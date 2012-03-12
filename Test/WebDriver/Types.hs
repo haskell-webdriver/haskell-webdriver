@@ -21,19 +21,19 @@ module Test.WebDriver.Types
         
        , Selector(..)
        ) where
+import Data.Aeson
+import Data.Aeson.TH
+import Data.Aeson.Types
+import Data.Text as Text (toLower, toUpper)
+import Data.Text (Text)
+import Network.Stream (ConnError)
+
 import Control.Applicative
 import Control.Monad.Error
 import Control.Monad.State
 import Control.Monad.IO.Class
-import Data.Aeson
-import Data.Aeson.TH
-import Data.Aeson.Types
-import Network.Stream (ConnError)
-import Data.Text as Text (toLower, toUpper)
 import Data.Word
 import Data.String
-import Data.Text (Text)
-
 
 newtype WD a = WD (StateT WDSession (ErrorT WDError IO) a)
   deriving (Functor, Monad, MonadState WDSession, MonadError WDError, MonadIO,

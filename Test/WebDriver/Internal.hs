@@ -8,37 +8,31 @@ module Test.WebDriver.Internal
                     
                                          
        , handleHTTPErr, handleJSONErr, handleHTTPResp
-       
-       , selector, single, pair, triple
-                                       
-       , parseJSON', fromJSON', (!:), 
-         parsePair, parseTriple
-                                      
        ) where
-import Control.Applicative
-import Control.Monad.Error
-import Control.Monad.State
-import Control.Monad.IO.Class
+
+import Test.WebDriver.Types
+import Test.WebDriver.Types.Internal
+import Test.WebDriver.JSON
+
 import Network.HTTP (simpleHTTP, Request(..), Response(..), RequestMethod(..))
 import Network.HTTP.Headers (findHeader, Header(..), HeaderName(..))
 import Network.URI
 import Data.Aeson
-import Data.Aeson.Types
-import qualified Data.ByteString.Lazy.Char8 as BS
-import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Attoparsec.ByteString.Lazy (Result(..))
-import qualified Data.Attoparsec.ByteString.Lazy as AP
-import qualified Data.Text as T
-import qualified Data.HashMap.Lazy as H
-import qualified Data.Vector as V
+import Data.Aeson.Types (emptyArray)
+
 import Data.Text (Text)
-import Data.List
-import Data.Maybe
-import Data.String
+import qualified Data.Text as T
+import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.Vector as V
 
-import Test.WebDriver.Types
-import Test.WebDriver.Types.Internal
-
+--import Control.Applicative
+import Control.Monad.Error (throwError)
+import Control.Monad.State (get)
+import Control.Monad.IO.Class (liftIO)
+import Data.List (isInfixOf)
+import Data.Maybe (fromJust)  -- used with relativeTo
+import Data.String (fromString)
 
 mkWDUri :: String -> WD URI  --todo: remove String :(
 mkWDUri path = do 
@@ -186,53 +180,3 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
     52  -> e InvalidXPathSelectorReturnType
     405 -> e MethodNotAllowed
     _   -> e UnknownError
-
-
-apResultToWD :: FromJSON a => AP.Result Value -> WD a
-apResultToWD p = case p of
-  Done _ res -> fromJSON' res
-  Fail _ _ err -> throwError $ BadJSON err
-
-aesonResultToWD r = case r of
-  Success val -> return val
-  Error err   -> throwError $ BadJSON err
-
-parseJSON' :: FromJSON a => ByteString -> WD a
-parseJSON' = apResultToWD . AP.parse json
-
-fromJSON' :: FromJSON a => Value -> WD a
-fromJSON' = aesonResultToWD . fromJSON
-
-(!:) :: FromJSON a => Object -> Text -> WD a
-o !: k = aesonResultToWD $ parse (.: k) o
-
-parsePair :: (FromJSON a, FromJSON b) => 
-             String -> String -> String -> Value -> WD (a, b)
-parsePair a b funcName v = 
-  case v of
-    Object o -> (,) <$> o !: fromString a <*> o !: fromString b
-    _        -> throwError . BadJSON $ funcName ++ 
-                ": cannot parse non-object JSON response as a (" ++ a  
-                ++ ", " ++ b ++ ") pair" ++ ")"
-
-parseTriple a b c funcName v = 
-  case v of
-    Object o -> (,,) <$> o !: fromString a 
-                     <*> o !: fromString b 
-                     <*> o !: fromString c
-    _        -> throwError . BadJSON $ funcName ++
-                ": cannot parse non-object JSON response as a (" ++ a
-                ++ ", " ++ b ++ ", " ++ c ++ ") pair"
-                
-selector :: Selector -> Text -> Value
-selector s t = object ["using" .= s, "value" .= t]
-
-single :: ToJSON a => Text -> a -> Value
-single a x = object [a .= x]
-
-pair :: (ToJSON a, ToJSON b) => (Text,Text) -> (a,b) -> Value
-pair (a,b) (x,y) = object [a .= x, b .= y]
-
-triple :: (ToJSON a, ToJSON b, ToJSON c) => 
-          (Text,Text,Text) -> (a,b,c) -> Value
-triple (a,b,c) (x,y,z) = object [a .= x, b.= y, c .= z]

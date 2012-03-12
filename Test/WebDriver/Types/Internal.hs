@@ -2,10 +2,13 @@
 module Test.WebDriver.Types.Internal
        ( WDResponse(..) 
        ) where
+
 import Test.WebDriver.Types
-import Control.Applicative
+
 import Data.Aeson
 import Data.Aeson.Types
+
+import Control.Applicative
 import Data.Word
 
 

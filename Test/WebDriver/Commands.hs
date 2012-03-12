@@ -3,19 +3,21 @@ module Test.WebDriver.Commands where
 
 import Test.WebDriver.Types
 import Test.WebDriver.Internal
+import Test.WebDriver.JSON
+
+import Data.Aeson
+import Network.HTTP (RequestMethod(..))
+import qualified Data.Text as T
+import Data.Text (Text, splitOn, append)
+import Data.ByteString.Lazy.Char8 (ByteString)
+import Network.URI
+import Control.Concurrent
+import Data.Time.Clock
 
 import Control.Applicative
 import Control.Monad.State
 import Control.Monad.Error
 import Data.Word
-import Data.Aeson
-import qualified Data.Text as T
-import Data.Text (Text, splitOn, append)
-import Data.ByteString.Lazy.Char8 (ByteString)
-import Network.HTTP (RequestMethod(..))
-import Network.URI
-import Control.Concurrent
-import Data.Time.Clock
 
 runSession :: WDSession -> Capabilities -> WD a -> IO (Either WDError a)
 runSession = ((runErrorT .) .) . trySession
