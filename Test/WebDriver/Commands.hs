@@ -25,12 +25,12 @@ trySession s caps wd = tryWD s $ createSession caps >> wd <* closeSession
                             `catchError` handler
   where handler = const closeSession
 
-createSession :: Capabilities -> WD SessionId
+createSession :: Capabilities -> WD WDSession
 createSession caps = do
   sessUrl <- doCommand POST "/session" . single "desiredCapabilities" $ caps
   let sessId = SessionId . last . filter (not . T.null) . splitOn "/" $  sessUrl
   modify $ \sess -> sess {wdSessId = Just sessId}
-  return sessId
+  return =<< get
 
 serverStatus :: WD Value   -- todo: make this a record type
 serverStatus = doCommand GET "/status" ()
