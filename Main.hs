@@ -1,9 +1,7 @@
 {-# LANGUAGE OverloadedStrings, NoMonomorphismRestriction #-}
 import Control.Monad.IO.Class
 import Control.Monad.Error
-import Test.WebDriver.Types
-import Test.WebDriver.Commands
-import Test.WebDriver.Internal
+import Test.WebDriver
 
 
 --convenience function to print output
