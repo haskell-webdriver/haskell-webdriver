@@ -2,7 +2,7 @@
 module Test.WebDriver.Commands where
 
 import Test.WebDriver.Types
-import Test.WebDriver.Internal
+import Test.WebDriver.Commands.Internal
 import Test.WebDriver.JSON
 
 import Data.Aeson
@@ -19,6 +19,20 @@ import Control.Monad.State
 import Control.Monad.Error
 import Data.Word
 
+runWD :: WDSession -> WD a -> IO (Either WDError a)
+runWD = (runErrorT .) . tryWD
+
+tryWD :: WDSession -> WD a -> ErrorT WDError IO a
+tryWD sess (WD wd) = evalStateT wd sess
+
+withSession :: WDSession -> WD a -> WD a
+withSession s' (WD wd) = WD $ do
+  s <- get
+  withStateT (const s') wd 
+    `catchError` (\err -> do put s
+                             throwError err
+                 ) <* put s
+
 runSession :: WDSession -> Capabilities -> WD a -> IO (Either WDError a)
 runSession = ((runErrorT .) .) . trySession
 
@@ -27,15 +41,16 @@ trySession s caps wd = tryWD s $ createSession caps >> wd <* closeSession
                             `catchError` handler
   where handler = const closeSession
 
+
+serverStatus :: WD Value   -- todo: make this a record type
+serverStatus = doCommand GET "/status" ()
+
 createSession :: Capabilities -> WD WDSession
 createSession caps = do
   sessUrl <- doCommand POST "/session" . single "desiredCapabilities" $ caps
   let sessId = SessionId . last . filter (not . T.null) . splitOn "/" $  sessUrl
   modify $ \sess -> sess {wdSessId = Just sessId}
   return =<< get
-
-serverStatus :: WD Value   -- todo: make this a record type
-serverStatus = doCommand GET "/status" ()
 
 sessions :: WD [(SessionId, Capabilities)]
 sessions = do

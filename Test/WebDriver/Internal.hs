@@ -2,10 +2,6 @@
 module Test.WebDriver.Internal 
        ( mkWDUri, mkRequest
        , Request(..), RequestMethod(..), Response(..)
-              
-       , doCommand', doSessCommand', doElemCommand', doWinCommand'
-       , doCommand, doSessCommand, doElemCommand, doWinCommand
-                    
                                          
        , handleHTTPErr, handleJSONErr, handleHTTPResp
        ) where
@@ -13,7 +9,6 @@ module Test.WebDriver.Internal
 import Test.WebDriver.Types
 import Test.WebDriver.Types.Internal
 import Test.WebDriver.JSON
-
 import Network.HTTP (simpleHTTP, Request(..), Response(..), RequestMethod(..))
 import Network.HTTP.Headers (findHeader, Header(..), HeaderName(..))
 import Network.URI
@@ -28,8 +23,8 @@ import qualified Data.Vector as V
 
 --import Control.Applicative
 import Control.Monad.Error (throwError)
-import Control.Monad.State (get)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.State (get)
 import Data.List (isInfixOf)
 import Data.Maybe (fromJust)  -- used with relativeTo
 import Data.String (fromString)
@@ -68,49 +63,6 @@ mkRequest headers method path args = do
   liftIO . print $ req
   liftIO (simpleHTTP req) >>= either (throwError . HTTPConnError) return
 
-
-doSessCommand :: (ToJSON a, FromJSON b) => RequestMethod -> Text -> a -> WD b
-doSessCommand = doSessCommand' []
-
-doElemCommand :: (ToJSON a, FromJSON b) => 
-                 RequestMethod -> Element -> Text -> a -> WD b
-doElemCommand = doElemCommand' []
-
-doWinCommand :: (ToJSON a, FromJSON b) => 
-                RequestMethod -> WindowHandle -> Text -> a -> WD b
-doWinCommand = doWinCommand' []
-
-doCommand :: (ToJSON a, FromJSON b) => RequestMethod -> Text -> a -> WD b
-doCommand = doCommand' []
-
-doSessCommand' :: (ToJSON a, FromJSON b) => [Header] -> RequestMethod -> Text -> a -> WD b
-doSessCommand' headers method path args = do
-  WDSession { wdSessId = mSessId } <- get
-  case mSessId of 
-      Nothing -> throwError . NoSessionId $ 
-                 "No session ID found when making request for relative URL " 
-                 ++ show path
-      Just (SessionId sId) -> doCommand' headers method 
-                              (T.concat ["/session/", sId, path]) args
-
-doWinCommand' :: (ToJSON a, FromJSON b) => 
-                [Header] -> RequestMethod -> WindowHandle -> Text -> a -> WD b
-doWinCommand' h m (WindowHandle w) path a = 
-  doSessCommand' h m (T.concat ["/window/", w, path]) a
-
-doElemCommand' :: (ToJSON a, FromJSON b) => 
-                 [Header] -> RequestMethod -> Element -> Text -> a -> WD b
-doElemCommand' h m (Element e) path a =
-  doSessCommand' h m (T.concat ["/element/", e, path]) a
-
-doCommand' :: (ToJSON a, FromJSON b) => 
-                [Header] -> RequestMethod -> Text -> a -> WD b  
-doCommand' headers method path args = do
-  r <- mkRequest headers method path args
-  liftIO . print $ r
-  handleHTTPErr r
-  --liftIO . print . rspBody $ r
-  handleHTTPResp r
 
 handleHTTPErr :: Response ByteString -> WD ()
 handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} = 

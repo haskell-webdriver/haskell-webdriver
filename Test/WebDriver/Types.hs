@@ -3,9 +3,8 @@
 module Test.WebDriver.Types 
        ( SessionId(..), WindowHandle(..), currentWindow, Element(..)
          
-       , WD(..), runWD, tryWD
-       , withSession
-       
+       , WD(..)
+         
        , WDSession(..), defaultSession
        , Capabilities(..), defaultCaps, allCaps
        , Browser(..), Platform(..), ProxyType(..)
@@ -50,20 +49,6 @@ newtype Element = Element Text
 
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
-
-runWD :: WDSession -> WD a -> IO (Either WDError a)
-runWD = (runErrorT .) . tryWD
-
-tryWD :: WDSession -> WD a -> ErrorT WDError IO a
-tryWD sess (WD wd) = evalStateT wd sess
-
-withSession :: WDSession -> WD a -> WD a
-withSession s' (WD wd) = WD $ do
-  s <- get
-  withStateT (const s') wd 
-    `catchError` (\err -> do put s
-                             throwError err
-                 ) <* put s
 
 data WDSession = WDSession { wdHost   :: String
                            , wdPort   :: Word
