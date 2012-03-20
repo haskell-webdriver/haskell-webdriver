@@ -60,7 +60,7 @@ mkRequest headers method path args = do
                                                . show . BS.length $ body 
                                              ]
                     }
-  liftIO . print $ req
+--  liftIO . print $ req
   liftIO (simpleHTTP req) >>= either (throwError . HTTPConnError) return
 
 
@@ -121,7 +121,7 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
     24  -> e InvalidCookieDomain
     25  -> e UnableToSetCookie
     26  -> e UnexpectedAlertOpen
-    27  -> e NoAlertOpenError
+    27  -> e NoAlertOpen
     28  -> e ScriptTimeout
     29  -> e InvalidElementCoordinates
     30  -> e IMENotAvailable

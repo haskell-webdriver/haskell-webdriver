@@ -49,7 +49,7 @@ doCommand' :: (ToJSON a, FromJSON b) =>
                 [Header] -> RequestMethod -> Text -> a -> WD b  
 doCommand' headers method path args = do
   r <- mkRequest headers method path args
-  liftIO . print $ r
+  --liftIO . print $ r
   handleHTTPErr r
   --liftIO . print . rspBody $ r
   handleHTTPResp r
