@@ -167,7 +167,7 @@ data FailedCommandType = NoSuchElement
                        | InvalidCookieDomain
                        | UnableToSetCookie
                        | UnexpectedAlertOpen
-                       | NoAlertOpenError
+                       | NoAlertOpen
                        | ScriptTimeout
                        | InvalidElementCoordinates
                        | IMENotAvailable
