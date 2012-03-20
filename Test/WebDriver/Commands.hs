@@ -89,7 +89,7 @@ currentURL = doSessCommand GET "/url" ()
 
 openPage :: String -> WD ()
 openPage url 
-  | isURI url = doSessCommand POST "/url" . object $ ["url" .= url]
+  | isURI url = doSessCommand POST "/url" . single "url" $ url
   | otherwise = throwError . InvalidURL $ url
 
 forward :: WD ()
@@ -196,7 +196,7 @@ getText :: Element -> WD Text
 getText e = doElemCommand GET e "/text" ()
 
 sendKeys :: Text -> Element -> WD ()
-sendKeys t e = doElemCommand POST e "/value" [t]
+sendKeys t e = doElemCommand POST e "/value" . single "value" $ [t]
 
 --TODO:  /session/:sessionId/keys
 
@@ -262,7 +262,13 @@ acceptAlert = doSessCommand POST "/accept_alert" ()
 dismissAlert :: WD ()
 dismissAlert = doSessCommand POST "/dismiss_alert" ()
 
---todo: moveto
+
+moveTo :: (Int, Int) -> WD ()
+moveTo = doSessCommand POST "/moveto" . pair ("xoffset","yoffset")
+
+moveToFrom :: Element -> (Int, Int) -> WD ()
+moveToFrom e (x,y) = doSessCommand POST "/moveto" 
+                     . triple ("element","xoffset","yoffset") $ (e,x,y)
 
 clickWith :: MouseButton -> WD ()
 clickWith = doSessCommand POST "/click" . single "button"
