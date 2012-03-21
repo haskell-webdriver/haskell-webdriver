@@ -328,24 +328,25 @@ setLocation = doSessCommand POST "/location" . triple ("latitude",
                                                        "longitude",
                                                        "altitude")
 
-waitUntil :: Double -> WD Bool -> WD ()
+waitUntil :: Double -> WD a -> WD a
 waitUntil = waitUntil' 500000
 
-waitUntil' :: Int -> Double -> WD Bool -> WD () 
-waitUntil' wait t cond = do
-  let timeout = realToFrac t
-  startTime <- getTime
-  fix $ \loop -> do
-    p <- cond `catchError` handler
-    unless p $ do
-      now <- getTime
-      unless (diffUTCTime now startTime >= timeout) $ do
-        sleep wait
-        loop
-  failedCommand Timeout "waitUntil': explicit wait timed out."
+waitUntil' :: Int -> Double -> WD a -> WD a
+waitUntil' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
   where
-    handler (FailedCommand NoSuchElement _) = return False
-    handler otherErr = throwError otherErr
-    getTime = liftIO getCurrentTime
-    sleep   = liftIO . threadDelay
+    timeout = realToFrac t
+    waitLoop startTime = wd `catchError` handler
+      where
+        handler (FailedCommand NoSuchElement _) = retry
+        handler (WDZero _) = retry
+        handler otherErr = throwError otherErr
+    
+        retry = do
+          now <- liftIO getCurrentTime
+          if diffUTCTime now startTime >= timeout
+            then do 
+              liftIO . threadDelay $ waitAmnt
+              waitLoop startTime
+            else 
+              failedCommand Timeout "waitUntil': explicit wait timed out."
 
