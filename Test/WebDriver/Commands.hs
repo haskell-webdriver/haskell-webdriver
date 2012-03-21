@@ -84,8 +84,8 @@ getCurrentWindow = doSessCommand GET "/window_handle" ()
 windows :: WD [WindowHandle]
 windows = doSessCommand GET "/window_handles" ()
 
-currentURL :: WD String
-currentURL = doSessCommand GET "/url" ()
+getCurrentURL :: WD String
+getCurrentURL = doSessCommand GET "/url" ()
 
 openPage :: String -> WD ()
 openPage url 
@@ -342,6 +342,7 @@ waitUntil' wait t cond = do
       unless (diffUTCTime now startTime >= timeout) $ do
         sleep wait
         loop
+  failedCommand Timeout "waitUntil': explicit wait timed out."
   where
     handler (FailedCommand NoSuchElement _) = return False
     handler otherErr = throwError otherErr
