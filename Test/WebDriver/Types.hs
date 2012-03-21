@@ -9,14 +9,13 @@ module Test.WebDriver.Types
        , Capabilities(..), defaultCaps, allCaps
        , Browser(..), Platform(..), ProxyType(..)
                                     
-       ,Orientation(..)
-       
-       ,MouseButton(..)
-                                    
        , WDError(..), FailedCommandType(..)
        , FailedCommandInfo(..), StackFrame(..)
+       , mkFailedCommandInfo, failedCommand
                                 
        , Cookie(..)
+       , Orientation(..)
+       , MouseButton(..)
         
        , Selector(..)
        ) where
@@ -67,12 +66,6 @@ data Browser = Firefox | Chrome | HTMLUnit | IE | IPhone
 data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
               deriving (Eq, Show, Ord, Bounded, Enum)
 
-
-data Orientation = Landscape | Portrait
-                 deriving (Eq, Show, Ord, Bounded, Enum)
-
-data MouseButton = LeftButton | MiddleButton | RightButton
-                 deriving (Eq, Show, Ord, Bounded, Enum)
 
 data Capabilities = Capabilities { browserName              :: Browser
                                  , version                  :: Maybe String
@@ -188,6 +181,18 @@ data FailedCommandInfo = FailedCommandInfo { errMsg    :: String
                        deriving (Eq)
 
 
+mkFailedCommandInfo :: String -> FailedCommandInfo
+mkFailedCommandInfo m = FailedCommandInfo {errMsg = m
+                                          , errSessId = Nothing
+                                          , errScreen = Nothing
+                                          , errClass  = Nothing
+                                          , errStack  = []
+                                          }
+
+failedCommand :: FailedCommandType -> String -> WD a
+failedCommand t = throwError . FailedCommand t . mkFailedCommandInfo
+
+
 data StackFrame = StackFrame { sfFileName   :: String
                              , sfClassName  :: String
                              , sfMethodName :: String
@@ -203,14 +208,21 @@ data Cookie = Cookie { cookName   :: Text
                      , cookExpiry :: Maybe Integer
                      } deriving (Eq, Show)              
 
+data Orientation = Landscape | Portrait
+                 deriving (Eq, Show, Ord, Bounded, Enum)
+
+data MouseButton = LeftButton | MiddleButton | RightButton
+                 deriving (Eq, Show, Ord, Bounded, Enum)
+
 data Selector = ById
               | ByName
               | ByClass
-              | ByTagName
+              | ByTag
               | ByLinkText
               | ByPartialLinkText
               | ByCSS
               | ByXPath 
+                deriving (Eq, Show, Ord, Bounded, Enum)
 
 
 instance Show FailedCommandInfo where --todo: pretty print
@@ -379,8 +391,8 @@ instance ToJSON Selector where
   toJSON s = String $ case s of
     ById              -> "id"
     ByName            -> "name"
-    ByClass           -> "class"
-    ByTagName         -> "tag name"
+    ByClass           -> "class name"
+    ByTag             -> "tag name"
     ByLinkText        -> "link text"
     ByPartialLinkText -> "partial link text"
     ByCSS             -> "css selector"
