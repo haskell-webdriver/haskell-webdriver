@@ -129,6 +129,9 @@ data ProxyType = NoProxy
                         }
                deriving (Eq, Show)
       
+
+--todo: simplify error constructors
+
 data WDError = NoSessionId String
              | InvalidURL String
              | UnknownCommand String
