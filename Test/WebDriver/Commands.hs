@@ -99,11 +99,11 @@ back = doSessCommand POST "/back" ()
 refresh :: WD ()
 refresh = doSessCommand POST "/refresh" ()
 
-executeJS :: [Value] -> Text -> WD Value
+executeJS :: [JSArg] -> Text -> WD Value
 executeJS = ((doSessCommand POST "/execute"
             . pair ("args", "script")) .) . (,)
 
-asyncJS :: [Value] -> Text -> WD (Maybe Value)
+asyncJS :: [JSArg] -> Text -> WD (Maybe Value)
 asyncJS = (((Just <$>) . doSessCommand POST "/execute_async"
           . pair ("args", "script")) .) . (,) 
         

@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, 
-    TemplateHaskell, OverloadedStrings, NoMonomorphismRestriction #-}
+    TemplateHaskell, OverloadedStrings, NoMonomorphismRestriction, 
+    ExistentialQuantification #-}
 module Test.WebDriver.Types 
        ( SessionId(..), WindowHandle(..), currentWindow, Element(..)
          
@@ -15,8 +16,8 @@ module Test.WebDriver.Types
        , Cookie(..)
        , Orientation(..)
        , MouseButton(..)
-        
        , Selector(..)
+       , JSArg(..)
        ) where
 import Data.Aeson
 import Data.Aeson.TH
@@ -128,6 +129,8 @@ data ProxyType = NoProxy
                         }
                deriving (Eq, Show)
       
+--todo: simplify error handling. perhaps include a module of convenience
+--      functions, switch to a (mostly) Enum type for error types, or use TH
 
 data WDError = NoSessionId String
              | InvalidURL String
@@ -208,6 +211,8 @@ data Selector = ById Text
               | ByCSS Text
               | ByXPath Text
                 deriving (Eq, Show, Ord)
+
+data JSArg = forall a. ToJSON a => JSArg a
 
 
 instance Show UnknownErrorInfo where --todo: pretty print
@@ -385,3 +390,6 @@ instance ToJSON Selector where
     where
       selector :: Text -> Text -> Value
       selector s t = object ["using" .= s, "value" .= t]
+      
+instance ToJSON JSArg where
+  toJSON (JSArg a) = toJSON a
