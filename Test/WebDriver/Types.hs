@@ -232,7 +232,7 @@ instance FromJSON Element where
   parseJSON v = typeMismatch "Element" v
   
 instance ToJSON Element where
-  toJSON (Element e) = object ["ELEMENT" .= e]
+  toJSON (Element e) = String e
 
 instance FromJSON Capabilities where  
   parseJSON (Object o) = Capabilities <$> req "browserName"
