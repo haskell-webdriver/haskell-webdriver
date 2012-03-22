@@ -101,30 +101,34 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
 handleJSONErr :: WDResponse -> WD ()
 handleJSONErr WDResponse{rspStatus = 0} = return ()
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
-  info <- fromJSON' val
-  throwError . ($ errMsg info) $ case status of
-    7   -> NoSuchElement
-    8   -> NoSuchFrame
-    9   -> UnknownCommand
-    10  -> StaleElementReference
-    11  -> ElementNotVisible
-    12  -> InvalidElementState
-    15  -> ElementIsNotSelectable
-    17  -> JavascriptError
-    19  -> XPathLookupError
-    21  -> Timeout
-    23  -> NoSuchWindow
-    24  -> InvalidCookieDomain
-    25  -> UnableToSetCookie
-    26  -> UnexpectedAlertOpen
-    27  -> NoAlertOpen
-    28  -> ScriptTimeout
-    29  -> InvalidElementCoordinates
-    30  -> IMENotAvailable
-    31  -> IMEEngineActivationFailed        
-    32  -> InvalidSelector
-    34  -> MoveTargetOutOfBounds
-    51  -> InvalidXPathSelector
-    52  -> InvalidXPathSelectorReturnType
-    405 -> MethodNotAllowed
-    _   -> const $ UnknownError info
+  sess <- get
+  errInfo <- fromJSON' val
+  let errInfo' = errInfo { errSessId = wdSessId sess } 
+      e errType = throwError $ FailedCommand errType errInfo'
+  case status of
+    7   -> e NoSuchElement
+    8   -> e NoSuchFrame
+    9   -> throwError . UnknownCommand . errMsg $ errInfo
+    10  -> e StaleElementReference
+    11  -> e ElementNotVisible
+    12  -> e InvalidElementState
+    13  -> e UnknownError
+    15  -> e ElementIsNotSelectable
+    17  -> e JavascriptError
+    19  -> e XPathLookupError
+    21  -> e Timeout
+    23  -> e NoSuchWindow
+    24  -> e InvalidCookieDomain
+    25  -> e UnableToSetCookie
+    26  -> e UnexpectedAlertOpen
+    27  -> e NoAlertOpen
+    28  -> e ScriptTimeout
+    29  -> e InvalidElementCoordinates
+    30  -> e IMENotAvailable
+    31  -> e IMEEngineActivationFailed        
+    32  -> e InvalidSelector
+    34  -> e MoveTargetOutOfBounds
+    51  -> e InvalidXPathSelector
+    52  -> e InvalidXPathSelectorReturnType
+    405 -> e MethodNotAllowed
+    _   -> e UnknownError

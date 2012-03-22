@@ -10,8 +10,9 @@ module Test.WebDriver.Types
        , Capabilities(..), defaultCaps, allCaps
        , Browser(..), Platform(..), ProxyType(..)
                                     
-       , WDError(..)
-       , UnknownErrorInfo(..), StackFrame(..)
+       , WDError(..), FailedCommandType(..)
+       , FailedCommandInfo(..), StackFrame(..)
+       , mkFailedCommandInfo, failedCommand
                                 
        , Cookie(..)
        , Orientation(..)
@@ -134,52 +135,67 @@ data ProxyType = NoProxy
 
 data WDError = NoSessionId String
              | InvalidURL String
+             | UnknownCommand String
+             | ServerError String
              | BadJSON String
              | HTTPConnError ConnError
              | HTTPStatusUnknown (Int, Int, Int) String 
-             | UnknownCommand String
-             | ServerError String
-             | NoSuchElement String
-             | NoSuchFrame String
-             | UnknownFrame String
-             | StaleElementReference String
-             | ElementNotVisible String
-             | InvalidElementState String
-             | ElementIsNotSelectable String
-             | JavascriptError String
-             | XPathLookupError String
-             | Timeout String
-             | NoSuchWindow String
-             | InvalidCookieDomain String
-             | UnableToSetCookie String
-             | UnexpectedAlertOpen String
-             | NoAlertOpen String
-             | ScriptTimeout String
-             | InvalidElementCoordinates String
-             | IMENotAvailable String
-             | IMEEngineActivationFailed String
-             | InvalidSelector String
-             | MoveTargetOutOfBounds String
-             | InvalidXPathSelector String
-             | InvalidXPathSelectorReturnType String
-             | MethodNotAllowed String
-             | UnknownError UnknownErrorInfo
+             | FailedCommand FailedCommandType FailedCommandInfo
              | WDZero String  -- used in the Error instance.
              deriving (Eq, Show)
-
 
 instance Error WDError where
   noMsg =  WDZero ""
   strMsg = WDZero
 
 
-data UnknownErrorInfo = UnknownErrorInfo { errMsg    :: String
-                                         , errSessId :: Maybe SessionId 
-                                         , errScreen :: Maybe String
-                                         , errClass  :: Maybe String
-                                         , errStack  :: [StackFrame]
-                                         }
+data FailedCommandType = NoSuchElement
+                       | NoSuchFrame
+                       | UnknownFrame
+                       | StaleElementReference
+                       | ElementNotVisible
+                       | InvalidElementState
+                       | UnknownError
+                       | ElementIsNotSelectable
+                       | JavascriptError
+                       | XPathLookupError
+                       | Timeout
+                       | NoSuchWindow
+                       | InvalidCookieDomain
+                       | UnableToSetCookie
+                       | UnexpectedAlertOpen
+                       | NoAlertOpen
+                       | ScriptTimeout
+                       | InvalidElementCoordinates
+                       | IMENotAvailable
+                       | IMEEngineActivationFailed
+                       | InvalidSelector
+                       | MoveTargetOutOfBounds
+                       | InvalidXPathSelector
+                       | InvalidXPathSelectorReturnType
+                       | MethodNotAllowed
+                       deriving (Eq, Ord, Enum, Bounded, Show)
+
+data FailedCommandInfo = FailedCommandInfo { errMsg    :: String
+                                           , errSessId :: Maybe SessionId 
+                                           , errScreen :: Maybe String
+                                           , errClass  :: Maybe String
+                                           , errStack  :: [StackFrame]
+                                           }
                        deriving (Eq)
+
+
+mkFailedCommandInfo :: String -> FailedCommandInfo
+mkFailedCommandInfo m = FailedCommandInfo {errMsg = m
+                                          , errSessId = Nothing
+                                          , errScreen = Nothing
+                                          , errClass  = Nothing
+                                          , errStack  = []
+                                          }
+
+failedCommand :: FailedCommandType -> String -> WD a
+failedCommand t = throwError . FailedCommand t . mkFailedCommandInfo
+
 
 data StackFrame = StackFrame { sfFileName   :: String
                              , sfClassName  :: String
@@ -215,7 +231,7 @@ data Selector = ById Text
 data JSArg = forall a. ToJSON a => JSArg a
 
 
-instance Show UnknownErrorInfo where --todo: pretty print
+instance Show FailedCommandInfo where --todo: pretty print
   show i =   showString "{errMsg = "     . shows (errMsg i) 
            . showString ", errSessId = " . shows (errSessId i)
            . showString ", errScreen = " . screen
@@ -259,13 +275,13 @@ instance FromJSON Capabilities where
           b k = opt k Nothing     -- Maybe Bool field
   parseJSON v = typeMismatch "Capabilities" v
 
-instance FromJSON UnknownErrorInfo where
+instance FromJSON FailedCommandInfo where
   parseJSON (Object o) = 
-    UnknownErrorInfo <$> (req "message" >>= maybe (return "") return)
-                     <*> pure Nothing
-                     <*> opt "screen"     Nothing
-                     <*> opt "class"      Nothing
-                     <*> opt "stackTrace" []
+    FailedCommandInfo <$> (req "message" >>= maybe (return "") return)
+                      <*> pure Nothing
+                      <*> opt "screen"     Nothing
+                      <*> opt "class"      Nothing
+                      <*> opt "stackTrace" []
     where req = (o .:)            --required key
           opt k d = o .:? k .!= d --optional key
   parseJSON v = typeMismatch "FailedCommandInfo" v
