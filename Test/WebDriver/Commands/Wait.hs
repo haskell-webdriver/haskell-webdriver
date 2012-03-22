@@ -16,7 +16,7 @@ waitUntil' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
     timeout = realToFrac t
     waitLoop startTime = wd `catchError` handler
       where
-        handler (NoSuchElement _) = retry
+        handler (FailedCommand NoSuchElement _) = retry
         handler (WDZero _) = retry
         handler otherErr = throwError otherErr
     
@@ -24,7 +24,7 @@ waitUntil' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
           now <- liftIO getCurrentTime
           if diffUTCTime now startTime >= timeout
             then 
-              throwError $ Timeout "waitUntil': explicit wait timed out."
+              failedCommand Timeout "waitUntil': explicit wait timed out."
             else do
               liftIO . threadDelay $ waitAmnt
               waitLoop startTime
@@ -41,11 +41,11 @@ waitWhile' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
       now <- liftIO getCurrentTime
       if diffUTCTime now startTime >= timeout
         then
-          throwError $ Timeout "waitUntil': explicit wait timed out."
+          failedCommand Timeout "waitUntil': explicit wait timed out."
         else do
           liftIO . threadDelay $ waitAmnt
           waitLoop startTime
       where
-        handler (NoSuchElement _) = return ()
+        handler (FailedCommand NoSuchElement _) = return ()
         handler (WDZero _) = return ()
         handler otherErr = throwError otherErr
