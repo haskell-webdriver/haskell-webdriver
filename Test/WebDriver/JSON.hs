@@ -16,9 +16,6 @@ import Data.String
 
 -- JSON object constructors
 
-selector :: Selector -> Text -> Value
-selector s t = object ["using" .= s, "value" .= t]
-
 single :: ToJSON a => Text -> a -> Value
 single a x = object [a .= x]
 
