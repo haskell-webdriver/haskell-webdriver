@@ -166,20 +166,20 @@ getSource = doSessCommand GET "/source" ()
 getTitle :: WD Text
 getTitle = doSessCommand GET "/title" ()
 
-findElem :: Selector -> Text -> WD Element
-findElem s t = doSessCommand POST "/element" (selector s t)
+findElem :: Selector -> WD Element
+findElem = doSessCommand POST "/element"
                
-findElems :: Selector -> Text -> WD [Element]
-findElems s t = doSessCommand POST "/elements" (selector s t)
+findElems :: Selector -> WD [Element]
+findElems = doSessCommand POST "/elements"
 
 activeElem :: WD Element
 activeElem = doSessCommand POST "/element/active" () 
 
-findElemFrom :: Element -> Selector -> Text -> WD Element
-findElemFrom e l t = doElemCommand POST e "/element" (selector l t)
+findElemFrom :: Element -> Selector -> WD Element
+findElemFrom e = doElemCommand POST e "/element"
 
-findElemsFrom :: Element -> Selector -> Text -> WD [Element]
-findElemsFrom e l t = doElemCommand POST e "/elements" (selector l t)
+findElemsFrom :: Element -> Selector -> WD [Element]
+findElemsFrom e = doElemCommand POST e "/elements"
 
 elemInfo :: Element -> WD Value
 elemInfo e = doElemCommand GET e "" ()

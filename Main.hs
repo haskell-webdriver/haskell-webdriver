@@ -3,12 +3,11 @@ import Control.Monad.IO.Class
 import Control.Monad.Error
 import Test.WebDriver
 
-
 --convenience function to print output
 p = (liftIO . print =<<)
 
 main = (print =<<) . runSession defaultSession defaultCaps $ do
-  waitUntil 5 mzero
+  waitUntil 5 mzero `mplus` (liftIO . print $ "explicit wait timed out")
   p serverStatus
   p sessions
   p getCaps
@@ -18,7 +17,7 @@ main = (print =<<) . runSession defaultSession defaultCaps $ do
   p getCurrentURL
   screenshot
   openPage "http://yahoo.com"
-  void (findElem ById "Not an Id") 
+  (void . findElem . ById $ "Not an Id")
     `catchError` \err -> liftIO (print err)
   back
   forward
@@ -40,8 +39,8 @@ main = (print =<<) . runSession defaultSession defaultCaps $ do
   
   p $ executeJS [] "return document.title"
   
-  e1 <- findElem ByTag "input"
-  e2 <- findElem ByTag "input"
+  e1 <- findElem $ ByTag "input"
+  e2 <- findElem $ ByTag "input"
   p $ e1 <==> e2
   p $ e1 </=> e2
   p $ isSelected e1
@@ -50,8 +49,8 @@ main = (print =<<) . runSession defaultSession defaultCaps $ do
   p $ e1 `attr` "incorrect"
   p $ e1 `cssAttr` "incorrect"
   
-  p $ findElems ByTag "div"
-  e3 <- findElem ById "hplogo"
+  p $ findElems $ ByTag "div"
+  e3 <- findElem $ ById "hplogo"
   click e3
   p $ elemInfo =<< activeElem
   

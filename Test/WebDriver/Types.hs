@@ -201,15 +201,15 @@ data Orientation = Landscape | Portrait
 data MouseButton = LeftButton | MiddleButton | RightButton
                  deriving (Eq, Show, Ord, Bounded, Enum)
 
-data Selector = ById
-              | ByName
-              | ByClass
-              | ByTag
-              | ByLinkText
-              | ByPartialLinkText
-              | ByCSS
-              | ByXPath 
-                deriving (Eq, Show, Ord, Bounded, Enum)
+data Selector = ById Text
+              | ByName Text
+              | ByClass Text
+              | ByTag Text
+              | ByLinkText Text
+              | ByPartialLinkText Text
+              | ByCSS Text
+              | ByXPath Text
+                deriving (Eq, Show, Ord)
 
 
 instance Show UnknownErrorInfo where --todo: pretty print
@@ -375,12 +375,15 @@ instance ToJSON ProxyType where
       ]
 
 instance ToJSON Selector where
-  toJSON s = String $ case s of
-    ById              -> "id"
-    ByName            -> "name"
-    ByClass           -> "class name"
-    ByTag             -> "tag name"
-    ByLinkText        -> "link text"
-    ByPartialLinkText -> "partial link text"
-    ByCSS             -> "css selector"
-    ByXPath           -> "xpath"
+  toJSON s = case s of
+    ById t              -> selector "id" t
+    ByName t            -> selector "name" t
+    ByClass t           -> selector "class name" t
+    ByTag t             -> selector "tag name" t
+    ByLinkText t        -> selector "link text" t
+    ByPartialLinkText t -> selector "partial link text" t
+    ByCSS t             -> selector "css selector" t
+    ByXPath t           -> selector "xpath" t
+    where
+      selector :: Text -> Text -> Value
+      selector s t = object ["using" .= s, "value" .= t]
