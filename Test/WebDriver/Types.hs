@@ -131,7 +131,7 @@ data ProxyType = NoProxy
                deriving (Eq, Show)
       
 --todo: simplify error handling. perhaps include a module of convenience
---      functions, switch to a (mostly) Enum type for error types, or use TH
+--      functions, or use TH
 
 data WDError = NoSessionId String
              | InvalidURL String
