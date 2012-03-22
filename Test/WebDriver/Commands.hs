@@ -125,8 +125,9 @@ activateIME = doSessCommand POST "/ime/activate" . single "engine"
 deactivateIME :: WD ()
 deactivateIME = doSessCommand POST "/ime/deactivate" ()
 
+--TODO!!!
 --focusFrame :: Frame -> WD ()
-focusFrame = undefined
+--focusFrame = undefined
 
 focusWindow :: WindowHandle -> WD ()
 focusWindow = doSessCommand POST "/window" . single "name"
@@ -265,8 +266,9 @@ moveTo :: (Int, Int) -> WD ()
 moveTo = doSessCommand POST "/moveto" . pair ("xoffset","yoffset")
 
 moveToFrom :: (Int, Int) -> Element -> WD ()
-moveToFrom (x,y) e = doSessCommand POST "/moveto" 
-                     . triple ("element","xoffset","yoffset") $ (e,x,y)
+moveToFrom (x,y) (Element e) = 
+  doSessCommand POST "/moveto" 
+  . triple ("element","xoffset","yoffset") $ (e,x,y)
 
 clickWith :: MouseButton -> WD ()
 clickWith = doSessCommand POST "/click" . single "button"
@@ -296,26 +298,30 @@ touchScroll :: (Int, Int) -> WD ()
 touchScroll = doSessCommand POST "/touch/scroll" . pair ("xOffset","yOffset")
 
 touchScrollFrom :: (Int, Int) -> Element -> WD ()
-touchScrollFrom (x, y) e = doSessCommand POST "/touch/scroll"
-                           . triple ("xOffset", "yOffset", "element")
-                           $ (x, y, e)
+touchScrollFrom (x, y) (Element e) = 
+  doSessCommand POST "/touch/scroll"
+  . triple ("xOffset", "yOffset", "element")
+  $ (x, y, e)
 
 touchDoubleClick :: Element -> WD ()
-touchDoubleClick = doSessCommand POST "/touch/doubleclick"
+touchDoubleClick (Element e) = doSessCommand POST "/touch/doubleclick"
+                               . single "element" $ e
 
 touchLongClick :: Element -> WD ()
-touchLongClick = doSessCommand POST "/touch/longclick"
+touchLongClick (Element e) = doSessCommand POST "/touch/longclick"
+                             . single "element" $ e
 
 touchFlick :: (Int, Int) -> WD ()
 touchFlick = doSessCommand POST "/touch/flick" . pair ("xSpeed", "ySpeed")
 
 touchFlickFrom :: (Int, Int) -> Int -> Element -> WD ()
-touchFlickFrom (x,y) s e = doSessCommand POST "/touch/flick" . object $
-                           ["xOffset" .= x
-                           ,"yOffset" .= y
-                           ,"speed"   .= s
-                           ,"element" .= e
-                           ]
+touchFlickFrom (x,y) s (Element e) = 
+  doSessCommand POST "/touch/flick" . object $
+  ["xOffset" .= x
+  ,"yOffset" .= y
+  ,"speed"   .= s
+  ,"element" .= e
+  ]
                            
 getLocation :: WD (Int, Int, Int)
 getLocation = doSessCommand GET "/location" () 
