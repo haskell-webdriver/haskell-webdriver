@@ -8,15 +8,14 @@ import Test.WebDriver
 p = (liftIO . print =<<)
 
 main = (print =<<) . runSession defaultSession defaultCaps $ do
-  waitUntil 5 (return False)
-  {-
+  waitUntil 5 mzero
   p serverStatus
   p sessions
   p getCaps
   setImplicitWait 5000
   setScriptTimeout 5000
   openPage "http://google.com"
-  p currentURL
+  p getCurrentURL
   screenshot
   openPage "http://yahoo.com"
   void (findElem ById "Not an Id") 
@@ -41,8 +40,8 @@ main = (print =<<) . runSession defaultSession defaultCaps $ do
   
   p $ executeJS [] "return document.title"
   
-  e1 <- findElem ByTagName "input"
-  e2 <- findElem ByTagName "input"
+  e1 <- findElem ByTag "input"
+  e2 <- findElem ByTag "input"
   p $ e1 <==> e2
   p $ e1 </=> e2
   p $ isSelected e1
@@ -51,8 +50,8 @@ main = (print =<<) . runSession defaultSession defaultCaps $ do
   p $ e1 `attr` "incorrect"
   p $ e1 `cssAttr` "incorrect"
   
-  p $ findElem ByTagName "div"
-  e3 <- findElem ByXPath "//[not(ancestor::div[contains(@style,'display:none')])][1]"
+  p $ findElems ByTag "div"
+  e3 <- findElem ById "hplogo"
   click e3
   p $ elemInfo =<< activeElem
   
@@ -60,4 +59,3 @@ main = (print =<<) . runSession defaultSession defaultCaps $ do
   p $ getWindowSize currentWindow
   p $ getWindowPos currentWindow
   setWindowSize currentWindow (20,20)
-  -}
