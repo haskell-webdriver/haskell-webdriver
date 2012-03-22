@@ -264,7 +264,7 @@ dismissAlert = doSessCommand POST "/dismiss_alert" ()
 moveTo :: (Int, Int) -> WD ()
 moveTo = doSessCommand POST "/moveto" . pair ("xoffset","yoffset")
 
-moveToFrom :: Element -> (Int, Int) -> WD ()
+moveToFrom :: (Int, Int) -> Element -> WD ()
 moveToFrom e (x,y) = doSessCommand POST "/moveto" 
                      . triple ("element","xoffset","yoffset") $ (e,x,y)
 
