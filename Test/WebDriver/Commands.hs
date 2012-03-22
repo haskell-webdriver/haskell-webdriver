@@ -11,8 +11,6 @@ import qualified Data.Text as T
 import Data.Text (Text, splitOn, append)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Network.URI
-import Control.Concurrent
-import Data.Time.Clock
 
 import Control.Applicative
 import Control.Monad.State
@@ -327,26 +325,4 @@ setLocation :: (Int, Int, Int) -> WD ()
 setLocation = doSessCommand POST "/location" . triple ("latitude",
                                                        "longitude",
                                                        "altitude")
-
-waitUntil :: Double -> WD a -> WD a
-waitUntil = waitUntil' 500000
-
-waitUntil' :: Int -> Double -> WD a -> WD a
-waitUntil' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
-  where
-    timeout = realToFrac t
-    waitLoop startTime = wd `catchError` handler
-      where
-        handler (FailedCommand NoSuchElement _) = retry
-        handler (WDZero _) = retry
-        handler otherErr = throwError otherErr
-    
-        retry = do
-          now <- liftIO getCurrentTime
-          if diffUTCTime now startTime >= timeout
-            then do 
-              liftIO . threadDelay $ waitAmnt
-              waitLoop startTime
-            else 
-              failedCommand Timeout "waitUntil': explicit wait timed out."
 
