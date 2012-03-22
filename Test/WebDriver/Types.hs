@@ -43,7 +43,7 @@ newtype WindowHandle = WindowHandle Text
                      deriving (Eq, Show, Read, IsString,  FromJSON, ToJSON)
 
 newtype Element = Element Text
-                  deriving (Show, Read, IsString)
+                  deriving (Eq, Show, Read, IsString)
 
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
