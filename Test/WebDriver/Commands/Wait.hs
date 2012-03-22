@@ -8,7 +8,7 @@ import Control.Monad.Error
 import Data.Time.Clock
 
 waitUntil :: Double -> WD a -> WD a
-waitUntil = waitUntil' 500000
+waitUntil = waitUntil' 250000
 
 waitUntil' :: Int -> Double -> WD a -> WD a
 waitUntil' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
@@ -30,7 +30,7 @@ waitUntil' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
               waitLoop startTime
 
 waitWhile :: Double -> WD a -> WD ()
-waitWhile = waitWhile' 500000
+waitWhile = waitWhile' 250000
 
 waitWhile' :: Int -> Double -> WD a -> WD ()
 waitWhile' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
