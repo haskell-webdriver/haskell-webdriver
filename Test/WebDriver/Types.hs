@@ -33,6 +33,7 @@ import Control.Monad.State
 import Control.Monad.IO.Class
 import Data.Word
 import Data.String
+import qualified Data.Char as C
 
 newtype WD a = WD (StateT WDSession (ErrorT WDError IO) a)
   deriving (Functor, Monad, MonadState WDSession, MonadError WDError, MonadIO,
@@ -295,7 +296,7 @@ instance FromJSON StackFrame where
           reqStr k = req k >>= maybe (return "") return
   parseJSON v = typeMismatch "StackFrame" v
 
-$( deriveToJSON (drop 4) ''Cookie )
+$( deriveToJSON (map C.toLower . drop 4) ''Cookie )
 
 instance FromJSON Cookie where
   parseJSON (Object o) = Cookie <$> req "name"
