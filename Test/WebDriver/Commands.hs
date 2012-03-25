@@ -295,12 +295,12 @@ touchMove :: (Int, Int) -> WD ()
 touchMove = doSessCommand POST "/touch/move" . pair ("x","y")
 
 touchScroll :: (Int, Int) -> WD ()
-touchScroll = doSessCommand POST "/touch/scroll" . pair ("xOffset","yOffset")
+touchScroll = doSessCommand POST "/touch/scroll" . pair ("xoffset","yoffset")
 
 touchScrollFrom :: (Int, Int) -> Element -> WD ()
 touchScrollFrom (x, y) (Element e) = 
   doSessCommand POST "/touch/scroll"
-  . triple ("xOffset", "yOffset", "element")
+  . triple ("xoffset", "yoffset", "element")
   $ (x, y, e)
 
 touchDoubleClick :: Element -> WD ()
@@ -317,8 +317,8 @@ touchFlick = doSessCommand POST "/touch/flick" . pair ("xSpeed", "ySpeed")
 touchFlickFrom :: (Int, Int) -> Int -> Element -> WD ()
 touchFlickFrom (x,y) s (Element e) = 
   doSessCommand POST "/touch/flick" . object $
-  ["xOffset" .= x
-  ,"yOffset" .= y
+  ["xoffset" .= x
+  ,"yoffset" .= y
   ,"speed"   .= s
   ,"element" .= e
   ]
