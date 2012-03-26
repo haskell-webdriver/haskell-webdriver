@@ -42,13 +42,15 @@ newtype WD a = WD (StateT WDSession (ErrorT WDError IO) a)
             MonadPlus, Applicative)
 
 newtype SessionId = SessionId Text
-                  deriving (Eq, Show, Read, IsString, FromJSON, ToJSON)
+                  deriving (Eq, Ord, Show, Read, 
+                            IsString, FromJSON, ToJSON)
 
 newtype WindowHandle = WindowHandle Text
-                     deriving (Eq, Show, Read, IsString,  FromJSON, ToJSON)
+                     deriving (Eq, Ord, Show, Read, 
+                               IsString,  FromJSON, ToJSON)
 
 newtype Element = Element Text
-                  deriving (Eq, Show, Read, IsString)
+                  deriving (Eq, Ord, Show, Read, IsString)
 
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
@@ -133,8 +135,35 @@ data ProxyType = NoProxy
                         }
                deriving (Eq, Show)
       
---todo: simplify error handling. perhaps include a module of convenience
---      functions, or use TH
+data Cookie = Cookie { cookName   :: Text
+                     , cookValue  :: Text
+                     , cookPath   :: Maybe Text
+                     , cookDomain :: Maybe Text
+                     , cookSecure :: Maybe Bool
+                     , cookExpiry :: Maybe Integer
+                     } deriving (Eq, Show)              
+
+data Selector = ById Text
+              | ByName Text
+              | ByClass Text
+              | ByTag Text
+              | ByLinkText Text
+              | ByPartialLinkText Text
+              | ByCSS Text
+              | ByXPath Text
+                deriving (Eq, Show, Ord)
+
+data JSArg = forall a. ToJSON a => JSArg a
+
+data Orientation = Landscape | Portrait
+                 deriving (Eq, Show, Ord, Bounded, Enum)
+
+data MouseButton = LeftButton | MiddleButton | RightButton
+                 deriving (Eq, Show, Ord, Bounded, Enum)
+
+
+--todo: simplify error handling. include a module of convenience
+--      functions. consider TH.
 
 data WDError = NoSessionId String
              | InvalidURL String
@@ -152,7 +181,6 @@ instance Exception WDError
 instance Error WDError where
   noMsg =  WDZero ""
   strMsg = WDZero
-
 
 data FailedCommandType = NoSuchElement
                        | NoSuchFrame
@@ -209,31 +237,6 @@ data StackFrame = StackFrame { sfFileName   :: String
                              }
                   deriving (Show, Eq)
 
-data Cookie = Cookie { cookName   :: Text
-                     , cookValue  :: Text
-                     , cookPath   :: Maybe Text
-                     , cookDomain :: Maybe Text
-                     , cookSecure :: Maybe Bool
-                     , cookExpiry :: Maybe Integer
-                     } deriving (Eq, Show)              
-
-data Orientation = Landscape | Portrait
-                 deriving (Eq, Show, Ord, Bounded, Enum)
-
-data MouseButton = LeftButton | MiddleButton | RightButton
-                 deriving (Eq, Show, Ord, Bounded, Enum)
-
-data Selector = ById Text
-              | ByName Text
-              | ByClass Text
-              | ByTag Text
-              | ByLinkText Text
-              | ByPartialLinkText Text
-              | ByCSS Text
-              | ByXPath Text
-                deriving (Eq, Show, Ord)
-
-data JSArg = forall a. ToJSON a => JSArg a
 
 
 instance Show FailedCommandInfo where --todo: pretty print
