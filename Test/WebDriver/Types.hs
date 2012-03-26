@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, 
+{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
     TemplateHaskell, OverloadedStrings, NoMonomorphismRestriction, 
     ExistentialQuantification #-}
 module Test.WebDriver.Types 
@@ -27,6 +27,8 @@ import Data.Text as Text (toLower, toUpper)
 import Data.Text (Text)
 import Network.Stream (ConnError)
 
+import Control.Exception
+import Data.Typeable
 import Control.Applicative
 import Control.Monad.Error
 import Control.Monad.State
@@ -143,7 +145,9 @@ data WDError = NoSessionId String
              | HTTPStatusUnknown (Int, Int, Int) String 
              | FailedCommand FailedCommandType FailedCommandInfo
              | WDZero String  -- used in the Error instance.
-             deriving (Eq, Show)
+             deriving (Eq, Show, Typeable)
+
+instance Exception WDError
 
 instance Error WDError where
   noMsg =  WDZero ""
