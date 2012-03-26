@@ -25,7 +25,8 @@ doWinCommand = doWinCommand' []
 doCommand :: (ToJSON a, FromJSON b) => RequestMethod -> Text -> a -> WD b
 doCommand = doCommand' []
 
-doSessCommand' :: (ToJSON a, FromJSON b) => [Header] -> RequestMethod -> Text -> a -> WD b
+doSessCommand' :: (ToJSON a, FromJSON b) => 
+                  [Header] -> RequestMethod -> Text -> a -> WD b
 doSessCommand' headers method path args = do
   WDSession { wdSessId = mSessId } <- get
   case mSessId of 
