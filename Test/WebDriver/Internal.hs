@@ -1,8 +1,7 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 module Test.WebDriver.Internal 
        ( mkWDUri, mkRequest
-       , Request(..), RequestMethod(..), Response(..)
-                                         
+       , Request(..), RequestMethod(..), Response(..)                      
        , handleHTTPErr, handleJSONErr, handleHTTPResp
        ) where
 
@@ -54,7 +53,7 @@ mkRequest headers method path args = do
                     , rqBody = body
                     , rqHeaders = headers ++ [ Header HdrAccept 
                                                "application/json;charset=UTF-8"
-                                             ,Header HdrContentType 
+                                             , Header HdrContentType 
                                                "application/json;charset=UTF-8"
                                              , Header HdrContentLength 
                                                . show . BS.length $ body 
