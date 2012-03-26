@@ -15,10 +15,15 @@ import Network.URI
 import Control.Applicative
 import Control.Monad.State
 import Control.Monad.Error
+import Data.Either
 import Data.Word
 
 runWD :: WDSession -> WD a -> IO (Either WDError a)
 runWD = (runErrorT .) . tryWD
+
+maybeWD :: WDSession -> WD a -> IO (Maybe a)
+maybeWD = (fmap eitherToMaybe .) . runWD
+  where eitherToMaybe = either (const Nothing) Just
 
 tryWD :: WDSession -> WD a -> ErrorT WDError IO a
 tryWD sess (WD wd) = evalStateT wd sess
