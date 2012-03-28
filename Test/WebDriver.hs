@@ -56,4 +56,5 @@ runSession = ((runErrorT .) .) . trySession
 trySession :: WDSession -> Capabilities ->  WD a -> ErrorT WDError IO a
 trySession s caps wd = tryWD s $ createSession caps >> wd <* closeSession
                             `catchError` handler
-  where handler = const closeSession
+  where handler e = do closeSession
+                       throwError e
