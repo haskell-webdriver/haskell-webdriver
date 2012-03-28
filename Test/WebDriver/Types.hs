@@ -1,11 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
-    TemplateHaskell, OverloadedStrings, NoMonomorphismRestriction, 
-    ExistentialQuantification, MultiParamTypeClasses, TypeFamilies #-}
+    TemplateHaskell, OverloadedStrings, ExistentialQuantification, 
+    MultiParamTypeClasses, TypeFamilies #-}
 module Test.WebDriver.Types 
-       ( SessionId(..), WindowHandle(..), currentWindow, Element(..)
+       ( WD(..)
          
-       , WD(..)
-         
+       , SessionId(..), WindowHandle(..), currentWindow, Element(..)
+       
        , WDSession(..), defaultSession
        , Capabilities(..), defaultCaps, allCaps
        , Browser(..), Platform(..), ProxyType(..)
@@ -146,33 +146,6 @@ data ProxyType = NoProxy
                         }
                deriving (Eq, Show)
       
-data Cookie = Cookie { cookName   :: Text
-                     , cookValue  :: Text
-                     , cookPath   :: Maybe Text
-                     , cookDomain :: Maybe Text
-                     , cookSecure :: Maybe Bool
-                     , cookExpiry :: Maybe Integer
-                     } deriving (Eq, Show)              
-
-data Selector = ById Text
-              | ByName Text
-              | ByClass Text
-              | ByTag Text
-              | ByLinkText Text
-              | ByPartialLinkText Text
-              | ByCSS Text
-              | ByXPath Text
-                deriving (Eq, Show, Ord)
-
-data JSArg = forall a. ToJSON a => JSArg a
-
-data Orientation = Landscape | Portrait
-                 deriving (Eq, Show, Ord, Bounded, Enum)
-
-data MouseButton = LeftButton | MiddleButton | RightButton
-                 deriving (Eq, Show, Ord, Bounded, Enum)
-
-
 --todo: simplify error handling. include a module of convenience
 --      functions. consider TH.
 
@@ -247,6 +220,33 @@ data StackFrame = StackFrame { sfFileName   :: String
                              , sfLineNumber :: Word
                              }
                   deriving (Show, Eq)
+
+
+data Cookie = Cookie { cookName   :: Text
+                     , cookValue  :: Text
+                     , cookPath   :: Maybe Text
+                     , cookDomain :: Maybe Text
+                     , cookSecure :: Maybe Bool
+                     , cookExpiry :: Maybe Integer
+                     } deriving (Eq, Show)              
+
+data Selector = ById Text
+              | ByName Text
+              | ByClass Text
+              | ByTag Text
+              | ByLinkText Text
+              | ByPartialLinkText Text
+              | ByCSS Text
+              | ByXPath Text
+                deriving (Eq, Show, Ord)
+
+data JSArg = forall a. ToJSON a => JSArg a
+
+data Orientation = Landscape | Portrait
+                 deriving (Eq, Show, Ord, Bounded, Enum)
+
+data MouseButton = LeftButton | MiddleButton | RightButton
+                 deriving (Eq, Show, Ord, Bounded, Enum)
 
 
 
