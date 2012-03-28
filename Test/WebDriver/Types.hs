@@ -1,7 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
     TemplateHaskell, OverloadedStrings, NoMonomorphismRestriction, 
-    ExistentialQuantification, MultiParamTypeClasses, TypeFamilies, 
-    FlexibleInstances, UndecidableInstances #-}
+    ExistentialQuantification, MultiParamTypeClasses, TypeFamilies #-}
 module Test.WebDriver.Types 
        ( SessionId(..), WindowHandle(..), currentWindow, Element(..)
          
