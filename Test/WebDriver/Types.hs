@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
     TemplateHaskell, OverloadedStrings, NoMonomorphismRestriction, 
-    ExistentialQuantification #-}
+    ExistentialQuantification, MultiParamTypeClasses, TypeFamilies, 
+    FlexibleInstances, UndecidableInstances #-}
 module Test.WebDriver.Types 
        ( SessionId(..), WindowHandle(..), currentWindow, Element(..)
          
@@ -33,13 +34,24 @@ import Control.Applicative
 import Control.Monad.Error
 import Control.Monad.State
 import Control.Monad.IO.Class
+import Control.Monad.Base
+import Control.Monad.Trans.Control
 import Data.Word
 import Data.String
 import qualified Data.Char as C
 
+
 newtype WD a = WD (StateT WDSession (ErrorT WDError IO) a)
-  deriving (Functor, Monad, MonadState WDSession, MonadError WDError, MonadIO,
-            MonadPlus, Applicative)
+  deriving (Functor, Monad, MonadState WDSession, MonadError WDError, MonadIO
+           ,MonadPlus, Applicative)
+
+instance MonadBase IO WD where
+  liftBase = WD . liftBase
+
+instance MonadBaseControl IO WD where
+  data StM WD a = StWD {unStWD :: WD a}
+  liftBaseWith f = WD (liftBase (f (return . StWD)))
+  restoreM = unStWD
 
 newtype SessionId = SessionId Text
                   deriving (Eq, Ord, Show, Read, 
@@ -278,8 +290,11 @@ instance FromJSON Capabilities where
                                       <*> b "rotatable"
                                       <*> b "acceptSslCerts"
                                       <*> b "nativeEvents"
-    where req = (o .:)            -- required field
+    where req :: FromJSON a => Text -> Parser a
+          req = (o .:)            -- required field
+          opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:? k .!= d -- optional field
+          b :: Text -> Parser (Maybe Bool)
           b k = opt k Nothing     -- Maybe Bool field
   parseJSON v = typeMismatch "Capabilities" v
 
@@ -290,7 +305,9 @@ instance FromJSON FailedCommandInfo where
                       <*> opt "screen"     Nothing
                       <*> opt "class"      Nothing
                       <*> opt "stackTrace" []
-    where req = (o .:)            --required key
+    where req :: FromJSON a => Text -> Parser a 
+          req = (o .:)            --required key
+          opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:? k .!= d --optional key
   parseJSON v = typeMismatch "FailedCommandInfo" v
 
@@ -299,7 +316,9 @@ instance FromJSON StackFrame where
                                     <*> reqStr "className"
                                     <*> reqStr "methodName"
                                     <*> req    "lineNumber"
-    where req = (o .:) -- all keys are required
+    where req :: FromJSON a => Text -> Parser a
+          req = (o .:) -- all keys are required
+          reqStr :: Text -> Parser String
           reqStr k = req k >>= maybe (return "") return
   parseJSON v = typeMismatch "StackFrame" v
 
@@ -312,8 +331,11 @@ instance FromJSON Cookie where
                                 <*> opt "domain" Nothing
                                 <*> opt "secure" Nothing
                                 <*> opt "expiry" Nothing
-    where req = (o .:)
-          opt k d = o .:? k .!= d
+    where 
+      req :: FromJSON a => Text -> Parser a
+      req = (o .:)
+      opt :: FromJSON a => Text -> a -> Parser a
+      opt k d = o .:? k .!= d
   parseJSON v = typeMismatch "Cookie" v
 
 
@@ -370,7 +392,8 @@ instance FromJSON MouseButton where
 
 instance FromJSON ProxyType where
   parseJSON (Object obj) = do
-    let f = (obj .:)
+    let f :: FromJSON a => Text -> Parser a 
+        f = (obj .:)
     pTyp <- f "proxyType"
     case toLower pTyp of
       "direct" -> return NoProxy
