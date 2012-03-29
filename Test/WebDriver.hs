@@ -34,25 +34,15 @@ runSession = ((runErrorT .) .) . trySession
 trySession :: WDSession -> Capabilities ->  WD a -> ErrorT WDError IO a
 trySession s caps wd = tryWD s $ createSession caps >> wd <* closeSession
 
-withSession :: WDSession -> WD a -> WD a
-withSession s' (WD wd) =
-  WD $ do
-    s <- get
-    withStateT (const s') wd 
-      `catchError` (\err -> do put s
-                               throwError err
-                   )
-      `catch` ( \(SomeException err) -> do put s
-                                           throwIO err
-              )  
-      <* put s
-      
-closeOnError :: WD a -> WD a
-closeOnError wd = wd
+withSession s' (WD wd) = WD . 
+                 lift $ evalStateT wd s'
+
+closeOnException :: WD a -> WD a
+closeOnException wd = wd
                   `catchError` (\ e -> do closeSession
                                           throwError e
                                )
                   `onException` closeSession
 
 finallyClose:: WD a -> WD a 
-finallyClose wd = closeOnError wd <* closeSession
+finallyClose wd = closeOnException wd <* closeSession
