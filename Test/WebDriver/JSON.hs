@@ -12,6 +12,7 @@ import qualified Data.Attoparsec.ByteString.Lazy as AP
 
 import Control.Applicative
 import Control.Monad.Error
+import Control.Exception.Lifted
 import Data.String
 
 -- JSON object constructors
@@ -48,7 +49,7 @@ parsePair :: (FromJSON a, FromJSON b) =>
 parsePair a b funcName v = 
   case v of
     Object o -> (,) <$> o !: fromString a <*> o !: fromString b
-    _        -> throwError . BadJSON $ funcName ++ 
+    _        -> throwIO . BadJSON $ funcName ++ 
                 ": cannot parse non-object JSON response as a (" ++ a  
                 ++ ", " ++ b ++ ") pair" ++ ")"
 
@@ -57,7 +58,7 @@ parseTriple a b c funcName v =
     Object o -> (,,) <$> o !: fromString a 
                      <*> o !: fromString b 
                      <*> o !: fromString c
-    _        -> throwError . BadJSON $ funcName ++
+    _        -> throwIO . BadJSON $ funcName ++
                 ": cannot parse non-object JSON response as a (" ++ a
                 ++ ", " ++ b ++ ", " ++ c ++ ") pair"
 
@@ -67,8 +68,8 @@ parseTriple a b c funcName v =
 apResultToWD :: FromJSON a => AP.Result Value -> WD a
 apResultToWD p = case p of
   Done _ res -> fromJSON' res
-  Fail _ _ err -> throwError $ BadJSON err
+  Fail _ _ err -> throwIO $ BadJSON err
 
 aesonResultToWD r = case r of
   Success val -> return val
-  Error err   -> throwError $ BadJSON err
+  Error err   -> throwIO $ BadJSON err

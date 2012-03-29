@@ -20,8 +20,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified Data.Vector as V
 
---import Control.Applicative
-import Control.Monad.Error (throwError)
+import Control.Exception.Lifted (throwIO)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State (get)
 import Data.List (isInfixOf)
@@ -38,8 +37,8 @@ mkWDUri path = do
       mBaseURI = parseAbsoluteURI urlStr
       mRelURI  = parseRelativeReference relPath
   case (mBaseURI, mRelURI) of
-    (Nothing, _) -> throwError $ InvalidURL urlStr 
-    (_, Nothing) -> throwError $ InvalidURL relPath
+    (Nothing, _) -> throwIO $ InvalidURL urlStr 
+    (_, Nothing) -> throwIO $ InvalidURL relPath
     (Just baseURI, Just relURI) -> return . fromJust $ relURI `relativeTo` baseURI
 
 mkRequest :: ToJSON a => [Header] -> RequestMethod -> Text -> a -> WD (Response ByteString)
@@ -60,7 +59,7 @@ mkRequest headers method path args = do
                                              ]
                     }
 --  liftIO . print $ req
-  liftIO (simpleHTTP req) >>= either (throwError . HTTPConnError) return
+  liftIO (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
 
 
 handleHTTPErr :: Response ByteString -> WD ()
@@ -80,7 +79,7 @@ handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
     (3,0,2)  -> return ()
     _        -> err (HTTPStatusUnknown code)
     where 
-      err errType = throwError $ errType reason
+      err errType = throwIO $ errType reason
       
 handleHTTPResp ::  FromJSON a => Response ByteString -> WD a
 handleHTTPResp resp@Response{rspBody = body, rspCode = code} = 
@@ -89,7 +88,7 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
     (3,0,2) -> fromJSON' =<< maybe statusErr (return . String . fromString) 
                  (findHeader HdrLocation resp)
                where 
-                 statusErr = throwError . HTTPStatusUnknown code  
+                 statusErr = throwIO . HTTPStatusUnknown code  
                              $ (BS.unpack body)
     other 
       | BS.null body -> returnEmptyArray
@@ -103,11 +102,11 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- get
   errInfo <- fromJSON' val
   let errInfo' = errInfo { errSessId = wdSessId sess } 
-      e errType = throwError $ FailedCommand errType errInfo'
+      e errType = throwIO $ FailedCommand errType errInfo'
   case status of
     7   -> e NoSuchElement
     8   -> e NoSuchFrame
-    9   -> throwError . UnknownCommand . errMsg $ errInfo
+    9   -> throwIO . UnknownCommand . errMsg $ errInfo
     10  -> e StaleElementReference
     11  -> e ElementNotVisible
     12  -> e InvalidElementState

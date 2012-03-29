@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, NoMonomorphismRestriction #-}
+import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.Error
+import Control.Exception.Lifted
 import Test.WebDriver
 
 --convenience function to print output
@@ -18,7 +19,7 @@ main = (print =<<) . runSession defaultSession defaultCaps $ do
   screenshot
   openPage "http://yahoo.com"
   (void . findElem . ById $ "Not an Id")
-    `catchError` \err -> liftIO (print err)
+    `catch` \err -> liftIO . print $ (err :: WDError)
   back
   forward
   back

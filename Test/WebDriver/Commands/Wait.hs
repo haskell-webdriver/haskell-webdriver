@@ -3,9 +3,12 @@ module Test.WebDriver.Commands.Wait
        , waitWhile, waitWhile'
        ) where
 import Test.WebDriver.Types
+import Control.Monad
+import Control.Monad.IO.Class
+import Control.Exception.Lifted
 import Control.Concurrent
-import Control.Monad.Error
 import Data.Time.Clock
+import Prelude hiding (catch)
 
 waitUntil :: Double -> WD a -> WD a
 waitUntil = waitUntil' 250000
@@ -14,11 +17,11 @@ waitUntil' :: Int -> Double -> WD a -> WD a
 waitUntil' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
   where
     timeout = realToFrac t
-    waitLoop startTime = wd `catchError` handler
+    waitLoop startTime = wd `catch` handler
       where
         handler (FailedCommand NoSuchElement _) = retry
         handler (WDZero _) = retry
-        handler otherErr = throwError otherErr
+        handler otherErr = throwIO otherErr
     
         retry = do
           now <- liftIO getCurrentTime
@@ -37,7 +40,7 @@ waitWhile' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
   where
     timeout = realToFrac t
     waitLoop startTime = do 
-      void wd `catchError` handler
+      void wd `catch` handler
       now <- liftIO getCurrentTime
       if diffUTCTime now startTime >= timeout
         then
@@ -48,4 +51,4 @@ waitWhile' waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
       where
         handler (FailedCommand NoSuchElement _) = return ()
         handler (WDZero _) = return ()
-        handler otherErr = throwError otherErr
+        handler otherErr = throwIO otherErr

@@ -13,6 +13,7 @@ import Control.Applicative
 import Control.Monad.State
 import Control.Monad.Error
 import Control.Exception.Lifted
+import qualified Control.Exception as IO
 
 import Prelude hiding (catch)
 
@@ -26,7 +27,8 @@ maybeWD = (fmap eitherToMaybe .) . runWD
   where eitherToMaybe = either (const Nothing) Just
 
 tryWD :: WDSession -> WD a -> ErrorT WDError IO a
-tryWD sess (WD wd) = evalStateT wd sess
+tryWD sess (WD wd) = do 
+  either throwError return <=< lift . IO.try . evalStateT wd $ sess
 
 runSession :: WDSession -> Capabilities -> WD a -> IO (Either WDError a)
 runSession = ((runErrorT .) .) . trySession
@@ -38,11 +40,7 @@ withSession s' (WD wd) = WD .
                  lift $ evalStateT wd s'
 
 closeOnException :: WD a -> WD a
-closeOnException wd = wd
-                  `catchError` (\ e -> do closeSession
-                                          throwError e
-                               )
-                  `onException` closeSession
+closeOnException wd = wd `onException` closeSession
 
 finallyClose:: WD a -> WD a 
 finallyClose wd = closeOnException wd <* closeSession

@@ -8,11 +8,13 @@ import Test.WebDriver.Types
 import Test.WebDriver.Internal
 import Data.Aeson
 import Network.HTTP (RequestMethod(..), Header(..))
+
 import qualified Data.Text as T
 import Data.Text (Text)
+
 import Control.Monad.State (get)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Error (throwError)
+import Control.Exception.Lifted (throwIO)
 
 doSessCommand :: (ToJSON a, FromJSON b) => RequestMethod -> Text -> a -> WD b
 doSessCommand = doSessCommand' []
@@ -33,7 +35,7 @@ doSessCommand' :: (ToJSON a, FromJSON b) =>
 doSessCommand' headers method path args = do
   WDSession { wdSessId = mSessId } <- get
   case mSessId of 
-      Nothing -> throwError . NoSessionId $ msg
+      Nothing -> throwIO . NoSessionId $ msg
         where 
           msg = "No session ID found when making request for relative URL "
                 ++ show path

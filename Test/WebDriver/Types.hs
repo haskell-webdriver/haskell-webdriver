@@ -27,7 +27,7 @@ import Data.Text as Text (toLower, toUpper)
 import Data.Text (Text)
 import Network.Stream (ConnError)
 
-import Control.Exception
+import Control.Exception.Lifted
 import Data.Typeable
 import Control.Applicative
 import Control.Monad.Error
@@ -40,8 +40,8 @@ import Data.String
 import qualified Data.Char as C
 
 
-newtype WD a = WD (StateT WDSession (ErrorT WDError IO) a)
-  deriving (Functor, Monad, MonadState WDSession, MonadError WDError, MonadIO
+newtype WD a = WD (StateT WDSession IO a)
+  deriving (Functor, Monad, MonadState WDSession, MonadIO
            ,MonadPlus, Applicative)
 
 instance MonadBase IO WD where
@@ -211,7 +211,7 @@ mkFailedCommandInfo m = FailedCommandInfo {errMsg = m
                                           }
 
 failedCommand :: FailedCommandType -> String -> WD a
-failedCommand t = throwError . FailedCommand t . mkFailedCommandInfo
+failedCommand t = throwIO . FailedCommand t . mkFailedCommandInfo
 
 
 data StackFrame = StackFrame { sfFileName   :: String

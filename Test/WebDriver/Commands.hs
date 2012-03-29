@@ -14,7 +14,7 @@ import Network.URI
 
 import Control.Applicative
 import Control.Monad.State
-import Control.Monad.Error
+import Control.Exception.Lifted (throwIO)
 import Data.Either
 import Data.Word
 
@@ -67,7 +67,7 @@ getCurrentURL = doSessCommand GET "/url" ()
 openPage :: String -> WD ()
 openPage url 
   | isURI url = doSessCommand POST "/url" . single "url" $ url
-  | otherwise = throwError . InvalidURL $ url
+  | otherwise = throwIO . InvalidURL $ url
 
 forward :: WD ()
 forward = doSessCommand POST "/forward" ()
