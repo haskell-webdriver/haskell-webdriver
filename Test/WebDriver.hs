@@ -41,14 +41,17 @@ withSession s' (WD wd) =
               )  
       <* put s
 
-finallyClose :: WD a -> WD a
-finallyClose wd = wd
+closeOnError :: WD a -> WD a
+closeOnError wd = wd
                   `catchError` (\ e -> do closeSession
                                           throwError e
                                )
                   `catch`      (\(SomeException e) -> do closeSession
                                                          throwIO e
                                )
+
+finallyClose:: WD a -> WD a 
+finallyClose wd = closeOnError wd <* closeSession
 
 runSession :: WDSession -> Capabilities -> WD a -> IO (Either WDError a)
 runSession = ((runErrorT .) .) . trySession
