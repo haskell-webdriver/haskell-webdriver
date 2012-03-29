@@ -17,7 +17,7 @@ import Control.Monad.State
 import Control.Monad.Error
 import Data.Either
 import Data.Word
-import Prelude hiding (catch)
+
 
 serverStatus :: WD Value   -- todo: make this a record type
 serverStatus = doCommand GET "/status" ()
