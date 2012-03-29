@@ -28,12 +28,6 @@ maybeWD = (fmap eitherToMaybe .) . runWD
 tryWD :: WDSession -> WD a -> ErrorT WDError IO a
 tryWD sess (WD wd) = evalStateT wd sess
 
-runSession :: WDSession -> Capabilities -> WD a -> IO (Either WDError a)
-runSession = ((runErrorT .) .) . trySession
-
-trySession :: WDSession -> Capabilities ->  WD a -> ErrorT WDError IO a
-trySession s caps wd = tryWD s $ createSession caps >> wd <* closeSession
-
 withSession :: WDSession -> WD a -> WD a
 withSession s' (WD wd) =
   WD $ do
@@ -42,7 +36,9 @@ withSession s' (WD wd) =
       `catchError` (\err -> do put s
                                throwError err
                    )
-      `onException` put s
+      `catch` ( \(SomeException err) -> do put s
+                                           throwIO err
+              )  
       <* put s
 
 closeOnError :: WD a -> WD a
@@ -56,3 +52,9 @@ closeOnError wd = wd
 
 finallyClose:: WD a -> WD a 
 finallyClose wd = closeOnError wd <* closeSession
+
+runSession :: WDSession -> Capabilities -> WD a -> IO (Either WDError a)
+runSession = ((runErrorT .) .) . trySession
+
+trySession :: WDSession -> Capabilities ->  WD a -> ErrorT WDError IO a
+trySession s caps wd = tryWD s $ createSession caps >> wd <* closeSession
