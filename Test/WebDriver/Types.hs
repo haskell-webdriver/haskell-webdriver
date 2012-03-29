@@ -23,9 +23,12 @@ module Test.WebDriver.Types
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Aeson.Types
+import Network.Stream (ConnError)
+
+
 import Data.Text as Text (toLower, toUpper)
 import Data.Text (Text)
-import Network.Stream (ConnError)
+import Data.ByteString.Internal (ByteString)
 
 import Control.Exception.Lifted
 import Data.Typeable
@@ -195,7 +198,7 @@ data FailedCommandType = NoSuchElement
 
 data FailedCommandInfo = FailedCommandInfo { errMsg    :: String
                                            , errSessId :: Maybe SessionId 
-                                           , errScreen :: Maybe String
+                                           , errScreen :: Maybe ByteString
                                            , errClass  :: Maybe String
                                            , errStack  :: [StackFrame]
                                            }
