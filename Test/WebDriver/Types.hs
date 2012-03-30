@@ -61,9 +61,6 @@ instance MonadBaseControl IO WD where
 
   restoreM = WD . restoreM . unStWD
 
-instance MonadPlus WD where
-  mplus a b = a `onException` b
-
 newtype SessionId = SessionId Text
                   deriving (Eq, Ord, Show, Read, 
                             IsString, FromJSON, ToJSON)
