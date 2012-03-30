@@ -216,12 +216,6 @@ infix 4 </=>
 (</=>) :: Element -> Element -> WD Bool
 e1 </=> e2 = not <$> (e1 <==> e2)
 
-(<&&>) :: Monad m  => m Bool -> m Bool -> m Bool
-(<&&>) = liftM2 (&&)
-
-(<||>) :: Monad m => m Bool -> m Bool -> m Bool
-(<||>) = liftM2 (||)
-
 getOrientation :: WD Orientation
 getOrientation = doSessCommand GET "/orientation" ()
 

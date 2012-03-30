@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
     TemplateHaskell, OverloadedStrings, ExistentialQuantification, 
-    MultiParamTypeClasses, TypeFamilies #-}
+    MultiParamTypeClasses, TypeFamilies, Rank2Types #-}
 module Test.WebDriver.Types 
        ( WD(..)
          
@@ -10,7 +10,10 @@ module Test.WebDriver.Types
        , Capabilities(..), defaultCaps, allCaps
        , Browser(..), Platform(..), ProxyType(..)
                                     
-       , WDError(..), FailedCommandType(..)
+       , InvalidURL(..), NoSessionId(..), BadJSON(..)
+       , HTTPStatusUnknown(..), HTTPConnError(..)
+       , UnknownCommand(..), ServerError(..)
+       , FailedCommand(..), FailedCommandType(..)
        , FailedCommandInfo(..), StackFrame(..)
        , mkFailedCommandInfo, failedCommand
                                 
@@ -33,7 +36,6 @@ import Data.ByteString.Lazy.Internal (ByteString)
 import Control.Exception.Lifted
 import Data.Typeable
 import Control.Applicative
-import Control.Monad.Error
 import Control.Monad.State
 import Control.Monad.IO.Class
 import Control.Monad.Base
@@ -45,15 +47,22 @@ import qualified Data.Char as C
 
 newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Monad, MonadState WDSession, MonadIO
-           ,MonadPlus, Applicative)
+           ,Applicative)
 
 instance MonadBase IO WD where
   liftBase = WD . liftBase
 
 instance MonadBaseControl IO WD where
-  data StM WD a = StWD {unStWD :: WD a}
-  liftBaseWith f = WD (liftBase (f (return . StWD)))
-  restoreM = unStWD
+  data StM WD a = StWD {unStWD :: StM (StateT WDSession IO) a}
+  
+  liftBaseWith f = WD $  
+    liftBaseWith $ \runInBase ->
+    f (\(WD sT) -> liftM StWD . runInBase $ sT)
+
+  restoreM = WD . restoreM . unStWD
+
+instance MonadPlus WD where
+  mplus a b = a `onException` b
 
 newtype SessionId = SessionId Text
                   deriving (Eq, Ord, Show, Read, 
@@ -152,22 +161,38 @@ data ProxyType = NoProxy
 --todo: simplify error handling. include a module of convenience
 --      functions. consider TH.
 
-data WDError = NoSessionId String
-             | InvalidURL String
-             | UnknownCommand String
-             | ServerError String
-             | BadJSON String
-             | HTTPConnError ConnError
-             | HTTPStatusUnknown (Int, Int, Int) String 
-             | FailedCommand FailedCommandType FailedCommandInfo
-             | WDZero String  -- used in the Error instance.
+instance Exception InvalidURL
+newtype InvalidURL = InvalidURL String 
+                deriving (Eq, Show, Typeable)
+
+instance Exception NoSessionId
+newtype NoSessionId = NoSessionId String 
+                 deriving (Eq, Show, Typeable)
+
+instance Exception BadJSON
+newtype BadJSON = BadJSON String 
              deriving (Eq, Show, Typeable)
 
-instance Exception WDError
+instance Exception HTTPStatusUnknown
+data HTTPStatusUnknown = HTTPStatusUnknown (Int, Int, Int) String
+                       deriving (Eq, Show, Typeable)
 
-instance Error WDError where
-  noMsg =  WDZero ""
-  strMsg = WDZero
+instance Exception HTTPConnError
+newtype HTTPConnError = HTTPConnError ConnError
+                     deriving (Eq, Show, Typeable)
+
+instance Exception UnknownCommand
+newtype UnknownCommand = UnknownCommand String 
+                    deriving (Eq, Show, Typeable)
+
+instance Exception ServerError
+newtype ServerError = ServerError String
+                      deriving (Eq, Show, Typeable)
+
+instance Exception FailedCommand
+data FailedCommand = FailedCommand FailedCommandType FailedCommandInfo
+                   deriving (Eq, Show, Typeable)
+
 
 data FailedCommandType = NoSuchElement
                        | NoSuchFrame

@@ -3,6 +3,7 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Control.Exception.Lifted
 import Test.WebDriver
+import Prelude hiding (catch)
 
 --convenience function to print output
 p = (liftIO . print =<<)
@@ -19,7 +20,7 @@ main = (print =<<) . runSession defaultSession defaultCaps $ do
   screenshot
   openPage "http://yahoo.com"
   (void . findElem . ById $ "Not an Id")
-    `catch` \err -> liftIO . print $ (err :: WDError)
+    `catch` \err -> liftIO . print $ (err :: SomeException)
   back
   forward
   back

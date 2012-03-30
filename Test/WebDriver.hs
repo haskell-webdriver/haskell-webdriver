@@ -17,27 +17,14 @@ import qualified Control.Exception as IO
 
 import Prelude hiding (catch)
 
+runWD :: WDSession -> WD a -> IO a
+runWD sess (WD wd) = evalStateT wd sess
 
+runSession :: WDSession -> Capabilities -> WD a -> IO a
+runSession s caps wd = runWD s $ createSession caps >> wd  <* closeSession
 
-runWD :: WDSession -> WD a -> IO (Either WDError a)
-runWD = (runErrorT .) . tryWD
-
-maybeWD :: WDSession -> WD a -> IO (Maybe a)
-maybeWD = (fmap eitherToMaybe .) . runWD
-  where eitherToMaybe = either (const Nothing) Just
-
-tryWD :: WDSession -> WD a -> ErrorT WDError IO a
-tryWD sess (WD wd) = do 
-  either throwError return <=< lift . IO.try . evalStateT wd $ sess
-
-runSession :: WDSession -> Capabilities -> WD a -> IO (Either WDError a)
-runSession = ((runErrorT .) .) . trySession
-
-trySession :: WDSession -> Capabilities ->  WD a -> ErrorT WDError IO a
-trySession s caps wd = tryWD s $ createSession caps >> wd <* closeSession
-
-withSession s' (WD wd) = WD . 
-                 lift $ evalStateT wd s'
+withSession :: WDSession -> WD a -> WD a
+withSession s' (WD wd) = WD . lift $ evalStateT wd s'
 
 closeOnException :: WD a -> WD a
 closeOnException wd = wd `onException` closeSession
