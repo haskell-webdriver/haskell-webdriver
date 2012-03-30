@@ -1,6 +1,11 @@
 {-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables #-}
 module Test.WebDriver.Commands.Wait 
-       ( waitUntil, waitUntil'
+       ( expect, unexpected
+       , (<||>), (<&&>)
+       , expectAny, expectAll
+       , expectOr, expectAnd
+                   
+       , waitUntil, waitUntil'
        , waitWhile, waitWhile'
        ) where
 import Test.WebDriver.Types
