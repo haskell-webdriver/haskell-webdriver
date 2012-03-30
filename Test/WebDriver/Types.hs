@@ -42,6 +42,7 @@ import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Data.Word
 import Data.String
+import Data.Default
 import qualified Data.Char as C
 
 
@@ -80,11 +81,13 @@ data WDSession = WDSession { wdHost   :: String
                            , wdSessId :: Maybe SessionId 
                            } deriving (Eq, Show)
 
-
-defaultSession = WDSession { wdHost   = "127.0.0.1"
-                           , wdPort   = 4444
-                           , wdSessId = Nothing
-                           }
+instance Default WDSession where
+  def = WDSession { wdHost   = "127.0.0.1"
+                  , wdPort   = 4444
+                  , wdSessId = Nothing
+                  }
+defaultSession :: WDSession
+defaultSession = def
 
 data Browser = Firefox | Chrome | HTMLUnit | IE | IPhone 
              deriving (Eq, Show, Ord, Bounded, Enum)
@@ -112,24 +115,27 @@ data Capabilities = Capabilities { browserName              :: Browser
                                  } deriving (Eq, Show)
 
 
+instance Default Capabilities where
+  def = Capabilities { browserName = Firefox
+                     , version = Nothing
+                     , platform = Any
+                     , javascriptEnabled = Nothing
+                     , takesScreenshot = Nothing
+                     , handlesAlerts = Nothing
+                     , databaseEnabled = Nothing
+                     , locationContextEnabled = Nothing
+                     , applicationCacheEnabled = Nothing
+                     , browserConnectionEnabled = Nothing
+                     , cssSelectorsEnabled = Nothing
+                     , webStorageEnabled = Nothing
+                     , rotatable = Nothing
+                     , acceptSslCerts = Nothing
+                     , nativeEvents = Nothing
+                     , proxy = UseSystemSettings
+                     }
 
-defaultCaps = Capabilities { browserName = Firefox
-                           , version = Nothing
-                           , platform = Any
-                           , javascriptEnabled = Nothing
-                           , takesScreenshot = Nothing
-                           , handlesAlerts = Nothing
-                           , databaseEnabled = Nothing
-                           , locationContextEnabled = Nothing
-                           , applicationCacheEnabled = Nothing
-                           , browserConnectionEnabled = Nothing
-                           , cssSelectorsEnabled = Nothing
-                           , webStorageEnabled = Nothing
-                           , rotatable = Nothing
-                           , acceptSslCerts = Nothing
-                           , nativeEvents = Nothing
-                           , proxy = UseSystemSettings
-                           }
+defaultCaps :: Capabilities
+defaultCaps = def
 
 allCaps = defaultCaps { javascriptEnabled = Just True
                       , takesScreenshot = Just True
