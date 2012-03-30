@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
 module Test.WebDriver.Commands where
 
 import Test.WebDriver.Types
@@ -14,9 +14,12 @@ import Network.URI
 
 import Control.Applicative
 import Control.Monad.State
-import Control.Exception.Lifted (throwIO)
+import Control.Exception (SomeException)
+import Control.Exception.Lifted (throwIO, catch)
 import Data.Either
 import Data.Word
+
+import Prelude hiding (catch)
 
 
 serverStatus :: WD Value   -- todo: make this a record type
@@ -42,15 +45,17 @@ closeSession = doSessCommand DELETE "" ()
 
 setImplicitWait :: Integer -> WD ()
 setImplicitWait ms = 
-          doSessCommand POST "/timeouts/implicit_wait" (object msField)
-  `mplus` doSessCommand POST "/timeouts"               (object allFields)
+  doSessCommand POST "/timeouts/implicit_wait" (object msField)
+    `catch` \(_ :: SomeException) ->  
+      doSessCommand POST "/timeouts" (object allFields)
   where msField   = ["ms" .= ms] 
         allFields = ["type" .= ("implicit" :: String)] ++ msField
 
 setScriptTimeout :: Integer -> WD () 
 setScriptTimeout ms =
-          doSessCommand POST "/timeouts/async_script" (object msField)
-  `mplus` doSessCommand POST "/timeouts"               (object allFields)
+  doSessCommand POST "/timeouts/async_script" (object msField)
+    `catch` \(_ :: SomeException) ->  
+      doSessCommand POST "/timeouts" (object allFields)
   where msField   = ["ms" .= ms]
         allFields = ["type" .= ("script" :: String)] ++ msField
   
