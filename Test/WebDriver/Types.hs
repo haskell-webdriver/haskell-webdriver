@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
     TemplateHaskell, OverloadedStrings, ExistentialQuantification, 
-    MultiParamTypeClasses, TypeFamilies, Rank2Types #-}
+    MultiParamTypeClasses, TypeFamilies #-}
 module Test.WebDriver.Types 
        ( WD(..)
          
