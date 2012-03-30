@@ -92,7 +92,12 @@ asyncJS = (((Just <$>) . doSessCommand POST "/execute_async"
           . pair ("args", "script")) .) . (,) 
         
 screenshot :: WD ByteString
-screenshot = doSessCommand GET "/screenshot" ()
+screenshot = do 
+  s <- doSessCommand GET "/screenshot" () 
+  either 
+    (throwIO . ServerError . 
+     ("screenshot: Error decoding base64 PNG from server" ++)) 
+    return s 
 
 availableIMEEngines :: WD [Text]
 availableIMEEngines = doSessCommand GET "/ime/available_engines" ()
