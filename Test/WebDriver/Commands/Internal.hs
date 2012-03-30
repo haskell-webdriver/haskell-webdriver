@@ -12,7 +12,7 @@ import Network.HTTP (RequestMethod(..), Header(..))
 import qualified Data.Text as T
 import Data.Text (Text)
 
-import Control.Monad.State (get)
+import Control.Monad.State.Strict (get)
 import Control.Monad.IO.Class (liftIO)
 import Control.Exception.Lifted (throwIO)
 

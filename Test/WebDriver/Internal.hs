@@ -22,7 +22,7 @@ import qualified Data.Vector as V
 
 import Control.Exception.Lifted (throwIO)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.State (get)
+import Control.Monad.State.Class (get)
 import Data.List (isInfixOf)
 import Data.Maybe (fromJust)  -- used with relativeTo
 import Data.String (fromString)

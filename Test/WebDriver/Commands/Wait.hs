@@ -3,7 +3,6 @@ module Test.WebDriver.Commands.Wait
        ( expect, unexpected
        , (<||>), (<&&>)
        , expectAny, expectAll
-       , expectOr, expectAnd
                    
        , waitUntil, waitUntil'
        , waitWhile, waitWhile'
@@ -43,12 +42,6 @@ expectAny p xs = expect . or =<< mapM p xs
 expectAll :: (a -> WD Bool) -> [a] -> WD ()
 expectAll p xs = expect . and =<< mapM p xs
 
-expectOr :: [WD Bool] -> WD ()
-expectOr = expectAny id
-
-expectAnd :: [WD Bool] -> WD ()
-expectAnd = expectAll id
-
 waitUntil :: Double -> WD a -> WD a
 waitUntil = waitUntil' 250000
 
@@ -63,7 +56,6 @@ waitUntil' = wait' handler
         handleFailedCommand err = throwIO err
                               
         handleExpectFailed (err :: ExpectFailed) = retry
-
 
 waitWhile :: Double -> WD a -> WD ()
 waitWhile = waitWhile' 250000

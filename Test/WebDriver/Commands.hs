@@ -13,7 +13,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Network.URI
 
 import Control.Applicative
-import Control.Monad.State
+import Control.Monad.State.Strict
 import Control.Exception (SomeException)
 import Control.Exception.Lifted (throwIO, catch)
 import Data.Either

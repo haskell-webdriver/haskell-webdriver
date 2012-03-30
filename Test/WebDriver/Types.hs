@@ -36,7 +36,7 @@ import Data.ByteString.Lazy.Internal (ByteString)
 import Control.Exception.Lifted
 import Data.Typeable
 import Control.Applicative
-import Control.Monad.State
+import Control.Monad.State.Strict
 import Control.Monad.IO.Class
 import Control.Monad.Base
 import Control.Monad.Trans.Control
