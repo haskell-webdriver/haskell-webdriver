@@ -64,7 +64,7 @@ instance MonadBaseControl IO WD where
 
 newtype SessionId = SessionId Text
                   deriving (Eq, Ord, Show, Read, 
-                            IsString, FromJSON, ToJSON)
+                            FromJSON, ToJSON)
 
 newtype WindowHandle = WindowHandle Text
                      deriving (Eq, Ord, Show, Read, 
