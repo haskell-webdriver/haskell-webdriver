@@ -68,10 +68,10 @@ newtype SessionId = SessionId Text
 
 newtype WindowHandle = WindowHandle Text
                      deriving (Eq, Ord, Show, Read, 
-                               IsString,  FromJSON, ToJSON)
+                               FromJSON, ToJSON)
 
 newtype Element = Element Text
-                  deriving (Eq, Ord, Show, Read, IsString)
+                  deriving (Eq, Ord, Show, Read)
 
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
