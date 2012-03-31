@@ -10,6 +10,8 @@ import Network.HTTP (RequestMethod(..))
 import qualified Data.Text as T
 import Data.Text (Text, splitOn, append)
 import Data.ByteString.Lazy.Char8 (ByteString)
+import qualified Data.ByteString as Strict
+import qualified Data.ByteString.Base64 as B64
 import Network.URI
 
 import Control.Applicative
@@ -91,13 +93,13 @@ asyncJS :: [JSArg] -> Text -> WD (Maybe Value)
 asyncJS = (((Just <$>) . doSessCommand POST "/execute_async"
           . pair ("args", "script")) .) . (,) 
         
-screenshot :: WD ByteString
+screenshot :: WD Strict.ByteString
 screenshot = do 
   s <- doSessCommand GET "/screenshot" () 
   either 
     (throwIO . ServerError . 
      ("screenshot: Error decoding base64 PNG from server" ++)) 
-    return s 
+    return (B64.decode s)
 
 availableIMEEngines :: WD [Text]
 availableIMEEngines = doSessCommand GET "/ime/available_engines" ()

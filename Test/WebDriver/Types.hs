@@ -31,7 +31,7 @@ import Network.Stream (ConnError)
 
 import Data.Text as Text (toLower, toUpper)
 import Data.Text (Text)
-import Data.ByteString.Lazy.Internal (ByteString)
+import Data.ByteString (ByteString)
 
 import Control.Exception.Lifted
 import Data.Typeable
