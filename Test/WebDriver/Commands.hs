@@ -9,8 +9,7 @@ import Data.Aeson
 import Network.HTTP (RequestMethod(..))
 import qualified Data.Text as T
 import Data.Text (Text, splitOn, append)
-import Data.ByteString.Lazy.Char8 (ByteString)
-import qualified Data.ByteString as Strict
+import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64 as B64
 import Network.URI
 
@@ -93,7 +92,7 @@ asyncJS :: [JSArg] -> Text -> WD (Maybe Value)
 asyncJS = (((Just <$>) . doSessCommand POST "/execute_async"
           . pair ("args", "script")) .) . (,) 
         
-screenshot :: WD Strict.ByteString
+screenshot :: WD ByteString
 screenshot = do 
   s <- doSessCommand GET "/screenshot" () 
   either 
@@ -188,7 +187,8 @@ getText e = doElemCommand GET e "/text" ()
 sendKeys :: Text -> Element -> WD ()
 sendKeys t e = doElemCommand POST e "/value" . single "value" $ [t]
 
---TODO:  /session/:sessionId/keys
+sendRawKeys :: Text -> Element -> WD ()
+sendRawKeys t e = doElemCommand POST e "/keys" . single "value" $ [t]
 
 tagName :: Element -> WD Text
 tagName e = doElemCommand GET e "/name" ()
@@ -213,8 +213,6 @@ cssAttr e t = doElemCommand GET e ("/css/" `append` t) ()
 
 elemPos :: Element -> WD (Int, Int)
 elemPos e = doElemCommand GET e "/location" () >>= parsePair "x" "y" "elemPos"
-
---todo: /session/:sessionid/element/:id/location_in_view ?????
 
 elemSize :: Element -> WD (Word, Word)
 elemSize e = doElemCommand GET e "/size" () 
@@ -249,6 +247,10 @@ dismissAlert = doSessCommand POST "/dismiss_alert" ()
 
 moveTo :: (Int, Int) -> WD ()
 moveTo = doSessCommand POST "/moveto" . pair ("xoffset","yoffset")
+
+moveToCenter :: Element -> WD ()
+moveToCenter (Element e) = 
+  doSessCommand POST "/moveto" . single "element" $ e
 
 moveToFrom :: (Int, Int) -> Element -> WD ()
 moveToFrom (x,y) (Element e) = 
