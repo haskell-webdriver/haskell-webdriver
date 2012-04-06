@@ -216,7 +216,7 @@ defaultProfile d =
                 ,("browser.tabs.warnOnOpen", PrefBool False)
                 ,("browser.startup.page", PrefInteger 0)
                 ,("browser.safebrowsing.malware.enabled", PrefBool False)
-                ,("startup.homepage_welcome_url", PrefString "\"about:blank\"")
+                ,("startup.homepage_welcome_url", PrefString "about:blank")
                 ,("devtools.errorconsole.enabled", PrefBool True)
                 ,("focusmanager.testmode", PrefBool True)
                 ,("dom.disable_open_during_load", PrefBool False)
@@ -270,23 +270,26 @@ mkTemp = do
 
 prefsParser = many prefLine
 
-spaces = AP.takeWhile isSpace
-
 prefLine = do 
-  spaces >> string "user_pref(" >> spaces
+  padSpaces $ string "user_pref("
   k <- prefKey
-  char ',' >> spaces
+  padSpaces $ char ','
   v <- prefVal
-  spaces >> string ");" >> spaces >> endOfLine
+  padSpaces $  string ");"
+  endOfLine
   return (k,v)
-           
-prefKey = char '"' >> AP.takeWhile (not . (=='"')) <* char '"'
+  where
+    spaces = AP.takeWhile isSpace
+    padSpaces p = spaces >> p >> spaces
 
+prefKey = str
 prefVal = boolVal <|> stringVal <|> intVal <|> doubleVal
   where
     boolVal   = boolTrue <|> boolFalse     
-    boolTrue  = stringCI "true"  >> return (PrefBool True)
-    boolFalse = stringCI "false" >> return (PrefBool False)
-    stringVal = PrefString <$>  prefKey
+    boolTrue  = string "true"  >> return (PrefBool True)
+    boolFalse = string "false" >> return (PrefBool False)
+    stringVal = PrefString <$> str
     intVal    = PrefInteger <$> signed decimal
     doubleVal = PrefDouble <$> double
+    
+str = char '"' >> AP.takeWhile (not . (=='"')) <* char '"'
