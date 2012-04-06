@@ -8,7 +8,8 @@ module Test.WebDriver.Types
        
        , WDSession(..), defaultSession
        , Capabilities(..), defaultCaps, allCaps
-       , Browser(..), Platform(..), ProxyType(..)
+       , Browser(..), firefox, chrome
+       , Platform(..), ProxyType(..)
                                     
        , InvalidURL(..), NoSessionId(..), BadJSON(..)
        , HTTPStatusUnknown(..), HTTPConnError(..)
@@ -360,12 +361,11 @@ instance ToJSON Capabilities where
              ]
         Chrome {chromeDriverVersion = v, chromeBinary = b, 
                 chromeOptions = o, chromeExtensions = e}
-          -> ["chrome" .= object ["chromedriverVersion" .= v
-                                 ,"binary" .= b
-                                 ,"switches" .= o
-                                 ,"extensions" .= e
-                                 ]
-             ]
+          -> ["chrome.chromedriverVersion" .= v
+             ,"chrome.binary" .= b
+             ,"chrome.switches" .= o
+             ,"chrome.extensions" .= e
+             ]        
         _ -> []
       f :: ToJSON a => (Capabilities -> a) -> Text -> Pair
       f field key = key .= field c
