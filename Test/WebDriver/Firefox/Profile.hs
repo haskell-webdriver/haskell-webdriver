@@ -157,7 +157,7 @@ prepareProfile FirefoxProfile {profileDir = d, profileExts = s,
                                profilePrefs = m} 
   = liftIO $ do 
       createDirectoryIfMissing False extensionD
-      forM_ (HS.toList s) $ installExtension
+      forM_ (HS.toList s) installExtension
       withFile userPrefs WriteMode $ writeUserPrefs
       PreparedFirefoxProfile . B64.encode . SBS.concat . LBS.toChunks 
         . fromArchive 
