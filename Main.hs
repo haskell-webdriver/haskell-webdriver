@@ -9,7 +9,6 @@ import Prelude hiding (catch)
 p = (liftIO . print =<<)
 
 main = (print =<<) . runSession defaultSession defaultCaps $ do
-  waitUntil 5 mzero `mplus` (liftIO . print $ "explicit wait timed out")
   p serverStatus
   p sessions
   p getCaps
