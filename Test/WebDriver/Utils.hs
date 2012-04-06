@@ -7,5 +7,6 @@ import Control.Exception.Lifted
 b64Decode :: ByteString -> ByteString
 b64Decode = either 
               (throw . ServerError
-              . ("screenshot: Error decoding base64 PNG from server" ++))
+              . ("Error decoding base64-encoded PNG screenshot from server: " 
+                 ++))
               id . decode
