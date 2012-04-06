@@ -103,8 +103,11 @@ data Browser = Firefox { ffProfile :: Maybe PreparedFirefoxProfile
                       , chromeOptions       :: [String]
                       , chromeExtensions    :: [ChromeExtension]
                       } 
-             | IE
+             | IE { ignoreProtectedModeSettings :: Bool
+                  , useLegacyInternalServer     :: Bool
+                  }
              | Opera
+             -- | Safari
              | HTMLUnit
              | IPhone 
              | IPad
@@ -117,6 +120,26 @@ firefox = Firefox Nothing Nothing Nothing
 chrome :: Browser
 chrome = Chrome Nothing Nothing [] []
 
+ie :: Browser
+ie = IE True False
+
+opera :: Browser
+opera = Opera
+
+--safari :: Browser
+--safari = Safari
+
+htmlUnit :: Browser
+htmlUnit = HTMLUnit
+
+iPhone :: Browser
+iPhone = IPhone
+
+iPad :: Browser
+iPad = IPad
+
+android :: Browser
+android = Android
 
 data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
               deriving (Eq, Show, Ord, Bounded, Enum)
@@ -365,7 +388,11 @@ instance ToJSON Capabilities where
              ,"chrome.binary" .= b
              ,"chrome.switches" .= o
              ,"chrome.extensions" .= e
-             ]        
+             ]       
+        IE {ignoreProtectedModeSettings = i, useLegacyInternalServer = u}
+          -> ["IgnoreProtectedModeSettings" .= i
+             ,"useLegacyInternalServer" .= u
+             ]
         _ -> []
       f :: ToJSON a => (Capabilities -> a) -> Text -> Pair
       f field key = key .= field c
@@ -448,12 +475,13 @@ instance FromJSON Browser where
   parseJSON (String jStr) = case toLower jStr of
     "firefox"           -> return firefox
     "chrome"            -> return chrome
-    "internet explorer" -> return IE
-    "opera"             -> return Opera
-    "iphone"            -> return IPhone
-    "ipad"              -> return IPad
-    "android"           -> return Android
-    "htmlunit"          -> return HTMLUnit
+    "internet explorer" -> return ie
+    "opera"             -> return opera
+    -- "safari"            -> return safari
+    "iphone"            -> return iPhone
+    "ipad"              -> return iPad
+    "android"           -> return android
+    "htmlunit"          -> return htmlUnit
     err  -> fail $ "Invalid Browser string " ++ show err
   parseJSON v = typeMismatch "Browser" v
 
