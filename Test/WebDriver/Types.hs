@@ -23,6 +23,10 @@ module Test.WebDriver.Types
        , Selector(..)
        , JSArg(..)
        ) where
+
+import Test.WebDriver.Firefox.Profile
+import Test.WebDriver.Chrome.Extension
+
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Aeson.Types
@@ -89,14 +93,39 @@ instance Default WDSession where
 defaultSession :: WDSession
 defaultSession = def
 
-data Browser = Firefox | Chrome | HTMLUnit | IE | IPhone 
-             deriving (Eq, Show, Ord, Bounded, Enum)
+data Browser = Firefox { ffProfile :: Maybe PreparedFirefoxProfile
+                       , ffLogPref :: Maybe LogPref
+                       , ffBinary :: Maybe FilePath
+                       }
+             | Chrome { chromeDriverVersion :: Maybe String 
+                      , chromeBinary        :: Maybe FilePath
+                      , chromeOptions       :: [String]
+                      , chromeExtensions    :: [ChromeExtension]
+                      } 
+             | IE
+             | Opera
+             | HTMLUnit
+             | IPhone 
+             | IPad
+             | Android
+             deriving (Eq, Show)
+
+firefox :: Browser
+firefox = Firefox Nothing Nothing Nothing
+
+chrome :: Browser
+chrome = Chrome Nothing Nothing [] []
+
 
 data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
               deriving (Eq, Show, Ord, Bounded, Enum)
 
 
-data Capabilities = Capabilities { browserName              :: Browser
+data LogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig 
+             | LogFine | LogFiner | LogFinest | LogAll
+             deriving (Eq, Show, Ord, Bounded, Enum)
+
+data Capabilities = Capabilities { browser                  :: Browser
                                  , version                  :: Maybe String
                                  , platform                 :: Platform
                                  , proxy                    :: ProxyType
@@ -110,13 +139,13 @@ data Capabilities = Capabilities { browserName              :: Browser
                                  , cssSelectorsEnabled      :: Maybe Bool
                                  , webStorageEnabled        :: Maybe Bool
                                  , rotatable                :: Maybe Bool
-                                 , acceptSslCerts           :: Maybe Bool
+                                 , acceptSSLCerts           :: Maybe Bool
                                  , nativeEvents             :: Maybe Bool
                                  } deriving (Eq, Show)
 
 
 instance Default Capabilities where
-  def = Capabilities { browserName = Firefox
+  def = Capabilities { browser = firefox
                      , version = Nothing
                      , platform = Any
                      , javascriptEnabled = Nothing
@@ -129,7 +158,7 @@ instance Default Capabilities where
                      , cssSelectorsEnabled = Nothing
                      , webStorageEnabled = Nothing
                      , rotatable = Nothing
-                     , acceptSslCerts = Nothing
+                     , acceptSSLCerts = Nothing
                      , nativeEvents = Nothing
                      , proxy = UseSystemSettings
                      }
@@ -147,7 +176,7 @@ allCaps = defaultCaps { javascriptEnabled = Just True
                       , cssSelectorsEnabled = Just True
                       , webStorageEnabled = Just True
                       , rotatable = Just True
-                      , acceptSslCerts = Just True
+                      , acceptSSLCerts = Just True
                       , nativeEvents = Just True
                       }
 
@@ -294,14 +323,52 @@ instance Show FailedCommandInfo where --todo: pretty print
             
 
 
-$( deriveToJSON id ''Capabilities )
-
 instance FromJSON Element where
   parseJSON (Object o) = Element <$> o .: "ELEMENT"
   parseJSON v = typeMismatch "Element" v
   
 instance ToJSON Element where
   toJSON (Element e) = object ["ELEMENT" .= e]
+
+
+instance ToJSON Capabilities where
+  toJSON c = object $ [ "browserName" .= browser'
+                      , f version "version"
+                      , f platform "platform"
+                      , f proxy "proxy"
+                      , f javascriptEnabled "javascriptEnabled"
+                      , f takesScreenshot "takesScreenshot"
+                      , f handlesAlerts "handlesAlerts"
+                      , f databaseEnabled "databaseEnabled"
+                      , f locationContextEnabled "locationContextEnabled"
+                      , f applicationCacheEnabled "applicationCacheEnabled"
+                      , f browserConnectionEnabled "browserConnectionEnabled"
+                      , f cssSelectorsEnabled "cssSelectorsEnabled"
+                      , f webStorageEnabled "webStorableEnabled"
+                      , f rotatable "rotatable"
+                      , f acceptSSLCerts "acceptSslCerts"
+                      , f nativeEvents "nativeEvents"
+                      ]
+                      ++ browserInfo
+    where 
+      browser' = browser c
+      browserInfo = case browser' of
+        Firefox {ffProfile = prof, ffLogPref = pref, ffBinary = bin }
+          -> ["firefox_profile" .= prof
+             ,"loggingPrefs" .= pref
+             ,"firefox_binary" .= bin
+             ]
+        Chrome {chromeDriverVersion = v, chromeBinary = b, 
+                chromeOptions = o, chromeExtensions = e}
+          -> ["chrome" .= object ["chromedriverVersion" .= v
+                                 ,"binary" .= b
+                                 ,"switches" .= o
+                                 ,"extensions" .= e
+                                 ]
+             ]
+        _ -> []
+      f :: ToJSON a => (Capabilities -> a) -> Text -> Pair
+      f field key = key .= field c
 
 instance FromJSON Capabilities where  
   parseJSON (Object o) = Capabilities <$> req "browserName"
@@ -354,6 +421,8 @@ instance FromJSON StackFrame where
 
 $( deriveToJSON (map C.toLower . drop 4) ''Cookie )
 
+$( deriveJSON (map C.toUpper . drop 3) ''LogPref )
+
 instance FromJSON Cookie where
   parseJSON (Object o) = Cookie <$> req "name"
                                 <*> req "value"
@@ -370,20 +439,24 @@ instance FromJSON Cookie where
 
 
 instance ToJSON Browser where
-  toJSON = String . f . toLower . fromString . show
+  toJSON Firefox {} = String "firefox"
+  toJSON b = String . f . toLower . fromString . show $ b
     where f "ie" = "internet explorer"
           f  x   = x
 
 instance FromJSON Browser where
   parseJSON (String jStr) = case toLower jStr of
-    "firefox"           -> return Firefox
-    "chrome"            -> return Chrome
+    "firefox"           -> return firefox
+    "chrome"            -> return chrome
     "internet explorer" -> return IE
+    "opera"             -> return Opera
     "iphone"            -> return IPhone
+    "ipad"              -> return IPad
+    "android"           -> return Android
     "htmlunit"          -> return HTMLUnit
     err  -> fail $ "Invalid Browser string " ++ show err
   parseJSON v = typeMismatch "Browser" v
-                                  
+
 instance ToJSON Platform where
   toJSON = String . toUpper . fromString . show
 
