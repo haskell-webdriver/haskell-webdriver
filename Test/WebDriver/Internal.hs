@@ -8,6 +8,8 @@ module Test.WebDriver.Internal
 import Test.WebDriver.Types
 import Test.WebDriver.Types.Internal
 import Test.WebDriver.JSON
+import Test.WebDriver.Utils
+
 import Network.HTTP (simpleHTTP, Request(..), Response(..), RequestMethod(..))
 import Network.HTTP.Headers (findHeader, Header(..), HeaderName(..))
 import Network.URI
@@ -18,8 +20,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.ByteString.Lazy.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified Data.ByteString.Base64 as B64
 import qualified Data.Vector as V
 
+import Control.Applicative
 import Control.Exception.Lifted (throwIO)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.State.Class (get)
@@ -101,7 +105,9 @@ handleJSONErr WDResponse{rspStatus = 0} = return ()
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- get
   errInfo <- fromJSON' val
-  let errInfo' = errInfo { errSessId = wdSessId sess } 
+  let screen = b64Decode <$> errScreen errInfo 
+      errInfo' = errInfo { errSessId = wdSessId sess 
+                         , errScreen = screen } 
       e errType = throwIO $ FailedCommand errType errInfo'
   case status of
     7   -> e NoSuchElement
