@@ -4,13 +4,13 @@ module Test.WebDriver.Commands where
 import Test.WebDriver.Types
 import Test.WebDriver.Commands.Internal
 import Test.WebDriver.JSON
-import Test.WebDriver.Utils
 
 import Data.Aeson
 import Network.HTTP (RequestMethod(..))
 import qualified Data.Text as T
 import Data.Text (Text, splitOn, append)
 import Data.ByteString (ByteString)
+import Data.ByteString.Base64 as B64
 import Network.URI
 
 import Control.Applicative
@@ -93,7 +93,7 @@ asyncJS = (((Just <$>) . doSessCommand POST "/execute_async"
           . pair ("args", "script")) .) . (,) 
         
 screenshot :: WD ByteString
-screenshot = b64Decode <$> doSessCommand GET "/screenshot" () 
+screenshot = B64.decodeLenient <$> doSessCommand GET "/screenshot" () 
 
 
 availableIMEEngines :: WD [Text]

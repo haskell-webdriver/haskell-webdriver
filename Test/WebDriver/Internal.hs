@@ -8,7 +8,6 @@ module Test.WebDriver.Internal
 import Test.WebDriver.Types
 import Test.WebDriver.Types.Internal
 import Test.WebDriver.JSON
-import Test.WebDriver.Utils
 
 import Network.HTTP (simpleHTTP, Request(..), Response(..), RequestMethod(..))
 import Network.HTTP.Headers (findHeader, Header(..), HeaderName(..))
@@ -105,7 +104,7 @@ handleJSONErr WDResponse{rspStatus = 0} = return ()
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- get
   errInfo <- fromJSON' val
-  let screen = b64Decode <$> errScreen errInfo 
+  let screen = B64.decodeLenient <$> errScreen errInfo 
       errInfo' = errInfo { errSessId = wdSessId sess 
                          , errScreen = screen } 
       e errType = throwIO $ FailedCommand errType errInfo'
