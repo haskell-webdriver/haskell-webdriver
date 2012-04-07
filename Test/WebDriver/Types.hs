@@ -8,7 +8,7 @@ module Test.WebDriver.Types
        
        , WDSession(..), defaultSession
        , Capabilities(..), defaultCaps, allCaps
-       , Browser(..), firefox, chrome
+       , Browser(..), firefox, chrome, ie, opera, safari, iphone, ipad, android
        , Platform(..), ProxyType(..)
                                     
        , InvalidURL(..), NoSessionId(..), BadJSON(..)
