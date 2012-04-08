@@ -8,7 +8,7 @@ import Prelude hiding (catch)
 --convenience function to print output
 p = (liftIO . print =<<)
 
-main = (print =<<) . runSession defaultSession defaultCaps $ do
+main = (print =<<) . runSession defaultSession defaultCaps {browser = chrome} $ do
   p serverStatus
   p sessions
   p getCaps

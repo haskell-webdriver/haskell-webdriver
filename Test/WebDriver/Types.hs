@@ -2,11 +2,7 @@
     TemplateHaskell, OverloadedStrings, ExistentialQuantification, 
     MultiParamTypeClasses, TypeFamilies #-}
 module Test.WebDriver.Types 
-       ( WD(..)
-         
-       , SessionId(..), WindowHandle(..), currentWindow, Element(..)
-       
-       , WDSession(..), defaultSession
+       ( WD(..), SessionId(..), WDSession(..), defaultSession
        , Capabilities(..), defaultCaps, allCaps
        , Browser(..), firefox, chrome, ie, opera, iPhone, iPad, android
        , Platform(..), ProxyType(..)
@@ -18,6 +14,8 @@ module Test.WebDriver.Types
        , FailedCommandInfo(..), StackFrame(..)
        , mkFailedCommandInfo, failedCommand
                                 
+       , Element(..)
+       , WindowHandle(..), currentWindow
        , Cookie(..)
        , Orientation(..)
        , MouseButton(..)
@@ -51,6 +49,9 @@ import Data.Default
 import qualified Data.Char as C
 
 
+{- |A monadic interface to the WebDriver server. This monad is a simple, strict 
+wrapper over IO, threading session information between sequential commands
+-}
 newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Monad, MonadState WDSession, MonadIO
            ,Applicative)
@@ -67,22 +68,38 @@ instance MonadBaseControl IO WD where
 
   restoreM = WD . restoreM . unStWD
 
+{- |An opaque identifier for a WebDriver session. These handles are produced by 
+the server on session creation, and act to identify a session in progress. -} 
 newtype SessionId = SessionId Text
                   deriving (Eq, Ord, Show, Read, 
                             FromJSON, ToJSON)
 
+
+{- |An opaque identifier for a browser window -}
 newtype WindowHandle = WindowHandle Text
                      deriving (Eq, Ord, Show, Read, 
                                FromJSON, ToJSON)
-
+{- |An opaque identifier for a web page element. -}
 newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)
 
+{- |A special WindowHandle that always refers to the currently focused window.-}
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
 
-data WDSession = WDSession { wdHost   :: String
-                           , wdPort   :: Word
+{- |Information about a WebDriver session. This information is threaded 
+implicitly through all WD computations. -}
+data WDSession = WDSession { 
+                             -- |Host name of the WebDriver server for this 
+                             -- session
+                             wdHost   :: String
+                             -- |Port number of the server
+                           , wdPort   :: Word16
+                             -- |An opaque reference identifying the session.
+                             -- A value of Nothing indicates that a session 
+                             -- hasn't been created yet. To create new sessions,
+                             -- use the createSession and withNewSession 
+                             -- functions.
                            , wdSessId :: Maybe SessionId 
                            } deriving (Eq, Show)
 
@@ -91,11 +108,71 @@ instance Default WDSession where
                   , wdPort   = 4444
                   , wdSessId = Nothing
                   }
+
+{- |A default session connects to localhost on port 4444, and hasn't been 
+created yet. -}
 defaultSession :: WDSession
 defaultSession = def
 
+
+data Capabilities = Capabilities { browser                  :: Browser
+                                 , version                  :: Maybe String
+                                 , platform                 :: Platform
+                                 , proxy                    :: ProxyType
+                                 , javascriptEnabled        :: Maybe Bool
+                                 , takesScreenshot          :: Maybe Bool
+                                 , handlesAlerts            :: Maybe Bool
+                                 , databaseEnabled          :: Maybe Bool
+                                 , locationContextEnabled   :: Maybe Bool
+                                 , applicationCacheEnabled  :: Maybe Bool
+                                 , browserConnectionEnabled :: Maybe Bool
+                                 , cssSelectorsEnabled      :: Maybe Bool
+                                 , webStorageEnabled        :: Maybe Bool
+                                 , rotatable                :: Maybe Bool
+                                 , acceptSSLCerts           :: Maybe Bool
+                                 , nativeEvents             :: Maybe Bool
+                                 } deriving (Eq, Show)
+
+instance Default Capabilities where
+  def = Capabilities { browser = firefox
+                     , version = Nothing
+                     , platform = Any
+                     , javascriptEnabled = Nothing
+                     , takesScreenshot = Nothing
+                     , handlesAlerts = Nothing
+                     , databaseEnabled = Nothing
+                     , locationContextEnabled = Nothing
+                     , applicationCacheEnabled = Nothing
+                     , browserConnectionEnabled = Nothing
+                     , cssSelectorsEnabled = Nothing
+                     , webStorageEnabled = Nothing
+                     , rotatable = Nothing
+                     , acceptSSLCerts = Nothing
+                     , nativeEvents = Nothing
+                     , proxy = UseSystemSettings
+                     }
+
+defaultCaps :: Capabilities
+defaultCaps = def
+
+allCaps = defaultCaps { javascriptEnabled = Just True
+                      , takesScreenshot = Just True
+                      , handlesAlerts = Just True
+                      , databaseEnabled = Just True
+                      , locationContextEnabled = Just True
+                      , applicationCacheEnabled = Just True
+                      , browserConnectionEnabled = Just True
+                      , cssSelectorsEnabled = Just True
+                      , webStorageEnabled = Just True
+                      , rotatable = Just True
+                      , acceptSSLCerts = Just True
+                      , nativeEvents = Just True
+                      }
+      
+
+
 data Browser = Firefox { ffProfile :: Maybe PreparedFirefoxProfile
-                       , ffLogPref :: Maybe LogPref
+                       , ffLogPref :: Maybe FFLogPref
                        , ffBinary :: Maybe FilePath
                        }
              | Chrome { chromeDriverVersion :: Maybe String 
@@ -141,69 +218,12 @@ iPad = IPad
 android :: Browser
 android = Android
 
+
+{- represents platforms supported by WebDriver -}
 data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
               deriving (Eq, Show, Ord, Bounded, Enum)
 
-
-data LogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig 
-             | LogFine | LogFiner | LogFinest | LogAll
-             deriving (Eq, Show, Ord, Bounded, Enum)
-
-data Capabilities = Capabilities { browser                  :: Browser
-                                 , version                  :: Maybe String
-                                 , platform                 :: Platform
-                                 , proxy                    :: ProxyType
-                                 , javascriptEnabled        :: Maybe Bool
-                                 , takesScreenshot          :: Maybe Bool
-                                 , handlesAlerts            :: Maybe Bool
-                                 , databaseEnabled          :: Maybe Bool
-                                 , locationContextEnabled   :: Maybe Bool
-                                 , applicationCacheEnabled  :: Maybe Bool
-                                 , browserConnectionEnabled :: Maybe Bool
-                                 , cssSelectorsEnabled      :: Maybe Bool
-                                 , webStorageEnabled        :: Maybe Bool
-                                 , rotatable                :: Maybe Bool
-                                 , acceptSSLCerts           :: Maybe Bool
-                                 , nativeEvents             :: Maybe Bool
-                                 } deriving (Eq, Show)
-
-
-instance Default Capabilities where
-  def = Capabilities { browser = firefox
-                     , version = Nothing
-                     , platform = Any
-                     , javascriptEnabled = Nothing
-                     , takesScreenshot = Nothing
-                     , handlesAlerts = Nothing
-                     , databaseEnabled = Nothing
-                     , locationContextEnabled = Nothing
-                     , applicationCacheEnabled = Nothing
-                     , browserConnectionEnabled = Nothing
-                     , cssSelectorsEnabled = Nothing
-                     , webStorageEnabled = Nothing
-                     , rotatable = Nothing
-                     , acceptSSLCerts = Nothing
-                     , nativeEvents = Nothing
-                     , proxy = UseSystemSettings
-                     }
-
-defaultCaps :: Capabilities
-defaultCaps = def
-
-allCaps = defaultCaps { javascriptEnabled = Just True
-                      , takesScreenshot = Just True
-                      , handlesAlerts = Just True
-                      , databaseEnabled = Just True
-                      , locationContextEnabled = Just True
-                      , applicationCacheEnabled = Just True
-                      , browserConnectionEnabled = Just True
-                      , cssSelectorsEnabled = Just True
-                      , webStorageEnabled = Just True
-                      , rotatable = Just True
-                      , acceptSSLCerts = Just True
-                      , nativeEvents = Just True
-                      }
-
+{- available settings for the proxy Capabilities field -}
 data ProxyType = NoProxy 
                | UseSystemSettings
                | AutoDetect
@@ -213,7 +233,14 @@ data ProxyType = NoProxy
                         , httpProxy :: String
                         }
                deriving (Eq, Show)
-      
+
+
+{- For Firefox sessions; indicates Firefox's log level -}
+data FFLogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig 
+             | LogFine | LogFiner | LogFinest | LogAll
+             deriving (Eq, Show, Ord, Bounded, Enum)
+
+
 --todo: simplify error handling. include a module of convenience
 --      functions. consider TH.
 
@@ -448,7 +475,7 @@ instance FromJSON StackFrame where
 
 $( deriveToJSON (map C.toLower . drop 4) ''Cookie )
 
-$( deriveJSON (map C.toUpper . drop 3) ''LogPref )
+$( deriveJSON (map C.toUpper . drop 3) ''FFLogPref )
 
 instance FromJSON Cookie where
   parseJSON (Object o) = Cookie <$> req "name"

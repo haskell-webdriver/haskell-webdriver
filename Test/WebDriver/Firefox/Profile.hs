@@ -67,9 +67,9 @@ newtype PreparedFirefoxProfile = PreparedFirefoxProfile ByteString
   deriving (Eq, Show, ToJSON, FromJSON)
 
 
+instance Exception ProfileParseError
 newtype ProfileParseError = ProfileParseError String
                           deriving  (Eq, Show, Read, Typeable)
-instance Exception ProfileParseError
 
 class ToFirefox a where
   toFirefox :: a -> FirefoxPref

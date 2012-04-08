@@ -1,8 +1,16 @@
-module Test.WebDriver
-       ( module Test.WebDriver.Types
-       , module Test.WebDriver.Commands
-       , module Test.WebDriver.Commands.Wait
+{-| 
+This module serves as the top-level interface to the Haskell WebDriver bindings.
+-}
+
+module Test.WebDriver 
+       ( WD(..), WDSession(..), defaultSession, SessionId(..)
+       , Capabilities(..), defaultCaps, allCaps
+       , Browser(..), firefox, chrome, ie, opera, iPhone, iPad, android
+       , Platform(..), ProxyType(..)
+
        , module Test.WebDriver
+       , module Test.WebDriver.Commands
+
        ) where
 
 import Test.WebDriver.Types
@@ -26,8 +34,8 @@ runSession s caps wd = runWD s $ createSession caps >> wd  <* closeSession
 withSession :: WDSession -> WD a -> WD a
 withSession s' (WD wd) = WD . lift $ evalStateT wd s'
 
-closeOnException :: WD a -> WD a
-closeOnException wd = wd `onException` closeSession
-
 finallyClose:: WD a -> WD a 
 finallyClose wd = closeOnException wd <* closeSession
+
+closeOnException :: WD a -> WD a
+closeOnException wd = wd `onException` closeSession
