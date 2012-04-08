@@ -7,13 +7,12 @@ module Test.WebDriver.Commands.Internal
 import Test.WebDriver.Types
 import Test.WebDriver.Internal
 import Data.Aeson
-import Network.HTTP (RequestMethod(..), Header(..))
+import Network.HTTP (Header(..))
 
 import qualified Data.Text as T
 import Data.Text (Text)
 
 import Control.Monad.State.Strict (get)
-import Control.Monad.IO.Class (liftIO)
 import Control.Exception.Lifted (throwIO)
 
 doSessCommand :: (ToJSON a, FromJSON b) => RequestMethod -> Text -> a -> WD b

@@ -55,7 +55,7 @@ waitUntil' = wait' handler
         handleFailedCommand (FailedCommand NoSuchElement _) = retry
         handleFailedCommand err = throwIO err
                               
-        handleExpectFailed (err :: ExpectFailed) = retry
+        handleExpectFailed (_ :: ExpectFailed) = retry
 
 waitWhile :: Double -> WD a -> WD ()
 waitWhile = waitWhile' 250000
@@ -64,14 +64,14 @@ waitWhile' :: Int -> Double -> WD a -> WD ()
 waitWhile' = wait' handler
   where
     handler retry = (`catches` [Handler handleFailedCommand
-                                      ,Handler handleExpectFailed
-                                      ]
-                    ) . void
+                               ,Handler handleExpectFailed
+                               ]
+                    ) . (>> retry)
       where
         handleFailedCommand (FailedCommand NoSuchElement _) = return ()
-        handlerFailedCommand err = throwIO err
+        handleFailedCommand err = throwIO err
                                
-        handleExpectFailed (err :: ExpectFailed) = return ()
+        handleExpectFailed (_ :: ExpectFailed) = return ()
     
 wait' :: (WD b -> WD a -> WD b) -> Int -> Double -> WD a -> WD b
 wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime

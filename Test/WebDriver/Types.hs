@@ -40,7 +40,7 @@ import Control.Exception.Lifted
 import Data.Typeable
 import Control.Applicative
 import Control.Monad.State.Strict
-import Control.Monad.IO.Class
+--import Control.Monad.IO.Class
 import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Data.Word
@@ -155,6 +155,7 @@ instance Default Capabilities where
 defaultCaps :: Capabilities
 defaultCaps = def
 
+allCaps :: Capabilities
 allCaps = defaultCaps { javascriptEnabled = Just True
                       , takesScreenshot = Just True
                       , handlesAlerts = Just True
@@ -369,7 +370,7 @@ instance Show FailedCommandInfo where --todo: pretty print
            . showString ", errStack = "  . shows (errStack i) 
            $ "}"
     where screen = showString $ case errScreen i of 
-                                  Just v  -> "Just \"...\""
+                                  Just _  -> "Just \"...\""
                                   Nothing -> "Nothing"
             
 
@@ -546,6 +547,7 @@ instance FromJSON MouseButton where
     "middle" -> return MiddleButton
     "right"  -> return RightButton
     err      -> fail $ "Invalid MouseButton string " ++ show err
+  parseJSON v = typeMismatch "MouseButton" v
 
 
 instance FromJSON ProxyType where
@@ -594,7 +596,7 @@ instance ToJSON Selector where
     ByXPath t           -> selector "xpath" t
     where
       selector :: Text -> Text -> Value
-      selector s t = object ["using" .= s, "value" .= t]
+      selector sn t = object ["using" .= sn, "value" .= t]
       
 instance ToJSON JSArg where
   toJSON (JSArg a) = toJSON a

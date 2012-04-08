@@ -15,13 +15,10 @@ module Test.WebDriver
 
 import Test.WebDriver.Types
 import Test.WebDriver.Commands
-import Test.WebDriver.Commands.Wait
 
 import Control.Applicative
 import Control.Monad.State.Strict
-import Control.Monad.Error
 import Control.Exception.Lifted
-import qualified Control.Exception as IO
 
 import Prelude hiding (catch)
 

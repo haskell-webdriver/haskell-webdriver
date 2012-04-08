@@ -1,12 +1,20 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
-module Test.WebDriver.Commands where
+module Test.WebDriver.Commands 
+       ( Element(..)
+       , WindowHandle(..), currentWindow
+       , Cookie(..)
+       , Orientation(..)
+       , MouseButton(..)
+       , Selector(..)
+       , JSArg(..)
+       , module Test.WebDriver.Commands
+       ) where
 
 import Test.WebDriver.Types
 import Test.WebDriver.Commands.Internal
 import Test.WebDriver.JSON
 
 import Data.Aeson
-import Network.HTTP (RequestMethod(..))
 import qualified Data.Text as T
 import Data.Text (Text, splitOn, append)
 import Data.ByteString (ByteString)
@@ -17,7 +25,6 @@ import Control.Applicative
 import Control.Monad.State.Strict
 import Control.Exception (SomeException)
 import Control.Exception.Lifted (throwIO, catch)
-import Data.Either
 import Data.Word
 
 import Prelude hiding (catch)

@@ -38,7 +38,6 @@ import Distribution.Verbosity
 import Control.Monad
 import Control.Applicative
 import Control.Monad.IO.Class
-import Control.Exception (Exception)
 import Control.Exception.Lifted
 import Data.Typeable
 
@@ -129,8 +128,14 @@ addExtension path p = asSet p $ HS.insert path
 deleteExtension :: FilePath -> FirefoxProfile -> FirefoxProfile
 deleteExtension path p = asSet p $ HS.delete path
 
+asMap :: FirefoxProfile
+         -> (HM.HashMap Text FirefoxPref -> HM.HashMap Text FirefoxPref)
+         -> FirefoxProfile
 asMap (FirefoxProfile p hs hm) f = FirefoxProfile p hs (f hm)
 
+asSet :: FirefoxProfile
+         -> (HS.HashSet FilePath -> HS.HashSet FilePath)
+         -> FirefoxProfile
 asSet (FirefoxProfile p hs hm) f = FirefoxProfile p (f hs) hm
 
 

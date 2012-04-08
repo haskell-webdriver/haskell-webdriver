@@ -11,7 +11,6 @@ import Data.Attoparsec.ByteString.Lazy (Result(..))
 import qualified Data.Attoparsec.ByteString.Lazy as AP
 
 import Control.Applicative
-import Control.Monad.Error
 import Control.Exception.Lifted
 import Data.String
 
@@ -53,6 +52,8 @@ parsePair a b funcName v =
                 ": cannot parse non-object JSON response as a (" ++ a  
                 ++ ", " ++ b ++ ") pair" ++ ")"
 
+parseTriple :: (FromJSON a, FromJSON b, FromJSON c) =>
+               String -> String -> String ->  String -> Value -> WD (a, b, c)
 parseTriple a b c funcName v = 
   case v of
     Object o -> (,,) <$> o !: fromString a 
