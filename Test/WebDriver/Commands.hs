@@ -153,10 +153,9 @@ assumed to be synchronous and the result of evaluating the script is
 returned and converted to an instance of FromJSON.
 
 The first parameter defines arguments to pass to the javascript
-function. Arguments may be any ToJSON instance. Values of type Element
-will be converted to the corresponding DOM element. Likewise, any
-elements in the script result will be returned to the client as
-Elements.
+function. Arguments of type Element will be converted to the
+corresponding DOM element. Likewise, any elements in the script result
+will be returned to the client as Elements.
 
 The second parameter defines the script itself in the form of a
 function body. The value returned by that function will be returned to
@@ -173,7 +172,8 @@ executeJS a s = fromJSON' =<< getResult
 similarly to 'executeJS', except that the Javascript is passed a callback
 function as its final argument. The script should call this function
 to signal that it has finished executing, passing to it a value that will be
-returned as the result of asyncJS.
+returned as the result of asyncJS. A result of Nothing indicates that the 
+Javascript function timed out (see 'setScriptTimeout')
 -}
 asyncJS :: FromJSON a => [JSArg] -> Text -> WD (Maybe a)
 asyncJS a s = handle timeout $ fromJSON' =<< getResult

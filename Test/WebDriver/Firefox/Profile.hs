@@ -1,14 +1,18 @@
 {-# LANGUAGE CPP, TypeSynonymInstances, OverloadedStrings,
              GeneralizedNewtypeDeriving, DeriveDataTypeable #-}
+-- |A module for working with Firefox profiles. Firefox profiles are manipulated
+-- in pure code and then \"prepared\" for network transmission. 
 module Test.WebDriver.Firefox.Profile 
-       ( FirefoxProfile(..), PreparedFirefoxProfile
+       ( -- * Profiles
+         FirefoxProfile(..), PreparedFirefoxProfile
+         -- * Preferences
        , FirefoxPref(..), ToFirefox(..)
-                          
-       ,addPref, getPref, deletePref
-       ,hasExtension, addExtension, deleteExtension
-                          
-       ,loadProfile, prepareProfile 
-       ,prepareTempProfile, prepareLoadedProfile
+       , addPref, getPref, deletePref
+         -- * Extensions
+       , addExtension, deleteExtension
+         -- * Loading and preparing profiles
+       , loadProfile, prepareProfile
+       , prepareTempProfile, prepareLoadedProfile
        ) where
 import Data.Aeson
 import Data.Attoparsec.Text as AP
@@ -41,13 +45,27 @@ import Control.Monad.IO.Class
 import Control.Exception.Lifted
 import Data.Typeable
 
+-- |A pure representation of a FirefoxProfile. This structure allows you to
+-- construct and manipulate Firefox profiles in pure code, deferring execution
+-- of IO operations until the profile is \"prepared\" using either
+-- 'prepareProfile' or one of the wrapper functions 'prepareTempProfile' and 
+-- 'prepareLoadedProfile'.
 data FirefoxProfile = FirefoxProfile 
-                      { profileDir    :: FilePath
+                      { -- |Location of the profile in the file system
+                        profileDir    :: FilePath
+                        -- |A set of filepaths pointing to Firefox extensions.
+                        -- These paths can either refer to an .xpi file
+                        -- or an extension directory
                       , profileExts   :: HS.HashSet FilePath
+                        -- |A map of Firefox preferences. These are the settings
+                        -- found in the profile's prefs.js, and entries found in
+                        -- about:config
                       , profilePrefs  :: HM.HashMap Text FirefoxPref
                       }
                     deriving (Eq, Show)
 
+-- |A Firefox preference. This is the subset of JSON values that excludes
+-- arrays and objects.
 data FirefoxPref = PrefInteger !Integer
                  | PrefDouble  !Double
                  | PrefString  !Text
@@ -62,14 +80,18 @@ instance ToJSON FirefoxPref where
     PrefBool  b   -> toJSON b
 
 
+-- |Represents a Firefox profile that has been prepared for 
+-- network transmission. The profile cannot be modified in this form.
 newtype PreparedFirefoxProfile = PreparedFirefoxProfile ByteString
   deriving (Eq, Show, ToJSON, FromJSON)
 
 
 instance Exception ProfileParseError
+-- |An error occured while attempting to parse a profile's prefs.js file 
 newtype ProfileParseError = ProfileParseError String
                           deriving  (Eq, Show, Read, Typeable)
 
+-- |A typeclass to convert types to Firefox preference values
 class ToFirefox a where
   toFirefox :: a -> FirefoxPref
 
@@ -110,21 +132,29 @@ instance (Integral a) => ToFirefox (Ratio a) where
 instance (HasResolution r) => ToFirefox (Fixed r) where
   toFirefox = PrefDouble . realToFrac
 
+-- |Retrieve a preference from a profile by key name.
 getPref :: Text -> FirefoxProfile -> Maybe FirefoxPref
 getPref k (FirefoxProfile _ _ m) = HM.lookup k m
 
+-- |Add a new preference entry to a profile, overwriting any existing entry
+-- with the same key.
 addPref :: ToFirefox a => Text -> a -> FirefoxProfile -> FirefoxProfile
 addPref k v p = asMap p $ HM.insert k (toFirefox v)
 
+-- |Delete an existing preference entry from a profile. This operation is
+-- silent if the preference wasn't found.
 deletePref :: Text -> FirefoxProfile -> FirefoxProfile
 deletePref k p = asMap p $ HM.delete k
 
-hasExtension :: FilePath -> FirefoxProfile -> Bool
-hasExtension p (FirefoxProfile _ hs _) = p `HS.member` hs
-
+-- |Add a new extension to the profile. The file path should refer to
+-- an .xpi file or an extension directory. This operation has no effect if
+-- the same extension has already been added to this profile.
 addExtension :: FilePath -> FirefoxProfile -> FirefoxProfile
 addExtension path p = asSet p $ HS.insert path
 
+-- |Delete an existing extension from the profile. The file path should refer
+-- to an .xpi file or an extension directory. This operation has no effect if
+-- the extension was never added to the profile.
 deleteExtension :: FilePath -> FirefoxProfile -> FirefoxProfile
 deleteExtension path p = asSet p $ HS.delete path
 
@@ -139,13 +169,15 @@ asSet :: FirefoxProfile
 asSet (FirefoxProfile p hs hm) f = FirefoxProfile p (f hs) hm
 
 
-
 tempProfile :: MonadIO m => m FirefoxProfile
 tempProfile = liftIO $ defaultProfile <$> mkTemp
 
+-- |Load an existing profile from the file system. Any prepared changes made to
+-- the FirefoxProfile will have no effect to the profile on disk.
 loadProfile :: MonadIO m => FilePath -> m FirefoxProfile
-loadProfile path = liftIO $  FirefoxProfile 
-                   <$> pure path <*> getExtensions <*> getPrefs
+loadProfile path = liftIO $ do
+  FirefoxProfile{ profileDir = d } <- tempProfile
+  FirefoxProfile <$> pure d <*> getExtensions <*> getPrefs
   where
     extD = path </> "extensions"
     userPref = path </> "prefs" <.> "js"
@@ -157,17 +189,24 @@ loadProfile path = liftIO $  FirefoxProfile
                           return 
                    $ parseOnly prefsParser s
 
+-- |Prepare a FirefoxProfile for network transmission.
+--
+-- Internally, this function constructs a Firefox profile within a temp 
+-- directory, archives it as a zip file, and then base64 encodes the zipped 
+-- data. The temporary directory is deleted afterwards
 prepareProfile :: MonadIO m => FirefoxProfile -> m PreparedFirefoxProfile
 prepareProfile FirefoxProfile {profileDir = d, profileExts = s, 
                                profilePrefs = m} 
   = liftIO $ do 
       createDirectoryIfMissing False extensionD
-      forM_ (HS.toList s) installExtension
-      withFile userPrefs WriteMode $ writeUserPrefs
-      PreparedFirefoxProfile . B64.encode . SBS.concat . LBS.toChunks 
-        . fromArchive 
-        <$> addFilesToArchive [OptRecursive] emptyArchive [d]
-        
+      extPaths <- mapM canonicalizePath . HS.toList $ s
+      forM_ extPaths installExtension
+      withFile userPrefs WriteMode writeUserPrefs
+      prof <-  PreparedFirefoxProfile . B64.encode . SBS.concat . LBS.toChunks 
+               . fromArchive 
+               <$> addFilesToArchive [OptRecursive] emptyArchive [d]
+      removeDirectoryRecursive d
+      return prof
   where
     extensionD = d </> "extensions"
     userPrefs  = d </> "prefs" <.> "js"
@@ -186,15 +225,16 @@ prepareProfile FirefoxProfile {profileDir = d, profileExts = s,
           $ [ "user_pref(", encode k, ", ", encode v, ");\n"]
   
 
+-- |Apply a function on an automatically generated default profile, and
+-- prepare the result. The FirefoxProfile passed to the handler function is
+-- the same one used by sessions when no Firefox profile is specified
 prepareTempProfile :: MonadIO m => 
                      (FirefoxProfile -> FirefoxProfile) 
                      -> m PreparedFirefoxProfile
-prepareTempProfile f = do 
-  p <- liftM f tempProfile 
-  p' <- prepareProfile p
-  liftIO $ removeDirectoryRecursive (profileDir p)
-  return p'
-             
+prepareTempProfile f = liftM f tempProfile >>= prepareProfile
+
+-- |Convenience function to load an existing Firefox profile from disk, apply
+-- a handler function, and then prepare the result for network transmission.
 prepareLoadedProfile :: MonadIO m =>
                         FilePath
                         -> (FirefoxProfile -> FirefoxProfile)
