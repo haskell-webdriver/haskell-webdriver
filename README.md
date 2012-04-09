@@ -7,10 +7,10 @@ hs-webdriver uses the cabal build system to configure, build, install, and gener
 For more information on using Cabal and its various installation options, see the Cabal User's Guide at http://www.haskell.org/cabal/users-guide/index.html
 
 ## Installation from Hackage
-hs-webdriver is hosted on Hackage. Thus, the simplest way to download and install the most recent version of hs-webdriver is to run:
+hs-webdriver is hosted on Hackage under the name webdriver. Thus, the simplest way to download and install the most recent version of hs-webdriver is to run:
 
 ```sh
-cabal install hs-webdriver
+cabal install webdriver
 ```
 There are also options to do system-wide installation, version selection, and other build options. See cabal documentation.
 
