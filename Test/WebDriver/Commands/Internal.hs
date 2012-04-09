@@ -15,6 +15,10 @@ import Data.Text (Text)
 import Control.Monad.State.Strict (get)
 import Control.Exception.Lifted (throwIO)
 
+
+doCommand :: (ToJSON a, FromJSON b) => RequestMethod -> Text -> a -> WD b
+doCommand = doCommand' []
+
 doSessCommand :: (ToJSON a, FromJSON b) => RequestMethod -> Text -> a -> WD b
 doSessCommand = doSessCommand' []
 
@@ -26,8 +30,14 @@ doWinCommand :: (ToJSON a, FromJSON b) =>
                 RequestMethod -> WindowHandle -> Text -> a -> WD b
 doWinCommand = doWinCommand' []
 
-doCommand :: (ToJSON a, FromJSON b) => RequestMethod -> Text -> a -> WD b
-doCommand = doCommand' []
+doCommand' :: (ToJSON a, FromJSON b) => 
+              [Header] -> RequestMethod -> Text -> a -> WD b  
+doCommand' headers method path args = do
+  r <- mkRequest headers method path args
+  --liftIO . print $ r
+  handleHTTPErr r
+  --liftIO . print . rspBody $ r
+  handleHTTPResp r
 
 doSessCommand' :: (ToJSON a, FromJSON b) => 
                   [Header] -> RequestMethod -> Text -> a -> WD b
@@ -51,13 +61,4 @@ doElemCommand' :: (ToJSON a, FromJSON b) =>
                   [Header] -> RequestMethod -> Element -> Text -> a -> WD b
 doElemCommand' h m (Element e) path a =
   doSessCommand' h m (T.concat ["/element/", e, path]) a
-
-doCommand' :: (ToJSON a, FromJSON b) => 
-              [Header] -> RequestMethod -> Text -> a -> WD b  
-doCommand' headers method path args = do
-  r <- mkRequest headers method path args
-  --liftIO . print $ r
-  handleHTTPErr r
-  --liftIO . print . rspBody $ r
-  handleHTTPResp r
 
