@@ -80,10 +80,11 @@ waitWhile = waitWhile' 250000
 waitWhile' :: Int -> Double -> WD a -> WD ()
 waitWhile' = wait' handler
   where
-    handler retry = (`catches` [Handler handleFailedCommand
-                               ,Handler handleExpectFailed
-                               ]
-                    ) . (>> retry)
+    handler retry wd = do 
+      void wd `catches` [Handler handleFailedCommand
+                        ,Handler handleExpectFailed
+                        ]
+      retry
       where
         handleFailedCommand (FailedCommand NoSuchElement _) = return ()
         handleFailedCommand err = throwIO err
