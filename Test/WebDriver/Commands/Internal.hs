@@ -7,7 +7,7 @@ module Test.WebDriver.Commands.Internal
 import Test.WebDriver.Types
 import Test.WebDriver.Internal
 import Data.Aeson
-import Network.HTTP (Header(..))
+import Network.HTTP (RequestMethod(..), Header(..))
 
 import qualified Data.Text as T
 import Data.Text (Text)

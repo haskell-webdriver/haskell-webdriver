@@ -1,19 +1,16 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
     TemplateHaskell, OverloadedStrings, ExistentialQuantification, 
-    MultiParamTypeClasses, TypeFamilies #-}
+    MultiParamTypeClasses, TypeFamilies, NoMonoLocalBinds #-}
+{-# OPTIONS_HADDOCK not-home #-}
 module Test.WebDriver.Types 
-       ( WD(..), SessionId(..), WDSession(..), defaultSession
+       ( -- * WebDriver sessions
+         WD(..), WDSession(..), defaultSession, SessionId(..)
+         -- * Capabilities and configuration
        , Capabilities(..), defaultCaps, allCaps
-       , Browser(..), firefox, chrome, ie, opera, iPhone, iPad, android
        , Platform(..), ProxyType(..)
-                                    
-       , InvalidURL(..), NoSessionId(..), BadJSON(..)
-       , HTTPStatusUnknown(..), HTTPConnError(..)
-       , UnknownCommand(..), ServerError(..)
-       , FailedCommand(..), FailedCommandType(..)
-       , FailedCommandInfo(..), StackFrame(..)
-       , mkFailedCommandInfo, failedCommand
-                                
+         -- ** Browser-specific configuration
+       , Browser(..), firefox, chrome, ie, opera, iPhone, iPad, android
+         -- * WebDriver objects and command-specific types
        , Element(..)
        , WindowHandle(..), currentWindow
        , Cookie(..)
@@ -21,6 +18,13 @@ module Test.WebDriver.Types
        , MouseButton(..)
        , Selector(..)
        , JSArg(..)
+         -- * Exceptions
+       , InvalidURL(..), NoSessionId(..), BadJSON(..)
+       , HTTPStatusUnknown(..), HTTPConnError(..)
+       , UnknownCommand(..), ServerError(..)
+       , FailedCommand(..), FailedCommandType(..)
+       , FailedCommandInfo(..), StackFrame(..)
+       , mkFailedCommandInfo, failedCommand
        ) where
 
 import Test.WebDriver.Firefox.Profile
@@ -40,7 +44,6 @@ import Control.Exception.Lifted
 import Data.Typeable
 import Control.Applicative
 import Control.Monad.State.Strict
---import Control.Monad.IO.Class
 import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Data.Word
@@ -50,7 +53,7 @@ import qualified Data.Char as C
 
 
 {- |A monadic interface to the WebDriver server. This monad is a simple, strict 
-wrapper over IO, threading session information between sequential commands
+wrapper over 'IO', threading session information between sequential commands
 -}
 newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Monad, MonadState WDSession, MonadIO
@@ -83,12 +86,13 @@ newtype WindowHandle = WindowHandle Text
 newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)
 
-{- |A special WindowHandle that always refers to the currently focused window.-}
+-- |A special 'WindowHandle' that always refers to the currently focused window.
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
 
-{- |Information about a WebDriver session. This information is threaded 
-implicitly through all WD computations. -}
+{- |Information about a WebDriver session. This structure is passed
+implicitly through all 'WD' computations, and is also used to configure the 'WD'
+monad before execution. -}
 data WDSession = WDSession { 
                              -- |Host name of the WebDriver server for this 
                              -- session
@@ -98,8 +102,8 @@ data WDSession = WDSession {
                              -- |An opaque reference identifying the session.
                              -- A value of Nothing indicates that a session 
                              -- hasn't been created yet. To create new sessions,
-                             -- use the createSession and withNewSession 
-                             -- functions.
+                             -- use the 'Test.WebDriver.Commands.createSession' 
+                             -- and 'Test.WebDriver.runSession' functions.
                            , wdSessId :: Maybe SessionId 
                            } deriving (Eq, Show)
 
@@ -110,14 +114,33 @@ instance Default WDSession where
                   }
 
 {- |A default session connects to localhost on port 4444, and hasn't been 
-created yet. -}
+created yet. This value is the same as the 'def' with a more specific type. -}
 defaultSession :: WDSession
 defaultSession = def
 
 
-data Capabilities = Capabilities { browser                  :: Browser
+{- |A structure describing the capabilities of a session. This record
+serves dual roles. 
+
+* It's used to specify the desired capabilities for a session before
+it's created. In this usage, fields that are set to Nothing indicate
+that we have no preference for that capability.
+
+* When returned by 'Test.WebDriver.Commands.getCaps', it's used to
+describe the actual capabilities given to us by the WebDriver
+server. Here a value of Nothing indicates that the server doesn't
+support the capability. Thus, for Maybe Bool fields, both Nothing and
+Just False indicate a lack of support for the desired capability.
+-}
+data Capabilities = Capabilities { -- |Browser choice and browser specific 
+                                   -- settings.
+                                   browser                  :: Browser
+                                   -- |Browser version to use.
                                  , version                  :: Maybe String
+                                   -- |Platform on which the browser should/will
+                                   -- run.   
                                  , platform                 :: Platform
+                                   -- |Proxy configuration.
                                  , proxy                    :: ProxyType
                                  , javascriptEnabled        :: Maybe Bool
                                  , takesScreenshot          :: Maybe Bool
@@ -152,9 +175,15 @@ instance Default Capabilities where
                      , proxy = UseSystemSettings
                      }
 
+-- |Default capabilities. This is the same as the 'Default' instance, but with 
+-- a more specific type. By default we use Firefox of an unspecified version 
+-- with default settings on whatever platform is available. 
+-- All Maybe Bool capabilities are set to Nothing (no preference).
 defaultCaps :: Capabilities
 defaultCaps = def
 
+-- |Same as 'defaultCaps', but with all Maybe Bool capabilities set to 
+-- Just True.
 allCaps :: Capabilities
 allCaps = defaultCaps { javascriptEnabled = Just True
                       , takesScreenshot = Just True
@@ -171,35 +200,49 @@ allCaps = defaultCaps { javascriptEnabled = Just True
                       }
       
 
-
-data Browser = Firefox { ffProfile :: Maybe PreparedFirefoxProfile
+-- |Browser setting and browser-specific capabilities.
+data Browser = Firefox { -- |The firefox profile to use. If Nothing, a
+                         -- a default temporary profile is automatically created
+                         -- and used.
+                         ffProfile :: Maybe PreparedFirefoxProfile
+                         -- |Firefox logging preference
                        , ffLogPref :: Maybe FFLogPref
+                         -- |Path to Firefox binary. If Nothing, use a sensible
+                         -- system-based default.
                        , ffBinary :: Maybe FilePath
                        }
              | Chrome { chromeDriverVersion :: Maybe String 
-                      , chromeBinary        :: Maybe FilePath
-                      , chromeOptions       :: [String]
-                      , chromeExtensions    :: [ChromeExtension]
+                        -- |Path to Chrome binary. If Nothing, use a sensible
+                        -- system-based default.
+                      , chromeBinary :: Maybe FilePath
+                        -- |A list of command-line options to pass to the 
+                        -- Chrome binary.
+                      , chromeOptions :: [String]
+                        -- |A list of extensions to use.
+                      , chromeExtensions :: [ChromeExtension]
                       } 
              | IE { ignoreProtectedModeSettings :: Bool
-                  , useLegacyInternalServer     :: Bool
+                  --, useLegacyInternalServer     :: Bool
                   }
-             | Opera
-             -- | Safari
+             | Opera -- ^ Opera-specific configuration coming soon!
              | HTMLUnit
              | IPhone 
              | IPad
              | Android
              deriving (Eq, Show)
 
+-- |Default Firefox settings. All fields are set to Nothing.
 firefox :: Browser
 firefox = Firefox Nothing Nothing Nothing
 
+-- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
+-- specified, and no extensions are used.
 chrome :: Browser
 chrome = Chrome Nothing Nothing [] []
 
+-- |Default IE settings. 'ignoreProtectedModeSettings' is set to True.
 ie :: Browser
-ie = IE True False
+ie = IE True
 
 opera :: Browser
 opera = Opera
@@ -220,15 +263,19 @@ android :: Browser
 android = Android
 
 
-{- represents platforms supported by WebDriver -}
+-- |Represents platform options supported by WebDriver. The value Any represents
+-- no preference.
 data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
               deriving (Eq, Show, Ord, Bounded, Enum)
 
-{- available settings for the proxy Capabilities field -}
+-- |Available settings for the proxy 'Capabilities' field
 data ProxyType = NoProxy 
                | UseSystemSettings
                | AutoDetect
+                 -- |Use a proxy auto-config file specified by URL
                | PAC { autoConfigUrl :: String }
+                 -- |Manually specify proxy hosts as hostname:port strings.
+                 -- Note that behavior is undefined for empty strings.
                | Manual { ftpProxy  :: String
                         , sslProxy  :: String
                         , httpProxy :: String
@@ -236,7 +283,7 @@ data ProxyType = NoProxy
                deriving (Eq, Show)
 
 
-{- For Firefox sessions; indicates Firefox's log level -}
+-- |For Firefox sessions; indicates Firefox's log level
 data FFLogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig 
              | LogFine | LogFiner | LogFinest | LogAll
              deriving (Eq, Show, Ord, Bounded, Enum)
@@ -246,38 +293,48 @@ data FFLogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
 --      functions. consider TH.
 
 instance Exception InvalidURL
+-- |An invalid URL was given
 newtype InvalidURL = InvalidURL String 
                 deriving (Eq, Show, Typeable)
 
 instance Exception NoSessionId
+-- |A command requiring a session ID was attempted when no session ID was 
+-- available.
 newtype NoSessionId = NoSessionId String 
                  deriving (Eq, Show, Typeable)
 
 instance Exception BadJSON
+-- |An error occured when parsing a JSON value.
 newtype BadJSON = BadJSON String 
              deriving (Eq, Show, Typeable)
 
 instance Exception HTTPStatusUnknown
+-- |An unexpected HTTP status was sent by the server.
 data HTTPStatusUnknown = HTTPStatusUnknown (Int, Int, Int) String
                        deriving (Eq, Show, Typeable)
 
 instance Exception HTTPConnError
+-- |HTTP connection errors.
 newtype HTTPConnError = HTTPConnError ConnError
                      deriving (Eq, Show, Typeable)
 
 instance Exception UnknownCommand
+-- |A command was sent to the WebDriver server that it didn't recognize.
 newtype UnknownCommand = UnknownCommand String 
                     deriving (Eq, Show, Typeable)
 
 instance Exception ServerError
+-- |A server-side exception occured
 newtype ServerError = ServerError String
                       deriving (Eq, Show, Typeable)
 
 instance Exception FailedCommand
+-- |This exception encapsulates many different kinds of exceptions that can
+-- occur when a command fails. 
 data FailedCommand = FailedCommand FailedCommandType FailedCommandInfo
                    deriving (Eq, Show, Typeable)
 
-
+-- |The type of failed command exception that occured.
 data FailedCommandType = NoSuchElement
                        | NoSuchFrame
                        | UnknownFrame
@@ -305,6 +362,7 @@ data FailedCommandType = NoSuchElement
                        | MethodNotAllowed
                        deriving (Eq, Ord, Enum, Bounded, Show)
 
+-- |Detailed information about the failed command provided by the server.
 data FailedCommandInfo = FailedCommandInfo { errMsg    :: String
                                            , errSessId :: Maybe SessionId 
                                            , errScreen :: Maybe ByteString
@@ -314,6 +372,7 @@ data FailedCommandInfo = FailedCommandInfo { errMsg    :: String
                        deriving (Eq)
 
 
+-- |Constructs a FailedCommandInfo from only an error message.
 mkFailedCommandInfo :: String -> FailedCommandInfo
 mkFailedCommandInfo m = FailedCommandInfo {errMsg = m
                                           , errSessId = Nothing
@@ -322,18 +381,24 @@ mkFailedCommandInfo m = FailedCommandInfo {errMsg = m
                                           , errStack  = []
                                           }
 
+-- |Convenience function to throw a 'FailedCommand' locally with no server-side 
+-- info present.
 failedCommand :: FailedCommandType -> String -> WD a
-failedCommand t = throwIO . FailedCommand t . mkFailedCommandInfo
+failedCommand t m = throwIO . FailedCommand t =<< getCmdInfo
+  where getCmdInfo = do
+          sessId <- wdSessId <$> get
+          return $ (mkFailedCommandInfo m) { errSessId = sessId }
 
-
+-- |An individual stack frame from the stack trace provided by the server 
+-- during a FailedCommand.
 data StackFrame = StackFrame { sfFileName   :: String
                              , sfClassName  :: String
                              , sfMethodName :: String
                              , sfLineNumber :: Word
                              }
-                  deriving (Show, Eq)
+                deriving (Show, Eq)
 
-
+-- |Cookies are delicious delicacies.
 data Cookie = Cookie { cookName   :: Text
                      , cookValue  :: Text
                      , cookPath   :: Maybe Text
@@ -342,21 +407,27 @@ data Cookie = Cookie { cookName   :: Text
                      , cookExpiry :: Maybe Integer
                      } deriving (Eq, Show)              
 
-data Selector = ById Text
+-- |Specifies element(s) within a DOM tree using various selection methods.
+data Selector = ById Text  
               | ByName Text
-              | ByClass Text
-              | ByTag Text
-              | ByLinkText Text
+              | ByClass Text -- ^ (Note: multiple classes are not  
+                             -- allowed. For more control, use ByCSS)
+              | ByTag Text            
+              | ByLinkText Text       
               | ByPartialLinkText Text
               | ByCSS Text
               | ByXPath Text
-                deriving (Eq, Show, Ord)
+              deriving (Eq, Show, Ord)
 
+-- |An existential wrapper for any 'ToJSON' instance. This allows us to pass
+-- parameters of many different types to Javascript code.
 data JSArg = forall a. ToJSON a => JSArg a
 
+-- |A screen orientation
 data Orientation = Landscape | Portrait
                  deriving (Eq, Show, Ord, Bounded, Enum)
 
+-- |A mouse button
 data MouseButton = LeftButton | MiddleButton | RightButton
                  deriving (Eq, Show, Ord, Bounded, Enum)
 
@@ -373,7 +444,6 @@ instance Show FailedCommandInfo where --todo: pretty print
                                   Just _  -> "Just \"...\""
                                   Nothing -> "Nothing"
             
-
 
 instance FromJSON Element where
   parseJSON (Object o) = Element <$> o .: "ELEMENT"
@@ -417,9 +487,9 @@ instance ToJSON Capabilities where
              ,"chrome.switches" .= o
              ,"chrome.extensions" .= e
              ]       
-        IE {ignoreProtectedModeSettings = i, useLegacyInternalServer = u}
+        IE {ignoreProtectedModeSettings = i{-, useLegacyInternalServer = u-}}
           -> ["IgnoreProtectedModeSettings" .= i
-             ,"useLegacyInternalServer" .= u
+             --,"useLegacyInternalServer" .= u
              ]
         _ -> []
       f :: ToJSON a => (Capabilities -> a) -> Text -> Pair
@@ -457,9 +527,9 @@ instance FromJSON FailedCommandInfo where
                       <*> opt "screen"     Nothing
                       <*> opt "class"      Nothing
                       <*> opt "stackTrace" []
-    where req :: FromJSON a => Text -> Parser a 
+    where --req :: FromJSON a => Text -> Parser a 
           req = (o .:)            --required key
-          opt :: FromJSON a => Text -> a -> Parser a
+          --opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:? k .!= d --optional key
   parseJSON v = typeMismatch "FailedCommandInfo" v
 

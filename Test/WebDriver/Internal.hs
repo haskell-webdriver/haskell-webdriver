@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
 module Test.WebDriver.Internal 
        ( mkWDUri, mkRequest
-       , Request(..), RequestMethod(..), Response(..)                      
        , handleHTTPErr, handleJSONErr, handleHTTPResp
        ) where
 
