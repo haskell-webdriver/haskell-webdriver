@@ -1,4 +1,4 @@
-Name: hs-webdriver
+Name: webdriver
 Version: 0
 Stability: alpha
 Cabal-Version: >= 1.6
@@ -11,6 +11,7 @@ Category: Web, Browser, Testing
 Synopsis: a Haskell client for the Selenium WebDriver protocol
 Build-type: Simple
 Extra-source-files: README
+
 library
   build-depends:   base == 4.*
                  , aeson == 0.6.*
