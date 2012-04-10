@@ -39,3 +39,13 @@ runhaskell Setup.hs install
 ```
 
 For more build options, please refer to the Cabal documentation.
+
+#Documentation
+
+Documentation for hs-webdriver is available on Hackage at <http://hackage.haskell.org/package/webdriver>. However, here's how to generate local HTML documentation from this source revision:
+
+```sh
+runhaskell Setup.hs haddock
+```
+
+Haddock will generate documentation and save it in dist/doc/html/webdriver
