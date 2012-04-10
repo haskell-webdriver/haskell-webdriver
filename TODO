@@ -1,0 +1,24 @@
+--fine-tune dependencies
+
+--Finish off remaining commands. focusFrame. setPageLoadTimeout. session storage
+
+--add special web-driver specific FF profile setters, either as special
+functions or via documentation
+
+--add opera config
+
+--improve documentation. Provide examples. Document errors better. Provide more
+--module introductions
+
+
+for 1.0
+
+-- change WDSession to WDSettings, use WDState as internal State type. Use
+ReaderT to store WDVersion for use with implicit configurations.
+
+-- allow settings to automatically load drivers. add modules with driver loading
+functions
+
+-- overload WD commands(???)
+
+-- use http-conduit and attoparsec-conduit to stream JSON data. use request methods from http-types
