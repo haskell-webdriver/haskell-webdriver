@@ -1,4 +1,4 @@
---fine-tune dependencies
+--fine-tune dependencies. network, transformers, transformers-base, monad-control, attoparsec, aeson(?)
 
 --Finish off remaining commands. focusFrame. setPageLoadTimeout. session storage
 
