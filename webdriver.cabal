@@ -12,7 +12,7 @@ Synopsis: a Haskell client for the Selenium WebDriver protocol
 Build-type: Simple
 Extra-source-files: README.md
 Description:
-        hs-webdriver is a Selenium WebDriver client for the Haskell
+        a Selenium WebDriver client for the Haskell
         programming language. You can use it to automate browser
         sessions for testing, system administration, etc.
 
