@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP, TypeSynonymInstances, OverloadedStrings,
-             GeneralizedNewtypeDeriving, DeriveDataTypeable #-}
+             GeneralizedNewtypeDeriving, DeriveDataTypeable,
+             FlexibleInstances #-}
 -- |A module for working with Firefox profiles. Firefox profiles are manipulated
 -- in pure code and then \"prepared\" for network transmission. 
 module Test.WebDriver.Firefox.Profile 
