@@ -51,7 +51,7 @@ library
                  , lifted-base == 0.1.*
                  , data-default
                  , base64-bytestring
-                 , temporary == 1.1.*
+                 , temporary
 
   exposed-modules: Test.WebDriver
                    Test.WebDriver.Commands
