@@ -47,7 +47,7 @@ library
                  , attoparsec == 0.10.*
                  , monad-control == 0.3.*
                  , transformers-base == 0.4.*
-                 , vector == 0.9.*
+                 , vector == 0.*
                  , lifted-base == 0.1.*
                  , data-default
                  , base64-bytestring
