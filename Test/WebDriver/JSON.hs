@@ -16,9 +16,10 @@ module Test.WebDriver.JSON
        , single, pair, triple
          -- ** Extracting JSON objects into tuples
        , parsePair, parseTriple 
-         -- * Conversion between parser results and WD
-         -- |These functions are used to implement the above functions,
-         -- and could be used to implement your own JSON convenience functions
+         -- * Conversion from parser results to WD
+         -- |These functions are used to implement the other functions
+         -- in this module, and could be used to implement other JSON 
+         -- convenience functions
        , apResultToWD, aesonResultToWD 
        ) where
 import Test.WebDriver.Types

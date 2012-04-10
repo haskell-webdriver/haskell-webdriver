@@ -37,7 +37,6 @@ import Prelude hiding (catch)
 runWD :: WDSession -> WD a -> IO a
 runWD sess (WD wd) = evalStateT wd sess
 
-
 -- |Like 'runWD', but automatically creates a session beforehand and closes it
 -- afterwards. This is a very common use case.
 runSession :: WDSession -> Capabilities -> WD a -> IO a
@@ -53,7 +52,6 @@ withSession s' (WD wd) = WD . lift $ evalStateT wd s'
 -- the given 'WD' action, regardless of any exceptions.
 finallyClose:: WD a -> WD a 
 finallyClose wd = closeOnException wd <* closeSession
-
 
 -- |A variant of 'finallyClose' that only closes the session when an 
 -- asynchronous exception is thrown, but otherwise leaves the session open

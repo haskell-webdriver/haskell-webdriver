@@ -289,9 +289,6 @@ data FFLogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
              deriving (Eq, Show, Ord, Bounded, Enum)
 
 
---todo: simplify error handling. include a module of convenience
---      functions. consider TH.
-
 instance Exception InvalidURL
 -- |An invalid URL was given
 newtype InvalidURL = InvalidURL String 

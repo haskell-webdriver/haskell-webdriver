@@ -6,7 +6,7 @@ module Test.WebDriver.Commands.Wait
        , expectAny, expectAll
        , (<||>), (<&&>)
                    
-         -- * Explicit waiting
+         -- * Wait on expected conditions
        , waitUntil, waitUntil'
        , waitWhile, waitWhile'
        ) where

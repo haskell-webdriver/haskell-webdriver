@@ -310,7 +310,6 @@ mkTemp = do
   d <- getTemporaryDirectory
   createTempDirectory d ""
   
-  
 -- firefox prefs.js parser
 
 prefsParser = many prefLine

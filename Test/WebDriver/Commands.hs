@@ -1,4 +1,6 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables #-}
+-- |This module exports basic WD actions that can be used to interact with a
+-- browser session.
 module Test.WebDriver.Commands 
        ( -- * Sessions
          createSession, closeSession, sessions, getCaps
@@ -116,7 +118,7 @@ setImplicitWait ms =
         allFields = ["type" .= ("implicit" :: String)] ++ msField
 
 -- |Sets the amount of time we wait for an asynchronous script to return a 
--- .result
+-- result
 setScriptTimeout :: Integer -> WD () 
 setScriptTimeout ms =
   doSessCommand POST "/timeouts/async_script" (object msField)
@@ -381,7 +383,6 @@ replyToAlert :: Text -> WD ()
 replyToAlert = doSessCommand POST "/alert_text" . single "text"
 
 -- |Accepts the currently displayed alert dialog.
--- no alert is present.
 acceptAlert :: WD ()
 acceptAlert = doSessCommand POST "/accept_alert" ()
 
