@@ -21,13 +21,13 @@ There are also options to do system-wide installation, version selection, and ot
 To build and install a git revision for a single user on your system, run these commands from within the repository directory
 
 
-### using cabal-install
+### Using cabal-install
 
 ```sh
 cabal install
 ```
 
-### using Cabal
+### Using Cabal
 
 For systems without cabal-install available, you can also run the Setup.hs
 script, as such:
