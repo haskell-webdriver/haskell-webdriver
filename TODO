@@ -7,8 +7,15 @@ functions or via documentation
 
 --add opera config
 
---improve documentation. Provide examples. Document errors better. Provide more
---module introductions
+--improve documentation. Document errors better. Provide more
+module introductions
+
+--provide examples
+  --basic runSession usage
+  --intermediate usage
+  --explicit waits usage
+  --firefox profile usage
+  --REPL usage
 
 
 for 1.0
