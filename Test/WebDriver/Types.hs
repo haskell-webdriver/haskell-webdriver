@@ -13,7 +13,7 @@ module Test.WebDriver.Types
          -- * WebDriver objects and command-specific types
        , Element(..)
        , WindowHandle(..), currentWindow
-       , Cookie(..)
+       , Cookie(..), mkCookie
        , Orientation(..)
        , MouseButton(..)
        , Selector(..)
