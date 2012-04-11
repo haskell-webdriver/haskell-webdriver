@@ -10,7 +10,7 @@ module Test.WebDriver.Commands
          -- ** Page info
        , getCurrentURL, getSource, getTitle, screenshot                    
          -- * Timeouts
-       , setImplicitWait, setScriptTimeout
+       , setImplicitWait, setScriptTimeout, setPageLoadTimeout
          -- * Web elements
        , Element(..), Selector(..)
          -- ** Searching for elements
@@ -128,6 +128,11 @@ setScriptTimeout ms =
       doSessCommand POST "/timeouts" (object allFields)
   where msField   = ["ms" .= ms]
         allFields = ["type" .= ("script" :: String)] ++ msField
+
+setPageLoadTimeout :: Integer -> WD ()
+setPageLoadTimeout ms = doSessCommand POST "/timeouts" params
+  where params = object ["type" .= ("page load" :: String)
+                        ,"ms"   .= ms ]
 
 -- |Gets the URL of the current page.
 getCurrentURL :: WD String
