@@ -114,7 +114,7 @@ instance Default WDSession where
                   }
 
 {- |A default session connects to localhost on port 4444, and hasn't been 
-created yet. This value is the same as the 'def' with a more specific type. -}
+created yet. This value is the same as 'def' but with a more specific type. -}
 defaultSession :: WDSession
 defaultSession = def
 

@@ -46,13 +46,13 @@ import Control.Monad.IO.Class
 import Control.Exception.Lifted
 import Data.Typeable
 
--- |A pure representation of a FirefoxProfile. This structure allows you to
+-- |This structure allows you to
 -- construct and manipulate Firefox profiles in pure code, deferring execution
 -- of IO operations until the profile is \"prepared\" using either
 -- 'prepareProfile' or one of the wrapper functions 'prepareTempProfile' and 
 -- 'prepareLoadedProfile'.
 data FirefoxProfile = FirefoxProfile 
-                      { -- |Location of the profile in the file system
+                      { -- |Location of the profile in the local file system
                         profileDir    :: FilePath
                         -- |A set of filepaths pointing to Firefox extensions.
                         -- These paths can either refer to an .xpi file
