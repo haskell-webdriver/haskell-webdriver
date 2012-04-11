@@ -34,7 +34,7 @@ module Test.WebDriver.Commands
        , getCurrentWindow, closeWindow, windows
        , getWindowSize, setWindowSize, getWindowPos, setWindowPos
          -- * Cookies
-       , Cookie(..)
+       , Cookie(..), mkCookie
        , cookies, setCookie, deleteCookie, deleteVisibleCookies
          -- * Alerts
        , getAlertText, replyToAlert, acceptAlert, dismissAlert
