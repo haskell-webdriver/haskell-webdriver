@@ -30,6 +30,10 @@ doWinCommand :: (ToJSON a, FromJSON b) =>
                 RequestMethod -> WindowHandle -> Text -> a -> WD b
 doWinCommand = doWinCommand' []
 
+doStorageCommand :: (ToJSON a, FromJSON b) =>
+                    RequestMethod -> HTML5StorageType -> Text -> a -> WD b
+doStorageCommand = doStorageCommand' []
+
 doCommand' :: (ToJSON a, FromJSON b) => 
               [Header] -> RequestMethod -> Text -> a -> WD b  
 doCommand' headers method path args = do
@@ -62,3 +66,10 @@ doElemCommand' :: (ToJSON a, FromJSON b) =>
 doElemCommand' h m (Element e) path a =
   doSessCommand' h m (T.concat ["/element/", e, path]) a
 
+doStorageCommand' :: (ToJSON a, FromJSON b) =>
+                     [Header] -> RequestMethod -> HTML5StorageType -> Text -> a
+                     -> WD b
+doStorageCommand' h m s path a = doSessCommand' h m (T.concat ["/", s', path]) a
+  where s' = case s of
+          LocalStorage -> "local_storage"
+          SessionStorage -> "session_storage"

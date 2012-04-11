@@ -51,6 +51,8 @@ module Test.WebDriver.Commands
        , getOrientation, setOrientation
          -- * Geo-location
        , getLocation, setLocation
+         -- * HTML 5 web storage
+       , storageSize, getAllKeys, deleteAllKeys, getKey, setKey, deleteKey
          -- * IME support              
        , availableIMEEngines, activeIMEEngine, checkIMEActive
        , activateIME, deactivateIME
@@ -500,3 +502,21 @@ setLocation = doSessCommand POST "/location" . triple ("latitude",
                                                        "longitude",
                                                        "altitude")
 
+storageSize :: HTML5StorageType -> WD Integer
+storageSize s = doStorageCommand GET s "/size" ()
+
+getAllKeys :: HTML5StorageType -> WD [Text]
+getAllKeys s = doStorageCommand GET s "" ()
+
+deleteAllKeys :: HTML5StorageType -> WD ()
+deleteAllKeys s = doStorageCommand DELETE s "" ()
+
+getKey :: HTML5StorageType -> Text ->  WD Text
+getKey s k = doStorageCommand GET s ("/key/" `T.append` k) ()
+
+setKey :: HTML5StorageType -> Text -> Text -> WD Text
+setKey s k v = doStorageCommand POST s "" . object $ ["key"   .= k,
+                                                      "value" .= v ]
+               
+deleteKey :: HTML5StorageType -> Text -> WD ()
+deleteKey s k = doStorageCommand POST s ("/key/" `T.append` k) ()

@@ -19,6 +19,7 @@ module Test.WebDriver.Types
        , Cookie(..), mkCookie
        , Orientation(..)
        , MouseButton(..)
+       , HTML5StorageType(..)
          -- * Exceptions
        , InvalidURL(..), NoSessionId(..), BadJSON(..)
        , HTTPStatusUnknown(..), HTTPConnError(..)
@@ -452,6 +453,9 @@ data MouseButton = LeftButton | MiddleButton | RightButton
                  deriving (Eq, Show, Ord, Bounded, Enum)
 
 
+-- |A type to specify HTML 5 storage type
+data HTML5StorageType = LocalStorage | SessionStorage 
+                      deriving (Eq, Show, Ord, Bounded, Enum)
 
 instance Show FailedCommandInfo where --todo: pretty print
   show i =   showString "{errMsg = "     . shows (errMsg i) 
