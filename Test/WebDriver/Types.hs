@@ -13,11 +13,12 @@ module Test.WebDriver.Types
          -- * WebDriver objects and command-specific types
        , Element(..)
        , WindowHandle(..), currentWindow
+       , Selector(..)
+       , JSArg(..)
+       , FocusSelector(..)
        , Cookie(..), mkCookie
        , Orientation(..)
        , MouseButton(..)
-       , Selector(..)
-       , JSArg(..)
          -- * Exceptions
        , InvalidURL(..), NoSessionId(..), BadJSON(..)
        , HTTPStatusUnknown(..), HTTPConnError(..)
@@ -89,6 +90,15 @@ newtype Element = Element Text
 -- |A special 'WindowHandle' that always refers to the currently focused window.
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
+
+-- |Specifies a window or frame to focus on.
+data FocusSelector = OnWindow WindowHandle -- ^ focus on a window
+                   | OnIndex Integer       -- ^ focus on a frame by 0-based 
+                                           -- index
+                   | OnName Text           -- ^ focus on a frame by name or ID
+                   | OnElement Element     -- ^ focus on a frame Element
+                   | DefaultFrame
+                   deriving (Eq, Show, Read)
 
 {- |Information about a WebDriver session. This structure is passed
 implicitly through all 'WD' computations, and is also used to configure the 'WD'
@@ -675,3 +685,10 @@ instance ToJSON Selector where
       
 instance ToJSON JSArg where
   toJSON (JSArg a) = toJSON a
+
+instance ToJSON FocusSelector where
+  toJSON s = case s of
+    OnWindow w -> toJSON w
+    OnIndex i -> toJSON i
+    OnName n -> toJSON n
+    OnElement e -> toJSON e

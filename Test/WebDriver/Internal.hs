@@ -42,7 +42,7 @@ mkWDUri path = do
     (Nothing, _) -> throwIO $ InvalidURL urlStr 
     (_, Nothing) -> throwIO $ InvalidURL relPath
     (Just baseURI, Just relURI) -> return . fromJust $ relURI `relativeTo` baseURI
-
+  
 mkRequest :: ToJSON a => [Header] -> RequestMethod -> Text -> a -> WD (Response ByteString)
 mkRequest headers method path args = do
   uri <- mkWDUri (T.unpack path)
