@@ -92,11 +92,16 @@ currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
 
 -- |Specifies a window or frame to focus on.
-data FocusSelector = OnWindow WindowHandle -- ^ focus on a window
-                   | OnIndex Integer       -- ^ focus on a frame by 0-based 
-                                           -- index
-                   | OnName Text           -- ^ focus on a frame by name or ID
-                   | OnElement Element     -- ^ focus on a frame Element
+data FocusSelector = -- |focus on a window
+                     OnWindow WindowHandle
+                     -- |focus on a frame by 0-based index
+                   | OnFrameIndex Integer       
+                     -- |focus on a frame by name or ID
+                   | OnFrameName Text
+                     -- |focus on a frame Element
+                   | OnFrameElement Element
+                     -- |focus on the first frame, or the main document
+                     -- if iframes are used.
                    | DefaultFrame
                    deriving (Eq, Show, Read)
 
@@ -689,6 +694,6 @@ instance ToJSON JSArg where
 instance ToJSON FocusSelector where
   toJSON s = case s of
     OnWindow w -> toJSON w
-    OnIndex i -> toJSON i
-    OnName n -> toJSON n
-    OnElement e -> toJSON e
+    OnFrameIndex i -> toJSON i
+    OnFrameName n -> toJSON n
+    OnFrameElement e -> toJSON e
