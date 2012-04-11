@@ -231,23 +231,28 @@ windows = doSessCommand GET "/window_handles" ()
 closeWindow :: WindowHandle -> WD ()
 closeWindow = doSessCommand DELETE "/window" . single "name"
 
--- |Get the dimensions of the given window.
-getWindowSize :: WindowHandle -> WD (Word, Word)
-getWindowSize w =
-  doWinCommand GET w "/size" () >>= parsePair "width" "height" "getWindowSize"
+-- |Maximizes the current  window if not already maximized
+maximize :: WD ()
+maximize = doWinCommand GET currentWindow "/maximize" ()
 
--- |Set the dimensions of the given window.
-setWindowSize :: WindowHandle -> (Word, Word) -> WD ()
-setWindowSize win = doWinCommand POST win "/size" . pair ("width", "height")
+-- |Get the dimensions of the current window.
+getWindowSize :: WD (Word, Word)
+getWindowSize = doWinCommand GET currentWindow "/size" () 
+                >>= parsePair "width" "height" "getWindowSize"
 
--- |Get the coordinates of the given window.
-getWindowPos :: WindowHandle -> WD (Int, Int)
-getWindowPos w = do 
-  doWinCommand GET w "/position" () >>= parsePair "x" "y" "getWindowPos"
+-- |Set the dimensions of the current window.
+setWindowSize :: (Word, Word) -> WD ()
+setWindowSize = doWinCommand POST currentWindow "/size" 
+                . pair ("width", "height")
 
--- |Set the coordinates of the given window.
-setWindowPos :: WindowHandle -> (Int, Int) -> WD ()
-setWindowPos w = doWinCommand POST w "/position" . pair ("x","y")
+-- |Get the coordinates of the current window.
+getWindowPos :: WD (Int, Int)
+getWindowPos = doWinCommand GET currentWindow "/position" () 
+               >>= parsePair "x" "y" "getWindowPos"
+
+-- |Set the coordinates of the current window.
+setWindowPos :: (Int, Int) -> WD ()
+setWindowPos = doWinCommand POST currentWindow "/position" . pair ("x","y")
 
 -- |Retrieve all cookies visible to the current page.
 cookies :: WD [Cookie]
