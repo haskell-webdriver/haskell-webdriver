@@ -516,7 +516,6 @@ getKey s k = doStorageCommand GET s ("/key/" `T.append` k) ()
 
 setKey :: HTML5StorageType -> Text -> Text -> WD Text
 setKey s k v = doStorageCommand POST s "" . object $ ["key"   .= k,
-                                                      "value" .= v ]
-               
+                                                      "value" .= v ]            
 deleteKey :: HTML5StorageType -> Text -> WD ()
 deleteKey s k = doStorageCommand POST s ("/key/" `T.append` k) ()

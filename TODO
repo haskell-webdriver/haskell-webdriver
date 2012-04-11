@@ -1,7 +1,5 @@
 --fine-tune dependencies. network, transformers, transformers-base, monad-control, attoparsec, aeson(?)
 
---Finish off remaining commands. focusFrame. setPageLoadTimeout. session storage
-
 --add special web-driver specific FF profile setters, either as special
 functions or via documentation
 
@@ -25,6 +23,8 @@ ReaderT to store WDVersion for use with implicit configurations.
 
 -- allow settings to automatically load drivers. add modules with driver loading
 functions
+
+-- allow setting to modify HTTP headers
 
 -- overload WD commands(???)
 
