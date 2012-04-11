@@ -31,7 +31,7 @@ module Test.WebDriver.Commands
        , JSArg(..)
          -- * Windows                                                       
        , WindowHandle(..), currentWindow
-       , getCurrentWindow, closeWindow, windows
+       , getCurrentWindow, closeWindow, windows, maximize
        , getWindowSize, setWindowSize, getWindowPos, setWindowPos
          -- * Cookies
        , Cookie(..), mkCookie
