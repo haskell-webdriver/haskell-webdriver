@@ -1,6 +1,6 @@
 for next release
 
---fine-tune dependencies. network, transformers, transformers-base, monad-control, attoparsec, aeson(?)
+--fine-tune dependencies. attoparsec
 
 --add special web-driver specific FF profile setters, either as special
 functions or via documentation
