@@ -1,5 +1,5 @@
 Name: webdriver
-Version: 0.0.1
+Version: 0.1
 Stability: alpha
 Cabal-Version: >= 1.6
 License: BSD3
@@ -38,7 +38,7 @@ library
                  , aeson == 0.6.*
                  , HTTP >= 4000.1 && < 4000.3
                  , mtl >= 2.0 && < 2.2
-                 , network == 2.3.*
+                 , network == 2.*
                  , bytestring == 0.9.*
                  , text >= 0.7 && < 0.12
                  , time
