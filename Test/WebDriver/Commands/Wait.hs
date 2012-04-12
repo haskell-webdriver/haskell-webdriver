@@ -23,7 +23,7 @@ instance Exception ExpectFailed
 -- |An exception representing a failure of an expected condition.
 data ExpectFailed = ExpectFailed deriving (Show, Eq, Typeable)
 
--- |Raises ExpectFailed.
+-- |throws ExpectFailed. This is nice for writing your own abstractions.
 unexpected :: WD a
 unexpected = throwIO ExpectFailed
 
@@ -44,15 +44,21 @@ expect b
 (<||>) :: Monad m => m Bool -> m Bool -> m Bool
 (<||>) = liftM2 (||)
 
+
+-- |Apply a predicate to every element in a list, and expect that at least one
+-- succeeds.
 expectAny :: (a -> WD Bool) -> [a] -> WD ()
 expectAny p xs = expect . or =<< mapM p xs
 
+-- |Apply a predicate to every element in a list, and expect that all succeed.
 expectAll :: (a -> WD Bool) -> [a] -> WD ()
 expectAll p xs = expect . and =<< mapM p xs
 
 -- |Wait until either the given action succeeds or the timeout is reached.
 -- The action will be retried every .25 seconds until no ExpectFailed or
--- NoSuchElement exceptions occur. The timeout value is expressed in seconds.
+-- NoSuchElement exceptions occur. If the timeout is reached, then a 
+-- 'Test.WebDriver.Timeout' exception will be raised. The timeout value is 
+-- expressed in seconds.
 waitUntil :: Double -> WD a -> WD a
 waitUntil = waitUntil' 250000
 
@@ -70,12 +76,12 @@ waitUntil' = wait' handler
                               
         handleExpectFailed (_ :: ExpectFailed) = retry
 
--- |Like waitWhile, but retries the action until it fails or until the timeout
+-- |Like 'waitUntil', but retries the action until it fails or until the timeout
 -- is exceeded.
 waitWhile :: Double -> WD a -> WD ()
 waitWhile = waitWhile' 250000
 
--- |Like waitWhile', but retries the action until it either fails or 
+-- |Like 'waitUntil\'', but retries the action until it either fails or 
 -- until the timeout is exceeded.
 waitWhile' :: Int -> Double -> WD a -> WD ()
 waitWhile' = wait' handler
