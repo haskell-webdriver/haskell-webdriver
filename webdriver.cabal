@@ -19,6 +19,10 @@ Description:
         For more information about Selenium itself, see
         <http://seleniumhq.org/>
 
+        To find out what's been changed in this version and others,
+        see the changelog at 
+        <https://github.com/kallisti-dev/hs-webdriver/blob/master/CHANGELOG.md>
+
 
 source-repository this
   type: git
