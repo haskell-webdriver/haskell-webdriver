@@ -15,7 +15,7 @@ module Test.WebDriver.Types
        , WindowHandle(..), currentWindow
        , Selector(..)
        , JSArg(..)
-       , FocusSelector(..)
+       , FrameSelector(..)
        , Cookie(..), mkCookie
        , Orientation(..)
        , MouseButton(..)
@@ -92,15 +92,12 @@ newtype Element = Element Text
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
 
--- |Specifies a window or frame to focus on.
-data FocusSelector = -- |focus on a window
-                     OnWindow WindowHandle
-                     -- |focus on a frame by 0-based index
-                   | OnFrameIndex Integer       
+-- |Specifies the frame used by 'Test.WebDriver.Commands.focusFrame'
+data FrameSelector = WithIndex Integer       
                      -- |focus on a frame by name or ID
-                   | OnFrameName Text
+                   | WithName Text
                      -- |focus on a frame Element
-                   | OnFrameElement Element
+                   | WithElement Element
                      -- |focus on the first frame, or the main document
                      -- if iframes are used.
                    | DefaultFrame
@@ -695,9 +692,9 @@ instance ToJSON Selector where
 instance ToJSON JSArg where
   toJSON (JSArg a) = toJSON a
 
-instance ToJSON FocusSelector where
+instance ToJSON FrameSelector where
   toJSON s = case s of
-    OnWindow w -> toJSON w
-    OnFrameIndex i -> toJSON i
-    OnFrameName n -> toJSON n
-    OnFrameElement e -> toJSON e
+    WithIndex i -> toJSON i
+    WithName n -> toJSON n
+    WithElement e -> toJSON e
+    DefaultFrame -> Null

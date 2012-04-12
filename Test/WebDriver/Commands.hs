@@ -24,15 +24,15 @@ module Test.WebDriver.Commands
        , tagName, activeElem, elemInfo
          -- ** Element equality
        , (<==>), (</=>)
-         -- * Focus on windows and frames
-       , focus, FocusSelector(..)
          -- * Javascript            
        , executeJS, asyncJS
        , JSArg(..)
          -- * Windows                                                       
        , WindowHandle(..), currentWindow
-       , getCurrentWindow, closeWindow, windows, maximize
+       , getCurrentWindow, closeWindow, windows, focusWindow,  maximize
        , getWindowSize, setWindowSize, getWindowPos, setWindowPos
+         -- * Focusing on frames
+       , focusFrame, FrameSelector(..)
          -- * Cookies
        , Cookie(..), mkCookie
        , cookies, setCookie, deleteCookie, deleteVisibleCookies
@@ -214,10 +214,9 @@ activateIME = doSessCommand POST "/ime/activate" . single "engine"
 deactivateIME :: WD ()
 deactivateIME = doSessCommand POST "/ime/deactivate" ()
 
--- |Switch focus to the window or frame specified by the FocusSelector.
-focus :: FocusSelector -> WD ()
-focus (OnWindow w) = doSessCommand POST "/window" . single "name" $ w
-focus s            = doSessCommand POST "/frame" . single "id" $ s 
+-- |Switch focus to the frame specified by the FrameSelector.
+focusFrame :: FrameSelector -> WD ()
+focusFrame s = doSessCommand POST "/frame" . single "id" $ s 
 
 -- |Returns a handle to the currently focused window
 getCurrentWindow :: WD WindowHandle
@@ -226,6 +225,9 @@ getCurrentWindow = doSessCommand GET "/window_handle" ()
 -- |Returns a list of all windows available to the session
 windows :: WD [WindowHandle]
 windows = doSessCommand GET "/window_handles" ()
+
+focusWindow :: WindowHandle -> WD ()
+focusWindow w = doSessCommand POST "/window" . single "name" $ w
 
 -- |Closes the given window
 closeWindow :: WindowHandle -> WD ()
