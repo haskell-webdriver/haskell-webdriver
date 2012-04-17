@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
     TemplateHaskell, OverloadedStrings, ExistentialQuantification, 
-    MultiParamTypeClasses, TypeFamilies, NoMonoLocalBinds #-}
+    MultiParamTypeClasses, TypeFamilies, NoMonoLocalBinds 
+  #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Test.WebDriver.Types 
        ( -- * WebDriver sessions
@@ -9,7 +10,10 @@ module Test.WebDriver.Types
        , Capabilities(..), defaultCaps, allCaps
        , Platform(..), ProxyType(..)
          -- ** Browser-specific configuration
-       , Browser(..), firefox, chrome, ie, opera, iPhone, iPad, android
+       , Browser(..), 
+         -- ** Default settings for browsers
+         firefox, chrome, ie, opera, iPhone, iPad, android
+       , FFLogPref
          -- * WebDriver objects and command-specific types
        , Element(..)
        , WindowHandle(..), currentWindow
@@ -112,11 +116,14 @@ data WDSession = WDSession {
                              wdHost   :: String
                              -- |Port number of the server
                            , wdPort   :: Word16
-                             -- |An opaque reference identifying the session.
+                             -- |An opaque reference identifying the session to
+                             -- use with 'WD' commands.
                              -- A value of Nothing indicates that a session 
-                             -- hasn't been created yet. To create new sessions,
-                             -- use the 'Test.WebDriver.Commands.createSession' 
-                             -- and 'Test.WebDriver.runSession' functions.
+                             -- hasn't been created yet.
+                             -- Sessions can be created within 'WD' via the
+                             -- 'Test.WebDriver.createSession', or created
+                             -- and closed automatically with 
+                             -- 'Test.WebDriver.runSession'
                            , wdSessId :: Maybe SessionId 
                            } deriving (Eq, Show)
 
@@ -139,7 +146,7 @@ serves dual roles.
 it's created. In this usage, fields that are set to Nothing indicate
 that we have no preference for that capability.
 
-* When returned by 'Test.WebDriver.Commands.getCaps', it's used to
+* When received from the server , it's used to
 describe the actual capabilities given to us by the WebDriver
 server. Here a value of Nothing indicates that the server doesn't
 support the capability. Thus, for Maybe Bool fields, both Nothing and
@@ -189,8 +196,8 @@ instance Default Capabilities where
                      }
 
 -- |Default capabilities. This is the same as the 'Default' instance, but with 
--- a more specific type. By default we use Firefox of an unspecified version 
--- with default settings on whatever platform is available. 
+-- less polymorphism. By default, we use 'firefox' of an unspecified 'version' 
+-- with default system-wide proxy settings on whatever 'platform' is available.
 -- All Maybe Bool capabilities are set to Nothing (no preference).
 defaultCaps :: Capabilities
 defaultCaps = def
@@ -214,7 +221,7 @@ allCaps = defaultCaps { javascriptEnabled = Just True
       
 
 -- |Browser setting and browser-specific capabilities.
-data Browser = Firefox { -- |The firefox profile to use. If Nothing, a
+data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                          -- a default temporary profile is automatically created
                          -- and used.
                          ffProfile :: Maybe PreparedFirefoxProfile
@@ -224,7 +231,10 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing, a
                          -- system-based default.
                        , ffBinary :: Maybe FilePath
                        }
-             | Chrome { chromeDriverVersion :: Maybe String 
+             | Chrome { -- |Version of the Chrome Webdriver server server to use.
+                        -- for more information on chromedriver see
+                        -- <http://code.google.com/p/selenium/wiki/ChromeDriver>
+                        chromeDriverVersion :: Maybe String 
                         -- |Path to Chrome binary. If Nothing, use a sensible
                         -- system-based default.
                       , chromeBinary :: Maybe FilePath
@@ -237,7 +247,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing, a
              | IE { ignoreProtectedModeSettings :: Bool
                   --, useLegacyInternalServer     :: Bool
                   }
-             | Opera -- ^ Opera-specific configuration coming soon!
+             | Opera -- ^ (Opera-specific configuration coming soon!)
              | HTMLUnit
              | IPhone 
              | IPad
@@ -296,7 +306,7 @@ data ProxyType = NoProxy
                deriving (Eq, Show)
 
 
--- |For Firefox sessions; indicates Firefox's log level
+-- |For 'Firefox' sessions; indicates Firefox's log level
 data FFLogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig 
              | LogFine | LogFiner | LogFinest | LogAll
              deriving (Eq, Show, Ord, Bounded, Enum)
@@ -339,8 +349,8 @@ newtype ServerError = ServerError String
                       deriving (Eq, Show, Typeable)
 
 instance Exception FailedCommand
--- |This exception encapsulates many different kinds of exceptions that can
--- occur when a command fails. 
+-- |This exception encapsulates a broad variety of exceptions that can
+-- occur when a command fails.
 data FailedCommand = FailedCommand FailedCommandType FailedCommandInfo
                    deriving (Eq, Show, Typeable)
 
@@ -373,10 +383,19 @@ data FailedCommandType = NoSuchElement
                        deriving (Eq, Ord, Enum, Bounded, Show)
 
 -- |Detailed information about the failed command provided by the server.
-data FailedCommandInfo = FailedCommandInfo { errMsg    :: String
+data FailedCommandInfo = FailedCommandInfo { -- |The error message.
+                                             errMsg    :: String
+                                             -- |The session ID associated with 
+                                             -- the exception, if any.
                                            , errSessId :: Maybe SessionId 
+                                             -- |A screen shot of the focused window
+                                             -- when the exception occured,
+                                             -- if provided.
                                            , errScreen :: Maybe ByteString
+                                             -- |The "class" in which the exception
+                                             -- was raised, if provided.
                                            , errClass  :: Maybe String
+                                             -- |A stack trace of the exception.
                                            , errStack  :: [StackFrame]
                                            }
                        deriving (Eq)
@@ -408,13 +427,22 @@ data StackFrame = StackFrame { sfFileName   :: String
                              }
                 deriving (Show, Eq)
 
--- |Cookies are delicious delicacies.
+-- |Cookies are delicious delicacies. When sending cookies to the server, a value
+-- of Nothing indicates that the server should use a default value. When receiving
+-- cookies from the server, a value of Nothing indicates that the server is unable
+-- to specify the value.
 data Cookie = Cookie { cookName   :: Text
-                     , cookValue  :: Text
-                     , cookPath   :: Maybe Text
-                     , cookDomain :: Maybe Text
-                     , cookSecure :: Maybe Bool
-                     , cookExpiry :: Maybe Integer
+                     , cookValue  :: Text          -- ^ 
+                     , cookPath   :: Maybe Text    -- ^path of this cookie.
+                                                   -- if Nothing, defaults to /
+                     , cookDomain :: Maybe Text    -- ^domain of this cookie.
+                                                   -- if Nothing, the current pages
+                                                   -- domain is used
+                     , cookSecure :: Maybe Bool    -- ^Is this cookie secure?
+                     , cookExpiry :: Maybe Integer -- ^Expiry date expressed as
+                                                   -- seconds since the Unix epoch
+                                                   -- Nothing indicates that the 
+                                                   -- cookie never expires
                      } deriving (Eq, Show)              
 
 -- |Creates a Cookie with only a name and value specified. All other
@@ -429,7 +457,7 @@ mkCookie name value = Cookie { cookName = name, cookValue = value,
 data Selector = ById Text  
               | ByName Text
               | ByClass Text -- ^ (Note: multiple classes are not  
-                             -- allowed. For more control, use ByCSS)
+                             -- allowed. For more control, use 'ByCSS')
               | ByTag Text            
               | ByLinkText Text       
               | ByPartialLinkText Text
@@ -450,7 +478,7 @@ data MouseButton = LeftButton | MiddleButton | RightButton
                  deriving (Eq, Show, Ord, Bounded, Enum)
 
 
--- |A type to specify HTML 5 storage type
+-- |An HTML 5 storage type
 data HTML5StorageType = LocalStorage | SessionStorage 
                       deriving (Eq, Show, Ord, Bounded, Enum)
 

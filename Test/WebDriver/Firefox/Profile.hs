@@ -65,7 +65,13 @@ data FirefoxProfile = FirefoxProfile
                       }
                     deriving (Eq, Show)
 
--- |A Firefox preference. This is the subset of JSON values that excludes
+
+-- |Represents a Firefox profile that has been prepared for 
+-- network transmission. The profile cannot be modified in this form.
+newtype PreparedFirefoxProfile = PreparedFirefoxProfile ByteString
+  deriving (Eq, Show, ToJSON, FromJSON)
+
+-- |A Firefox preference value. This is the subset of JSON values that excludes
 -- arrays and objects.
 data FirefoxPref = PrefInteger !Integer
                  | PrefDouble  !Double
@@ -80,11 +86,6 @@ instance ToJSON FirefoxPref where
     PrefString s  -> toJSON s
     PrefBool  b   -> toJSON b
 
-
--- |Represents a Firefox profile that has been prepared for 
--- network transmission. The profile cannot be modified in this form.
-newtype PreparedFirefoxProfile = PreparedFirefoxProfile ByteString
-  deriving (Eq, Show, ToJSON, FromJSON)
 
 
 instance Exception ProfileParseError
@@ -191,7 +192,6 @@ loadProfile path = liftIO $ do
                    $ parseOnly prefsParser s
 
 -- |Prepare a FirefoxProfile for network transmission.
---
 -- Internally, this function constructs a Firefox profile within a temp 
 -- directory, archives it as a zip file, and then base64 encodes the zipped 
 -- data. The temporary directory is deleted afterwards
@@ -228,7 +228,7 @@ prepareProfile FirefoxProfile {profileDir = d, profileExts = s,
 
 -- |Apply a function on an automatically generated default profile, and
 -- prepare the result. The FirefoxProfile passed to the handler function is
--- the same one used by sessions when no Firefox profile is specified
+-- the default profile used by sessions when Nothing is specified
 prepareTempProfile :: MonadIO m => 
                      (FirefoxProfile -> FirefoxProfile) 
                      -> m PreparedFirefoxProfile

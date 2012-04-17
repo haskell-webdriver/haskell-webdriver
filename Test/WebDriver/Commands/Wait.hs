@@ -20,10 +20,10 @@ import Data.Typeable
 import Prelude hiding (catch)
 
 instance Exception ExpectFailed
--- |An exception representing a failure of an expected condition.
+-- |An exception representing the failure of an expected condition.
 data ExpectFailed = ExpectFailed deriving (Show, Eq, Typeable)
 
--- |throws ExpectFailed. This is nice for writing your own abstractions.
+-- |throws 'ExpectFailed'. This is nice for writing your own abstractions.
 unexpected :: WD a
 unexpected = throwIO ExpectFailed
 

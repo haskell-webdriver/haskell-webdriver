@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
--- |A collection of convenience functions for using and parsing JSON valus
+-- |A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous 
 -- 'BadJSON' exceptions.
 module Test.WebDriver.JSON 
