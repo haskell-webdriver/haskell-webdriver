@@ -9,7 +9,7 @@ Homepage: https://github.com/kallisti-dev/hs-webdriver
 Category: Web, Browser, Testing
 Synopsis: a Haskell client for the Selenium WebDriver protocol
 Build-type: Simple
-Extra-source-files: README.md, TODO, CHANGELOG.md
+Extra-source-files: README.md, TODO, CHANGELOG.md, .ghci
 Description:
         A Selenium WebDriver client for Haskell. 
         You can use it to automate browser sessions 
