@@ -5,8 +5,6 @@ functions or via documentation
 
 -- add opera config
 
--- rewrite show instances for errors to improve error output
-
 -- improve documentation. Document errors better. Provide more
 module introductions
   -- provide examples
