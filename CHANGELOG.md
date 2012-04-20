@@ -1,5 +1,10 @@
 #Change Log
 
+## hs-webdriver 0.2.1
+
+###Bug fixes
+*Properly export FFLogPref from Test.WebDriver and Test.WebDriver.Types
+
 ## hs-webdriver 0.2
 
 ### API changes

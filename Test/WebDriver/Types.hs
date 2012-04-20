@@ -13,7 +13,7 @@ module Test.WebDriver.Types
        , Browser(..), 
          -- ** Default settings for browsers
          firefox, chrome, ie, opera, iPhone, iPad, android
-       , FFLogPref
+       , FFLogPref(..)
          -- * WebDriver objects and command-specific types
        , Element(..)
        , WindowHandle(..), currentWindow
