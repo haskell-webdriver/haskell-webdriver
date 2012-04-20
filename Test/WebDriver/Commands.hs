@@ -42,17 +42,22 @@ module Test.WebDriver.Commands
        , moveTo, moveToCenter, moveToFrom
        , clickWith, MouseButton(..)
        , mouseDown, mouseUp, withMouseDown, doubleClick
-         -- * Touch gestures
-       , touchClick, touchDown, touchUp, touchMove
-       , touchScroll, touchScrollFrom, touchDoubleClick
-       , touchLongClick, touchFlick, touchFlickFrom
          -- * Screen orientation
        , Orientation(..)
        , getOrientation, setOrientation
          -- * Geo-location
        , getLocation, setLocation
-         -- * HTML 5 web storage
+         -- * HTML 5 Web Storage
        , storageSize, getAllKeys, deleteAllKeys, getKey, setKey, deleteKey
+         -- * Uploading files to remote server
+         -- |These functions allow you to upload a file to a remote server. 
+         -- Note that this operation isn't supported by all WebDriver servers,
+         -- and the location where the file is stored is not standardized.
+       , uploadFile, uploadRawFile, uploadZipEntry
+         -- * Touch gestures
+       , touchClick, touchDown, touchUp, touchMove
+       , touchScroll, touchScrollFrom, touchDoubleClick
+       , touchLongClick, touchFlick, touchFlickFrom
          -- * IME support              
        , availableIMEEngines, activeIMEEngine, checkIMEActive
        , activateIME, deactivateIME
@@ -67,9 +72,11 @@ import Test.WebDriver.JSON
 import Data.Aeson
 import qualified Data.Text as T
 import Data.Text (Text, splitOn, append)
-import Data.ByteString (ByteString)
+import Data.ByteString as SBS (ByteString, concat)
 import Data.ByteString.Base64 as B64
+import Data.ByteString.Lazy as LBS (ByteString, toChunks)
 import Network.URI
+import Codec.Archive.Zip
 
 import Control.Applicative
 import Control.Monad.State.Strict
@@ -122,7 +129,7 @@ setImplicitWait ms =
         allFields = ["type" .= ("implicit" :: String)] ++ msField
 
 -- |Sets the amount of time we wait for an asynchronous script to return a 
--- result
+-- result.
 setScriptTimeout :: Integer -> WD () 
 setScriptTimeout ms =
   doSessCommand POST "/timeouts/async_script" (object msField)
@@ -131,6 +138,7 @@ setScriptTimeout ms =
   where msField   = ["ms" .= ms]
         allFields = ["type" .= ("script" :: String)] ++ msField
 
+-- |Sets the amount of time to wait for a page to finish loading before throwing a 'Timeout' exception
 setPageLoadTimeout :: Integer -> WD ()
 setPageLoadTimeout ms = doSessCommand POST "/timeouts" params
   where params = object ["type" .= ("page load" :: String)
@@ -195,7 +203,7 @@ asyncJS a s = handle timeout $ fromJSON' =<< getResult
     timeout err = throwIO err
         
 -- |Grab a screenshot of the current page as a PNG image
-screenshot :: WD ByteString
+screenshot :: WD SBS.ByteString
 screenshot = B64.decodeLenient <$> doSessCommand GET "/screenshot" () 
 
 
@@ -509,20 +517,49 @@ setLocation = doSessCommand POST "/location" . triple ("latitude",
                                                        "longitude",
                                                        "altitude")
 
-storageSize :: HTML5StorageType -> WD Integer
+-- |Uploads a file from the local filesystem by its file path.
+uploadFile :: FilePath -> WD ()
+uploadFile path = uploadZipEntry =<< liftIO (readEntry [] path)
+  
+-- |Uploads a raw bytestring with associated file info.
+uploadRawFile :: FilePath          -- ^File path to use with this bytestring.
+                 -> Integer        -- ^Modification time 
+                                   -- (in seconds since Unix epoch).
+                 -> LBS.ByteString -- ^ The file contents as a lazy ByteString
+                 -> WD ()
+uploadRawFile path t str = uploadZipEntry (toEntry path t str)
+
+
+-- |Lowest level interface to the file uploading mechanism.
+-- This allows you to specify the exact details of
+-- the zip entry sent across network.
+uploadZipEntry :: Entry -> WD ()
+uploadZipEntry = doSessCommand POST "/file" . single "file" 
+                 . B64.encode . SBS.concat . toChunks 
+                 . fromArchive . (`addEntryToArchive` emptyArchive)
+
+-- |Get the current number of keys in a web storage area.
+storageSize :: WebStorageType -> WD Integer
 storageSize s = doStorageCommand GET s "/size" ()
 
-getAllKeys :: HTML5StorageType -> WD [Text]
+-- |Get a list of all keys from a web storage area.
+getAllKeys :: WebStorageType -> WD [Text]
 getAllKeys s = doStorageCommand GET s "" ()
 
-deleteAllKeys :: HTML5StorageType -> WD ()
+-- |Delete all keys within a given web storage area.
+deleteAllKeys :: WebStorageType -> WD ()
 deleteAllKeys s = doStorageCommand DELETE s "" ()
 
-getKey :: HTML5StorageType -> Text ->  WD Text
+-- |Get the value associated with a key in the given web storage area.
+-- Unset keys result in empty strings, since the Web Storage spec
+-- makes no distinction between the empty string and an undefined value.
+getKey :: WebStorageType -> Text ->  WD Text
 getKey s k = doStorageCommand GET s ("/key/" `T.append` k) ()
 
-setKey :: HTML5StorageType -> Text -> Text -> WD Text
+-- |Set a key in the given web storage area.
+setKey :: WebStorageType -> Text -> Text -> WD Text
 setKey s k v = doStorageCommand POST s "" . object $ ["key"   .= k,
-                                                      "value" .= v ]            
-deleteKey :: HTML5StorageType -> Text -> WD ()
+                                                      "value" .= v ]
+-- |Delete a key in the given web storage area. 
+deleteKey :: WebStorageType -> Text -> WD ()
 deleteKey s k = doStorageCommand POST s ("/key/" `T.append` k) ()

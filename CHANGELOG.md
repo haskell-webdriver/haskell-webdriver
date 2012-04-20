@@ -1,5 +1,14 @@
 #Change Log
 
+## hs-webdriver 0.2
+
+### API changes
+* HTML5StorageType changed to the more accurate WebStorageType
+
+### new features
+* general documentation improvements
+* the uploadFile, uploadRawFile, and uploadZipEntry functions, which support uploading file contents to the remote server
+
 ## hs-webdriver 0.1
 
 ### API changes

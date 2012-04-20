@@ -23,7 +23,7 @@ module Test.WebDriver.Types
        , Cookie(..), mkCookie
        , Orientation(..)
        , MouseButton(..)
-       , HTML5StorageType(..)
+       , WebStorageType(..)
          -- * Exceptions
        , InvalidURL(..), NoSessionId(..), BadJSON(..)
        , HTTPStatusUnknown(..), HTTPConnError(..)
@@ -59,7 +59,7 @@ import qualified Data.Char as C
 
 
 {- |A monadic interface to the WebDriver server. This monad is a simple, strict 
-wrapper over 'IO', threading session information between sequential commands
+layer over 'IO', threading session information between sequential commands
 -}
 newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Monad, MonadState WDSession, MonadIO
@@ -479,8 +479,8 @@ data MouseButton = LeftButton | MiddleButton | RightButton
 
 
 -- |An HTML 5 storage type
-data HTML5StorageType = LocalStorage | SessionStorage 
-                      deriving (Eq, Show, Ord, Bounded, Enum)
+data WebStorageType = LocalStorage | SessionStorage 
+                    deriving (Eq, Show, Ord, Bounded, Enum)
 
 instance Show FailedCommandInfo where --todo: pretty print
   show i =   showString "{errMsg = "     . shows (errMsg i) 
