@@ -495,9 +495,9 @@ instance Show FailedCommandInfo where --todo: pretty print
     where
       sessId = case errSessId i of
         Just (SessionId sid) -> unpack sid
-        Nothing -> "<none>"
+        Nothing -> "<no session id>"
         
-      className = fromMaybe "<none>" . errClass $ i
+      className = fromMaybe "<unknown exception>" . errClass $ i
 
 instance Show StackFrame where
   show f = showString (sfClassName f) . showChar '.' 
