@@ -427,7 +427,7 @@ data StackFrame = StackFrame { sfFileName   :: String
                              , sfMethodName :: String
                              , sfLineNumber :: Word
                              }
-                deriving (Show, Eq)
+                deriving (Eq)
 
 -- |Cookies are delicious delicacies. When sending cookies to the server, a value
 -- of Nothing indicates that the server should use a default value. When receiving
@@ -490,8 +490,7 @@ instance Show FailedCommandInfo where --todo: pretty print
            . showChar '\n'
            . showString className . showString ": " . showString (errMsg i)
            . showChar '\n'
-           . foldl (\f s-> f . showString "  " . shows s . showChar '\n') 
-             id (errStack i)
+           . foldl (\f s-> f . showString "  " . shows s) id (errStack i)
            $ ""
     where
       sessId = case errSessId i of
@@ -500,8 +499,12 @@ instance Show FailedCommandInfo where --todo: pretty print
         
       className = fromMaybe "<none>" . errClass $ i
 
---instance Show StackFrame where
---  show f = 
+instance Show StackFrame where
+  show f = showString (sfClassName f) . showChar '.' 
+           . showString (sfMethodName f) . showChar ' '
+           . showParen True ( showString (sfFileName f) . showChar ':'
+                              . shows (sfLineNumber f))
+           $ "\n"
 
 instance FromJSON Element where
   parseJSON (Object o) = Element <$> o .: "ELEMENT"
