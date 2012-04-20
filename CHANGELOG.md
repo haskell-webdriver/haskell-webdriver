@@ -3,6 +3,8 @@
 ## hs-webdriver 0.2
 
 ### API changes
+* FailedCommandInfo changed so that it stores a WDSession rather than just a Maybe SessionId, thus providing server host and port information as well as the session ID.
+* As a result, mkFailedcommandInfo is now String -> WD FailedCommandInfo, since it requires access to the WDSession state.
 * HTML5StorageType changed to the more accurate WebStorageType
 
 ### new features

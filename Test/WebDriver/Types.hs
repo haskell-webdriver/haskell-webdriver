@@ -387,9 +387,9 @@ data FailedCommandType = NoSuchElement
 -- |Detailed information about the failed command provided by the server.
 data FailedCommandInfo = FailedCommandInfo { -- |The error message.
                                              errMsg    :: String
-                                             -- |The session ID associated with 
-                                             -- the exception, if any.
-                                           , errSessId :: Maybe SessionId 
+                                             -- |The session associated with 
+                                             -- the exception.
+                                           , errSess :: WDSession 
                                              -- |A screen shot of the focused window
                                              -- when the exception occured,
                                              -- if provided.
@@ -404,21 +404,16 @@ data FailedCommandInfo = FailedCommandInfo { -- |The error message.
 
 
 -- |Constructs a FailedCommandInfo from only an error message.
-mkFailedCommandInfo :: String -> FailedCommandInfo
-mkFailedCommandInfo m = FailedCommandInfo {errMsg = m
-                                          , errSessId = Nothing
-                                          , errScreen = Nothing
-                                          , errClass  = Nothing
-                                          , errStack  = []
-                                          }
+mkFailedCommandInfo :: String -> WD FailedCommandInfo
+mkFailedCommandInfo m = do
+  sess <- get
+  return $ FailedCommandInfo {errMsg = m , errSess = sess , errScreen = Nothing
+                             , errClass  = Nothing , errStack  = [] }
 
 -- |Convenience function to throw a 'FailedCommand' locally with no server-side 
 -- info present.
 failedCommand :: FailedCommandType -> String -> WD a
-failedCommand t m = throwIO . FailedCommand t =<< getCmdInfo
-  where getCmdInfo = do
-          sessId <- wdSessId <$> get
-          return $ (mkFailedCommandInfo m) { errSessId = sessId }
+failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m
 
 -- |An individual stack frame from the stack trace provided by the server 
 -- during a FailedCommand.
@@ -486,18 +481,22 @@ data WebStorageType = LocalStorage | SessionStorage
 
 instance Show FailedCommandInfo where --todo: pretty print
   show i = showChar '\n' 
-           . showString "Session: " . showString sessId 
+           . showString "Session: " . sess 
            . showChar '\n'
            . showString className . showString ": " . showString (errMsg i)
            . showChar '\n'
            . foldl (\f s-> f . showString "  " . shows s) id (errStack i)
            $ ""
     where
-      sessId = case errSessId i of
-        Just (SessionId sid) -> unpack sid
-        Nothing -> "<no session id>"
-        
       className = fromMaybe "<unknown exception>" . errClass $ i
+      
+      sess = showString sessId . showString " at " 
+             . showString host . showChar ':' . shows port
+        where
+          WDSession {wdHost = host, wdPort = port, wdSessId = msid } = errSess i
+          sessId = case msid of
+            Just (SessionId sid) -> unpack sid
+            Nothing -> "<no session id>"
 
 instance Show StackFrame where
   show f = showString (sfClassName f) . showChar '.' 
@@ -584,7 +583,7 @@ instance FromJSON Capabilities where
 instance FromJSON FailedCommandInfo where
   parseJSON (Object o) = 
     FailedCommandInfo <$> (req "message" >>= maybe (return "") return)
-                      <*> pure Nothing
+                      <*> pure undefined
                       <*> opt "screen"     Nothing
                       <*> opt "class"      Nothing
                       <*> opt "stackTrace" []

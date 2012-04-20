@@ -104,7 +104,7 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- get
   errInfo <- fromJSON' val
   let screen = B64.decodeLenient <$> errScreen errInfo 
-      errInfo' = errInfo { errSessId = wdSessId sess 
+      errInfo' = errInfo { errSess = sess 
                          , errScreen = screen } 
       e errType = throwIO $ FailedCommand errType errInfo'
   case status of
