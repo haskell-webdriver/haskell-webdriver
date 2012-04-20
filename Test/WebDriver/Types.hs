@@ -42,7 +42,7 @@ import Data.Aeson.Types
 import Network.Stream (ConnError)
 
 
-import Data.Text as Text (toLower, toUpper)
+import Data.Text as Text (toLower, toUpper, unpack)
 import Data.Text (Text)
 import Data.ByteString (ByteString)
 
@@ -52,8 +52,10 @@ import Control.Applicative
 import Control.Monad.State.Strict
 import Control.Monad.Base
 import Control.Monad.Trans.Control
+import Data.Maybe
 import Data.Word
 import Data.String
+import Text.Show
 import Data.Default
 import qualified Data.Char as C
 
@@ -483,16 +485,23 @@ data WebStorageType = LocalStorage | SessionStorage
                     deriving (Eq, Show, Ord, Bounded, Enum)
 
 instance Show FailedCommandInfo where --todo: pretty print
-  show i =   showString "{errMsg = "     . shows (errMsg i) 
-           . showString ", errSessId = " . shows (errSessId i)
-           . showString ", errScreen = " . screen
-           . showString ", errClass = "  . shows (errClass i)
-           . showString ", errStack = "  . shows (errStack i) 
-           $ "}"
-    where screen = showString $ case errScreen i of 
-                                  Just _  -> "Just \"...\""
-                                  Nothing -> "Nothing"
-            
+  show i = showChar '\n' 
+           . showString "Session: " . showString sessId 
+           . showChar '\n'
+           . showString className . showString ": " . showString (errMsg i)
+           . showChar '\n'
+           . foldl (\f s-> f . showString "  " . shows s . showChar '\n') 
+             id (errStack i)
+           $ ""
+    where
+      sessId = case errSessId i of
+        Just (SessionId sid) -> unpack sid
+        Nothing -> "<none>"
+        
+      className = fromMaybe "<none>" . errClass $ i
+
+--instance Show StackFrame where
+--  show f = 
 
 instance FromJSON Element where
   parseJSON (Object o) = Element <$> o .: "ELEMENT"
