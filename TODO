@@ -1,7 +1,5 @@
 for next minor releases
 
---fine-tune dependencies. attoparsec
-
 --add special web-driver specific FF profile setters, either as special
 functions or via documentation
 
