@@ -22,7 +22,6 @@ Description:
         see the change log at 
         <https://github.com/kallisti-dev/hs-webdriver/blob/master/CHANGELOG.md>
 
-
 source-repository head
   type: git
   location: git://github.com/kallisti-dev/hs-webdriver.git  

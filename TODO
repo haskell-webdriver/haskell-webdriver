@@ -1,4 +1,4 @@
-for next release
+for next minor releases
 
 --fine-tune dependencies. attoparsec
 
@@ -20,14 +20,20 @@ module introductions
 
 for 1.0
 
--- change WDSession to WDSettings, use WDState as internal State type. Use
-ReaderT to store WDVersion for use with implicit configurations.
-
+-- overload WD commands in typeclass
+-- add WDSettings, use WDSession as internal State type. 
 -- allow settings to automatically load drivers. add modules with driver loading
 functions
-
 -- allow setting to modify HTTP headers
 
--- overload WD commands(???)
+
+for 1.1
+
+
+
+miscellaneous unsorted
 
 -- use http-conduit and attoparsec-conduit to stream JSON data. use request methods from http-types
+
+--Use ReaderT to store WDVersion for use with implicit configurations.
+
