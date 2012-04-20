@@ -14,7 +14,7 @@ hs-webdriver is hosted on Hackage under the name webdriver. Thus, the simplest w
 ```sh
 cabal install webdriver
 ```
-There are also options to do system-wide installation, version selection, and other build options. See Cabal documentation.
+There are also options to do system-wide installation, version selection, and other build options; see cabal-install documentation.
 
 ## Installation from this repository
 
