@@ -1,21 +1,20 @@
 for next minor releases
 
---add special web-driver specific FF profile setters, either as special
+-- add special web-driver specific FF profile setters, either as special
 functions or via documentation
 
---add opera config
+-- add opera config
 
 -- rewrite show instances for errors to improve error output
 
---improve documentation. Document errors better. Provide more
+-- improve documentation. Document errors better. Provide more
 module introductions
-
---provide examples
-  --basic runSession usage
-  --intermediate usage
-  --explicit waits usage
-  --firefox profile usage
-  --REPL usage
+  -- provide examples
+    -- basic runSession usage
+    -- intermediate usage
+    -- explicit waits usage
+    -- firefox profile usage
+    -- REPL usage
 
 
 for 1.0
@@ -35,5 +34,5 @@ miscellaneous unsorted
 
 -- use http-conduit and attoparsec-conduit to stream JSON data. use request methods from http-types
 
---Use ReaderT to store WDVersion for use with implicit configurations.
+-- use ReaderT to store WDVersion for use with implicit configurations.
 
