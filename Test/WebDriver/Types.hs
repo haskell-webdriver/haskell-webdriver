@@ -122,7 +122,7 @@ data WDSession = WDSession {
                              -- use with 'WD' commands.
                              -- A value of Nothing indicates that a session 
                              -- hasn't been created yet.
-                             -- Sessions can be created within 'WD' via the
+                             -- Sessions can be created within 'WD' via
                              -- 'Test.WebDriver.createSession', or created
                              -- and closed automatically with 
                              -- 'Test.WebDriver.runSession'
