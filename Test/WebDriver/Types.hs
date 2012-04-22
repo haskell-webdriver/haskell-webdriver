@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
     TemplateHaskell, OverloadedStrings, ExistentialQuantification, 
-    MultiParamTypeClasses, TypeFamilies, NoMonoLocalBinds 
+    MultiParamTypeClasses, TypeFamilies, 
+    RecordWildCards
   #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Test.WebDriver.Types 
@@ -13,7 +14,7 @@ module Test.WebDriver.Types
        , Browser(..), 
          -- ** Default settings for browsers
          firefox, chrome, ie, opera, iPhone, iPad, android
-       , FFLogPref(..)
+       , LogPref(..)
          -- * WebDriver objects and command-specific types
        , Element(..)
        , WindowHandle(..), currentWindow
@@ -41,17 +42,17 @@ import Data.Aeson.TH
 import Data.Aeson.Types
 import Network.Stream (ConnError)
 
-
 import Data.Text as Text (toLower, toUpper, unpack)
 import Data.Text (Text)
 import Data.ByteString (ByteString)
 
 import Control.Exception.Lifted
-import Data.Typeable
 import Control.Applicative
 import Control.Monad.State.Strict
 import Control.Monad.Base
 import Control.Monad.Trans.Control
+import Data.Typeable
+import Data.List
 import Data.Maybe
 import Data.Word
 import Data.String
@@ -228,17 +229,17 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                          -- and used.
                          ffProfile :: Maybe PreparedFirefoxProfile
                          -- |Firefox logging preference
-                       , ffLogPref :: Maybe FFLogPref
-                         -- |Path to Firefox binary. If Nothing, use a sensible
-                         -- system-based default.
+                       , ffLogPref :: LogPref
+                         -- |Server-side path to Firefox binary. If Nothing, 
+                         -- use a sensible system-based default.
                        , ffBinary :: Maybe FilePath
                        }
              | Chrome { -- |Version of the Chrome Webdriver server server to use.
                         -- for more information on chromedriver see
                         -- <http://code.google.com/p/selenium/wiki/ChromeDriver>
                         chromeDriverVersion :: Maybe String 
-                        -- |Path to Chrome binary. If Nothing, use a sensible
-                        -- system-based default.
+                        -- |Server-side path to Chrome binary. If Nothing, 
+                        -- use a sensible system-based default.
                       , chromeBinary :: Maybe FilePath
                         -- |A list of command-line options to pass to the 
                         -- Chrome binary.
@@ -246,19 +247,42 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                         -- |A list of extensions to use.
                       , chromeExtensions :: [ChromeExtension]
                       } 
-             | IE { ignoreProtectedModeSettings :: Bool
+             | IE { -- |Whether to skip the protected mode check. If set, tests 
+                    -- may become flaky, unresponsive, or browsers may hang. If 
+                    -- not set, and protected mode settings are not the same for
+                    -- all zones, an exception will be thrown on driver 
+                    -- construction. 
+                    ignoreProtectedModeSettings :: Bool
                   --, useLegacyInternalServer     :: Bool
                   }
-             | Opera -- ^ (Opera-specific configuration coming soon!)
+             | Opera { -- |Server-side path to the Opera binary
+                       operaBinary    :: Maybe FilePath
+                     , operaNoRestart :: Maybe Bool 
+                     , operaProduct   :: Maybe String
+                     , operaNoQuit    :: Bool
+                     , operaAutoStart :: Bool
+                     , operaDisplay   :: Maybe Int
+                     , operaIdle      :: Bool
+                     , operaProfile   :: Maybe String --PreparedOperaProfile
+                     , operaLauncher  :: Maybe String
+                     , operaPort      :: Maybe Word16
+                     , operaHost      :: Maybe String
+                     , operaOptions   :: [String]
+                     , operaLogFile   :: Maybe FilePath
+                     , operaLogPref   :: LogPref
+                     }
+             -- | Safari
              | HTMLUnit
              | IPhone 
              | IPad
              | Android
              deriving (Eq, Show)
+instance Default Browser where
+  def = firefox
 
 -- |Default Firefox settings. All fields are set to Nothing.
 firefox :: Browser
-firefox = Firefox Nothing Nothing Nothing
+firefox = Firefox Nothing def Nothing
 
 -- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
 -- specified, and no extensions are used.
@@ -270,7 +294,21 @@ ie :: Browser
 ie = IE True
 
 opera :: Browser
-opera = Opera
+opera = Opera { operaBinary = Nothing
+              , operaNoRestart = Nothing
+              , operaProduct = Nothing
+              , operaNoQuit = False
+              , operaAutoStart = True
+              , operaDisplay = Nothing
+              , operaIdle = False
+              , operaProfile = Nothing
+              , operaLauncher = Nothing
+              , operaHost = Nothing
+              , operaPort = Nothing
+              , operaOptions = []
+              , operaLogFile = Nothing
+              , operaLogPref = def
+              }
 
 --safari :: Browser
 --safari = Safari
@@ -286,7 +324,6 @@ iPad = IPad
 
 android :: Browser
 android = Android
-
 
 -- |Represents platform options supported by WebDriver. The value Any represents
 -- no preference.
@@ -307,11 +344,14 @@ data ProxyType = NoProxy
                         }
                deriving (Eq, Show)
 
-
 -- |For 'Firefox' sessions; indicates Firefox's log level
-data FFLogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig 
+data LogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig 
              | LogFine | LogFiner | LogFinest | LogAll
              deriving (Eq, Show, Ord, Bounded, Enum)
+
+instance Default LogPref where
+  def = LogInfo
+
 
 
 instance Exception InvalidURL
@@ -385,23 +425,23 @@ data FailedCommandType = NoSuchElement
                        deriving (Eq, Ord, Enum, Bounded, Show)
 
 -- |Detailed information about the failed command provided by the server.
-data FailedCommandInfo = FailedCommandInfo { -- |The error message.
-                                             errMsg    :: String
-                                             -- |The session associated with 
-                                             -- the exception.
-                                           , errSess :: WDSession 
-                                             -- |A screen shot of the focused window
-                                             -- when the exception occured,
-                                             -- if provided.
-                                           , errScreen :: Maybe ByteString
-                                             -- |The "class" in which the exception
-                                             -- was raised, if provided.
-                                           , errClass  :: Maybe String
-                                             -- |A stack trace of the exception.
-                                           , errStack  :: [StackFrame]
-                                           }
-                       deriving (Eq)
-
+data FailedCommandInfo = 
+  FailedCommandInfo { -- |The error message.
+                      errMsg    :: String
+                      -- |The session associated with 
+                      -- the exception.
+                    , errSess :: WDSession 
+                      -- |A screen shot of the focused window
+                      -- when the exception occured,
+                      -- if provided.
+                    , errScreen :: Maybe ByteString
+                      -- |The "class" in which the exception
+                      -- was raised, if provided.
+                    , errClass  :: Maybe String
+                      -- |A stack trace of the exception.
+                    , errStack  :: [StackFrame]
+                    }
+  deriving (Eq)
 
 -- |Constructs a FailedCommandInfo from only an error message.
 mkFailedCommandInfo :: String -> WD FailedCommandInfo
@@ -479,7 +519,7 @@ data MouseButton = LeftButton | MiddleButton | RightButton
 data WebStorageType = LocalStorage | SessionStorage 
                     deriving (Eq, Show, Ord, Bounded, Enum)
 
-instance Show FailedCommandInfo where --todo: pretty print
+instance Show FailedCommandInfo where
   show i = showChar '\n' 
            . showString "Session: " . sess 
            . showChar '\n'
@@ -512,48 +552,63 @@ instance FromJSON Element where
 instance ToJSON Element where
   toJSON (Element e) = object ["ELEMENT" .= e]
 
-
 instance ToJSON Capabilities where
-  toJSON c = object $ [ "browserName" .= browser'
-                      , f version "version"
-                      , f platform "platform"
-                      , f proxy "proxy"
-                      , f javascriptEnabled "javascriptEnabled"
-                      , f takesScreenshot "takesScreenshot"
-                      , f handlesAlerts "handlesAlerts"
-                      , f databaseEnabled "databaseEnabled"
-                      , f locationContextEnabled "locationContextEnabled"
-                      , f applicationCacheEnabled "applicationCacheEnabled"
-                      , f browserConnectionEnabled "browserConnectionEnabled"
-                      , f cssSelectorsEnabled "cssSelectorsEnabled"
-                      , f webStorageEnabled "webStorableEnabled"
-                      , f rotatable "rotatable"
-                      , f acceptSSLCerts "acceptSslCerts"
-                      , f nativeEvents "nativeEvents"
-                      ]
-                      ++ browserInfo
+  toJSON Capabilities{..} = 
+    object $ [ "browserName" .= browser
+             , "version" .= version
+             , "platform" .= platform
+             , "proxy" .= proxy
+             , "javascriptEnabled" .= javascriptEnabled
+             , "takesScreenshot" .= takesScreenshot
+             , "handlesAlerts" .= handlesAlerts
+             , "databaseEnabled" .= databaseEnabled
+             , "locationContextEnabled" .= locationContextEnabled
+             , "applicationCacheEnabled" .= applicationCacheEnabled
+             , "browserConnectionEnabled" .= browserConnectionEnabled
+             , "cssSelectorsEnabled" .= cssSelectorsEnabled
+             , "webStorageEnabled" .= webStorageEnabled
+             , "rotatable" .= rotatable
+             , "acceptSslCerts" .= acceptSSLCerts
+             , "nativeEvents" .= nativeEvents
+             ] ++ browserInfo
     where 
-      browser' = browser c
-      browserInfo = case browser' of
-        Firefox {ffProfile = prof, ffLogPref = pref, ffBinary = bin }
-          -> ["firefox_profile" .= prof
-             ,"loggingPrefs" .= pref
-             ,"firefox_binary" .= bin
+      browserInfo = case browser of
+        Firefox {..}
+          -> ["firefox_profile" .= ffProfile
+             ,"loggingPrefs" .= ffLogPref
+             ,"firefox_binary" .= ffBinary
              ]
-        Chrome {chromeDriverVersion = v, chromeBinary = b, 
-                chromeOptions = o, chromeExtensions = e}
-          -> ["chrome.chromedriverVersion" .= v
-             ,"chrome.binary" .= b
-             ,"chrome.switches" .= o
-             ,"chrome.extensions" .= e
+        Chrome {..}
+          -> ["chrome.chromedriverVersion" .= chromeDriverVersion
+             ,"chrome.binary" .= chromeBinary
+             ,"chrome.switches" .= chromeOptions
+             ,"chrome.extensions" .= chromeBinary
              ]       
-        IE {ignoreProtectedModeSettings = i{-, useLegacyInternalServer = u-}}
-          -> ["IgnoreProtectedModeSettings" .= i
+        IE {..}
+          -> ["IgnoreProtectedModeSettings" .= ignoreProtectedModeSettings
              --,"useLegacyInternalServer" .= u
              ]
+        Opera{..}
+          -> ["opera.binary" .= operaBinary
+             ,"opera.guess_binary_path" .= isNothing operaBinary
+             ,"opera.no_restart" .= operaNoRestart
+             ,"opera.product" .= operaProduct
+             ,"opera.no_quit" .= operaNoQuit
+             ,"opera.autostart" .= operaAutoStart
+             ,"opera.display" .= operaDisplay
+             ,"opera.idle" .= operaIdle
+             ,"opera.profile" .= operaProfile
+             ,"opera.launcher" .= operaLauncher
+             ,"opera.port" .= fromMaybe (-1) operaPort
+             ,"opera.host" .= operaHost
+              --note: I wonder if we should do any sort of quoting
+              --around arguments? or perhaps use a flat string?
+             ,"opera.arguments" .= intercalate " " operaOptions
+             ,"opera.logging.file" .= operaLogFile
+             ,"opera.logging.level" .= operaLogPref
+             ]
         _ -> []
-      f :: ToJSON a => (Capabilities -> a) -> Text -> Pair
-      f field key = key .= field c
+
 
 instance FromJSON Capabilities where  
   parseJSON (Object o) = Capabilities <$> req "browserName"
@@ -587,9 +642,9 @@ instance FromJSON FailedCommandInfo where
                       <*> opt "screen"     Nothing
                       <*> opt "class"      Nothing
                       <*> opt "stackTrace" []
-    where --req :: FromJSON a => Text -> Parser a 
+    where req :: FromJSON a => Text -> Parser a 
           req = (o .:)            --required key
-          --opt :: FromJSON a => Text -> a -> Parser a
+          opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:? k .!= d --optional key
   parseJSON v = typeMismatch "FailedCommandInfo" v
 
@@ -606,7 +661,7 @@ instance FromJSON StackFrame where
 
 $( deriveToJSON (map C.toLower . drop 4) ''Cookie )
 
-$( deriveJSON (map C.toUpper . drop 3) ''FFLogPref )
+$( deriveJSON (map C.toUpper . drop 3) ''LogPref )
 
 instance FromJSON Cookie where
   parseJSON (Object o) = Cookie <$> req "name"
@@ -625,9 +680,10 @@ instance FromJSON Cookie where
 
 instance ToJSON Browser where
   toJSON Firefox {} = String "firefox"
-  toJSON b = String . f . toLower . fromString . show $ b
-    where f "ie" = "internet explorer"
-          f  x   = x
+  toJSON Chrome {}  = String "chrome"
+  toJSON Opera {}   = String "opera"
+  toJSON IE {}      = String "internet explorer"
+  toJSON b = String . toLower . fromString . show $ b
 
 instance FromJSON Browser where
   parseJSON (String jStr) = case toLower jStr of
@@ -682,8 +738,6 @@ instance FromJSON MouseButton where
 
 instance FromJSON ProxyType where
   parseJSON (Object obj) = do
-    let f :: FromJSON a => Text -> Parser a 
-        f = (obj .:)
     pTyp <- f "proxyType"
     case toLower pTyp of
       "direct" -> return NoProxy
@@ -693,6 +747,9 @@ instance FromJSON ProxyType where
                          <*> f "sslProxy"
                          <*> f "httpProxy"
       _ -> fail $ "Invalid ProxyType " ++ show pTyp
+    where
+      f :: FromJSON a => Text -> Parser a 
+      f = (obj .:)
   parseJSON v = typeMismatch "ProxyType" v
       
 instance ToJSON ProxyType where

@@ -2,8 +2,12 @@
 
 ## hs-webdriver 0.2.1
 
-###Bug fixes
-*Properly export FFLogPref from Test.WebDriver and Test.WebDriver.Types
+### new features
+* Opera configuration now implemented.
+
+### Bug fix
+* FFLogPref (which was never properly exported due to carelessness) is now removed and replaced by the LogPref type, since both Firefox and Opera config use the same logging preference system. Since only FFLogPref's type and not its constructors were ever properly exported, this isn't considered worthy of a major version bump.
+* An issue with the serialization of browser names meant that Chrome and IE weren't working correctly. This is now fixed.
 
 ## hs-webdriver 0.2
 
