@@ -300,7 +300,6 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                      , operaLogFile   :: Maybe FilePath
                      , operaLogPref   :: LogPref
                      }
-             -- | Safari
              | HTMLUnit
              | IPhone 
              | IPad
