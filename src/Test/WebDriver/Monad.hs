@@ -23,8 +23,7 @@ import Control.Applicative
 layer over 'IO', threading session information between sequential commands
 -}
 newtype WD a = WD (StateT WDSession IO a)
-  deriving (Functor, Monad, MonadState WDSession, MonadIO
-           ,Applicative)
+  deriving (Functor, Monad, MonadIO, Applicative)
 
 instance MonadBase IO WD where
   liftBase = WD . liftBase
