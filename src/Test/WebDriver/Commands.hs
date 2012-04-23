@@ -42,17 +42,17 @@ module Test.WebDriver.Commands
        , moveTo, moveToCenter, moveToFrom
        , clickWith, MouseButton(..)
        , mouseDown, mouseUp, withMouseDown, doubleClick
+         -- * HTML 5 Web Storage
+         -- |As of Selenium 2.21, Web Storage is only supported on iOS and
+         -- Android platforms
+       , storageSize, getAllKeys, deleteAllKeys, getKey, setKey, deleteKey
          -- * Mobile device support
          -- ** Screen orientation
        , Orientation(..)
        , getOrientation, setOrientation
          -- ** Geo-location
        , getLocation, setLocation
-         -- ** HTML 5 Web Storage
-         -- |As of Selenium 2.21, Web Storage is only supported on iOS and
-         -- Android platforms
-       , storageSize, getAllKeys, deleteAllKeys, getKey, setKey, deleteKey
-         -- * Touch gestures
+         -- ** Touch gestures
        , touchClick, touchDown, touchUp, touchMove
        , touchScroll, touchScrollFrom, touchDoubleClick
        , touchLongClick, touchFlick, touchFlickFrom
