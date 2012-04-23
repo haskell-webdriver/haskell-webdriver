@@ -374,7 +374,7 @@ data ProxyType = NoProxy
                         }
                deriving (Eq, Show)
 
--- |For 'Firefox' sessions; indicates Firefox's log level
+-- |Indicates log verbosity. Used in 'Firefox' and 'Opera' configuration.
 data LogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig 
              | LogFine | LogFiner | LogFinest | LogAll
              deriving (Eq, Show, Ord, Bounded, Enum)
