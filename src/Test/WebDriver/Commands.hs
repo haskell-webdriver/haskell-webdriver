@@ -122,7 +122,7 @@ closeSession = do s <- get
                   doSessCommand DELETE "" () :: WD ()
                   put s { wdSessId = Nothing } 
 
--- |Sets the amount of time we implicitly wait when searching for 'Elements'.
+-- |Sets the amount of time we implicitly wait when searching for elements.
 setImplicitWait :: Integer -> WD ()
 setImplicitWait ms = 
   doSessCommand POST "/timeouts/implicit_wait" (object msField)
