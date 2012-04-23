@@ -53,7 +53,7 @@ library
                  , temporary
 
   exposed-modules: Test.WebDriver
-                   Test.WebDriver.Class
+                   Test.WebDriver.Classes
                    Test.WebDriver.Monad
                    Test.WebDriver.Exceptions
                    Test.WebDriver.Commands

@@ -35,9 +35,10 @@ module Test.WebDriver.Types
        ) where
 
 import Test.WebDriver.Monad
-import Test.WebDriver.Class
+import Test.WebDriver.Classes
 import Test.WebDriver.Commands
 import Test.WebDriver.Exceptions
+import Test.WebDriver.Capabilities
 
   
 

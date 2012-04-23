@@ -2,10 +2,9 @@
              MultiParamTypeClasses #-}
 module Test.WebDriver.Monad
        ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException
-       , module Test.WebDriver.Capabilities
        )where
 
-import Test.WebDriver.Class
+import Test.WebDriver.Classes
 import Test.WebDriver.Commands 
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Internal

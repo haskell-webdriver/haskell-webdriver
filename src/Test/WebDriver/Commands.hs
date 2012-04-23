@@ -70,7 +70,7 @@ module Test.WebDriver.Commands
        , serverStatus
        ) where
 
-import Test.WebDriver.Class
+import Test.WebDriver.Classes
 import Test.WebDriver.JSON
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Internal

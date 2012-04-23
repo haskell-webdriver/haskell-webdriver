@@ -9,7 +9,7 @@ module Test.WebDriver.Internal
        , FailedCommand(..), failedCommand, mkFailedCommandInfo
        , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
        ) where
-import Test.WebDriver.Class
+import Test.WebDriver.Classes
 import Test.WebDriver.JSON
 
 import Network.HTTP (simpleHTTP, Request(..), Response(..))

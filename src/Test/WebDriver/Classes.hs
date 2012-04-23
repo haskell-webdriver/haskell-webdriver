@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, 
              GeneralizedNewtypeDeriving #-}
-module Test.WebDriver.Class
+module Test.WebDriver.Classes
        ( WebDriver(..), RequestMethod(..),
          SessionState(..), modifySession, doSessCommand
        , WDSession(..), SessionId(..), defaultSession
@@ -9,7 +9,7 @@ module Test.WebDriver.Class
 
 --import Test.WebDriver.Internal
 import Data.Aeson
-import Network.HTTP (RequestMethod(..), Header(..))
+import Network.HTTP (RequestMethod(..))
 
 import qualified Data.Text as T
 import Data.Text (Text)
