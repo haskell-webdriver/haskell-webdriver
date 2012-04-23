@@ -179,7 +179,7 @@ data Capabilities =
                  -- |Whether the session can set and query the browser's
                  -- location context with 'setLocation' and 'getLocation'.
                , locationContextEnabled   :: Maybe Bool
-               , -- |Whether the session can interact with the application cache
+                 -- |Whether the session can interact with the application cache
                  -- .
                , applicationCacheEnabled  :: Maybe Bool
                  -- |Whether the session can query for the browser's
