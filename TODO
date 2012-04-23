@@ -1,7 +1,6 @@
-for next minor releases
+for next release
 
--- add special web-driver specific FF profile setters, either as special
-functions or via documentation
+-- document opera settings and default opera constructor
 
 -- improve documentation. Document errors better. Provide more
 module introductions
@@ -11,8 +10,6 @@ module introductions
     -- explicit waits usage
     -- firefox profile usage
     -- REPL usage
-
---Use lazy ByteString where possible. patch base64-bytestring to work with lazy bytestrings
 
 for 1.0
 
@@ -24,9 +21,15 @@ functions
 
 
 
-miscellaneous unsorted
+distant future
 
 -- use http-conduit and attoparsec-conduit to stream JSON data. use request methods from http-types
 
 -- use ReaderT to store WDVersion for use with implicit configurations.
 
+
+misc. unsorted
+
+-- remove temporary directory code from prepareProfile
+
+--Use lazy ByteString where possible. patch base64-bytestring to work with lazy bytestrings
