@@ -155,29 +155,51 @@ server. Here a value of Nothing indicates that the server doesn't
 support the capability. Thus, for Maybe Bool fields, both Nothing and
 Just False indicate a lack of support for the desired capability.
 -}
-data Capabilities = Capabilities { -- |Browser choice and browser specific 
-                                   -- settings.
-                                   browser                  :: Browser
-                                   -- |Browser version to use.
-                                 , version                  :: Maybe String
-                                   -- |Platform on which the browser should/will
-                                   -- run.   
-                                 , platform                 :: Platform
-                                   -- |Proxy configuration.
-                                 , proxy                    :: ProxyType
-                                 , javascriptEnabled        :: Maybe Bool
-                                 , takesScreenshot          :: Maybe Bool
-                                 , handlesAlerts            :: Maybe Bool
-                                 , databaseEnabled          :: Maybe Bool
-                                 , locationContextEnabled   :: Maybe Bool
-                                 , applicationCacheEnabled  :: Maybe Bool
-                                 , browserConnectionEnabled :: Maybe Bool
-                                 , cssSelectorsEnabled      :: Maybe Bool
-                                 , webStorageEnabled        :: Maybe Bool
-                                 , rotatable                :: Maybe Bool
-                                 , acceptSSLCerts           :: Maybe Bool
-                                 , nativeEvents             :: Maybe Bool
-                                 } deriving (Eq, Show)
+data Capabilities = 
+  Capabilities { -- |Browser choice and browser specific settings.
+                 browser                  :: Browser
+                 -- |Browser version to use.
+               , version                  :: Maybe String
+                 -- |Platform on which the browser should run.   
+               , platform                 :: Platform
+                 -- |Proxy configuration settings.
+               , proxy                    :: ProxyType
+                 -- |Whether the session supports executing JavaScript via
+                 -- 'executeJS' and 'asyncJS'.
+               , javascriptEnabled        :: Maybe Bool
+                 -- |Whether the session supports taking screenshots of the
+                 -- current page with the 'screenshot' command
+               , takesScreenshot          :: Maybe Bool
+                 -- |Whether the session can interact with modal popups,
+                 -- such as window.alert and window.confirm via 
+                 -- 'acceptAlerts', 'dismissAlerts', etc.
+               , handlesAlerts            :: Maybe Bool
+                 -- |Whether the session can interact with database storage.
+               , databaseEnabled          :: Maybe Bool
+                 -- |Whether the session can set and query the browser's
+                 -- location context with 'setLocation' and 'getLocation'.
+               , locationContextEnabled   :: Maybe Bool
+               , -- |Whether the session can interact with the application cache
+                 -- .
+               , applicationCacheEnabled  :: Maybe Bool
+                 -- |Whether the session can query for the browser's
+                 -- connectivity and disable it if desired
+               , browserConnectionEnabled :: Maybe Bool
+                 -- |Whether the session supports CSS selectors when searching
+                 -- for elements.
+               , cssSelectorsEnabled      :: Maybe Bool
+                 -- |Whether Web Storage ('getKey', 'setKey', etc) support is 
+                 -- enabled
+               , webStorageEnabled        :: Maybe Bool
+                 -- |Whether the session can rotate the current page's current
+                 -- layout between 'Portrait' and 'Landscape' orientations.
+               , rotatable                :: Maybe Bool
+                 -- |Whether the session should accept all SSL certs by default
+               , acceptSSLCerts           :: Maybe Bool
+                 -- |Whether the session is capable of generating native OS
+                 -- events when simulating user input.
+               , nativeEvents             :: Maybe Bool
+               } deriving (Eq, Show)
 
 instance Default Capabilities where
   def = Capabilities { browser = firefox
