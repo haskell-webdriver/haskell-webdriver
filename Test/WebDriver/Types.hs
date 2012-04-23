@@ -245,7 +245,13 @@ allCaps = defaultCaps { javascriptEnabled = Just True
                       }
       
 
--- |Browser setting and browser-specific capabilities.
+-- This constructor simultaneously specifies which browser this session will 
+-- use, while also providing browser-specific configuration. Default
+-- configuration is provided for each browser by 'firefox', 'chrome', 'opera',
+-- 'ie', etc.
+--
+-- The 'Default' instance uses 'firefox' as the default Browser.
+-- When no browser is specified, that default is used.
 data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                          -- a default temporary profile is automatically created
                          -- and used.
@@ -256,7 +262,8 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                          -- use a sensible system-based default.
                        , ffBinary :: Maybe FilePath
                        }
-             | Chrome { -- |Version of the Chrome Webdriver server server to use.
+             | Chrome { -- |Version of the Chrome Webdriver server server to use
+                        --
                         -- for more information on chromedriver see
                         -- <http://code.google.com/p/selenium/wiki/ChromeDriver>
                         chromeDriverVersion :: Maybe String 
@@ -302,7 +309,8 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
 instance Default Browser where
   def = firefox
 
--- |Default Firefox settings. All fields are set to Nothing.
+-- |Default Firefox settings. All Maybe fields are set to Nothing. ffLogPref
+-- is set to 'LogInfo'.
 firefox :: Browser
 firefox = Firefox Nothing def Nothing
 
@@ -373,8 +381,6 @@ data LogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
 
 instance Default LogPref where
   def = LogInfo
-
-
 
 instance Exception InvalidURL
 -- |An invalid URL was given
