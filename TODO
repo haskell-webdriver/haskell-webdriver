@@ -12,6 +12,7 @@ module introductions
     -- firefox profile usage
     -- REPL usage
 
+--Use lazy ByteString where possible. patch base64-bytestring to work with lazy bytestrings
 
 for 1.0
 
