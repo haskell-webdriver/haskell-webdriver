@@ -86,16 +86,20 @@ newtype SessionId = SessionId Text
                   deriving (Eq, Ord, Show, Read, 
                             FromJSON, ToJSON)
 
+{- |An opaque identifier for a web page element. -}
+newtype Element = Element Text
+                  deriving (Eq, Ord, Show, Read)
 
 {- |An opaque identifier for a browser window -}
 newtype WindowHandle = WindowHandle Text
                      deriving (Eq, Ord, Show, Read, 
                                FromJSON, ToJSON)
-{- |An opaque identifier for a web page element. -}
-newtype Element = Element Text
-                  deriving (Eq, Ord, Show, Read)
+                              
+instance Default WindowHandle where
+  def = currentWindow
 
 -- |A special 'WindowHandle' that always refers to the currently focused window.
+-- This is also used by the 'Default' instance.
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
 
