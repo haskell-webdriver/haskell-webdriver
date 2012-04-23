@@ -3,8 +3,6 @@ for next minor releases
 -- add special web-driver specific FF profile setters, either as special
 functions or via documentation
 
--- add opera config
-
 -- improve documentation. Document errors better. Provide more
 module introductions
   -- provide examples
