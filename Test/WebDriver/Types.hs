@@ -264,7 +264,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                      , operaDisplay   :: Maybe Int
                      , operaIdle      :: Bool
                      , operaProfile   :: Maybe String --PreparedOperaProfile
-                     , operaLauncher  :: Maybe String
+                     , operaLauncher  :: Maybe FilePath
                      , operaPort      :: Maybe Word16
                      , operaHost      :: Maybe String
                      , operaOptions   :: [String]
