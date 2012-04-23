@@ -533,10 +533,10 @@ instance Show FailedCommandInfo where
       sess = showString sessId . showString " at " 
              . showString host . showChar ':' . shows port
         where
-          WDSession {wdHost = host, wdPort = port, wdSessId = msid } = errSess i
           sessId = case msid of
             Just (SessionId sid) -> unpack sid
             Nothing -> "<no session id>"
+          WDSession {wdHost = host, wdPort = port, wdSessId = msid } = errSess i
 
 instance Show StackFrame where
   show f = showString (sfClassName f) . showChar '.' 
