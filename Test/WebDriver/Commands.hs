@@ -42,18 +42,16 @@ module Test.WebDriver.Commands
        , moveTo, moveToCenter, moveToFrom
        , clickWith, MouseButton(..)
        , mouseDown, mouseUp, withMouseDown, doubleClick
-         -- * Screen orientation
+       , -- * Mobile device support
+         -- ** Screen orientation
        , Orientation(..)
        , getOrientation, setOrientation
-         -- * Geo-location
+         -- ** Geo-location
        , getLocation, setLocation
-         -- * HTML 5 Web Storage
+         -- ** HTML 5 Web Storage
+       , -- |As of Selenium 2.21, Web Storage is only supported on iOS and
+         -- Android platforms
        , storageSize, getAllKeys, deleteAllKeys, getKey, setKey, deleteKey
-         -- * Uploading files to remote server
-         -- |These functions allow you to upload a file to a remote server. 
-         -- Note that this operation isn't supported by all WebDriver servers,
-         -- and the location where the file is stored is not standardized.
-       , uploadFile, uploadRawFile, uploadZipEntry
          -- * Touch gestures
        , touchClick, touchDown, touchUp, touchMove
        , touchScroll, touchScrollFrom, touchDoubleClick
@@ -61,6 +59,11 @@ module Test.WebDriver.Commands
          -- * IME support              
        , availableIMEEngines, activeIMEEngine, checkIMEActive
        , activateIME, deactivateIME
+         -- * Uploading files to remote server
+         -- |These functions allow you to upload a file to a remote server. 
+         -- Note that this operation isn't supported by all WebDriver servers,
+         -- and the location where the file is stored is not standardized.
+       , uploadFile, uploadRawFile, uploadZipEntry
          -- * Server information
        , serverStatus
        ) where
