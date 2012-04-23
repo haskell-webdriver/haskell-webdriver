@@ -1,14 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables #-}
 module Test.WebDriver.Commands.Wait 
-       ( -- * Expected conditions
-         ExpectFailed, expect, unexpected
+       ( -- * Wait on expected conditions
+         waitUntil, waitUntil'
+       , waitWhile, waitWhile'
+         -- * Expected conditions
+       , ExpectFailed, expect, unexpected
          -- ** Convenience functions
        , expectAny, expectAll
        , (<||>), (<&&>)
-                   
-         -- * Wait on expected conditions
-       , waitUntil, waitUntil'
-       , waitWhile, waitWhile'
        ) where
 import Test.WebDriver.Types
 import Control.Monad
@@ -55,15 +54,15 @@ expectAll :: (a -> WD Bool) -> [a] -> WD ()
 expectAll p xs = expect . and =<< mapM p xs
 
 -- |Wait until either the given action succeeds or the timeout is reached.
--- The action will be retried every .25 seconds until no ExpectFailed or
--- NoSuchElement exceptions occur. If the timeout is reached, then a 
--- 'Test.WebDriver.Timeout' exception will be raised. The timeout value is 
--- expressed in seconds.
+-- The action will be retried every .25 seconds until no 'ExpectFailed' or
+-- 'Test.WebDriver.NoSuchElement' exceptions occur. If the timeout is reached, 
+-- then a 'Test.WebDriver.Timeout' exception will be raised. The timeout value 
+-- is expressed in seconds.
 waitUntil :: Double -> WD a -> WD a
 waitUntil = waitUntil' 250000
 
--- |Similar to waitUntil but allows you to also specify the poll frequency
--- of the WD action. The frequency is expressed as an integer in microseconds.
+-- |Similar to 'waitUntil' but allows you to also specify the poll frequency
+-- of the 'WD' action. The frequency is expressed as an integer in microseconds.
 waitUntil' :: Int -> Double -> WD a -> WD a
 waitUntil' = wait' handler
   where
@@ -81,7 +80,7 @@ waitUntil' = wait' handler
 waitWhile :: Double -> WD a -> WD ()
 waitWhile = waitWhile' 250000
 
--- |Like 'waitUntil\'', but retries the action until it either fails or 
+-- |Like 'waitUntil'', but retries the action until it either fails or 
 -- until the timeout is exceeded.
 waitWhile' :: Int -> Double -> WD a -> WD ()
 waitWhile' = wait' handler
