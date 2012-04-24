@@ -328,6 +328,8 @@ chrome = Chrome Nothing Nothing [] []
 ie :: Browser
 ie = IE True
 
+-- |Default Opera settings. See the 'Opera' constructor for more details on
+-- individual defaults.
 opera :: Browser
 opera = Opera { operaBinary = Nothing
               --, operaNoRestart = Nothing
