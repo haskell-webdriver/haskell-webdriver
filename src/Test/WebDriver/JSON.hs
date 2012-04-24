@@ -74,7 +74,7 @@ o !: k = aesonResultToWD $ parse (.: k) o
 
 
 -- |Parse a JSON 'Object' as a pair. The first two string arguments specify the
--- keys to extract from the object. The fourth string is the name of the
+-- keys to extract from the object. The third string is the name of the
 -- calling function, for better error reporting.
 parsePair :: (MonadBaseControl IO wd, FromJSON a, FromJSON b) => 
              String -> String -> String -> Value -> wd (a, b)
