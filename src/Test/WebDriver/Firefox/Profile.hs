@@ -201,9 +201,10 @@ prefsParser = many $ do
   return (k,v)
   where
     prefKey = jstring
-    prefVal = parseAsPref =<< value'
-      where parseAsPref v = case fromJSON v of
-              Error str -> fail str
-              Success p -> return p
+    prefVal = do 
+      v <- value'
+      case fromJSON v of
+        Error str -> fail str
+        Success p -> return p
     spaces = AP.takeWhile isSpace
     padSpaces p = spaces >> p >> spaces
