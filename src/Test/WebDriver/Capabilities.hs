@@ -11,7 +11,6 @@ import Data.Aeson.TH
 import Control.Applicative
 import Data.Text (Text, toLower, toUpper)
 import Data.Default
-import Data.List
 import Data.Word
 import Data.Maybe (isNothing, fromMaybe, maybeToList)
 import Data.String(fromString)
@@ -165,13 +164,12 @@ instance ToJSON Capabilities where
              ,"opera.no_quit" .= operaDetach --backwards compatability
              ,"opera.autostart" .= operaAutoStart
              , "opera.idle" .= operaIdle
-             ,"opera.profile" .= operaProfile
+--             ,"opera.profile" .= operaProfile
              ,"opera.launcher" .= operaLauncher
              ,"opera.port" .= fromMaybe (-1) operaPort
              ,"opera.host" .= operaHost
-              --note: I wonder if we should do any sort of quoting
-              --around arguments? or perhaps use a flat string?
-             ,"opera.arguments" .= intercalate " " operaOptions
+              --note: consider replacing operaOptions with a list of options
+             ,"opera.arguments" .= operaOptions
              ,"opera.logging.file" .= operaLogFile
              ,"opera.logging.level" .= operaLogPref
              ]
@@ -246,17 +244,42 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
              | Opera { -- |Server-side path to the Opera binary
                        operaBinary    :: Maybe FilePath
                      --, operaNoRestart :: Maybe Bool 
+                       -- |Which Opera product 'were using, e.g. "desktop",
+                       -- "core"
                      , operaProduct   :: Maybe String
+                       -- |Whether the Opera instance should stay open after
+                       -- we close the session. If False, closing the session
+                       -- closes the browser.
                      , operaDetach    :: Bool
+                       -- |Whether to auto-start the Opera binary. If false,
+                       -- OperaDriver will wait for a connection from the
+                       -- browser. By default this is True.
                      , operaAutoStart :: Bool
-                     , operaDisplay   :: Maybe Int
+                       -- |Whether to use Opera's alternative implicit wait
+                       -- implementation. It will use an in-browser heuristic
+                       -- to guess when a page has finished loading. This
+                       -- feature is experimental, and disabled by default.
                      , operaIdle      :: Bool
-                     , operaProfile   :: Maybe String --PreparedOperaProfile
+                       -- |(*nix only) which X display to use.
+                     , operaDisplay   :: Maybe Int
+                     --, operaProfile   :: Maybe (PreparedProfile Opera)
+                       -- |Path to the launcher binary to use. The launcher
+                       -- is a gateway between OperaDriver and the Opera
+                       -- browser. If Nothing, OperaDriver will use the
+                       -- launcher supplied with the package.
                      , operaLauncher  :: Maybe FilePath
+                       -- |The port we should use to connect to Opera. If Just 0
+                       -- , use a random port. If Nothing, use a default.
                      , operaPort      :: Maybe Word16
+                       -- |The host Opera should connect to. Unless you're
+                       -- starting Opera manually you won't need this.
                      , operaHost      :: Maybe String
-                     , operaOptions   :: [String]
+                       -- |Command-line arguments to pass to Opera.
+                     , operaOptions   :: String
+                       -- |Where to send the log output. If Nothing, logging is 
+                       -- disabled.
                      , operaLogFile   :: Maybe FilePath
+                       -- |Log level preference. Defaults to 'LogInfo'
                      , operaLogPref   :: LogPref
                      }
              | HTMLUnit
@@ -313,7 +336,7 @@ opera = Opera { operaBinary = Nothing
               , operaAutoStart = True
               , operaDisplay = Nothing
               , operaIdle = False
-              , operaProfile = Nothing
+--              , operaProfile = Nothing
               , operaLauncher = Nothing
               , operaHost = Nothing
               , operaPort = Nothing
