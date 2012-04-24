@@ -13,7 +13,6 @@ module introductions
 
 for 1.0
 
--- overload WD commands in typeclass
 -- add WDSettings, use WDSession as internal State type. 
 -- allow settings to automatically load drivers. add modules with driver loading
 functions
