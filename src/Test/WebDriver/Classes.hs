@@ -2,8 +2,10 @@
              GeneralizedNewtypeDeriving, StandaloneDeriving #-}
 module Test.WebDriver.Classes
        ( WebDriver(..), RequestMethod(..),
-         SessionState(..), modifySession, doSessCommand
+         SessionState(..), modifySession
        , WDSession(..), SessionId(..), defaultSession
+       , doSessCommand
+         -- * No Session Exception
        , NoSessionId(..)
        ) where
 
@@ -48,7 +50,12 @@ class MonadBaseControl IO s => SessionState s where
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
 class SessionState wd => WebDriver wd where
   doCommand :: (ToJSON a, FromJSON b) => 
-                RequestMethod -> Text -> a -> wd b 
+                RequestMethod -- ^HTTP request method 
+                -> Text       -- ^URL of request 
+                -> a          -- ^JSON parameters passed in the body 
+                              -- of the request. Note that, as a special case,
+                              -- () will result in an empty request body.
+                -> wd b 
 
 
 modifySession :: SessionState s => (WDSession -> WDSession) -> s ()
@@ -101,6 +108,9 @@ newtype NoSessionId = NoSessionId String
                  deriving (Eq, Show, Typeable)
 
 
+-- |This a convenient wrapper around doCommand that automatically prepends
+-- the session URL parameter to the wire command URL. For example, passing
+-- a URL of "/refresh" will expand to "/session/:sessionId/refresh".
 doSessCommand :: (WebDriver wd, ToJSON a, FromJSON b) => 
                   RequestMethod -> Text -> a -> wd b
 doSessCommand method path args = do
