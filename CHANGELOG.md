@@ -1,6 +1,6 @@
 #Change Log
 
-## next release
+## upcoming release
 
 ### API changes
 * 2 typeclasses were introduced. All WebDriver commands are now overloaded on WebDriver class, so that monad transformers with a WD base can be used conveniently.
