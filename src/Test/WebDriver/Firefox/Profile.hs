@@ -207,4 +207,4 @@ prefsParser = many $ do
         Error str -> fail str
         Success p -> return p
     spaces = AP.takeWhile isSpace
-    padSpaces p = spaces >> p >> spaces
+    padSpaces p = spaces >> p <* spaces
