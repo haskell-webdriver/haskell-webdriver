@@ -35,6 +35,7 @@ import Data.Default
 import Data.Word
 
 
+-- |A class for monads that can
 class MonadBaseControl IO s => SessionState s where
   getSession :: s WDSession
   putSession :: WDSession -> s ()
