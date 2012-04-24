@@ -193,10 +193,10 @@ mkTemp = do
 prefsParser :: Parser [(Text, ProfilePref)]
 prefsParser = many $ do 
   padSpaces $ string "user_pref("
-  k <- prefKey
+  k <- prefKey <?> "preference key"
   padSpaces $ char ','
-  v <- prefVal
-  padSpaces $  string ");"
+  v <- prefVal <?> "preference value"
+  padSpaces $ string ");"
   endOfLine
   return (k,v)
   where
