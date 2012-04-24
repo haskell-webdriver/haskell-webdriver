@@ -5,6 +5,7 @@
 ### API changes
 * 2 typeclasses were introduced. All WebDriver commands are now overloaded on WebDriver class, so that monad transformers with a WD base can be used conveniently.
 * The MonadState instance of WD has been removed and replaced by SessionState.
+* The Firefox profile code has been generalized to work with either Opera or Firefox profiles. A phantom type parameter is used to create a distinction between the two. See Common.Profile and Firefox.Profile to learn about the specific changes that were made.
 
 ### new features
 * Opera configuration is now implemented.
