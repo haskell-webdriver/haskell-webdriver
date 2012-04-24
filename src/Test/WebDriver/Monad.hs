@@ -13,7 +13,7 @@ import Control.Monad.Base (MonadBase, liftBase)
 import Control.Monad (liftM)
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
-import Control.Monad.State (StateT, MonadState, evalStateT, get, put)
+import Control.Monad.State.Strict (StateT, MonadState, evalStateT, get, put)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Lifted
 import Control.Applicative
