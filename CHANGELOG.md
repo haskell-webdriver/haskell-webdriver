@@ -2,8 +2,13 @@
 
 ## hs-webdriver 0.2.1
 
+### API changes
+* 2 typeclasses were introduced. All WebDriver commands are now overloaded on WebDriver class, so that monad transformers with a WD base can be used conveniently.
+* The MonadState instance of WD has been removed and replaced by SessionState.
+
 ### new features
 * Opera configuration is now implemented.
+* Several new modules have been created, including: Capabilities, Monad, Classes, Exceptions. Many of the definitions have been moved around, but the export lists of the pre-existing modules are the same.
 
 ### Bug fix
 * An issue with the serialization of browser names meant that Chrome and IE weren't working correctly. This is now fixed.

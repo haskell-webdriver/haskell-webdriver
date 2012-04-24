@@ -8,20 +8,14 @@ module Test.WebDriver
          -- * Running WebDriver tests
        , runWD, runSession, withSession, finallyClose, closeOnException
          -- * Capabilities and configuration
-       , Capabilities(..), defaultCaps, allCaps
-       , Platform(..), ProxyType(..)
+       , module Test.WebDriver.Capabilities
          -- ** Browser-specific configuration
        , Browser(..), LogPref(..)
        , firefox, chrome, ie, opera, iPhone, iPad, android
          -- * WebDriver commands
        , module Test.WebDriver.Commands
          -- * Exceptions
-       , InvalidURL(..), NoSessionId(..), BadJSON(..)
-       , HTTPStatusUnknown(..), HTTPConnError(..)
-       , UnknownCommand(..), ServerError(..)
-       , FailedCommand(..), FailedCommandType(..)
-       , FailedCommandInfo(..), StackFrame(..)
-       , mkFailedCommandInfo, failedCommand
+       , module Test.WebDriver.Exceptions
        ) where
 
 import Test.WebDriver.Types
