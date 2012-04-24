@@ -13,7 +13,7 @@ import Data.Text (Text, toLower, toUpper)
 import Data.Default
 import Data.List
 import Data.Word
-import Data.Maybe (isNothing, fromMaybe)
+import Data.Maybe (isNothing, fromMaybe, maybeToList)
 import Data.String(fromString)
 import qualified Data.Char as C
 
@@ -159,12 +159,12 @@ instance ToJSON Capabilities where
         Opera{..}
           -> ["opera.binary" .= operaBinary
              ,"opera.guess_binary_path" .= isNothing operaBinary
-             ,"opera.no_restart" .= operaNoRestart
+             --,"opera.no_restart" .= operaNoRestart
              ,"opera.product" .= operaProduct
-             ,"opera.no_quit" .= operaNoQuit
+             ,"opera.detatch" .= operaDetach
+             ,"opera.no_quit" .= operaDetach --backwards compatability
              ,"opera.autostart" .= operaAutoStart
-             ,"opera.display" .= operaDisplay
-             ,"opera.idle" .= operaIdle
+             , "opera.idle" .= operaIdle
              ,"opera.profile" .= operaProfile
              ,"opera.launcher" .= operaLauncher
              ,"opera.port" .= fromMaybe (-1) operaPort
@@ -175,6 +175,7 @@ instance ToJSON Capabilities where
              ,"opera.logging.file" .= operaLogFile
              ,"opera.logging.level" .= operaLogPref
              ]
+             ++ map ("opera.display" .=) (maybeToList operaDisplay)
         _ -> []
 
 
@@ -213,7 +214,7 @@ instance FromJSON Capabilities where
 data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                          -- a default temporary profile is automatically created
                          -- and used.
-                         ffProfile :: Maybe PreparedFirefoxProfile
+                         ffProfile :: Maybe (PreparedProfile Firefox)
                          -- |Firefox logging preference
                        , ffLogPref :: LogPref
                          -- |Server-side path to Firefox binary. If Nothing, 
@@ -244,9 +245,9 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                   }
              | Opera { -- |Server-side path to the Opera binary
                        operaBinary    :: Maybe FilePath
-                     , operaNoRestart :: Maybe Bool 
+                     --, operaNoRestart :: Maybe Bool 
                      , operaProduct   :: Maybe String
-                     , operaNoQuit    :: Bool
+                     , operaDetach    :: Bool
                      , operaAutoStart :: Bool
                      , operaDisplay   :: Maybe Int
                      , operaIdle      :: Bool
@@ -306,9 +307,9 @@ ie = IE True
 
 opera :: Browser
 opera = Opera { operaBinary = Nothing
-              , operaNoRestart = Nothing
+              --, operaNoRestart = Nothing
               , operaProduct = Nothing
-              , operaNoQuit = False
+              , operaDetach = False
               , operaAutoStart = True
               , operaDisplay = Nothing
               , operaIdle = False
