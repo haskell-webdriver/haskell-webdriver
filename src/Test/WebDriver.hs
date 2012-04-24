@@ -8,7 +8,8 @@ module Test.WebDriver
          -- * Running WebDriver tests
        , runWD, runSession, withSession, finallyClose, closeOnException
          -- * Capabilities and configuration
-       , module Test.WebDriver.Capabilities
+       , Capabilities(..), defaultCaps, allCaps
+       , Platform(..), ProxyType(..)
          -- ** Browser-specific configuration
        , Browser(..), LogPref(..)
        , firefox, chrome, ie, opera, iPhone, iPad, android
@@ -21,3 +22,4 @@ module Test.WebDriver
 import Test.WebDriver.Types
 import Test.WebDriver.Commands
 import Test.WebDriver.Monad
+import Test.WebDriver.Exceptions
