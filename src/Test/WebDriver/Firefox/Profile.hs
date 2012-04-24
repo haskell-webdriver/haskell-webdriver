@@ -190,6 +190,7 @@ mkTemp = do
   
 -- firefox prefs.js parser
 
+prefsParser :: Parser [(Text, ProfilePref)]
 prefsParser = many $ do 
   padSpaces $ string "user_pref("
   k <- prefKey
