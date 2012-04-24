@@ -35,11 +35,17 @@ import Data.Default
 import Data.Word
 
 
--- |A class for monads that can
+-- |A class for monads that carry a WebDriver session with them. The
+-- MonadBaseControl superclass is used for exception handling through
+-- the lifted-base package.
 class MonadBaseControl IO s => SessionState s where
   getSession :: s WDSession
   putSession :: WDSession -> s ()
 
+-- |A class for monads that can handle wire protocol requests. This is the
+-- operation underlying all of the high-level commands exported in
+-- "Test.WebDriver.Commands". For more information on the wire protocol see
+-- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
 class SessionState wd => WebDriver wd where
   doCommand :: (ToJSON a, FromJSON b) => 
                 RequestMethod -> Text -> a -> wd b 
