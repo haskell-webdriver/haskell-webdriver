@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables, FlexibleContexts #-}
 module Test.WebDriver.Commands.Wait 
        ( -- * Wait on expected conditions
          waitUntil, waitUntil'
@@ -9,9 +9,11 @@ module Test.WebDriver.Commands.Wait
        , expectAny, expectAll
        , (<||>), (<&&>)
        ) where
-import Test.WebDriver.Types
+import Test.WebDriver.Exceptions
+import Test.WebDriver.Classes
 import Control.Monad
-import Control.Monad.IO.Class
+import Control.Monad.Base
+import Control.Monad.Trans.Control
 import Control.Exception.Lifted
 import Control.Concurrent
 import Data.Time.Clock
@@ -23,13 +25,13 @@ instance Exception ExpectFailed
 data ExpectFailed = ExpectFailed deriving (Show, Eq, Typeable)
 
 -- |throws 'ExpectFailed'. This is nice for writing your own abstractions.
-unexpected :: WD a
+unexpected :: MonadBaseControl IO m => m a
 unexpected = throwIO ExpectFailed
 
 -- |An expected condition. This function allows you to express assertions in
 -- your explicit wait. This function raises 'ExpectFailed' if the given
 -- boolean is False, and otherwise does nothing.
-expect :: Bool -> WD ()
+expect :: MonadBaseControl IO m => Bool -> m ()
 expect b
   | b         = return ()
   | otherwise = unexpected
@@ -46,11 +48,11 @@ expect b
 
 -- |Apply a predicate to every element in a list, and expect that at least one
 -- succeeds.
-expectAny :: (a -> WD Bool) -> [a] -> WD ()
+expectAny :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
 expectAny p xs = expect . or =<< mapM p xs
 
 -- |Apply a predicate to every element in a list, and expect that all succeed.
-expectAll :: (a -> WD Bool) -> [a] -> WD ()
+expectAll :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
 expectAll p xs = expect . and =<< mapM p xs
 
 -- |Wait until either the given action succeeds or the timeout is reached.
@@ -58,12 +60,12 @@ expectAll p xs = expect . and =<< mapM p xs
 -- 'Test.WebDriver.NoSuchElement' exceptions occur. If the timeout is reached, 
 -- then a 'Test.WebDriver.Timeout' exception will be raised. The timeout value 
 -- is expressed in seconds.
-waitUntil :: Double -> WD a -> WD a
+waitUntil :: SessionState m => Double -> m a -> m a
 waitUntil = waitUntil' 250000
 
 -- |Similar to 'waitUntil' but allows you to also specify the poll frequency
 -- of the 'WD' action. The frequency is expressed as an integer in microseconds.
-waitUntil' :: Int -> Double -> WD a -> WD a
+waitUntil' :: SessionState m => Int -> Double -> m a -> m a
 waitUntil' = wait' handler
   where
     handler retry = (`catches` [Handler handleFailedCommand
@@ -77,12 +79,12 @@ waitUntil' = wait' handler
 
 -- |Like 'waitUntil', but retries the action until it fails or until the timeout
 -- is exceeded.
-waitWhile :: Double -> WD a -> WD ()
+waitWhile :: SessionState m => Double -> m a -> m ()
 waitWhile = waitWhile' 250000
 
 -- |Like 'waitUntil'', but retries the action until it either fails or 
 -- until the timeout is exceeded.
-waitWhile' :: Int -> Double -> WD a -> WD ()
+waitWhile' :: SessionState m => Int -> Double -> m a -> m ()
 waitWhile' = wait' handler
   where
     handler retry wd = do 
@@ -96,16 +98,17 @@ waitWhile' = wait' handler
                                
         handleExpectFailed (_ :: ExpectFailed) = return ()
     
-wait' :: (WD b -> WD a -> WD b) -> Int -> Double -> WD a -> WD b
-wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
+wait' :: SessionState m => 
+         (m b -> m a -> m b) -> Int -> Double -> m a -> m b
+wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
   where timeout = realToFrac t
         waitLoop startTime = handler retry wd
           where 
             retry = do
-              now <- liftIO getCurrentTime
+              now <- liftBase getCurrentTime
               if diffUTCTime now startTime >= timeout
                 then 
                   failedCommand Timeout "waitUntil': explicit wait timed out."
                 else do
-                  liftIO . threadDelay $ waitAmnt
+                  liftBase . threadDelay $ waitAmnt
                   waitLoop startTime

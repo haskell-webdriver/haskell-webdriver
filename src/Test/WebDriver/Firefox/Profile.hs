@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP, TypeSynonymInstances, OverloadedStrings,
              GeneralizedNewtypeDeriving, DeriveDataTypeable,
-             FlexibleInstances #-}
+             FlexibleInstances, FlexibleContexts #-}
 -- |A module for working with Firefox profiles. Firefox profiles are manipulated
 -- in pure code and then \"prepared\" for network transmission. 
 module Test.WebDriver.Firefox.Profile 
@@ -42,7 +42,7 @@ import Distribution.Verbosity
 
 import Control.Monad
 import Control.Applicative
-import Control.Monad.IO.Class
+import Control.Monad.Base
 import Control.Exception.Lifted
 import Data.Typeable
 
@@ -171,13 +171,13 @@ asSet :: FirefoxProfile
 asSet (FirefoxProfile p hs hm) f = FirefoxProfile p (f hs) hm
 
 
-tempProfile :: MonadIO m => m FirefoxProfile
-tempProfile = liftIO $ defaultProfile <$> mkTemp
+tempProfile :: MonadBase IO m => m FirefoxProfile
+tempProfile = liftBase $ defaultProfile <$> mkTemp
 
 -- |Load an existing profile from the file system. Any prepared changes made to
 -- the FirefoxProfile will have no effect to the profile on disk.
-loadProfile :: MonadIO m => FilePath -> m FirefoxProfile
-loadProfile path = liftIO $ do
+loadProfile :: MonadBase IO m => FilePath -> m FirefoxProfile
+loadProfile path = liftBase $ do
   FirefoxProfile{ profileDir = d } <- tempProfile
   FirefoxProfile <$> pure d <*> getExtensions <*> getPrefs
   where
@@ -195,10 +195,11 @@ loadProfile path = liftIO $ do
 -- Internally, this function constructs a Firefox profile within a temp 
 -- directory, archives it as a zip file, and then base64 encodes the zipped 
 -- data. The temporary directory is deleted afterwards
-prepareProfile :: MonadIO m => FirefoxProfile -> m PreparedFirefoxProfile
+prepareProfile :: MonadBase IO m => 
+                  FirefoxProfile -> m PreparedFirefoxProfile
 prepareProfile FirefoxProfile {profileDir = d, profileExts = s, 
                                profilePrefs = m} 
-  = liftIO $ do 
+  = liftBase $ do 
       createDirectoryIfMissing False extensionD
       extPaths <- mapM canonicalizePath . HS.toList $ s
       forM_ extPaths installExtension
@@ -229,14 +230,14 @@ prepareProfile FirefoxProfile {profileDir = d, profileExts = s,
 -- |Apply a function on an automatically generated default profile, and
 -- prepare the result. The FirefoxProfile passed to the handler function is
 -- the default profile used by sessions when Nothing is specified
-prepareTempProfile :: MonadIO m => 
+prepareTempProfile :: MonadBase IO m => 
                      (FirefoxProfile -> FirefoxProfile) 
                      -> m PreparedFirefoxProfile
 prepareTempProfile f = liftM f tempProfile >>= prepareProfile
 
 -- |Convenience function to load an existing Firefox profile from disk, apply
 -- a handler function, and then prepare the result for network transmission.
-prepareLoadedProfile :: MonadIO m =>
+prepareLoadedProfile :: MonadBase IO m =>
                         FilePath
                         -> (FirefoxProfile -> FirefoxProfile)
                         -> m PreparedFirefoxProfile
