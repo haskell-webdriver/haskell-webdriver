@@ -3,12 +3,14 @@
 {-# OPTIONS_HADDOCK not-home #-}
 -- |A type for profile preferences. These preference values are used by both 
 -- Firefox and Opera profiles.
-module Test.WebDriver.ProfilePreference 
+module Test.WebDriver.Common.Profile
        ( Profile(..), PreparedProfile(..), ProfilePref(..), ToPref(..)
        , getPref, addPref, deletePref, addExtension, deleteExtension
        , ProfileParseError(..) ) where
 
 import Data.Aeson
+import Data.Aeson.Types
+import Data.Attoparsec.Number (Number(..))
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashSet as HS
 import Data.Text (Text, pack)

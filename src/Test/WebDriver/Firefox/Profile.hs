@@ -14,19 +14,19 @@ module Test.WebDriver.Firefox.Profile
        , loadProfile, prepareProfile
        , prepareTempProfile, prepareLoadedProfile
        ) where
-import Test.WebDriver.ProfilePreference
+import Test.WebDriver.Common.Profile
+import Test.WebDriver.JSON (fromJSON')
 
 import Data.Aeson
-import Data.Attoparsec.Text as AP
+import Data.Aeson.Parser (jstring, value')
+import Data.Attoparsec.Char8 as AP
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashSet as HS
 import Data.Text (Text, pack)
-import Data.Text.IO as TIO
-import Data.ByteString (ByteString)
+import Data.ByteString as BS (ByteString, readFile)
 import qualified Data.ByteString.Char8 as SBS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.ByteString.Base64 as B64
-import Data.Char
 
 import System.IO
 import System.FilePath hiding (hasExtension, addExtension)
@@ -37,8 +37,9 @@ import Distribution.Simple.Utils
 import Distribution.Verbosity
 
 import Control.Monad
-import Control.Applicative
 import Control.Monad.Base
+import Control.Monad.Trans.Control
+import Control.Applicative
 import Control.Exception.Lifted
 import Data.Typeable
 
@@ -51,7 +52,7 @@ tempProfile = liftBase $ defaultProfile <$> mkTemp
 
 -- |Load an existing profile from the file system. Any prepared changes made to
 -- the 'Profile' will have no effect to the profile on disk.
-loadProfile :: MonadBase IO m => FilePath -> m (Profile Firefox)
+loadProfile :: MonadBaseControl IO m => FilePath -> m (Profile Firefox)
 loadProfile path = liftBase $ do
   Profile{ profileDir = d } <- tempProfile
   Profile <$> pure d <*> getExtensions <*> getPrefs
@@ -60,10 +61,10 @@ loadProfile path = liftBase $ do
     userPref = path </> "prefs" <.> "js"
     getExtensions = HS.fromList . filter (`elem` [".",".."]) 
                     <$> getDirectoryContents extD
-    getPrefs = HM.fromList <$> (parsePrefs =<< TIO.readFile userPref)
+    getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPref)
     
     parsePrefs s = either (throwIO . ProfileParseError)
-                          return 
+                          return
                    $ parseOnly prefsParser s
 
 -- |Prepare a firefox profile for network transmission.
@@ -79,9 +80,9 @@ prepareProfile Profile {profileDir = d, profileExts = s,
       extPaths <- mapM canonicalizePath . HS.toList $ s
       forM_ extPaths installExtension
       withFile userPrefs WriteMode writeUserPrefs
-      prof <-  PreparedProfile . B64.encode . SBS.concat . LBS.toChunks 
-               . fromArchive 
-               <$> addFilesToArchive [OptRecursive] emptyArchive [d]
+      prof <- PreparedProfile . B64.encode . SBS.concat . LBS.toChunks 
+              . fromArchive 
+              <$> addFilesToArchive [OptRecursive] emptyArchive [d]
       removeDirectoryRecursive d
       return prof
   where
@@ -112,7 +113,7 @@ prepareTempProfile f = liftM f tempProfile >>= prepareProfile
 
 -- |Convenience function to load an existing Firefox profile from disk, apply
 -- a handler function, and then prepare the result for network transmission.
-prepareLoadedProfile :: MonadBase IO m =>
+prepareLoadedProfile :: MonadBaseControl IO m =>
                         FilePath
                         -> (Profile Firefox -> Profile Firefox)
                         -> m (PreparedProfile Firefox)
@@ -189,9 +190,7 @@ mkTemp = do
   
 -- firefox prefs.js parser
 
-prefsParser = many prefLine
-
-prefLine = do 
+prefsParser = many $ do 
   padSpaces $ string "user_pref("
   k <- prefKey
   padSpaces $ char ','
@@ -200,17 +199,10 @@ prefLine = do
   endOfLine
   return (k,v)
   where
+    prefKey = jstring
+    prefVal = parseAsPref =<< value'
+      where parseAsPref v = case fromJSON v of
+              Error str -> fail str
+              Success p -> return p
     spaces = AP.takeWhile isSpace
     padSpaces p = spaces >> p >> spaces
-
-prefKey = str
-prefVal = boolVal <|> stringVal <|> intVal <|> doubleVal
-  where
-    boolVal   = boolTrue <|> boolFalse     
-    boolTrue  = string "true"  >> return (PrefBool True)
-    boolFalse = string "false" >> return (PrefBool False)
-    stringVal = PrefString <$> str
-    intVal    = PrefInteger <$> signed decimal
-    doubleVal = PrefDouble <$> double
-    
-str = char '"' >> AP.takeWhile (not . (=='"')) <* char '"'
