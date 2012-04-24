@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, 
-             GeneralizedNewtypeDeriving #-}
+             GeneralizedNewtypeDeriving, StandaloneDeriving #-}
 module Test.WebDriver.Classes
        ( WebDriver(..), RequestMethod(..),
          SessionState(..), modifySession, doSessCommand
@@ -17,6 +17,19 @@ import Data.Text (Text)
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted (Exception, throwIO)
 import Data.Typeable
+
+import Control.Monad.Trans.Maybe
+import Control.Monad.List
+import Control.Monad.Trans.Identity
+import Control.Monad.Reader
+import Control.Monad.Error
+--import Control.Monad.Cont
+import Control.Monad.Writer.Strict as SW
+import Control.Monad.Writer.Lazy as LW
+import Control.Monad.State.Strict as SS
+import Control.Monad.State.Lazy as LS
+import Control.Monad.RWS.Strict as SRWS
+import Control.Monad.RWS.Lazy as LRWS
 
 import Data.Default
 import Data.Word
@@ -92,3 +105,83 @@ doSessCommand method path args = do
                 ++ show path
       Just (SessionId sId) -> doCommand method 
                               (T.concat ["/session/", sId, path]) args
+
+
+instance SessionState m => SessionState (LS.StateT s m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance WebDriver wd => WebDriver (LS.StateT s wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
+
+instance SessionState m => SessionState (SS.StateT s m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance WebDriver wd => WebDriver (SS.StateT s wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
+instance SessionState m => SessionState (MaybeT m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance WebDriver wd => WebDriver (MaybeT wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
+
+instance SessionState m => SessionState (IdentityT m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance WebDriver wd => WebDriver (IdentityT wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
+
+instance (Monoid w, SessionState m) => SessionState (LW.WriterT w m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance (Monoid w, WebDriver wd) => WebDriver (LW.WriterT w wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
+
+instance SessionState m => SessionState (ReaderT r m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance WebDriver wd => WebDriver (ReaderT r wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
+
+instance (Error e, SessionState m) => SessionState (ErrorT e m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance (Error e, WebDriver wd) => WebDriver (ErrorT e wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
+
+--instance SessionState m => SessionState (ContT r m) where
+--  getSession = lift getSession
+--  putSession = lift . putSession
+
+--instance WebDriver wd => WebDriver (ContT r wd) where
+--  doCommand rm t a = lift (doCommand rm t a)
+
+
+instance (Monoid w, SessionState m) => SessionState (SRWS.RWST r w s m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance (Monoid w, WebDriver wd) => WebDriver (SRWS.RWST r w s wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
+
+instance (Monoid w, SessionState m) => SessionState (LRWS.RWST r w s m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance (Monoid w, WebDriver wd) => WebDriver (LRWS.RWST r w s wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
