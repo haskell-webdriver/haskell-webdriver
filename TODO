@@ -1,9 +1,6 @@
 for next release
 
--- document opera settings and default opera constructor
-
--- improve documentation. Document errors better. Provide more
-module introductions
+-- improve documentation. Document errors.
   -- provide examples
     -- basic runSession usage
     -- intermediate usage

@@ -1,19 +1,20 @@
 #Change Log
 
-## upcoming release
+## hs-webdriver 0.3 
 
 ### API changes
 * 2 typeclasses were introduced. All WebDriver commands are now overloaded on WebDriver class, so that monad transformers with a WD base can be used conveniently.
 * The MonadState instance of WD has been removed and replaced by SessionState.
 * The Firefox profile code has been generalized to work with either Opera or Firefox profiles. A phantom type parameter is used to create a distinction between the two. See documentation on Common.Profile and Firefox.Profile to learn about the specific changes that were made.
-* FFLogPref is now removed and replaced by the LogPref type, because both Firefox and Opera config use the same logging preference values. Since only FFLogPref's type and not its constructors were ever properly exported, this isn't considered worthy of a major version bump.
-
-### new features
-* Opera configuration is now implemented.
+* FFLogPref is now removed and replaced by the LogPref type, because both Firefox and Opera config use the same logging preference values.
 * Several new modules have been created, including: Capabilities, Monad, Classes, Exceptions. Many of the definitions have been moved around, but the export lists of the pre-existing modules are the same.
 
-### Bug fix
-* Various issues with the serialization of capabilities meant that Chrome, IE, and Opera weren't able to startup correctly. This is now fixed.
+### Bug fixes
+* Various issues with the serialization of capabilities meant that Chrome, IE, and Opera weren't able to startup correctly with default capabilities. This is now fixed.
+
+### new features
+* General documentation improvements.
+* Opera configuration is now implemented.
 
 ## hs-webdriver 0.2
 

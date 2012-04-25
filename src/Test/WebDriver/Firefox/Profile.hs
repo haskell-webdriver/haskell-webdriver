@@ -4,7 +4,7 @@
 -- in pure code and then \"prepared\" for network transmission. 
 module Test.WebDriver.Firefox.Profile 
        ( -- * Profiles
-         Firefox(..), Profile(..), PreparedProfile
+         Firefox, Profile(..), PreparedProfile
          -- * Preferences
        , ProfilePref(..), ToPref(..)
        , addPref, getPref, deletePref
@@ -15,15 +15,14 @@ module Test.WebDriver.Firefox.Profile
        , prepareTempProfile, prepareLoadedProfile
        ) where
 import Test.WebDriver.Common.Profile
-import Test.WebDriver.JSON (fromJSON')
 
 import Data.Aeson
 import Data.Aeson.Parser (jstring, value')
 import Data.Attoparsec.Char8 as AP
 import qualified Data.HashMap.Strict as HM
 import qualified Data.HashSet as HS
-import Data.Text (Text, pack)
-import Data.ByteString as BS (ByteString, readFile)
+import Data.Text (Text)
+import Data.ByteString as BS (readFile)
 import qualified Data.ByteString.Char8 as SBS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.ByteString.Base64 as B64
@@ -41,7 +40,6 @@ import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Control.Applicative
 import Control.Exception.Lifted
-import Data.Typeable
 
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'

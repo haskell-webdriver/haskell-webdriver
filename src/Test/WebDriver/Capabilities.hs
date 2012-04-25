@@ -12,7 +12,7 @@ import Data.Aeson.Types (Parser, typeMismatch)
 import Data.Text (Text, toLower, toUpper)
 import Data.Default (Default(..))
 import Data.Word (Word16)
-import Data.Maybe (isNothing, fromMaybe, catMaybes)
+import Data.Maybe (fromMaybe, catMaybes)
 import Data.String (fromString)
 
 import Control.Applicative

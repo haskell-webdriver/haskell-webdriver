@@ -15,12 +15,7 @@ import qualified Data.HashMap.Strict as HM
 import qualified Data.HashSet as HS
 import Data.Text (Text, pack)
 import Data.ByteString (ByteString)
-import qualified Data.ByteString.Char8 as SBS
-import qualified Data.ByteString.Lazy.Char8 as LBS
-import qualified Data.ByteString.Base64 as B64
-import Data.Char
 
-import Data.Text (Text, pack)
 import Data.Fixed
 import Data.Ratio
 import Data.Int
