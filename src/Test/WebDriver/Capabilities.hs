@@ -1,20 +1,22 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell, RecordWildCards
+{-# LANGUAGE OverloadedStrings, RecordWildCards
   #-}
 module Test.WebDriver.Capabilities where
 
 import Test.WebDriver.Firefox.Profile
 import Test.WebDriver.Chrome.Extension
+import Test.WebDriver.JSON
 
 import Data.Aeson
-import Data.Aeson.Types
-import Data.Aeson.TH
-import Control.Applicative
+import Data.Aeson.Types (Parser, typeMismatch)
+
 import Data.Text (Text, toLower, toUpper)
-import Data.Default
-import Data.Word
-import Data.Maybe (isNothing, fromMaybe, maybeToList)
-import Data.String(fromString)
-import qualified Data.Char as C
+import Data.Default (Default(..))
+import Data.Word (Word16)
+import Data.Maybe (isNothing, fromMaybe, catMaybes)
+import Data.String (fromString)
+
+import Control.Applicative
+import Control.Exception.Lifted (throw)
 
 {- |A structure describing the capabilities of a session. This record
 serves dual roles. 
@@ -146,35 +148,38 @@ instance ToJSON Capabilities where
              ,"firefox_binary" .= ffBinary
              ]
         Chrome {..}
-          -> ["chrome.chromedriverVersion" .= chromeDriverVersion
-             ,"chrome.binary" .= chromeBinary
-             ,"chrome.switches" .= chromeOptions
-             ,"chrome.extensions" .= chromeBinary
-             ]       
+          -> catMaybes [ opt "chrome.chromedriverVersion" chromeDriverVersion
+                       , opt "chrome.binary" chromeBinary 
+                       ]
+             ++ ["chrome.switches" .= chromeOptions
+                ,"chrome.extensions" .= chromeExtensions
+                ]       
         IE {..}
           -> ["IgnoreProtectedModeSettings" .= ignoreProtectedModeSettings
              --,"useLegacyInternalServer" .= u
              ]
         Opera{..}
-          -> ["opera.binary" .= operaBinary
-             ,"opera.guess_binary_path" .= isNothing operaBinary
-             --,"opera.no_restart" .= operaNoRestart
-             ,"opera.product" .= operaProduct
-             ,"opera.detatch" .= operaDetach
-             ,"opera.no_quit" .= operaDetach --backwards compatability
-             ,"opera.autostart" .= operaAutoStart
-             , "opera.idle" .= operaIdle
---             ,"opera.profile" .= operaProfile
-             ,"opera.launcher" .= operaLauncher
-             ,"opera.port" .= fromMaybe (-1) operaPort
-             ,"opera.host" .= operaHost
-              --note: consider replacing operaOptions with a list of options
-             ,"opera.arguments" .= operaOptions
-             ,"opera.logging.file" .= operaLogFile
-             ,"opera.logging.level" .= operaLogPref
-             ]
-             ++ map ("opera.display" .=) (maybeToList operaDisplay)
+          -> catMaybes [ opt "opera.binary" operaBinary
+                       , opt "opera.display" operaDisplay
+                       , opt "opera.product" operaProduct
+                       , opt "opera.launcher" operaLauncher
+                       , opt "opera.host" operaHost
+                       , opt "opera.logging.file" operaLogFile
+                       ] 
+             ++ ["opera.detatch" .= operaDetach
+                ,"opera.no_quit" .= operaDetach --backwards compatability
+                ,"opera.autostart" .= operaAutoStart
+                , "opera.idle" .= operaIdle
+                -- ,"opera.profile" .= operaProfile
+                ,"opera.port" .= fromMaybe (-1) operaPort
+                 --note: consider replacing operaOptions with a list of options
+                ,"opera.arguments" .= operaOptions
+                ,"opera.logging.level" .= operaLogPref
+                ]
         _ -> []
+          
+        where
+          opt k = fmap (k .=)
 
 
 instance FromJSON Capabilities where  
@@ -269,7 +274,10 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                        -- launcher supplied with the package.
                      , operaLauncher  :: Maybe FilePath
                        -- |The port we should use to connect to Opera. If Just 0
-                       -- , use a random port. If Nothing, use a default.
+                       -- , use a random port. If Nothing, use the default
+                       -- Opera port. The default 'opera' constructor uses
+                       -- Just 0, since Nothing is likely to cause "address
+                       -- already in use" errors.
                      , operaPort      :: Maybe Word16
                        -- |The host Opera should connect to. Unless you're
                        -- starting Opera manually you won't need this.
@@ -341,7 +349,7 @@ opera = Opera { operaBinary = Nothing
 --              , operaProfile = Nothing
               , operaLauncher = Nothing
               , operaHost = Nothing
-              , operaPort = Nothing
+              , operaPort = Just 0
               , operaOptions = []
               , operaLogFile = Nothing
               , operaLogPref = def
@@ -439,4 +447,28 @@ data LogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
 instance Default LogPref where
   def = LogInfo
 
-$( deriveJSON (map C.toUpper . drop 3) ''LogPref )
+instance ToJSON LogPref where
+  toJSON p= String $ case p of
+    LogOff -> "OFF"
+    LogSevere -> "SEVERE"
+    LogWarning -> "WARNING"
+    LogInfo -> "INFO"
+    LogConfig -> "CONFIG"
+    LogFine -> "FINE"
+    LogFiner -> "FINER"
+    LogFinest -> "FINEST"
+    LogAll -> "ALL"
+    
+instance FromJSON LogPref where
+  parseJSON (String s) = return $ case s of
+    "OFF" -> LogOff
+    "SEVERE" -> LogSevere
+    "WARNING" -> LogWarning
+    "INFO" -> LogInfo
+    "CONFIG" -> LogConfig
+    "FINE" -> LogFine
+    "FINER" -> LogFiner
+    "FINEST" -> LogFinest
+    "ALL" -> LogAll
+    _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
+  parseJSON other = typeMismatch "LogPref" other
