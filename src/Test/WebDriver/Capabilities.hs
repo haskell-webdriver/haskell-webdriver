@@ -144,7 +144,7 @@ instance ToJSON Capabilities where
       browserInfo = case browser of
         Firefox {..}
           -> ["firefox_profile" .= ffProfile
-             ,"loggingPrefs" .= ffLogPref
+             ,"loggingPrefs" .= object ["driver" .= ffLogPref]
              ,"firefox_binary" .= ffBinary
              ]
         Chrome {..}
