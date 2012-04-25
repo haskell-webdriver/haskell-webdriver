@@ -9,7 +9,7 @@
 * FFLogPref is now removed and replaced by the LogPref type, because both Firefox and Opera config use the same logging preference values.
 * Several new modules have been created, including: Capabilities, Monad, Classes, Exceptions. Many of the definitions have been moved around, but the export lists of the pre-existing modules are the same.
 
-### Bug fixes
+### bug fixes
 * Various issues with the serialization of capabilities meant that Chrome, IE, and Opera weren't able to startup correctly with default capabilities. This is now fixed.
 
 ### new features
