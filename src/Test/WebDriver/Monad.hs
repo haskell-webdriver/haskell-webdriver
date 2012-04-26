@@ -43,9 +43,7 @@ instance SessionState WD where
 instance WebDriver WD where
   doCommand method path args = do
     r <- mkRequest [] method path args
-    --liftIO . print $ r
     handleHTTPErr r
-    --liftIO . print . rspBody $ r
     handleHTTPResp r
 
 -- |Executes a 'WD' computation within the 'IO' monad, using the given 
