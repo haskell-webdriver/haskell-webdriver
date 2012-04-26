@@ -69,8 +69,9 @@ mkRequest headers method path args = do
                                                . show . BS.length $ body 
                                              ]
                     }
---  liftIO . print $ req
-  liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
+  r <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
+  liftBase . print . rspBody $ r
+  return r
 
 handleHTTPErr :: SessionState s => Response ByteString -> s ()
 handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} = 
@@ -151,7 +152,7 @@ data WDResponse = WDResponse { rspSessId :: Maybe SessionId
                   deriving (Eq, Show)
                            
 instance FromJSON WDResponse where
-  parseJSON (Object o) = WDResponse <$> o .: "sessionId"
+  parseJSON (Object o) = WDResponse <$> o .: "sessionId" .!= Nothing
                                     <*> o .: "status"
                                     <*> o .: "value" .!= Null
   parseJSON v = typeMismatch "WDResponse" v
