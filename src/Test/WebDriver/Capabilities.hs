@@ -98,8 +98,8 @@ instance Default Capabilities where
 
 -- |Default capabilities. This is the same as the 'Default' instance, but with 
 -- less polymorphism. By default, we use 'firefox' of an unspecified 'version' 
--- with default system-wide proxy settings on whatever 'platform' is available.
--- All Maybe Bool capabilities are set to Nothing (no preference).
+-- with default system-wide 'proxy' settings on whatever 'platform' is available
+-- . All Maybe Bool capabilities are set to Nothing (no preference).
 defaultCaps :: Capabilities
 defaultCaps = def
 
@@ -249,11 +249,11 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
              | Opera { -- |Server-side path to the Opera binary
                        operaBinary    :: Maybe FilePath
                      --, operaNoRestart :: Maybe Bool 
-                       -- |Which Opera product 'were using, e.g. "desktop",
-                       -- "core"
+                       -- |Which Opera product we're using, e.g. \"desktop\",
+                       -- \"core\"
                      , operaProduct   :: Maybe String
                        -- |Whether the Opera instance should stay open after
-                       -- we close the session. If False, closing the session
+                       -- we close the session. If false, closing the session
                        -- closes the browser.
                      , operaDetach    :: Bool
                        -- |Whether to auto-start the Opera binary. If false,
