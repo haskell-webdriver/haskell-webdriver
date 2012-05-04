@@ -4,6 +4,8 @@
 
 ###bug fixes
 *due to a nonconformance in the spec from the Grid server, wire responses were being received that contained no sessionId key, which subsequently resulted in a parse error from our JSON parser. This has been fixed, so that an omitted sessionId defaults to Nothing.
+*major bux fixes in the Firefox profile code. Note that loadProfile is unlikely
+to work as expected, but prepareTempProfile should.
 
 ## hs-webdriver 0.3 
 

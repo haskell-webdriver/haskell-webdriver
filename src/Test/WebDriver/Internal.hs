@@ -152,9 +152,9 @@ data WDResponse = WDResponse { rspSessId :: Maybe SessionId
                   deriving (Eq, Show)
                            
 instance FromJSON WDResponse where
-  parseJSON (Object o) = WDResponse <$> o .: "sessionId" .!= Nothing
+  parseJSON (Object o) = WDResponse <$> o .:? "sessionId" .!= Nothing
                                     <*> o .: "status"
-                                    <*> o .: "value" .!= Null
+                                    <*> o .:? "value" .!= Null
   parseJSON v = typeMismatch "WDResponse" v
 
 

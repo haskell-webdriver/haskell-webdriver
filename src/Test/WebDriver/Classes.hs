@@ -1,9 +1,13 @@
 {-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, 
-             GeneralizedNewtypeDeriving, StandaloneDeriving #-}
+             GeneralizedNewtypeDeriving #-}
 module Test.WebDriver.Classes
-       ( WebDriver(..), RequestMethod(..),
+       ( -- * WebDriver class
+         WebDriver(..), RequestMethod(..),
+         -- * SessionState class
          SessionState(..), modifySession
+         -- ** WebDriver sessions
        , WDSession(..), SessionId(..), defaultSession
+         -- **Convenience function for :sessionId URLs
        , doSessCommand
          -- * No Session Exception
        , NoSessionId(..)
@@ -55,8 +59,7 @@ class SessionState wd => WebDriver wd where
                 -> a          -- ^JSON parameters passed in the body 
                               -- of the request. Note that, as a special case,
                               -- () will result in an empty request body.
-                -> wd b 
-
+                -> wd b       -- ^The JSON result of the HTTP request.
 
 modifySession :: SessionState s => (WDSession -> WDSession) -> s ()
 modifySession f = getSession >>= putSession . f
@@ -108,7 +111,7 @@ newtype NoSessionId = NoSessionId String
                  deriving (Eq, Show, Typeable)
 
 
--- |This a convenient wrapper around doCommand that automatically prepends
+-- |This a convenient wrapper around 'doCommand' that automatically prepends
 -- the session URL parameter to the wire command URL. For example, passing
 -- a URL of "/refresh" will expand to "/session/:sessionId/refresh".
 doSessCommand :: (WebDriver wd, ToJSON a, FromJSON b) => 
@@ -118,7 +121,7 @@ doSessCommand method path args = do
   case mSessId of 
       Nothing -> throwIO . NoSessionId $ msg
         where 
-          msg = "No session ID found when making request for relative URL "
+          msg = "doSessCommand: No session ID found for relative URL "
                 ++ show path
       Just (SessionId sId) -> doCommand method 
                               (T.concat ["/session/", sId, path]) args
@@ -178,14 +181,12 @@ instance (Error e, SessionState m) => SessionState (ErrorT e m) where
 instance (Error e, WebDriver wd) => WebDriver (ErrorT e wd) where
   doCommand rm t a = lift (doCommand rm t a)
 
-
 --instance SessionState m => SessionState (ContT r m) where
 --  getSession = lift getSession
 --  putSession = lift . putSession
 
 --instance WebDriver wd => WebDriver (ContT r wd) where
 --  doCommand rm t a = lift (doCommand rm t a)
-
 
 instance (Monoid w, SessionState m) => SessionState (SRWS.RWST r w s m) where
   getSession = lift getSession

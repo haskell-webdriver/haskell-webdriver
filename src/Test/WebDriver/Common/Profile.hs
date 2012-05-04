@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP, TypeSynonymInstances, DeriveDataTypeable, FlexibleInstances, 
-             GeneralizedNewtypeDeriving #-}
+             GeneralizedNewtypeDeriving, OverloadedStrings #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- |A type for profile preferences. These preference values are used by both 
 -- Firefox and Opera profiles.
@@ -23,6 +23,7 @@ import Data.Word
 
 import Data.Typeable
 import Control.Exception
+import Control.Applicative
 
 -- |This structure allows you to construct and manipulate profiles in pure code,
 -- deferring execution of IO operations until the profile is \"prepared\". This 
@@ -43,7 +44,14 @@ data Profile b = Profile
 -- |Represents a profile that has been prepared for 
 -- network transmission. The profile cannot be modified in this form.
 newtype PreparedProfile b = PreparedProfile ByteString
-  deriving (Eq, Show, ToJSON, FromJSON)
+  deriving (Eq, Show)
+
+instance FromJSON (PreparedProfile s) where
+  parseJSON (Object o) = PreparedProfile <$> o .: "zip"
+  parseJSON other = typeMismatch "PreparedProfile" other
+  
+instance ToJSON (PreparedProfile s) where
+  toJSON s = object ["zip" .= s]
 
 -- |A profile preference value. This is the subset of JSON values that excludes
 -- arrays, objects, and null.

@@ -15,7 +15,6 @@ module Test.WebDriver.Firefox.Profile
        , prepareTempProfile, prepareLoadedProfile
        ) where
 import Test.WebDriver.Common.Profile
-
 import Data.Aeson
 import Data.Aeson.Parser (jstring, value')
 import Data.Attoparsec.Char8 as AP
@@ -39,7 +38,7 @@ import Control.Monad
 import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Control.Applicative
-import Control.Exception.Lifted
+import Control.Exception.Lifted hiding (try)
 
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
@@ -57,8 +56,12 @@ loadProfile path = liftBase $ do
   where
     extD = path </> "extensions"
     userPref = path </> "prefs" <.> "js"
-    getExtensions = HS.fromList . filter (`elem` [".",".."]) 
-                    <$> getDirectoryContents extD
+    getExtensions = do
+      b <- doesDirectoryExist extD
+      if b
+        then HS.fromList . map (extD </>) . filter (`notElem` [".",".."])
+              <$> getDirectoryContents extD
+        else return HS.empty
     getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPref)
     
     parsePrefs s = either (throwIO . ProfileParseError)
@@ -85,7 +88,7 @@ prepareProfile Profile {profileDir = d, profileExts = s,
       return prof
   where
     extensionD = d </> "extensions"
-    userPrefs  = d </> "prefs" <.> "js"
+    userPrefs  = d </> "user" <.> "js"
     
     installExtension ePath = 
       case splitExtension ePath of
@@ -189,13 +192,12 @@ mkTemp = do
 -- firefox prefs.js parser
 
 prefsParser :: Parser [(Text, ProfilePref)]
-prefsParser = many $ do 
+prefsParser = many1 $ do 
   padSpaces $ string "user_pref("
   k <- prefKey <?> "preference key"
   padSpaces $ char ','
   v <- prefVal <?> "preference value"
   padSpaces $ string ");"
-  endOfLine
   return (k,v)
   where
     prefKey = jstring
@@ -204,5 +206,10 @@ prefsParser = many $ do
       case fromJSON v of
         Error str -> fail str
         Success p -> return p
-    spaces = AP.takeWhile isSpace
+    
     padSpaces p = spaces >> p <* spaces
+    spaces = many (endOfLine <|> void space <|> void comment)      
+      where
+        comment = inlineComment <|> lineComment
+        lineComment = char '#' *> manyTill anyChar endOfLine
+        inlineComment = string "/*" *> manyTill anyChar (string "*/")
