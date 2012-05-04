@@ -1,6 +1,11 @@
-# hs-webdriver 0.3.0.1
+# Change Log
 
 ## upcoming release
+
+###API changes
+*The <&&> and <||> in Commands.Wait now have fixity declarations matching their respective Prelude counterparts.
+
+## hs-webdriver 0.3.0.1
 
 ###bug fixes
 *due to a nonconformance in the spec from the Grid server, wire responses were being received that contained no sessionId key, which subsequently resulted in a parse error from our JSON parser. This has been fixed, so that an omitted sessionId defaults to Nothing.
