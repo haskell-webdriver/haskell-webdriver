@@ -1,4 +1,4 @@
-#Change Log
+# hs-webdriver 0.3.0.1
 
 ## upcoming release
 
