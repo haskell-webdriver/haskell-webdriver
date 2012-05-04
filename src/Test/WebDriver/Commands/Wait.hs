@@ -36,6 +36,8 @@ expect b
   | b         = return ()
   | otherwise = unexpected
 
+infixr 3  <&&>
+infixr 2  <||>
 
 -- |Lifted boolean and
 (<&&>) :: Monad m  => m Bool -> m Bool -> m Bool
