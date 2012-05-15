@@ -83,7 +83,7 @@ import Data.Text (Text, splitOn, append, toUpper, toLower)
 import Data.ByteString as SBS (ByteString, concat)
 import Data.ByteString.Base64 as B64
 import Data.ByteString.Lazy as LBS (ByteString, toChunks)
-import Network.URI
+import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
 
 import Control.Applicative
