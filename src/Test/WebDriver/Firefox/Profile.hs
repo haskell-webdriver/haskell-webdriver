@@ -56,9 +56,9 @@ loadProfile path = liftBase $ do
       case FS.filter (not.isIgnored) [d] of
         [t] -> return $ FS.zipWithDest (,) "" t
         _   -> return []
-      where isIgnored p = "Cache/" `isInfixOf` path
-                          || "OfflineCache/" `isInfixOf` path
-                          || "lock" `isSuffixOf` path
+      where isIgnored p = "Cache/" `isInfixOf` p
+                          || "OfflineCache/" `isInfixOf` p
+                          || "lock" `isSuffixOf` p
     
     userPref = path </> "prefs" <.> "js"
     getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPref)
