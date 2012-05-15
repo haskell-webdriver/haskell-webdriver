@@ -27,8 +27,6 @@ distant future
 
 misc. unsorted
 
--- remove temporary directory code from prepareProfile
-
 --Use lazy ByteString where possible. patch base64-bytestring to work with lazy bytestrings
 
 -- add support for new experimental IE capabilities
