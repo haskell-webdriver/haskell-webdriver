@@ -13,8 +13,11 @@ module Test.WebDriver.Firefox.Profile
          -- * Extensions
        , addExtension, deleteExtension
          -- * Loading and preparing profiles
-       , loadProfile, prepareProfile
-       , prepareDefaultProfile, prepareLoadedProfile
+       , prepareProfile, prepareTempProfile
+         -- ** Preparing profiles from disk
+       , loadProfile, prepareLoadedProfile, prepareLoadedProfile_
+         -- ** Preparing zip archives
+       , prepareZippedProfile, prepareZipArchive, prepareRawZip
        ) where
 import Test.WebDriver.Common.Profile
 import Data.Aeson
@@ -44,80 +47,6 @@ import Prelude hiding (catch)
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
 data Firefox
-
--- |Load an existing profile from the file system. Any prepared changes made to
--- the 'Profile' will have no effect to the profile on disk.
-loadProfile :: MonadBaseControl IO m => FilePath -> m (Profile Firefox)
-loadProfile path = liftBase $ do
-  Profile <$> getFiles <*> getPrefs
-  where
-    getFiles = do
-      d <- FS.getDirectory path
-      case FS.filter (not.isIgnored) [d] of
-        [t] -> return $ FS.zipWithDest (,) "" t
-        _   -> return []
-      where isIgnored p = "Cache/" `isInfixOf` p
-                          || "OfflineCache/" `isInfixOf` p
-                          || "lock" `isSuffixOf` p
-    
-    userPref = path </> "prefs" <.> "js"
-    getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPref)
-    parsePrefs s = either (throwIO . ProfileParseError)
-                          return
-                   $ parseOnly prefsParser s
-
--- |Prepare a firefox profile for network transmission.
--- Internally, this function constructs a Firefox profile within a temp 
--- directory, archives it as a zip file, and then base64 encodes the zipped 
--- data. The temporary directory is deleted afterwards
-prepareProfile :: MonadBaseControl IO m => 
-                  Profile Firefox -> m (PreparedProfile Firefox)
-prepareProfile Profile {profileFiles = files, profilePrefs = prefs} 
-  = liftBase $ do 
-      tmpdir <- mkTemp
-      mapM_ (installPath tmpdir) files
-      archive <- addUserPrefs <$> addFilesToArchive [OptRecursive] 
-                                                    emptyArchive [tmpdir]
-      return . PreparedProfile . B64.encode . SBS.concat . LBS.toChunks
-        . fromArchive $ archive
-  where
-    installPath tmp (src, d) = do
-      let dest = tmp </> d
-      isDir <- doesDirectoryExist src
-      if isDir
-        then createDirectoryIfMissing True dest `catch` ignoreIOException
-        else do
-          let dir = takeDirectory dest
-          when (not . null $ dir) $
-            createDirectoryIfMissing True dir `catch` ignoreIOException
-          copyFile src dest `catch` ignoreIOException
-    
-    ignoreIOException :: IOException -> IO ()
-    ignoreIOException = print 
-    
-    addUserPrefs = addEntryToArchive e
-      where
-        e = toEntry ("user" <.> "js") 0
-            . LBS.concat
-            . map (\(k, v) -> LBS.concat [ "user_pref(", encode k, 
-                                           ", ", encode v, ");\n"]) 
-            . HM.toList $ prefs  
-
--- |Apply a function on a default profile, and
--- prepare the result. The Profile passed to the handler function is
--- the default profile used by sessions when Nothing is specified
-prepareDefaultProfile :: MonadBaseControl IO m => 
-                     (Profile Firefox -> Profile Firefox) 
-                     -> m (PreparedProfile Firefox)
-prepareDefaultProfile f = prepareProfile . f $ defaultProfile
-
--- |Convenience function to load an existing Firefox profile from disk, apply
--- a handler function, and then prepare the result for network transmission.
-prepareLoadedProfile :: MonadBaseControl IO m =>
-                        FilePath
-                        -> (Profile Firefox -> Profile Firefox)
-                        -> m (PreparedProfile Firefox)
-prepareLoadedProfile path f = liftM f (loadProfile path) >>= prepareProfile
 
 defaultProfile :: Profile Firefox
 defaultProfile = 
@@ -182,6 +111,87 @@ defaultProfile =
 #else
       native_events = PrefBool True
 #endif
+
+
+-- |Load an existing profile from the file system. Any prepared changes made to
+-- the 'Profile' will have no effect to the profile on disk.
+loadProfile :: MonadBaseControl IO m => FilePath -> m (Profile Firefox)
+loadProfile path = liftBase $ do
+  Profile <$> getFiles <*> getPrefs
+  where
+    getFiles = do
+      d <- FS.getDirectory path
+      case FS.filter (not.isIgnored) [d] of
+        [t] -> return $ FS.zipWithDest (,) "" t
+        _   -> return []
+      where isIgnored p = "Cache/" `isInfixOf` p
+                          || "OfflineCache/" `isInfixOf` p
+                          || "lock" `isSuffixOf` p
+    
+    userPref = path </> "prefs" <.> "js"
+    getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPref)
+    parsePrefs s = either (throwIO . ProfileParseError)
+                          return
+                   $ parseOnly prefsParser s
+
+-- |Prepare a firefox profile for network transmission.
+-- Internally, this function constructs a Firefox profile within a temp 
+-- directory, archives it as a zip file, and then base64 encodes the zipped 
+-- data. The temporary directory is deleted afterwards.
+--
+-- NOTE: because this function has to copy the profile files into a 
+-- a temp directory before zip archiving them, this operation is likely to be slow
+-- for large profiles. In such a case, consider using 'prepareLoadedProfile_' or 
+-- 'prepareZippedProfile' instead.
+prepareProfile :: MonadBaseControl IO m => 
+                  Profile Firefox -> m (PreparedProfile Firefox)
+prepareProfile Profile {profileFiles = files, profilePrefs = prefs} 
+  = liftBase $ do 
+      tmpdir <- mkTemp
+      mapM_ (installPath tmpdir) files
+      archive <- addUserPrefs <$> addFilesToArchive [OptRecursive] 
+                                                    emptyArchive [tmpdir]
+      return . prepareZipArchive $ archive
+  where
+    installPath tmp (src, d) = do
+      let dest = tmp </> d
+      isDir <- doesDirectoryExist src
+      if isDir
+        then createDirectoryIfMissing True dest `catch` ignoreIOException
+        else do
+          let dir = takeDirectory dest
+          when (not . null $ dir) $
+            createDirectoryIfMissing True dir `catch` ignoreIOException
+          copyFile src dest `catch` ignoreIOException
+    
+    ignoreIOException :: IOException -> IO ()
+    ignoreIOException = print 
+    
+    addUserPrefs = addEntryToArchive e
+      where
+        e = toEntry ("user" <.> "js") 0
+            . LBS.concat
+            . map (\(k, v) -> LBS.concat [ "user_pref(", encode k, 
+                                           ", ", encode v, ");\n"]) 
+            . HM.toList $ prefs  
+
+-- |Apply a function on a default profile, and
+-- prepare the result. The Profile passed to the handler function is
+-- the default profile used by sessions when Nothing is specified
+prepareTempProfile :: MonadBaseControl IO m => 
+                     (Profile Firefox -> Profile Firefox) 
+                     -> m (PreparedProfile Firefox)
+prepareTempProfile f = prepareProfile . f $ defaultProfile
+
+-- |Convenience function to load an existing Firefox profile from disk, apply
+-- a handler function, and then prepare the result for network transmission.
+--
+-- NOTE: like 'prepareProfile', the same caveat about large profiles applies.
+prepareLoadedProfile :: MonadBaseControl IO m =>
+                        FilePath
+                        -> (Profile Firefox -> Profile Firefox)
+                        -> m (PreparedProfile Firefox)
+prepareLoadedProfile path f = liftM f (loadProfile path) >>= prepareProfile
   
 -- firefox prefs.js parser
 

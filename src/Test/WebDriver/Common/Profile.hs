@@ -1,12 +1,20 @@
 {-# LANGUAGE CPP, TypeSynonymInstances, DeriveDataTypeable, FlexibleInstances, 
-             GeneralizedNewtypeDeriving, OverloadedStrings #-}
+             GeneralizedNewtypeDeriving, OverloadedStrings, FlexibleContexts #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- |A type for profile preferences. These preference values are used by both 
 -- Firefox and Opera profiles.
 module Test.WebDriver.Common.Profile
-       ( Profile(..), PreparedProfile(..), ProfilePref(..), ToPref(..)
+       ( -- *Profiles and profile preferences
+         Profile(..), PreparedProfile(..), ProfilePref(..), ToPref(..)
        , getPref, addPref, deletePref, addExtension, deleteExtension
-       , ProfileParseError(..) ) where
+         -- *Preparing profiles from disk
+       , prepareLoadedProfile_
+         -- *Preparing zipped profiles
+       , prepareZippedProfile, prepareZipArchive,
+         prepareRawZip
+         -- *Profile errors
+       , ProfileParseError(..) 
+       ) where
 
 import Data.Aeson
 import Data.Aeson.Types
@@ -14,7 +22,14 @@ import Data.Attoparsec.Number (Number(..))
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text, pack)
 import Data.ByteString (ByteString)
+import qualified Data.ByteString as SBS
+import qualified Data.ByteString.Lazy as LBS
+import qualified Data.ByteString.Base64 as B64
+
+
+import Codec.Archive.Zip
 import System.FilePath hiding (addExtension)
+
 
 import Data.Fixed
 import Data.Ratio
@@ -24,6 +39,7 @@ import Data.Word
 import Data.Typeable
 import Control.Exception
 import Control.Applicative
+import Control.Monad.Base
 
 -- |This structure allows you to construct and manipulate profiles in pure code,
 -- deferring execution of IO operations until the profile is \"prepared\". This 
@@ -31,7 +47,7 @@ import Control.Applicative
 -- must be made, the phantom type parameter is used to differentiate.
 data Profile b = Profile 
                  { -- |A set of filepaths pointing to files to place in
-                   -- the extension directory. The first element is the source 
+                   -- the extension directory. The first tuple element is the source 
                    -- path. The second tuple element is the destination path 
                    -- relative to the extension of the file.
                    profileFiles   :: [(FilePath, FilePath)]
@@ -139,21 +155,20 @@ deletePref k p = asMap p $ HM.delete k
 
 -- |Add a file to the profile directory. The first argument is the source
 -- of the file on the local filesystem. The second argument is the destination 
--- as a path relative to the profile directory. 
---
--- NOTE: the zip-archive package only recognize / as a valid path seperator
--- so all destination filepaths should use / seperators
+-- as a path relative to a profile directory. 
 addFile :: FilePath -> FilePath -> Profile b -> Profile b
 addFile src dest p = asList p ((src, dest):)
 
+-- |Delete a file from the profile directory. The first argument is the name of
+-- file within the profile directory.
 deleteFile :: FilePath -> Profile b -> Profile b
 deleteFile path p = asList p $ filter (\(_,p) -> p == path)
 
 -- |Add a new extension to the profile. The file path should refer to
--- an .xpi file or an extension directory on the filesystem. This operation has 
--- no effect if the same extension has already been added to this profile.
+-- an .xpi file or an extension directory on the filesystem. If possible,
+-- you should avoiding adding the same extension twice to a given profile.
 addExtension :: FilePath -> Profile b -> Profile b
-addExtension path = addFile path ("extensions/" ++ name)
+addExtension path = addFile path ("extensions/" </> name)
   where (_, name) = splitFileName path
 
 -- |Delete an existing extension from the profile. The string parameter 
@@ -161,7 +176,7 @@ addExtension path = addFile path ("extensions/" ++ name)
 -- directory of the profile. This operation has no effect if the extension was 
 -- never added to the profile.
 deleteExtension :: String -> Profile b -> Profile b
-deleteExtension name = deleteFile ("extensions/" ++ name)
+deleteExtension name = deleteFile ("extensions/" </> name)
 
 asMap :: Profile b
          -> (HM.HashMap Text ProfilePref -> HM.HashMap Text ProfilePref)
@@ -172,3 +187,26 @@ asList :: Profile b
          -> ([(FilePath, FilePath)] -> [(FilePath, FilePath)])
          -> Profile b
 asList (Profile ls hm) f = Profile (f ls) hm
+
+
+-- |Efficiently load an existing profile from disk and prepare it for network
+-- transmission.
+prepareLoadedProfile_ :: MonadBase IO m =>
+                        FilePath -> m (PreparedProfile a)
+prepareLoadedProfile_ path = prepareZipArchive <$>
+                             liftBase (addFilesToArchive [OptRecursive] 
+                                       emptyArchive [path])
+
+-- |Prepare a zip file of a profile on disk for network transmission.
+-- This function is very efficient at loading large profiles from disk.
+prepareZippedProfile :: MonadBase IO m => 
+                        FilePath -> m (PreparedProfile a)
+prepareZippedProfile path = prepareRawZip <$> liftBase (LBS.readFile path)
+
+-- |Prepare a zip archive of a profile for network transmission.
+prepareZipArchive :: Archive -> PreparedProfile a
+prepareZipArchive = prepareRawZip . fromArchive
+
+-- |Prepare a ByteString of raw zip data for network transmission
+prepareRawZip :: LBS.ByteString -> PreparedProfile a
+prepareRawZip = PreparedProfile . B64.encode . SBS.concat . LBS.toChunks
