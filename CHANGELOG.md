@@ -15,6 +15,7 @@
 
 ###new features
 *several new functions for working with Firefox/Opera profiles have been added. This includes functions for loading large profiles from disk, functions for working with zipped profiles, and functions for adding arbitrary files to a profile in pure code. 
+*new helper functions were added to Test.WebDriver.Commands.Wait, exported from the cond package.
 
 ## hs-webdriver 0.3.0.1
 
