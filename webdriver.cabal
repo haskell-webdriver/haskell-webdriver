@@ -51,6 +51,7 @@ library
                  , data-default
                  , temporary
                  , base64-bytestring
+                 , cond >= 0.3 && < 0.5
 
   exposed-modules: Test.WebDriver
                    Test.WebDriver.Classes

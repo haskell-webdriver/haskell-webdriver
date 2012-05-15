@@ -7,7 +7,7 @@ module Test.WebDriver.Commands.Wait
        , ExpectFailed, expect, unexpected
          -- ** Convenience functions
        , expectAny, expectAll
-       , (<||>), (<&&>)
+       , ifM, (<||>), (<&&>), notM
        ) where
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Classes
@@ -18,6 +18,7 @@ import Control.Exception.Lifted
 import Control.Concurrent
 import Data.Time.Clock
 import Data.Typeable
+import Control.Conditional
 import Prelude hiding (catch)
 
 instance Exception ExpectFailed
@@ -35,18 +36,6 @@ expect :: MonadBaseControl IO m => Bool -> m ()
 expect b
   | b         = return ()
   | otherwise = unexpected
-
-infixr 3  <&&>
-infixr 2  <||>
-
--- |Lifted boolean and
-(<&&>) :: Monad m  => m Bool -> m Bool -> m Bool
-(<&&>) = liftM2 (&&)
-
--- |Lifted boolean or
-(<||>) :: Monad m => m Bool -> m Bool -> m Bool
-(<||>) = liftM2 (||)
-
 
 -- |Apply a predicate to every element in a list, and expect that at least one
 -- succeeds.
