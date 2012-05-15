@@ -70,7 +70,6 @@ mkRequest headers method path args = do
                                              ]
                     }
   r <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
-  liftBase . print . rspBody $ r
   return r
 
 handleHTTPErr :: SessionState s => Response ByteString -> s ()

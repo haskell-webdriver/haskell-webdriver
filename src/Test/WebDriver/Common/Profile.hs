@@ -162,7 +162,7 @@ addFile src dest p = asList p ((src, dest):)
 -- |Delete a file from the profile directory. The first argument is the name of
 -- file within the profile directory.
 deleteFile :: FilePath -> Profile b -> Profile b
-deleteFile path p = asList p $ filter (\(_,p) -> p == path)
+deleteFile path prof = asList prof $ filter (\(_,p) -> p == path)
 
 -- |Add a new extension to the profile. The file path should refer to
 -- an .xpi file or an extension directory on the filesystem. If possible,
