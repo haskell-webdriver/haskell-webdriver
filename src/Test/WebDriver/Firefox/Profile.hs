@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP, OverloadedStrings, FlexibleContexts, 
              GeneralizedNewtypeDeriving, EmptyDataDecls, 
              ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-warn-unused-do-bind #-} -- suppress warnings from attoparsec
 -- |A module for working with Firefox profiles. Firefox profiles are manipulated
 -- in pure code and then \"prepared\" for network transmission. 
 module Test.WebDriver.Firefox.Profile 
@@ -26,9 +27,7 @@ import Data.Attoparsec.Char8 as AP
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
 import Data.ByteString as BS (readFile)
-import qualified Data.ByteString.Char8 as SBS
 import qualified Data.ByteString.Lazy.Char8 as LBS
-import qualified Data.ByteString.Base64 as B64
 
 import System.FilePath hiding (addExtension)
 import System.Directory
@@ -151,6 +150,7 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
       mapM_ (installPath tmpdir) files
       archive <- addUserPrefs <$> addFilesToArchive [OptRecursive] 
                                                     emptyArchive [tmpdir]
+      removeDirectoryRecursive tmpdir
       return . prepareZipArchive $ archive
   where
     installPath tmp (src, d) = do
