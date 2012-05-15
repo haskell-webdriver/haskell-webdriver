@@ -237,7 +237,7 @@ data FailedCommandInfo =
   deriving (Eq)
 
 -- |Provides a readable printout of the error information, useful for
--- logging
+-- logging.
 instance Show FailedCommandInfo where
   show i = showChar '\n' 
            . showString "Session: " . sess 

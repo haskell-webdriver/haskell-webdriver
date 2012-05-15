@@ -12,9 +12,9 @@ import Data.Aeson
 import Data.Aeson.Types
 import Data.Attoparsec.Number (Number(..))
 import qualified Data.HashMap.Strict as HM
-import qualified Data.HashSet as HS
 import Data.Text (Text, pack)
 import Data.ByteString (ByteString)
+import System.FilePath hiding (addExtension)
 
 import Data.Fixed
 import Data.Ratio
@@ -30,10 +30,11 @@ import Control.Applicative
 -- type is shared by both Firefox and Opera profile code; when a distinction 
 -- must be made, the phantom type parameter is used to differentiate.
 data Profile b = Profile 
-                 { -- |Location of the profile in the local file system
-                   profileDir    :: FilePath
-                   -- |A set of filepaths pointing to browser extensions.
-                 , profileExts   :: HS.HashSet FilePath
+                 { -- |A set of filepaths pointing to files to place in
+                   -- the extension directory. The first element is the source 
+                   -- path. The second tuple element is the destination path 
+                   -- relative to the extension of the file.
+                   profileFiles   :: [(FilePath, FilePath)]
                    -- |A map of Firefox preferences. These are the settings
                    -- found in the profile's prefs.js, and entries found in
                    -- about:config
@@ -51,7 +52,7 @@ instance FromJSON (PreparedProfile s) where
   parseJSON other = typeMismatch "PreparedProfile" other
   
 instance ToJSON (PreparedProfile s) where
-  toJSON s = object ["zip" .= s]
+  toJSON (PreparedProfile s) = object ["zip" .= s]
 
 -- |A profile preference value. This is the subset of JSON values that excludes
 -- arrays, objects, and null.
@@ -124,7 +125,7 @@ instance (HasResolution r) => ToPref (Fixed r) where
 
 -- |Retrieve a preference from a profile by key name.
 getPref :: Text -> Profile b -> Maybe ProfilePref
-getPref k (Profile _ _ m) = HM.lookup k m
+getPref k (Profile _ m) = HM.lookup k m
 
 -- |Add a new preference entry to a profile, overwriting any existing entry
 -- with the same key.
@@ -136,24 +137,38 @@ addPref k v p = asMap p $ HM.insert k (toPref v)
 deletePref :: Text -> Profile b -> Profile b
 deletePref k p = asMap p $ HM.delete k
 
--- |Add a new extension to the profile. The file path should refer to
--- an .xpi file or an extension directory. This operation has no effect if
--- the same extension has already been added to this profile.
-addExtension :: FilePath -> Profile b -> Profile b
-addExtension path p = asSet p $ HS.insert path
+-- |Add a file to the profile directory. The first argument is the source
+-- of the file on the local filesystem. The second argument is the destination 
+-- as a path relative to the profile directory. 
+--
+-- NOTE: the zip-archive package only recognize / as a valid path seperator
+-- so all destination filepaths should use / seperators
+addFile :: FilePath -> FilePath -> Profile b -> Profile b
+addFile src dest p = asList p ((src, dest):)
 
--- |Delete an existing extension from the profile. The file path should refer
--- to an .xpi file or an extension directory. This operation has no effect if
--- the extension was never added to the profile.
-deleteExtension :: FilePath -> Profile b -> Profile b
-deleteExtension path p = asSet p $ HS.delete path
+deleteFile :: FilePath -> Profile b -> Profile b
+deleteFile path p = asList p $ filter (\(_,p) -> p == path)
+
+-- |Add a new extension to the profile. The file path should refer to
+-- an .xpi file or an extension directory on the filesystem. This operation has 
+-- no effect if the same extension has already been added to this profile.
+addExtension :: FilePath -> Profile b -> Profile b
+addExtension path = addFile path ("extensions/" ++ name)
+  where (_, name) = splitFileName path
+
+-- |Delete an existing extension from the profile. The string parameter 
+-- should refer to an .xpi file or directory located within the extensions 
+-- directory of the profile. This operation has no effect if the extension was 
+-- never added to the profile.
+deleteExtension :: String -> Profile b -> Profile b
+deleteExtension name = deleteFile ("extensions/" ++ name)
 
 asMap :: Profile b
          -> (HM.HashMap Text ProfilePref -> HM.HashMap Text ProfilePref)
          -> Profile b
-asMap (Profile p hs hm) f = Profile p hs (f hm)
+asMap (Profile hs hm) f = Profile hs (f hm)
 
-asSet :: Profile b
-         -> (HS.HashSet FilePath -> HS.HashSet FilePath)
+asList :: Profile b
+         -> ([(FilePath, FilePath)] -> [(FilePath, FilePath)])
          -> Profile b
-asSet (Profile p hs hm) f = Profile p (f hs) hm
+asList (Profile ls hm) f = Profile (f ls) hm

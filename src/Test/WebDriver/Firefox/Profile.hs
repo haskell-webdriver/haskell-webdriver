@@ -1,10 +1,12 @@
 {-# LANGUAGE CPP, OverloadedStrings, FlexibleContexts, 
-             GeneralizedNewtypeDeriving, EmptyDataDecls #-}
+             GeneralizedNewtypeDeriving, EmptyDataDecls, 
+             ScopedTypeVariables #-}
 -- |A module for working with Firefox profiles. Firefox profiles are manipulated
 -- in pure code and then \"prepared\" for network transmission. 
 module Test.WebDriver.Firefox.Profile 
        ( -- * Profiles
          Firefox, Profile(..), PreparedProfile
+       , defaultProfile
          -- * Preferences
        , ProfilePref(..), ToPref(..)
        , addPref, getPref, deletePref
@@ -12,58 +14,54 @@ module Test.WebDriver.Firefox.Profile
        , addExtension, deleteExtension
          -- * Loading and preparing profiles
        , loadProfile, prepareProfile
-       , prepareTempProfile, prepareLoadedProfile
+       , prepareDefaultProfile, prepareLoadedProfile
        ) where
 import Test.WebDriver.Common.Profile
 import Data.Aeson
 import Data.Aeson.Parser (jstring, value')
 import Data.Attoparsec.Char8 as AP
 import qualified Data.HashMap.Strict as HM
-import qualified Data.HashSet as HS
 import Data.Text (Text)
 import Data.ByteString as BS (readFile)
 import qualified Data.ByteString.Char8 as SBS
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.ByteString.Base64 as B64
 
-import System.IO
-import System.FilePath hiding (hasExtension, addExtension)
+import System.FilePath hiding (addExtension)
 import System.Directory
-import System.IO.Temp
+import System.IO.Temp (createTempDirectory)
+import qualified System.File.Tree as FS
 import Codec.Archive.Zip
-import Distribution.Simple.Utils
-import Distribution.Verbosity
 
 import Control.Monad
 import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Control.Applicative
+import Data.List
 import Control.Exception.Lifted hiding (try)
 
+import Prelude hiding (catch)
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
 data Firefox
-
-tempProfile :: MonadBase IO m => m (Profile Firefox)
-tempProfile = liftBase $ defaultProfile <$> mkTemp
 
 -- |Load an existing profile from the file system. Any prepared changes made to
 -- the 'Profile' will have no effect to the profile on disk.
 loadProfile :: MonadBaseControl IO m => FilePath -> m (Profile Firefox)
 loadProfile path = liftBase $ do
-  Profile{ profileDir = d } <- tempProfile
-  Profile <$> pure d <*> getExtensions <*> getPrefs
+  Profile <$> getFiles <*> getPrefs
   where
-    extD = path </> "extensions"
-    userPref = path </> "prefs" <.> "js"
-    getExtensions = do
-      b <- doesDirectoryExist extD
-      if b
-        then HS.fromList . map (extD </>) . filter (`notElem` [".",".."])
-              <$> getDirectoryContents extD
-        else return HS.empty
-    getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPref)
+    getFiles = do
+      d <- FS.getDirectory path
+      case FS.filter isNotIgnored [d] of
+        [t] -> return $ FS.zipWithDest (,) "" t
+        _   -> return []
+      where isNotIgnored p = "Cache/" `isInfixOf` path
+                            || "OfflineCache/" `isInfixOf` path
+                            || "lock" `isSuffixOf` path
     
+    userPref = path </> "prefs" <.> "js"
+    getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPref)
     parsePrefs s = either (throwIO . ProfileParseError)
                           return
                    $ parseOnly prefsParser s
@@ -72,45 +70,46 @@ loadProfile path = liftBase $ do
 -- Internally, this function constructs a Firefox profile within a temp 
 -- directory, archives it as a zip file, and then base64 encodes the zipped 
 -- data. The temporary directory is deleted afterwards
-prepareProfile :: MonadBase IO m => 
+prepareProfile :: MonadBaseControl IO m => 
                   Profile Firefox -> m (PreparedProfile Firefox)
-prepareProfile Profile {profileDir = d, profileExts = s, 
-                        profilePrefs = m} 
+prepareProfile Profile {profileFiles = files, profilePrefs = prefs} 
   = liftBase $ do 
-      createDirectoryIfMissing False extensionD
-      extPaths <- mapM canonicalizePath . HS.toList $ s
-      forM_ extPaths installExtension
-      withFile userPrefs WriteMode writeUserPrefs
-      prof <- PreparedProfile . B64.encode . SBS.concat . LBS.toChunks 
-              . fromArchive 
-              <$> addFilesToArchive [OptRecursive] emptyArchive [d]
-      removeDirectoryRecursive d
-      return prof
+      tmpdir <- mkTemp
+      mapM_ (installPath tmpdir) files
+      archive <- addUserPrefs <$> addFilesToArchive [OptRecursive] 
+                                                    emptyArchive [tmpdir]
+      return . PreparedProfile . B64.encode . SBS.concat . LBS.toChunks
+        . fromArchive $ archive
   where
-    extensionD = d </> "extensions"
-    userPrefs  = d </> "user" <.> "js"
+    installPath tmp (src, d) = do
+      let dest = tmp </> d
+      isDir <- doesDirectoryExist src
+      if isDir
+        then createDirectoryIfMissing True dest `catch` ignoreIOException
+        else do
+          let dir = takeDirectory dest
+          when (not . null $ dir) $
+            createDirectoryIfMissing True dir `catch` ignoreIOException
+          copyFile src dest `catch` ignoreIOException
     
-    installExtension ePath = 
-      case splitExtension ePath of
-           (_,".xpi") -> installOrdinaryFile silent ePath dest
-           _          -> installDirectoryContents silent ePath dest
+    ignoreIOException :: IOException -> IO ()
+    ignoreIOException = print 
+    
+    addUserPrefs = addEntryToArchive e
       where
-        dest = extensionD </> eFile
-        (_,eFile) = splitFileName ePath
-      
-    writeUserPrefs h =
-      forM_ (HM.toList m) $ \(k, v) ->
-        LBS.hPut h . LBS.concat
-          $ [ "user_pref(", encode k, ", ", encode v, ");\n"]
-  
+        e = toEntry ("user" <.> "js") 0
+            . LBS.concat
+            . map (\(k, v) -> LBS.concat [ "user_pref(", encode k, 
+                                           ", ", encode v, ");\n"]) 
+            . HM.toList $ prefs  
 
--- |Apply a function on an automatically generated default profile, and
+-- |Apply a function on a default profile, and
 -- prepare the result. The Profile passed to the handler function is
 -- the default profile used by sessions when Nothing is specified
-prepareTempProfile :: MonadBase IO m => 
+prepareDefaultProfile :: MonadBaseControl IO m => 
                      (Profile Firefox -> Profile Firefox) 
                      -> m (PreparedProfile Firefox)
-prepareTempProfile f = liftM f tempProfile >>= prepareProfile
+prepareDefaultProfile f = prepareProfile . f $ defaultProfile
 
 -- |Convenience function to load an existing Firefox profile from disk, apply
 -- a handler function, and then prepare the result for network transmission.
@@ -120,9 +119,9 @@ prepareLoadedProfile :: MonadBaseControl IO m =>
                         -> m (PreparedProfile Firefox)
 prepareLoadedProfile path f = liftM f (loadProfile path) >>= prepareProfile
 
-defaultProfile :: FilePath -> Profile Firefox
-defaultProfile d = 
-  Profile d HS.empty
+defaultProfile :: Profile Firefox
+defaultProfile = 
+  Profile []
   $ HM.fromList [("app.update.auto", PrefBool False)
                 ,("app.update.enabled", PrefBool False)
                 ,("browser.startup.page" , PrefInteger 0)
@@ -183,11 +182,6 @@ defaultProfile d =
 #else
       native_events = PrefBool True
 #endif
-
-mkTemp :: IO FilePath
-mkTemp = do 
-  d <- getTemporaryDirectory
-  createTempDirectory d ""
   
 -- firefox prefs.js parser
 
@@ -213,3 +207,9 @@ prefsParser = many1 $ do
         comment = inlineComment <|> lineComment
         lineComment = char '#' *> manyTill anyChar endOfLine
         inlineComment = string "/*" *> manyTill anyChar (string "*/")
+        
+        
+mkTemp :: IO FilePath
+mkTemp = do
+  d <- getTemporaryDirectory
+  createTempDirectory d ""

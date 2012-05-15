@@ -38,7 +38,6 @@ library
                  , text >= 0.7 && < 0.12
                  , time == 1.*
                  , transformers >= 0.2
-                 , Cabal >= 1.6
                  , zip-archive >= 0.1.1.7
                  , directory == 1.*
                  , filepath >=1.1
@@ -48,9 +47,10 @@ library
                  , transformers-base < 1.0
                  , vector >= 0.3
                  , lifted-base == 0.1.*
+                 , filesystem-trees
                  , data-default
-                 , base64-bytestring
                  , temporary
+                 , base64-bytestring
 
   exposed-modules: Test.WebDriver
                    Test.WebDriver.Classes

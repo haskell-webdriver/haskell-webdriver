@@ -5,6 +5,9 @@
 ###API changes
 *The <&&> and <||> in Commands.Wait now have fixity declarations matching their respective Prelude counterparts.
 
+###bug fixes
+*Fixed memory leak resulting from an infinite recursion in the FromJSON instance of PreparedProfile
+
 ## hs-webdriver 0.3.0.1
 
 ###bug fixes
