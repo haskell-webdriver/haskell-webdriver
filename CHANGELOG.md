@@ -1,6 +1,6 @@
 # Change Log
 
-## upcoming release
+## hs-webdriver 0.3.1 
 
 ###API changes
 *The representation of Profiles has changed, allowing it to store arbitrary files as well as extensions. The functional API for working with preferences and extensions ismostly unchanged, except for the behavior of calling addExtension consecutively with the same filepath argument.
