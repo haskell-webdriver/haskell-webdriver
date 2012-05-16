@@ -6,7 +6,12 @@
 module Test.WebDriver.Common.Profile
        ( -- *Profiles and profile preferences
          Profile(..), PreparedProfile(..), ProfilePref(..), ToPref(..)
-       , getPref, addPref, deletePref, addExtension, deleteExtension
+         -- * Preferences
+       , getPref, addPref, deletePref
+         -- * Extensions
+       , addExtension, deleteExtension, hasExtension
+         -- * Other files
+       , addFile, deleteFile, hasFile
          -- *Preparing profiles from disk
        , prepareLoadedProfile_
          -- *Preparing zipped profiles
@@ -26,17 +31,17 @@ import qualified Data.ByteString as SBS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Base64 as B64
 
-
 import Codec.Archive.Zip
-import System.FilePath hiding (addExtension)
-
+import System.FilePath hiding (addExtension, hasExtension)
 
 import Data.Fixed
 import Data.Ratio
 import Data.Int
 import Data.Word
-
+import Data.List
+import Data.Maybe
 import Data.Typeable
+
 import Control.Exception
 import Control.Applicative
 import Control.Monad.Base
@@ -164,11 +169,16 @@ addFile src dest p = asList p ((src, dest):)
 deleteFile :: FilePath -> Profile b -> Profile b
 deleteFile path prof = asList prof $ filter (\(_,p) -> p == path)
 
+-- |Determines if a profile contains the given file. specified as a path relative to
+-- the profile directory.
+hasFile :: String -> Profile b -> Bool
+hasFile path (Profile files _) = isJust $ find (\(_,d) ->  d == path) files
+
 -- |Add a new extension to the profile. The file path should refer to
 -- an .xpi file or an extension directory on the filesystem. If possible,
 -- you should avoiding adding the same extension twice to a given profile.
 addExtension :: FilePath -> Profile b -> Profile b
-addExtension path = addFile path ("extensions/" </> name)
+addExtension path = addFile path ("extensions" </> name)
   where (_, name) = splitFileName path
 
 -- |Delete an existing extension from the profile. The string parameter 
@@ -176,7 +186,12 @@ addExtension path = addFile path ("extensions/" </> name)
 -- directory of the profile. This operation has no effect if the extension was 
 -- never added to the profile.
 deleteExtension :: String -> Profile b -> Profile b
-deleteExtension name = deleteFile ("extensions/" </> name)
+deleteExtension name = deleteFile ("extensions" </> name)
+
+-- |Determines if a profile contains the given extension. specified as an .xpi file 
+-- or directory name
+hasExtension :: String -> Profile b -> Bool
+hasExtension name prof = hasFile ("extensions" </> name) prof
 
 asMap :: Profile b
          -> (HM.HashMap Text ProfilePref -> HM.HashMap Text ProfilePref)

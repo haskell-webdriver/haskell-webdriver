@@ -12,13 +12,17 @@ module Test.WebDriver.Firefox.Profile
        , ProfilePref(..), ToPref(..)
        , addPref, getPref, deletePref
          -- * Extensions
-       , addExtension, deleteExtension
+       , addExtension, deleteExtension, hasExtension
+         -- * Other Files
+       , addFile, removeFile, hasFile
          -- * Loading and preparing profiles
        , prepareProfile, prepareTempProfile
          -- ** Preparing profiles from disk
        , loadProfile, prepareLoadedProfile, prepareLoadedProfile_
          -- ** Preparing zip archives
        , prepareZippedProfile, prepareZipArchive, prepareRawZip
+         -- ** Preferences parsing error
+       , ProfileParseError(..)
        ) where
 import Test.WebDriver.Common.Profile
 import Data.Aeson
@@ -29,7 +33,7 @@ import Data.Text (Text)
 import Data.ByteString as BS (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LBS
 
-import System.FilePath hiding (addExtension)
+import System.FilePath hiding (addExtension, hasExtension)
 import System.Directory
 import System.IO.Temp (createTempDirectory)
 import qualified System.File.Tree as FS
