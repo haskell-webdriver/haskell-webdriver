@@ -1,5 +1,14 @@
 # Change Log
 
+## hs-webdriver 0.3.2
+
+###bug fixes
+*Changed the constraint on filesystrem-trees to avoid a broken version
+*Added the missing exports for addFile and deleteFile in Common.Profile and Firefox.Profile
+
+###new features
+*new Common.Profile functions: hasExtension, hasFile
+
 ## hs-webdriver 0.3.1 
 
 ###API changes
