@@ -3,34 +3,34 @@
 ## hs-webdriver 0.3.2
 
 ###bug fixes
-*Changed the constraint on filesystrem-trees to avoid a broken version
-*Added the missing exports for addFile and deleteFile in Common.Profile and Firefox.Profile
+* Changed the constraint on filesystrem-trees to avoid a broken version
+* Added the missing exports for addFile and deleteFile in Common.Profile and Firefox.Profile
 
 ###new features
-*new Common.Profile functions: hasExtension, hasFile
+* new Common.Profile functions: hasExtension, hasFile
 
 ## hs-webdriver 0.3.1 
 
 ###API changes
-*The representation of Profiles has changed, allowing it to store arbitrary files as well as extensions. The functional API for working with preferences and extensions ismostly unchanged, except for the behavior of calling addExtension consecutively with the same filepath argument.
-*The old <&&> and <||> operators in Test.WebDriver.Commands.Wait have been removed and replaced with the ones exported from Control.Conditional from the cond package.
+* The representation of Profiles has changed, allowing it to store arbitrary files as well as extensions. The functional API for working with preferences and extensions ismostly unchanged, except for the behavior of calling addExtension consecutively with the same filepath argument.
+* The old <&&> and <||> operators in Test.WebDriver.Commands.Wait have been removed and replaced with the ones exported from Control.Conditional from the cond package.
 
 ###bug fixes
-*Fixed memory leak resulting from an infinite recursion in the FromJSON instance of PreparedProfile.
-*loadProfile now properly loads an entire Firefox profile from disk, rather than just the extensions and preferences.
+* Fixed memory leak resulting from an infinite recursion in the FromJSON instance of PreparedProfile.
+* loadProfile now properly loads an entire Firefox profile from disk, rather than just the extensions and preferences.
 
 ###known issues
 *An issue involving lazy bytestring IO in the zip-archive package means that unusually large profiles might exceed the OSes open file limit.
 
 ###new features
-*several new functions for working with Firefox/Opera profiles have been added. This includes functions for loading large profiles from disk, functions for working with zipped profiles, and functions for adding arbitrary files to a profile in pure code. 
-*new helper functions were added to Test.WebDriver.Commands.Wait, exported from the cond package.
+* several new functions for working with Firefox/Opera profiles have been added. This includes functions for loading large profiles from disk, functions for working with zipped profiles, and functions for adding arbitrary files to a profile in pure code. 
+* new helper functions were added to Test.WebDriver.Commands.Wait, exported from the cond package.
 
 ## hs-webdriver 0.3.0.1
 
 ###bug fixes
-*due to a nonconformance in the spec from the Grid server, wire responses were being received that contained no sessionId key, which subsequently resulted in a parse error from our JSON parser. This has been fixed, so that an omitted sessionId defaults to Nothing.
-*major bux fixes in the Firefox profile code. Note that loadProfile is unlikely
+* due to a nonconformance in the spec from the Grid server, wire responses were being received that contained no sessionId key, which subsequently resulted in a parse error from our JSON parser. This has been fixed, so that an omitted sessionId defaults to Nothing.
+* major bux fixes in the Firefox profile code. Note that loadProfile is unlikely
 to work as expected, but prepareTempProfile should.
 
 ## hs-webdriver 0.3 
