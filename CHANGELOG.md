@@ -1,5 +1,9 @@
 # Change Log
 
+## upcoming release
+###bug fixes
+*Fixed a bug in waitWhile' that resulted in an infinite loop
+
 ## hs-webdriver 0.3.2
 
 ###bug fixes

@@ -18,7 +18,7 @@ import Control.Exception.Lifted
 import Control.Concurrent
 import Data.Time.Clock
 import Data.Typeable
-import Control.Conditional
+import Control.Conditional (ifM, (<||>), (<&&>), notM)
 import Prelude hiding (catch)
 
 instance Exception ExpectFailed
@@ -52,7 +52,7 @@ expectAll p xs = expect . and =<< mapM p xs
 -- then a 'Test.WebDriver.Timeout' exception will be raised. The timeout value 
 -- is expressed in seconds.
 waitUntil :: SessionState m => Double -> m a -> m a
-waitUntil = waitUntil' 250000
+waitUntil = waitUntil' 500000
 
 -- |Similar to 'waitUntil' but allows you to also specify the poll frequency
 -- of the 'WD' action. The frequency is expressed as an integer in microseconds.
@@ -71,7 +71,7 @@ waitUntil' = wait' handler
 -- |Like 'waitUntil', but retries the action until it fails or until the timeout
 -- is exceeded.
 waitWhile :: SessionState m => Double -> m a -> m ()
-waitWhile = waitWhile' 250000
+waitWhile = waitWhile' 500000
 
 -- |Like 'waitUntil'', but retries the action until it either fails or 
 -- until the timeout is exceeded.
@@ -79,15 +79,15 @@ waitWhile' :: SessionState m => Int -> Double -> m a -> m ()
 waitWhile' = wait' handler
   where
     handler retry wd = do 
-      void wd `catches` [Handler handleFailedCommand
-                        ,Handler handleExpectFailed
-                        ]
-      retry
+      b <- (wd >> return True) `catches` [Handler handleFailedCommand
+                                         ,Handler handleExpectFailed
+                                         ]
+      when b retry
       where
-        handleFailedCommand (FailedCommand NoSuchElement _) = return ()
+        handleFailedCommand (FailedCommand NoSuchElement _) = return False
         handleFailedCommand err = throwIO err
                                
-        handleExpectFailed (_ :: ExpectFailed) = return ()
+        handleExpectFailed (_ :: ExpectFailed) = return False
     
 wait' :: SessionState m => 
          (m b -> m a -> m b) -> Int -> Double -> m a -> m b
@@ -99,7 +99,7 @@ wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
               now <- liftBase getCurrentTime
               if diffUTCTime now startTime >= timeout
                 then 
-                  failedCommand Timeout "waitUntil': explicit wait timed out."
+                  failedCommand Timeout "wait': explicit wait timed out."
                 else do
                   liftBase . threadDelay $ waitAmnt
                   waitLoop startTime
