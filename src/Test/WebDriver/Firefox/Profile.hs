@@ -37,7 +37,6 @@ import System.FilePath hiding (addExtension, hasExtension)
 import System.Directory
 import System.IO.Temp (createTempDirectory)
 import qualified System.File.Tree as FS
-import Codec.Archive.Zip
 
 import Control.Monad
 import Control.Monad.Base
@@ -152,13 +151,12 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
   = liftBase $ do 
       tmpdir <- mkTemp
       mapM_ (installPath tmpdir) files
-      archive <- addUserPrefs <$> addFilesToArchive [OptRecursive] 
-                                                    emptyArchive [tmpdir]
-      removeDirectoryRecursive tmpdir
-      return . prepareZipArchive $ archive
+      addUserPrefs tmpdir
+      prepareLoadedProfile_ tmpdir
+        <* removeDirectoryRecursive tmpdir
   where
-    installPath tmp (src, d) = do
-      let dest = tmp </> d
+    installPath destDir (src, destPath) = do
+      let dest = destDir </> destPath
       isDir <- doesDirectoryExist src
       if isDir
         then createDirectoryIfMissing True dest `catch` ignoreIOException
@@ -171,10 +169,9 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
     ignoreIOException :: IOException -> IO ()
     ignoreIOException = print 
     
-    addUserPrefs = addEntryToArchive e
+    addUserPrefs d = LBS.writeFile (d </> "user" <.> "js") str
       where
-        e = toEntry ("user" <.> "js") 0
-            . LBS.concat
+        str = LBS.concat
             . map (\(k, v) -> LBS.concat [ "user_pref(", encode k, 
                                            ", ", encode v, ");\n"]) 
             . HM.toList $ prefs  

@@ -32,7 +32,9 @@ import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Base64 as B64
 
 import Codec.Archive.Zip
+import System.Directory
 import System.FilePath hiding (addExtension, hasExtension)
+
 
 import Data.Fixed
 import Data.Ratio
@@ -69,11 +71,10 @@ newtype PreparedProfile b = PreparedProfile ByteString
   deriving (Eq, Show)
 
 instance FromJSON (PreparedProfile s) where
-  parseJSON (Object o) = PreparedProfile <$> o .: "zip"
-  parseJSON other = typeMismatch "PreparedProfile" other
+  parseJSON v = PreparedProfile <$> parseJSON v
   
 instance ToJSON (PreparedProfile s) where
-  toJSON (PreparedProfile s) = object ["zip" .= s]
+  toJSON (PreparedProfile s) = toJSON s
 
 -- |A profile preference value. This is the subset of JSON values that excludes
 -- arrays, objects, and null.
@@ -208,9 +209,11 @@ asList (Profile ls hm) f = Profile (f ls) hm
 -- transmission.
 prepareLoadedProfile_ :: MonadBase IO m =>
                         FilePath -> m (PreparedProfile a)
-prepareLoadedProfile_ path = prepareZipArchive <$>
-                             liftBase (addFilesToArchive [OptRecursive] 
-                                       emptyArchive [path])
+prepareLoadedProfile_ path = do
+  paths <- liftBase $ getDirectoryContents path
+  prepareZipArchive <$>
+    liftBase (addFilesToArchive [OptRecursive] 
+              emptyArchive paths)
 
 -- |Prepare a zip file of a profile on disk for network transmission.
 -- This function is very efficient at loading large profiles from disk.
@@ -225,3 +228,4 @@ prepareZipArchive = prepareRawZip . fromArchive
 -- |Prepare a ByteString of raw zip data for network transmission
 prepareRawZip :: LBS.ByteString -> PreparedProfile a
 prepareRawZip = PreparedProfile . B64.encode . SBS.concat . LBS.toChunks
+

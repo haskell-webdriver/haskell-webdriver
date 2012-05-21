@@ -59,8 +59,8 @@ library
                    Test.WebDriver.Exceptions
                    Test.WebDriver.Commands
                    Test.WebDriver.Commands.Wait
-                   Test.WebDriver.Firefox.Profile
                    Test.WebDriver.Common.Profile
+                   Test.WebDriver.Firefox.Profile
                    Test.WebDriver.Chrome.Extension
                    Test.WebDriver.Capabilities
                    Test.WebDriver.Types

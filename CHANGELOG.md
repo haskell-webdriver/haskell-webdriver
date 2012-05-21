@@ -2,7 +2,9 @@
 
 ## upcoming release
 ###bug fixes
-*Fixed a bug in waitWhile' that resulted in an infinite loop
+*Removed a bug in waitWhile' that resulted in an infinite loop
+*Fixed the incorrect representation of JSON profiles
+*Fixed relative path issues when zipping profile directories from disk
 
 ## hs-webdriver 0.3.2
 
