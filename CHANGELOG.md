@@ -1,6 +1,7 @@
 # Change Log
 
-## upcoming release
+## hs-webdriver 0.3.2.1
+
 ###bug fixes
 *Removed a bug in waitWhile' that resulted in an infinite loop
 *Fixed the incorrect representation of JSON profiles

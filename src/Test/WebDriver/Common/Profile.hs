@@ -209,11 +209,13 @@ asList (Profile ls hm) f = Profile (f ls) hm
 -- transmission.
 prepareLoadedProfile_ :: MonadBase IO m =>
                         FilePath -> m (PreparedProfile a)
-prepareLoadedProfile_ path = do
-  paths <- liftBase $ getDirectoryContents path
+prepareLoadedProfile_ path = liftBase $ do
+  oldWd <- getCurrentDirectory
+  setCurrentDirectory path
   prepareZipArchive <$>
     liftBase (addFilesToArchive [OptRecursive] 
-              emptyArchive paths)
+              emptyArchive ["."])
+    <* setCurrentDirectory oldWd
 
 -- |Prepare a zip file of a profile on disk for network transmission.
 -- This function is very efficient at loading large profiles from disk.

@@ -44,7 +44,6 @@ import Control.Monad.Trans.Control
 import Control.Applicative
 import Data.List
 import Control.Exception.Lifted hiding (try)
-
 import Prelude hiding (catch)
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
@@ -122,10 +121,10 @@ loadProfile path = liftBase $ do
   Profile <$> getFiles <*> getPrefs
   where
     getFiles = do
-      d <- FS.getDirectory path
+      d <- FS.getDirectory' path
       case FS.filter (not.isIgnored) [d] of
-        [t] -> return $ FS.zipWithDest (,) "" t
-        _   -> return []
+        [d'] -> return $ FS.zipWithDest (,) "" d'
+        _    -> return []
       where isIgnored p = "Cache/" `isInfixOf` p
                           || "OfflineCache/" `isInfixOf` p
                           || "lock" `isSuffixOf` p
@@ -151,7 +150,7 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
   = liftBase $ do 
       tmpdir <- mkTemp
       mapM_ (installPath tmpdir) files
-      addUserPrefs tmpdir
+      installUserPrefs tmpdir
       prepareLoadedProfile_ tmpdir
         <* removeDirectoryRecursive tmpdir
   where
@@ -165,11 +164,11 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
           when (not . null $ dir) $
             createDirectoryIfMissing True dir `catch` ignoreIOException
           copyFile src dest `catch` ignoreIOException
+      where
+        ignoreIOException :: IOException -> IO ()
+        ignoreIOException = print 
     
-    ignoreIOException :: IOException -> IO ()
-    ignoreIOException = print 
-    
-    addUserPrefs d = LBS.writeFile (d </> "user" <.> "js") str
+    installUserPrefs d = LBS.writeFile (d </> "user" <.> "js") str
       where
         str = LBS.concat
             . map (\(k, v) -> LBS.concat [ "user_pref(", encode k, 
