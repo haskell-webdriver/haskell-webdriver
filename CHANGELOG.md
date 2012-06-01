@@ -2,12 +2,15 @@
 
 ## hs-webdriver 0.3.3
 
+###API changes
+* The representation of profile files has been changed to use a HashMap instead of an association list. This ensures that destination paths are always unique.
+
 ###bug fixes
 * The default preferences used by Selenium are now merged into the preferences of Firefox profiles loaded from disk.
 * addExtension will now correctly add extension directories to a profile.
 
-###API changes
-* The representation of profile files has been changed to use a HashMap instead of an association list. This ensures that destination paths are always unique.
+###known issues
+* Because of the way loadProfile currently adds directories to the profileFiles HashMap, it's possible for extensions added via addExtension to be overriden by the original extensions originally listed in the on-disk extensions directory.
 
 ###new features 
 * It's now possible to add entire directories to a profile in pure code using addFile and addExtension.
@@ -43,7 +46,7 @@
 * loadProfile now properly loads an entire Firefox profile from disk, rather than just the extensions and preferences.
 
 ###known issues
-*An issue involving lazy bytestring IO in the zip-archive package means that unusually large profiles might exceed the OSes open file limit.
+* An issue involving lazy bytestring IO in the zip-archive package means that unusually large profiles might exceed the OSes open file limit.
 
 ###new features
 * several new functions for working with Firefox/Opera profiles have been added. This includes functions for loading large profiles from disk, functions for working with zipped profiles, and functions for adding arbitrary files to a profile in pure code. 
