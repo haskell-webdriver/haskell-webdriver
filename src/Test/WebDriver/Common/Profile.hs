@@ -10,7 +10,7 @@ module Test.WebDriver.Common.Profile
        , getPref, addPref, deletePref
          -- * Extensions
        , addExtension, deleteExtension, hasExtension
-         -- * Other files
+         -- * Other files and directories
        , addFile, deleteFile, hasFile
          -- * Miscellaneous profile operations
        , unionProfiles, onProfileFiles, onProfilePrefs

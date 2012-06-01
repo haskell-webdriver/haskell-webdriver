@@ -13,8 +13,10 @@ module Test.WebDriver.Firefox.Profile
        , addPref, getPref, deletePref
          -- * Extensions
        , addExtension, deleteExtension, hasExtension
-         -- * Other Files
+         -- * Other files and directories
        , addFile, removeFile, hasFile
+         -- * Miscellaneous profile operations
+       , unionProfiles, onProfileFiles, onProfilePrefs
          -- * Loading and preparing profiles
        , prepareProfile, prepareTempProfile
          -- ** Preparing profiles from disk
