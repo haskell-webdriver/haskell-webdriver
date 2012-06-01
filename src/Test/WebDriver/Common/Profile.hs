@@ -199,19 +199,20 @@ hasExtension :: String -> Profile b -> Bool
 hasExtension name prof = hasFile ("extensions" </> name) prof
 
 
--- |Unions two profiles together. This is the union of their HashMap fields.
+-- |Takes the union of two profiles. This is the union of their 'HashMap' 
+-- fields.
 unionProfiles :: Profile b -> Profile b -> Profile b
 unionProfiles (Profile f1 p1) (Profile f2 p2) 
   = Profile (f1 `HM.union` f2) (p1 `HM.union` p2)
 
--- |Modifies the 'profilePrefs' field of a 'Profile'.
+-- |Modifies the 'profilePrefs' field of a profile.
 onProfilePrefs :: Profile b
                   -> (HM.HashMap Text ProfilePref 
                       -> HM.HashMap Text ProfilePref)
                   -> Profile b
 onProfilePrefs (Profile hs hm) f = Profile hs (f hm)
 
--- |Modifies the 'profileFiles' field of a 'Profile'
+-- |Modifies the 'profileFiles' field of a profile
 onProfileFiles :: Profile b
                   -> (HM.HashMap FilePath FilePath 
                       -> HM.HashMap FilePath FilePath)
