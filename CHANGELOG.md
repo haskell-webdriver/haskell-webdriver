@@ -1,6 +1,6 @@
 # Change Log
 
-## upcoming release
+## hs-webdriver 0.3.3
 
 ###bug fixes
 *The default preferences used by Selenium are now merged into the preferences of Firefox profiles loaded from disk.
@@ -13,6 +13,7 @@
 *It's now possible to add entire directories to a profile in pure code using addFile and addExtension.
 *new functions in Common.Profile: unionProfiles, onProfileFiles, onProfilePrefs
 *new function in Commands.Wait: onTimeout
+*the WD monad now has a MonadCatchIO instance, as an alternative to lifted-base for exception handling
 
 
 ## hs-webdriver 0.3.2.1
