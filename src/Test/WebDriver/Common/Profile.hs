@@ -12,6 +12,8 @@ module Test.WebDriver.Common.Profile
        , addExtension, deleteExtension, hasExtension
          -- * Other files
        , addFile, deleteFile, hasFile
+         -- * Miscellaneous profile operations
+       , unionProfiles, onProfileFiles, onProfilePrefs
          -- *Preparing profiles from disk
        , prepareLoadedProfile_
          -- *Preparing zipped profiles
@@ -21,9 +23,13 @@ module Test.WebDriver.Common.Profile
        , ProfileParseError(..) 
        ) where
 
+import System.Directory
+import System.FilePath hiding (addExtension, hasExtension)
+import Codec.Archive.Zip
 import Data.Aeson
 import Data.Aeson.Types
 import Data.Attoparsec.Number (Number(..))
+
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text, pack)
 import Data.ByteString (ByteString)
@@ -31,17 +37,11 @@ import qualified Data.ByteString as SBS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Base64 as B64
 
-import Codec.Archive.Zip
-import System.Directory
-import System.FilePath hiding (addExtension, hasExtension)
-
 
 import Data.Fixed
 import Data.Ratio
 import Data.Int
 import Data.Word
-import Data.List
-import Data.Maybe
 import Data.Typeable
 
 import Control.Exception
@@ -50,14 +50,18 @@ import Control.Monad.Base
 
 -- |This structure allows you to construct and manipulate profiles in pure code,
 -- deferring execution of IO operations until the profile is \"prepared\". This 
--- type is shared by both Firefox and Opera profile code; when a distinction 
+-- type is shared by both Firefox and Opera profiles; when a distinction 
 -- must be made, the phantom type parameter is used to differentiate.
 data Profile b = Profile 
-                 { -- |A set of filepaths pointing to files to place in
-                   -- the extension directory. The first tuple element is the source 
-                   -- path. The second tuple element is the destination path 
-                   -- relative to the extension of the file.
-                   profileFiles   :: [(FilePath, FilePath)]
+                 { -- |A mapping from relative destination filepaths to source
+                   -- filepaths found on the filesystem. When the profile is 
+                   -- prepared, these source filepaths will be moved to their
+                   -- destinations within the profile directory.
+                   --
+                   -- Using the destination path as the key ensures that 
+                   -- there is one unique source path going to each
+                   -- destination path.
+                   profileFiles   :: HM.HashMap FilePath FilePath
                    -- |A map of Firefox preferences. These are the settings
                    -- found in the profile's prefs.js, and entries found in
                    -- about:config
@@ -152,32 +156,32 @@ getPref k (Profile _ m) = HM.lookup k m
 -- |Add a new preference entry to a profile, overwriting any existing entry
 -- with the same key.
 addPref :: ToPref a => Text -> a -> Profile b -> Profile b
-addPref k v p = asMap p $ HM.insert k (toPref v)
+addPref k v p = onProfilePrefs p $ HM.insert k (toPref v)
 
 -- |Delete an existing preference entry from a profile. This operation is
 -- silent if the preference wasn't found.
 deletePref :: Text -> Profile b -> Profile b
-deletePref k p = asMap p $ HM.delete k
+deletePref k p = onProfilePrefs p $ HM.delete k
 
 -- |Add a file to the profile directory. The first argument is the source
 -- of the file on the local filesystem. The second argument is the destination 
--- as a path relative to a profile directory. 
+-- as a path relative to a profile directory. Overwrites any file that
+-- previously pointed to the same destination
 addFile :: FilePath -> FilePath -> Profile b -> Profile b
-addFile src dest p = asList p ((src, dest):)
+addFile src dest p = onProfileFiles p $ HM.insert dest src
 
 -- |Delete a file from the profile directory. The first argument is the name of
 -- file within the profile directory.
 deleteFile :: FilePath -> Profile b -> Profile b
-deleteFile path prof = asList prof $ filter (\(_,p) -> p == path)
+deleteFile path prof = onProfileFiles prof $ HM.delete path
 
--- |Determines if a profile contains the given file. specified as a path relative to
--- the profile directory.
+-- |Determines if a profile contains the given file, specified as a path
+-- relative to the profile directory.
 hasFile :: String -> Profile b -> Bool
-hasFile path (Profile files _) = isJust $ find (\(_,d) ->  d == path) files
+hasFile path (Profile files _) = path `HM.member` files
 
 -- |Add a new extension to the profile. The file path should refer to
--- an .xpi file or an extension directory on the filesystem. If possible,
--- you should avoiding adding the same extension twice to a given profile.
+-- a .xpi file or an extension directory on the filesystem.
 addExtension :: FilePath -> Profile b -> Profile b
 addExtension path = addFile path ("extensions" </> name)
   where (_, name) = splitFileName path
@@ -189,20 +193,30 @@ addExtension path = addFile path ("extensions" </> name)
 deleteExtension :: String -> Profile b -> Profile b
 deleteExtension name = deleteFile ("extensions" </> name)
 
--- |Determines if a profile contains the given extension. specified as an .xpi file 
--- or directory name
+-- |Determines if a profile contains the given extension. specified as an 
+-- .xpi file or directory name
 hasExtension :: String -> Profile b -> Bool
 hasExtension name prof = hasFile ("extensions" </> name) prof
 
-asMap :: Profile b
-         -> (HM.HashMap Text ProfilePref -> HM.HashMap Text ProfilePref)
-         -> Profile b
-asMap (Profile hs hm) f = Profile hs (f hm)
 
-asList :: Profile b
-         -> ([(FilePath, FilePath)] -> [(FilePath, FilePath)])
-         -> Profile b
-asList (Profile ls hm) f = Profile (f ls) hm
+-- |Unions two profiles together. This is the union of their HashMap fields.
+unionProfiles :: Profile b -> Profile b -> Profile b
+unionProfiles (Profile f1 p1) (Profile f2 p2) 
+  = Profile (f1 `HM.union` f2) (p1 `HM.union` p2)
+
+-- |Modifies the 'profilePrefs' field of a 'Profile'.
+onProfilePrefs :: Profile b
+                  -> (HM.HashMap Text ProfilePref 
+                      -> HM.HashMap Text ProfilePref)
+                  -> Profile b
+onProfilePrefs (Profile hs hm) f = Profile hs (f hm)
+
+-- |Modifies the 'profileFiles' field of a 'Profile'
+onProfileFiles :: Profile b
+                  -> (HM.HashMap FilePath FilePath 
+                      -> HM.HashMap FilePath FilePath)
+                  -> Profile b
+onProfileFiles (Profile ls hm) f = Profile (f ls) hm
 
 
 -- |Efficiently load an existing profile from disk and prepare it for network

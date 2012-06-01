@@ -41,17 +41,20 @@ import qualified System.File.Tree as FS
 import Control.Monad
 import Control.Monad.Base
 import Control.Monad.Trans.Control
-import Control.Applicative
-import Data.List
 import Control.Exception.Lifted hiding (try)
+import Control.Applicative
+import Control.Arrow
+import Data.List
+
 import Prelude hiding (catch)
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
 data Firefox
 
+-- |Default Firefox Profile, used when no profile is supplied.
 defaultProfile :: Profile Firefox
 defaultProfile = 
-  Profile []
+  Profile HM.empty
   $ HM.fromList [("app.update.auto", PrefBool False)
                 ,("app.update.enabled", PrefBool False)
                 ,("browser.startup.page" , PrefInteger 0)
@@ -116,24 +119,26 @@ defaultProfile =
 
 -- |Load an existing profile from the file system. Any prepared changes made to
 -- the 'Profile' will have no effect to the profile on disk.
+--
+-- To make automated browser run smoothly, preferences found in
+-- 'defaultProfile' are automatically merged into the preferences of the on-disk-- profile. The on-disk profile's preference will override those found in the 
+-- default profile.
 loadProfile :: MonadBaseControl IO m => FilePath -> m (Profile Firefox)
 loadProfile path = liftBase $ do
-  Profile <$> getFiles <*> getPrefs
+  unionProfiles defaultProfile <$> (Profile <$> getFiles <*> getPrefs)
   where
-    getFiles = do
-      d <- FS.getDirectory' path
-      case FS.filter (not.isIgnored) [d] of
-        [d'] -> return $ FS.zipWithDest (,) "" d'
-        _    -> return []
-      where isIgnored p = "Cache/" `isInfixOf` p
-                          || "OfflineCache/" `isInfixOf` p
-                          || "lock" `isSuffixOf` p
+    userPrefFile = path </> "prefs" <.> "js"
     
-    userPref = path </> "prefs" <.> "js"
-    getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPref)
-    parsePrefs s = either (throwIO . ProfileParseError)
-                          return
-                   $ parseOnly prefsParser s
+    getFiles = HM.fromList . map (takeFileName &&& id) . filter isNotIgnored
+               <$> getDirectoryContents path
+      where isNotIgnored = (`notElem` 
+                         [".", "..", "OfflineCache", "Cache"
+                         ,"parent.lock", ".parentlock", ".lock"
+                         ,userPrefFile])
+    
+    getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPrefFile)
+      where parsePrefs s = either (throwIO . ProfileParseError) return 
+                           $ parseOnly prefsParser s
 
 -- |Prepare a firefox profile for network transmission.
 -- Internally, this function constructs a Firefox profile within a temp 
@@ -149,16 +154,19 @@ prepareProfile :: MonadBaseControl IO m =>
 prepareProfile Profile {profileFiles = files, profilePrefs = prefs} 
   = liftBase $ do 
       tmpdir <- mkTemp
-      mapM_ (installPath tmpdir) files
+      mapM_ (installPath tmpdir) . HM.toList $ files
       installUserPrefs tmpdir
       prepareLoadedProfile_ tmpdir
         <* removeDirectoryRecursive tmpdir
   where
-    installPath destDir (src, destPath) = do
+    installPath destDir (destPath, src) = do
       let dest = destDir </> destPath
       isDir <- doesDirectoryExist src
       if isDir
-        then createDirectoryIfMissing True dest `catch` ignoreIOException
+        then do
+          createDirectoryIfMissing True dest `catch` ignoreIOException
+          FS.getDirectory src 
+            >>= handle ignoreIOException . FS.mergeInto_ dest
         else do
           let dir = takeDirectory dest
           when (not . null $ dir) $

@@ -1,5 +1,19 @@
 # Change Log
 
+## upcoming release
+
+###bug fixes
+*The default preferences used by Selenium are now merged into the preferences of Firefox profiles loaded from disk.
+
+###API changes
+* The representation of profile files has been changed to use a HashMap instead of an association list. This ensures that destination paths are always unique.
+
+###new features 
+*It's now possible to add entire directories to a profile in pure code.
+*new functions in Common.Profile: unionProfiles, onProfileFiles, onProfilePrefs
+
+
+
 ## hs-webdriver 0.3.2.1
 
 ###bug fixes
