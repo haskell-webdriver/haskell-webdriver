@@ -3,25 +3,25 @@
 ## hs-webdriver 0.3.3
 
 ###bug fixes
-*The default preferences used by Selenium are now merged into the preferences of Firefox profiles loaded from disk.
-*addExtension will now correctly add extension directories to a profile.
+* The default preferences used by Selenium are now merged into the preferences of Firefox profiles loaded from disk.
+* addExtension will now correctly add extension directories to a profile.
 
 ###API changes
 * The representation of profile files has been changed to use a HashMap instead of an association list. This ensures that destination paths are always unique.
 
 ###new features 
-*It's now possible to add entire directories to a profile in pure code using addFile and addExtension.
-*new functions in Common.Profile: unionProfiles, onProfileFiles, onProfilePrefs
-*new function in Commands.Wait: onTimeout
-*the WD monad now has a MonadCatchIO instance, as an alternative to lifted-base for exception handling
+* It's now possible to add entire directories to a profile in pure code using addFile and addExtension.
+* new functions in Common.Profile: unionProfiles, onProfileFiles, onProfilePrefs
+* new function in Commands.Wait: onTimeout
+* the WD monad now has a MonadCatchIO instance, as an alternative to lifted-base for exception handling
 
 
 ## hs-webdriver 0.3.2.1
 
 ###bug fixes
-*Removed a bug in waitWhile' that resulted in an infinite loop
-*Fixed the incorrect representation of JSON profiles
-*Fixed relative path issues when zipping profile directories from disk
+* Removed a bug in waitWhile' that resulted in an infinite loop
+* Fixed the incorrect representation of JSON profiles
+* Fixed relative path issues when zipping profile directories from disk
 
 ## hs-webdriver 0.3.2
 
