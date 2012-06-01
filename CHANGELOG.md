@@ -12,7 +12,7 @@
 ###new features 
 *It's now possible to add entire directories to a profile in pure code using addFile and addExtension.
 *new functions in Common.Profile: unionProfiles, onProfileFiles, onProfilePrefs
-
+*new function in Commands.Wait: onTimeout
 
 
 ## hs-webdriver 0.3.2.1

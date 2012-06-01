@@ -6,6 +6,7 @@ module Test.WebDriver.Commands.Wait
          -- * Expected conditions
        , ExpectFailed, expect, unexpected
          -- ** Convenience functions
+       , onTimeout
        , expectAny, expectAll
        , ifM, (<||>), (<&&>), notM
        ) where
@@ -37,19 +38,20 @@ expect b
   | b         = return ()
   | otherwise = unexpected
 
--- |Apply a predicate to every element in a list, and expect that at least one
--- succeeds.
+-- |Apply a monadic predicate to every element in a list, and 'expect' that 
+-- at least one succeeds.
 expectAny :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
 expectAny p xs = expect . or =<< mapM p xs
 
--- |Apply a predicate to every element in a list, and expect that all succeed.
+-- |Apply a monadic predicate to every element in a list, and 'expect' that all 
+-- succeed.
 expectAll :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
 expectAll p xs = expect . and =<< mapM p xs
 
 -- |Wait until either the given action succeeds or the timeout is reached.
 -- The action will be retried every .25 seconds until no 'ExpectFailed' or
--- 'Test.WebDriver.NoSuchElement' exceptions occur. If the timeout is reached, 
--- then a 'Test.WebDriver.Timeout' exception will be raised. The timeout value 
+-- 'FailedCommand' 'NoSuchElement' exceptions occur. If the timeout is reached, 
+-- then a 'Timeout' exception will be raised. The timeout value 
 -- is expressed in seconds.
 waitUntil :: SessionState m => Double -> m a -> m a
 waitUntil = waitUntil' 500000
@@ -100,6 +102,19 @@ wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
               if diffUTCTime now startTime >= timeout
                 then 
                   failedCommand Timeout "wait': explicit wait timed out."
-                else do
+                else do 
                   liftBase . threadDelay $ waitAmnt
                   waitLoop startTime
+
+-- |Convenience function to catch 'FailedCommand' 'Timeout' exceptions 
+-- and perform some action.
+--
+-- Example:
+--
+-- > waitUntil 5 (getText <=< findElem $ ByCSS ".class")
+-- >    `onTimeout` return ""
+onTimeout :: MonadBaseControl IO m => m a -> m a -> m a
+onTimeout m r = m `catch` handler
+  where
+    handler (FailedCommand Timeout _) = r
+    handler other = throwIO other
