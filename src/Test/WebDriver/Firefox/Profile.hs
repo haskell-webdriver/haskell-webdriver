@@ -129,7 +129,7 @@ loadProfile path = liftBase $ do
   where
     userPrefFile = path </> "prefs" <.> "js"
     
-    getFiles = HM.fromList . map (takeFileName &&& id) . filter isNotIgnored
+    getFiles = HM.fromList . map (id &&& (path </>)) . filter isNotIgnored
                <$> getDirectoryContents path
       where isNotIgnored = (`notElem` 
                          [".", "..", "OfflineCache", "Cache"
@@ -157,7 +157,7 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
       mapM_ (installPath tmpdir) . HM.toList $ files
       installUserPrefs tmpdir
       prepareLoadedProfile_ tmpdir
-        <* removeDirectoryRecursive tmpdir
+--        <* removeDirectoryRecursive tmpdir
   where
     installPath destDir (destPath, src) = do
       let dest = destDir </> destPath
@@ -166,7 +166,7 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
         then do
           createDirectoryIfMissing True dest `catch` ignoreIOException
           FS.getDirectory src 
-            >>= handle ignoreIOException . FS.mergeInto_ dest
+            >>= handle ignoreIOException . FS.copyTo_ dest
         else do
           let dir = takeDirectory dest
           when (not . null $ dir) $
