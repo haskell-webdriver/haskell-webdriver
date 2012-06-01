@@ -47,6 +47,7 @@ library
                  , transformers-base < 1.0
                  , vector >= 0.3
                  , lifted-base == 0.1.*
+                 , MonadCatchIO-transformers >= 0.3 && < 0.4
                  , filesystem-trees >= 0.1.0.2 && < 0.2
                  , data-default
                  , temporary

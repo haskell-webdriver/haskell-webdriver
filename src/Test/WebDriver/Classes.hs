@@ -25,8 +25,8 @@ import Control.Exception.Lifted (Exception, throwIO)
 import Data.Typeable
 
 import Control.Monad.Trans.Maybe
-import Control.Monad.List
 import Control.Monad.Trans.Identity
+import Control.Monad.List
 import Control.Monad.Reader
 import Control.Monad.Error
 --import Control.Monad.Cont
