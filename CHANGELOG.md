@@ -10,7 +10,7 @@
 * addExtension will now correctly add extension directories to a profile.
 
 ###known issues
-* Because of the way loadProfile currently adds directories to the profileFiles HashMap, it's possible for extensions added via addExtension to be overriden by the original extensions originally listed in the on-disk extensions directory.
+* Because of the way loadProfile currently adds directories to the profileFiles HashMap, it's possible for extensions added via addExtension to be overriden by the extensions originally listed in the on-disk extensions directory.
 
 ###new features 
 * It's now possible to add entire directories to a profile in pure code using addFile and addExtension.
