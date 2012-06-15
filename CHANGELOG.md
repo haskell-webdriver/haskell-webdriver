@@ -1,9 +1,12 @@
-# Change Log
+#Change Log
 
-## upcoming release
+##upcoming release
 
 ###API changes
 * finallyClose and closeOnException are now overloaded on the WebDriver class.
+
+###bug fixes
+* fixed a typo in the export list of Firefox.Profile; deleteFile is now correctly exported instead of removeFile from System.Directory 
 
 ## hs-webdriver 0.3.3
 
