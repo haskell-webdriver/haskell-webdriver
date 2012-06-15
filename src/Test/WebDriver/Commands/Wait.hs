@@ -49,7 +49,7 @@ expectAll :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
 expectAll p xs = expect . and =<< mapM p xs
 
 -- |Wait until either the given action succeeds or the timeout is reached.
--- The action will be retried every .25 seconds until no 'ExpectFailed' or
+-- The action will be retried every .5 seconds until no 'ExpectFailed' or
 -- 'FailedCommand' 'NoSuchElement' exceptions occur. If the timeout is reached, 
 -- then a 'Timeout' exception will be raised. The timeout value 
 -- is expressed in seconds.
