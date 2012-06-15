@@ -1,5 +1,10 @@
 # Change Log
 
+## upcoming release
+
+###API changes
+* finallyClose and closeOnException are now overloaded on the WebDriver class.
+
 ## hs-webdriver 0.3.3
 
 ###API changes

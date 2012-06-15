@@ -65,11 +65,11 @@ withSession s' (WD wd) = WD . lift $ evalStateT wd s'
 
 -- |A finalizer ensuring that the session is always closed at the end of 
 -- the given 'WD' action, regardless of any exceptions.
-finallyClose:: WD a -> WD a 
+finallyClose:: WebDriver wd => wd a -> wd a 
 finallyClose wd = closeOnException wd <* closeSession
 
 -- |A variant of 'finallyClose' that only closes the session when an 
 -- asynchronous exception is thrown, but otherwise leaves the session open
 -- if the action was successful.
-closeOnException :: WD a -> WD a
+closeOnException :: WebDriver wd => wd a -> wd a
 closeOnException wd = wd `onException` closeSession
