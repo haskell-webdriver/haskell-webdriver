@@ -7,14 +7,14 @@ module Test.WebDriver
          WD(..), WDSession(..), defaultSession, SessionId(..)
          -- * Running WebDriver tests
        , runWD, runSession, withSession, finallyClose, closeOnException
+         -- * WebDriver commands
+       , module Test.WebDriver.Commands
          -- * Capabilities and configuration
        , Capabilities(..), defaultCaps, allCaps
        , Platform(..), ProxyType(..)
          -- ** Browser-specific configuration
        , Browser(..), LogPref(..)
        , firefox, chrome, ie, opera, iPhone, iPad, android
-         -- * WebDriver commands
-       , module Test.WebDriver.Commands
          -- * Exceptions
        , module Test.WebDriver.Exceptions
        ) where
