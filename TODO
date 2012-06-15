@@ -6,7 +6,8 @@ in upcoming releases
 
 -- add support for Opera profiles
 
--- improve documentation. Document errors.
+-- improve documentation
+  -- document errors.
   -- provide examples
     -- basic runSession usage
     -- intermediate usage
@@ -33,3 +34,5 @@ distant future
 misc. unsorted
 
 --Use lazy ByteString where possible. patch base64-bytestring to work with lazy bytestrings
+
+--consider adding withSession to SessionState so that it can be overloaded easily, or rewriting it so that it's overloaded but not a method itself.
