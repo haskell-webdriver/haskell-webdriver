@@ -4,9 +4,13 @@
 
 ###API changes
 * finallyClose and closeOnException are now overloaded on the WebDriver class.
+* NoSessionId and doSessCommand were moved from Test.WebDriver.Classes to Test.WebDriver.Commands.Internal
 
 ###bug fixes
 * fixed a typo in the export list of Firefox.Profile; deleteFile is now correctly exported instead of removeFile from System.Directory 
+
+###new features
+* A new module, Test.WebDriver.Commands.Internal, which exports some low-level functions used to implement the high-level interface. This makes it possible for library users to extend hs-webdriver with nonstandard or unimplemented features.
 
 ## hs-webdriver 0.3.3
 

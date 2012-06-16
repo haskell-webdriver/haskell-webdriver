@@ -1,7 +1,10 @@
 {-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable #-}
 -- |A collection of convenience functions for using and parsing JSON values
--- within 'WD'. All monadic parse errors are converted to asynchronous 
+-- within 'WD'. All monadic parse errors are converted to asynchronous
 -- 'BadJSON' exceptions.
+-- 
+-- These functions are used internally to implement webdriver commands, and may
+-- be useful for implementing non-standard commands.
 module Test.WebDriver.JSON 
        ( -- * Access a JSON object key
          (!:)

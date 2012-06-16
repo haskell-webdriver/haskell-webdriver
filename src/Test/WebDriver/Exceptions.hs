@@ -7,5 +7,5 @@ module Test.WebDriver.Exceptions
        , mkFailedCommandInfo, failedCommand
        )where
 import Test.WebDriver.Internal
-import Test.WebDriver.Classes
 import Test.WebDriver.JSON
+import Test.WebDriver.Commands.Internal

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, ExistentialQuantification,
-             GeneralizedNewtypeDeriving, TemplateHaskell #-}
+             TemplateHaskell #-}
 -- |This module exports basic WD actions that can be used to interact with a
 -- browser session.
 module Test.WebDriver.Commands 
@@ -70,6 +70,7 @@ module Test.WebDriver.Commands
        , serverStatus
        ) where
 
+import Test.WebDriver.Commands.Internal
 import Test.WebDriver.Classes
 import Test.WebDriver.JSON
 import Test.WebDriver.Capabilities
@@ -93,7 +94,6 @@ import Control.Exception (SomeException)
 import Control.Exception.Lifted (throwIO, catch, handle)
 import Data.Word
 import Data.String (fromString)
-import Data.Default
 import qualified Data.Char as C
 
 import Prelude hiding (catch)
@@ -263,18 +263,6 @@ instance ToJSON FrameSelector where
 focusFrame :: WebDriver wd => FrameSelector -> wd ()
 focusFrame s = doSessCommand POST "/frame" . single "id" $ s 
 
-{- |An opaque identifier for a browser window -}
-newtype WindowHandle = WindowHandle Text
-                     deriving (Eq, Ord, Show, Read, 
-                               FromJSON, ToJSON)
-instance Default WindowHandle where
-  def = currentWindow
-
--- |A special 'WindowHandle' that always refers to the currently focused window.
--- This is also used by the 'Default' instance.
-currentWindow :: WindowHandle
-currentWindow = WindowHandle "current"
-
 -- |Returns a handle to the currently focused window
 getCurrentWindow :: WebDriver wd => wd WindowHandle
 getCurrentWindow = doSessCommand GET "/window_handle" ()
@@ -312,11 +300,6 @@ getWindowPos = doWinCommand GET currentWindow "/position" ()
 -- |Set the coordinates of the current window.
 setWindowPos :: WebDriver wd => (Int, Int) -> wd ()
 setWindowPos = doWinCommand POST currentWindow "/position" . pair ("x","y")
-
-doWinCommand :: (WebDriver wd, ToJSON a, FromJSON b) => 
-                 RequestMethod -> WindowHandle -> Text -> a -> wd b
-doWinCommand m (WindowHandle w) path a = 
-  doSessCommand m (T.concat ["/window/", w, path]) a
 
 -- |Cookies are delicious delicacies. When sending cookies to the server, a value
 -- of Nothing indicates that the server should use a default value. When receiving
@@ -388,17 +371,6 @@ getSource = doSessCommand GET "/source" ()
 -- |Get the title of the current page.
 getTitle :: WebDriver wd => wd Text
 getTitle = doSessCommand GET "/title" ()
-
-{- |An opaque identifier for a web page element. -}
-newtype Element = Element Text
-                  deriving (Eq, Ord, Show, Read)
-
-instance FromJSON Element where
-  parseJSON (Object o) = Element <$> o .: "ELEMENT"
-  parseJSON v = typeMismatch "Element" v
-
-instance ToJSON Element where
-  toJSON (Element e) = object ["ELEMENT" .= e]
 
 -- |Specifies element(s) within a DOM tree using various selection methods.
 data Selector = ById Text  
@@ -521,11 +493,6 @@ e1 <==> (Element e2) = doElemCommand GET e1 ("/equals/" `append` e2) ()
 infix 4 </=>
 (</=>) :: WebDriver wd => Element -> Element -> wd Bool
 e1 </=> e2 = not <$> (e1 <==> e2)
-
-doElemCommand :: (WebDriver wd, ToJSON a, FromJSON b) => 
-                  RequestMethod -> Element -> Text -> a -> wd b
-doElemCommand m (Element e) path a =
-  doSessCommand m (T.concat ["/element/", e, path]) a
 
 -- |A screen orientation
 data Orientation = Landscape | Portrait
@@ -710,10 +677,6 @@ uploadZipEntry = doSessCommand POST "/file" . single "file"
                  . fromArchive . (`addEntryToArchive` emptyArchive)
 
 
--- |An HTML 5 storage type
-data WebStorageType = LocalStorage | SessionStorage 
-                    deriving (Eq, Show, Ord, Bounded, Enum)
-
 -- |Get the current number of keys in a web storage area.
 storageSize :: WebDriver wd => WebStorageType -> wd Integer
 storageSize s = doStorageCommand GET s "/size" ()
@@ -726,6 +689,10 @@ getAllKeys s = doStorageCommand GET s "" ()
 deleteAllKeys :: WebDriver wd => WebStorageType -> wd ()
 deleteAllKeys s = doStorageCommand DELETE s "" ()
 
+-- |An HTML 5 storage type
+data WebStorageType = LocalStorage | SessionStorage 
+                    deriving (Eq, Show, Ord, Bounded, Enum)
+          
 -- |Get the value associated with a key in the given web storage area.
 -- Unset keys result in empty strings, since the Web Storage spec
 -- makes no distinction between the empty string and an undefined value.
@@ -740,11 +707,15 @@ setKey s k v = doStorageCommand POST s "" . object $ ["key"   .= k,
 deleteKey :: WebDriver wd => WebStorageType -> Text -> wd ()
 deleteKey s k = doStorageCommand POST s ("/key/" `T.append` k) ()
 
+-- |A wrapper around 'doStorageCommand' to create web storage URLs.
 doStorageCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
                      RequestMethod -> WebStorageType -> Text -> a -> wd b
 doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
   where s' = case s of
           LocalStorage -> "local_storage"
           SessionStorage -> "session_storage"
-          
+
+
+-- Moving this closer to the definition of Cookie seems to cause strange compile 
+-- errors, so I'm leaving it here for now.
 $( deriveToJSON (map C.toLower . drop 4) ''Cookie )

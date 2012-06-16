@@ -7,23 +7,15 @@ module Test.WebDriver.Classes
          SessionState(..), modifySession
          -- ** WebDriver sessions
        , WDSession(..), SessionId(..), defaultSession
-         -- **Convenience function for :sessionId URLs
-       , doSessCommand
-         -- * No Session Exception
-       , NoSessionId(..)
        ) where
 
 --import Test.WebDriver.Internal
 import Data.Aeson
 import Network.HTTP (RequestMethod(..))
 
-import qualified Data.Text as T
 import Data.Text (Text)
 
 import Control.Monad.Trans.Control
-import Control.Exception.Lifted (Exception, throwIO)
-import Data.Typeable
-
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Identity
 import Control.Monad.List
@@ -102,29 +94,6 @@ the server on session creation, and act to identify a session in progress. -}
 newtype SessionId = SessionId Text
                   deriving (Eq, Ord, Show, Read, 
                             FromJSON, ToJSON)
-
-
-instance Exception NoSessionId
--- |A command requiring a session ID was attempted when no session ID was 
--- available.
-newtype NoSessionId = NoSessionId String 
-                 deriving (Eq, Show, Typeable)
-
-
--- |This a convenient wrapper around 'doCommand' that automatically prepends
--- the session URL parameter to the wire command URL. For example, passing
--- a URL of "/refresh" will expand to "/session/:sessionId/refresh".
-doSessCommand :: (WebDriver wd, ToJSON a, FromJSON b) => 
-                  RequestMethod -> Text -> a -> wd b
-doSessCommand method path args = do
-  WDSession { wdSessId = mSessId } <- getSession
-  case mSessId of 
-      Nothing -> throwIO . NoSessionId $ msg
-        where 
-          msg = "doSessCommand: No session ID found for relative URL "
-                ++ show path
-      Just (SessionId sId) -> doCommand method 
-                              (T.concat ["/session/", sId, path]) args
 
 
 instance SessionState m => SessionState (LS.StateT s m) where
