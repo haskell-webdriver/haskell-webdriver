@@ -4,9 +4,9 @@
 -- . These may be useful for implementing non-standard webdriver commands.
 module Test.WebDriver.Commands.Internal 
        (-- * Low-level webdriver functions
-         doCommand, doSessCommand, doElemCommand, doWinCommand
-        -- * Types
-       , Element(..), WindowHandle(..), currentWindow
+         doCommand, doSessCommand, SessionId(..)
+       , doElemCommand, Element(..)
+       , doWinCommand, WindowHandle(..), currentWindow
         -- * Exceptions
        , NoSessionId(..)
        ) where
