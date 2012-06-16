@@ -5,8 +5,12 @@
 -- webdriver commands.
 module Test.WebDriver.Commands.Internal 
        (-- * Low-level webdriver functions
-         doCommand, doSessCommand, SessionId(..)
+         doCommand
+        -- ** Commands with :sessionId URL parameter
+       , doSessCommand, SessionId(..)
+        -- ** Commands with element :id URL parameters
        , doElemCommand, Element(..)
+        -- ** Commands with :windowHandle URL parameters
        , doWinCommand, WindowHandle(..), currentWindow
         -- * Exceptions
        , NoSessionId(..)
@@ -80,7 +84,9 @@ doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", e, path]) a
 
 -- |A wrapper around 'doSessCommand' to create window handle URLS.
--- For example, passing a URL of \"/size\" will expand to \"/session/:sessionId/window/:id/\", where :sessionId and :id are URL parameters as described in the wire protocol
+-- For example, passing a URL of \"/size\" will expand to
+-- \"/session/:sessionId/window/:windowHandle/\", where :sessionId and 
+-- :windowHandle are URL parameters as described in the wire protocol
 doWinCommand :: (WebDriver wd, ToJSON a, FromJSON b) => 
                  RequestMethod -> WindowHandle -> Text -> a -> wd b
 doWinCommand m (WindowHandle w) path a = 
