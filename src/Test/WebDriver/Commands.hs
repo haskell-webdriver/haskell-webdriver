@@ -18,6 +18,7 @@ module Test.WebDriver.Commands
        , findElem, findElems, findElemFrom, findElemsFrom
          -- ** Interacting with elements
        , click, submit, getText
+       , -- *** Sending key inputs to elements
        , sendKeys, sendRawKeys, clearInput
          -- ** Element information
        , attr, cssProp, elemPos, elemSize
