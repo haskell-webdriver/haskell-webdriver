@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings, DeriveDataTypeable, GeneralizedNewtypeDeriving  #-}
 {-# OPTIONS_HADDOCK not-home #-}
--- |Internal functions used to implement the functions exported by "Test.WebDriver"
--- . These may be useful for implementing non-standard webdriver commands.
+-- |Internal functions used to implement the functions exported by 
+-- "Test.WebDriver.Commands". These may be useful for implementing non-standard 
+-- webdriver commands.
 module Test.WebDriver.Commands.Internal 
        (-- * Low-level webdriver functions
          doCommand, doSessCommand, SessionId(..)
