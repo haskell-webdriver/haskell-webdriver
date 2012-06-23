@@ -60,6 +60,7 @@ library
                    Test.WebDriver.Exceptions
                    Test.WebDriver.Commands
                    Test.WebDriver.Commands.Wait
+                   Test.WebDriver.Commands.Internal
                    Test.WebDriver.Common.Profile
                    Test.WebDriver.Firefox.Profile
                    Test.WebDriver.Chrome.Extension
