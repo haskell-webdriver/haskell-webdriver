@@ -113,7 +113,7 @@ createSession caps = do
   sessUrl <- doCommand POST "/session" . single "desiredCapabilities" $ caps
   let sessId = SessionId . last . filter (not . T.null) . splitOn "/" $  sessUrl
   modifySession $ \sess -> sess {wdSessId = Just sessId}
-  return =<< getSession
+  getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
 sessions :: WebDriver wd => wd [(SessionId, Capabilities)]
