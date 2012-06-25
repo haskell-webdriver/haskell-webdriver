@@ -553,14 +553,16 @@ data MouseButton = LeftButton | MiddleButton | RightButton
                  deriving (Eq, Show, Ord, Bounded, Enum)
 
 instance ToJSON MouseButton where
-  toJSON = String . toUpper . fromString . show
+  toJSON = toJSON . fromEnum
   
 instance FromJSON MouseButton where
-  parseJSON (String jStr) = case toLower jStr of
-    "left"   -> return LeftButton
-    "middle" -> return MiddleButton
-    "right"  -> return RightButton
-    err      -> fail $ "Invalid MouseButton string " ++ show err
+  parseJSON v = do
+    n <- parseJSON v
+    case n :: Integer of
+      0 -> return LeftButton
+      1 -> return MiddleButton
+      2 -> return RightButton
+      err -> fail $ "Invalid JSON for MouseButton: " ++ show err
   parseJSON v = typeMismatch "MouseButton" v
 
 -- |Click at the current mouse position with the given mouse button.

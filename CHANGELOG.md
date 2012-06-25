@@ -8,6 +8,7 @@
 
 ###bug fixes
 * fixed a typo in the export list of Firefox.Profile; deleteFile is now correctly exported instead of removeFile from System.Directory 
+* fixed an error in the JSON representation of MouseButton
 
 ###new features
 * A new module, Test.WebDriver.Commands.Internal, which exports some low-level functions used to implement the high-level interface. This makes it possible for library users to extend hs-webdriver with nonstandard or unimplemented features.
