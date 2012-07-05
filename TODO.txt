@@ -1,0 +1,4 @@
+--complete shadowrun diceroller
+--make generic diceroller
+--make GURPs diceroller
+--make DnD diceroller
