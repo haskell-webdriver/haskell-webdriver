@@ -28,7 +28,11 @@ sub {
     while (@titles < 5 && $a->{body} =~ /$parse_url/gp) {
         my $link = ${^MATCH};
         $link = "http://" . $link if $link =~ /^www/;
-        if (get_url($link) =~ m{<title>(.*?)</title>}si) {
+        my $res = get_url($link);
+        if ($res->header("Content-Type") =~ 'text/html'
+            && $res->header("Content-Length") < 250000000
+            && $res->decoded_content
+               =~ m{<title>(.*?)</title>}si) {
             my $title = HTML::Entities::decode($1);
             $title =~ s/\s+/ /g;
             $title = trim (substr $title, 0, 200);

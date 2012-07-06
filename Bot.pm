@@ -142,7 +142,7 @@ sub cap(\$;$) {
 
 sub get_url(_) {
     state $ua = LWP::UserAgent->new(agent => $Rolebot::Config::useragent);
-    return $ua->request(HTTP::Request->new('GET', shift))->decoded_content;
+    return $ua->request(HTTP::Request->new('GET', shift));
 }
 
 sub call_plugin_with_callback {
@@ -254,7 +254,7 @@ sub init {
     my $admins = $self->{admins} = [];
     tie @$admins, 'Tie::Persistent', $Rolebot::Config::admins_file, 'rw';
     (tied @$admins)->autosync(1);
-    qx(mkdir $botdir/state);
+    qx(mkdir $bot_dir/state);
     if (opendir my $d, "Plugins") {
         $self->load_plugins(grep !/(^\.\.?)|(.*~$)$/, readdir $d);
     }

@@ -25,7 +25,7 @@ sub {
                 . $d->time_zone_short_name . ': '
                 . strftime($date_format, gmtime $d->epoch));
     }
-    my $json = get_url "http://www.worldweatheronline.com/feed/tz.ashx?q=$query&format=json&key=$api_key";
+    my $json = get_url ("http://www.worldweatheronline.com/feed/tz.ashx?q=$query&format=json&key=$api_key")->decoded_content;
     my $data = decode_json($json)->{data};
     return (body => 'Invalid query.') unless defined $data && !$data->{error};
     my $city = $data->{request}->[0]->{query};
