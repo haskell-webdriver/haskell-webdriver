@@ -254,7 +254,7 @@ sub init {
     my $admins = $self->{admins} = [];
     tie @$admins, 'Tie::Persistent', $Rolebot::Config::admins_file, 'rw';
     (tied @$admins)->autosync(1);
-    my $state_dir = "$bot_dir/state"
+    my $state_dir = "$bot_dir/state";
     qx(mkdir $state_dir) unless -d $state_dir;
     if (opendir my $d, "Plugins") {
         $self->load_plugins(grep !/(^\.\.?)|(.*~$)$/, readdir $d);
