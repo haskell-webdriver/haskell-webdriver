@@ -1,0 +1,38 @@
+in upcoming releases
+
+-- fix loadProfile so that it doesn't cause an overlap with user addExtension calls
+
+-- add support for new experimental IE capabilities
+
+-- add support for Opera profiles
+
+-- improve documentation
+  -- document errors.
+  -- provide examples
+    -- basic runSession usage
+    -- intermediate usage
+    -- exception handling with lifted-base
+    -- explicit waits usage
+    -- firefox profile usage
+    -- REPL usage
+
+
+for 1.0
+
+-- add WDSettings, use WDSession as internal State type. 
+-- allow settings to automatically load drivers. add modules with driver loading
+functions
+-- use http-conduit and attoparsec-conduit to stream JSON data. use request methods from http-types
+
+
+
+distant future
+
+-- use ReaderT to store WDVersion for use with implicit configurations.
+
+
+misc. unsorted
+
+--Use lazy ByteString where possible. patch base64-bytestring to work with lazy bytestrings
+
+--consider adding withSession to SessionState so that it can be overloaded easily, or rewriting it so that it's overloaded but not a method itself.
