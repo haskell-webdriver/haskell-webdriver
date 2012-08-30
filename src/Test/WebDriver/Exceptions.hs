@@ -1,4 +1,4 @@
-module Test.WebDriver.Exceptions 
+module Test.WebDriver.Exceptions
        ( InvalidURL(..), NoSessionId(..), BadJSON(..)
        , HTTPStatusUnknown(..), HTTPConnError(..)
        , UnknownCommand(..), ServerError(..)

@@ -1,8 +1,8 @@
-{-| 
+{-|
 This module serves as the top-level interface to the Haskell WebDriver bindings,
 providing most of the functionality you're likely to want.
 -}
-module Test.WebDriver 
+module Test.WebDriver
        ( -- * WebDriver sessions
          WD(..), WDSession(..), defaultSession, SessionId(..)
          -- * Running WebDriver tests

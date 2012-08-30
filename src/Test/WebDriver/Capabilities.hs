@@ -19,7 +19,7 @@ import Control.Applicative
 import Control.Exception.Lifted (throw)
 
 {- |A structure describing the capabilities of a session. This record
-serves dual roles. 
+serves dual roles.
 
 * It's used to specify the desired capabilities for a session before
 it's created. In this usage, fields that are set to Nothing indicate
@@ -31,12 +31,12 @@ server. Here a value of Nothing indicates that the server doesn't
 support the capability. Thus, for Maybe Bool fields, both Nothing and
 Just False indicate a lack of support for the desired capability.
 -}
-data Capabilities = 
+data Capabilities =
   Capabilities { -- |Browser choice and browser specific settings.
                  browser                  :: Browser
                  -- |Browser version to use.
                , version                  :: Maybe String
-                 -- |Platform on which the browser should run.   
+                 -- |Platform on which the browser should run.
                , platform                 :: Platform
                  -- |Proxy configuration settings.
                , proxy                    :: ProxyType
@@ -47,7 +47,7 @@ data Capabilities =
                  -- current page with the 'screenshot' command
                , takesScreenshot          :: Maybe Bool
                  -- |Whether the session can interact with modal popups,
-                 -- such as window.alert and window.confirm via 
+                 -- such as window.alert and window.confirm via
                  -- 'acceptAlerts', 'dismissAlerts', etc.
                , handlesAlerts            :: Maybe Bool
                  -- |Whether the session can interact with database storage.
@@ -64,7 +64,7 @@ data Capabilities =
                  -- |Whether the session supports CSS selectors when searching
                  -- for elements.
                , cssSelectorsEnabled      :: Maybe Bool
-                 -- |Whether Web Storage ('getKey', 'setKey', etc) support is 
+                 -- |Whether Web Storage ('getKey', 'setKey', etc) support is
                  -- enabled
                , webStorageEnabled        :: Maybe Bool
                  -- |Whether the session can rotate the current page's current
@@ -96,14 +96,14 @@ instance Default Capabilities where
                      , proxy = UseSystemSettings
                      }
 
--- |Default capabilities. This is the same as the 'Default' instance, but with 
--- less polymorphism. By default, we use 'firefox' of an unspecified 'version' 
+-- |Default capabilities. This is the same as the 'Default' instance, but with
+-- less polymorphism. By default, we use 'firefox' of an unspecified 'version'
 -- with default system-wide 'proxy' settings on whatever 'platform' is available
 -- . All Maybe Bool capabilities are set to Nothing (no preference).
 defaultCaps :: Capabilities
 defaultCaps = def
 
--- |Same as 'defaultCaps', but with all Maybe Bool capabilities set to 
+-- |Same as 'defaultCaps', but with all Maybe Bool capabilities set to
 -- Just True.
 allCaps :: Capabilities
 allCaps = defaultCaps { javascriptEnabled = Just True
@@ -119,10 +119,10 @@ allCaps = defaultCaps { javascriptEnabled = Just True
                       , acceptSSLCerts = Just True
                       , nativeEvents = Just True
                       }
-      
+
 
 instance ToJSON Capabilities where
-  toJSON Capabilities{..} = 
+  toJSON Capabilities{..} =
     object $ [ "browserName" .= browser
              , "version" .= version
              , "platform" .= platform
@@ -140,7 +140,7 @@ instance ToJSON Capabilities where
              , "acceptSslCerts" .= acceptSSLCerts
              , "nativeEvents" .= nativeEvents
              ] ++ browserInfo
-    where 
+    where
       browserInfo = case browser of
         Firefox {..}
           -> ["firefox_profile" .= ffProfile
@@ -149,11 +149,11 @@ instance ToJSON Capabilities where
              ]
         Chrome {..}
           -> catMaybes [ opt "chrome.chromedriverVersion" chromeDriverVersion
-                       , opt "chrome.binary" chromeBinary 
+                       , opt "chrome.binary" chromeBinary
                        ]
              ++ ["chrome.switches" .= chromeOptions
                 ,"chrome.extensions" .= chromeExtensions
-                ]       
+                ]
         IE {..}
           -> ["IgnoreProtectedModeSettings" .= ignoreProtectedModeSettings
              --,"useLegacyInternalServer" .= u
@@ -165,7 +165,7 @@ instance ToJSON Capabilities where
                        , opt "opera.launcher" operaLauncher
                        , opt "opera.host" operaHost
                        , opt "opera.logging.file" operaLogFile
-                       ] 
+                       ]
              ++ ["opera.detatch" .= operaDetach
                 ,"opera.no_quit" .= operaDetach --backwards compatability
                 ,"opera.autostart" .= operaAutoStart
@@ -177,12 +177,12 @@ instance ToJSON Capabilities where
                 ,"opera.logging.level" .= operaLogPref
                 ]
         _ -> []
-          
+
         where
           opt k = fmap (k .=)
 
 
-instance FromJSON Capabilities where  
+instance FromJSON Capabilities where
   parseJSON (Object o) = Capabilities <$> req "browserName"
                                       <*> opt "version" Nothing
                                       <*> req "platform"
@@ -207,7 +207,7 @@ instance FromJSON Capabilities where
           b k = opt k Nothing     -- Maybe Bool field
   parseJSON v = typeMismatch "Capabilities" v
 
--- |This constructor simultaneously specifies which browser the session will 
+-- |This constructor simultaneously specifies which browser the session will
 -- use, while also providing browser-specific configuration. Default
 -- configuration is provided for each browser by 'firefox', 'chrome', 'opera',
 -- 'ie', etc.
@@ -220,7 +220,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                          ffProfile :: Maybe (PreparedProfile Firefox)
                          -- |Firefox logging preference
                        , ffLogPref :: LogPref
-                         -- |Server-side path to Firefox binary. If Nothing, 
+                         -- |Server-side path to Firefox binary. If Nothing,
                          -- use a sensible system-based default.
                        , ffBinary :: Maybe FilePath
                        }
@@ -228,27 +228,27 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                         --
                         -- for more information on chromedriver see
                         -- <http://code.google.com/p/selenium/wiki/ChromeDriver>
-                        chromeDriverVersion :: Maybe String 
-                        -- |Server-side path to Chrome binary. If Nothing, 
+                        chromeDriverVersion :: Maybe String
+                        -- |Server-side path to Chrome binary. If Nothing,
                         -- use a sensible system-based default.
                       , chromeBinary :: Maybe FilePath
-                        -- |A list of command-line options to pass to the 
+                        -- |A list of command-line options to pass to the
                         -- Chrome binary.
                       , chromeOptions :: [String]
                         -- |A list of extensions to use.
                       , chromeExtensions :: [ChromeExtension]
-                      } 
-             | IE { -- |Whether to skip the protected mode check. If set, tests 
-                    -- may become flaky, unresponsive, or browsers may hang. If 
+                      }
+             | IE { -- |Whether to skip the protected mode check. If set, tests
+                    -- may become flaky, unresponsive, or browsers may hang. If
                     -- not set, and protected mode settings are not the same for
-                    -- all zones, an exception will be thrown on driver 
-                    -- construction. 
+                    -- all zones, an exception will be thrown on driver
+                    -- construction.
                     ignoreProtectedModeSettings :: Bool
                   --, useLegacyInternalServer     :: Bool
                   }
              | Opera { -- |Server-side path to the Opera binary
                        operaBinary    :: Maybe FilePath
-                     --, operaNoRestart :: Maybe Bool 
+                     --, operaNoRestart :: Maybe Bool
                        -- |Which Opera product we're using, e.g. \"desktop\",
                        -- \"core\"
                      , operaProduct   :: Maybe String
@@ -284,14 +284,14 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                      , operaHost      :: Maybe String
                        -- |Command-line arguments to pass to Opera.
                      , operaOptions   :: String
-                       -- |Where to send the log output. If Nothing, logging is 
+                       -- |Where to send the log output. If Nothing, logging is
                        -- disabled.
                      , operaLogFile   :: Maybe FilePath
                        -- |Log level preference. Defaults to 'LogInfo'
                      , operaLogPref   :: LogPref
                      }
              | HTMLUnit
-             | IPhone 
+             | IPhone
              | IPad
              | Android
              deriving (Eq, Show)
@@ -385,13 +385,13 @@ instance FromJSON Platform where
     "vista"   -> return Vista
     "mac"     -> return Mac
     "linux"   -> return Linux
-    "unix"    -> return Unix 
+    "unix"    -> return Unix
     "any"     -> return Any
-    err -> fail $ "Invalid Platform string " ++ show err 
+    err -> fail $ "Invalid Platform string " ++ show err
   parseJSON v = typeMismatch "Platform" v
 
 -- |Available settings for the proxy 'Capabilities' field
-data ProxyType = NoProxy 
+data ProxyType = NoProxy
                | UseSystemSettings
                | AutoDetect
                  -- |Use a proxy auto-config file specified by URL
@@ -411,24 +411,24 @@ instance FromJSON ProxyType where
       "direct" -> return NoProxy
       "system" -> return UseSystemSettings
       "pac"    -> PAC <$> f "autoConfigUrl"
-      "manual" -> Manual <$> f "ftpProxy" 
+      "manual" -> Manual <$> f "ftpProxy"
                          <*> f "sslProxy"
                          <*> f "httpProxy"
       _ -> fail $ "Invalid ProxyType " ++ show pTyp
     where
-      f :: FromJSON a => Text -> Parser a 
+      f :: FromJSON a => Text -> Parser a
       f = (obj .:)
   parseJSON v = typeMismatch "ProxyType" v
-      
+
 instance ToJSON ProxyType where
   toJSON pt = object $ case pt of
-    NoProxy -> 
+    NoProxy ->
       ["proxyType" .= ("DIRECT" :: String)]
-    UseSystemSettings -> 
+    UseSystemSettings ->
       ["proxyType" .= ("SYSTEM" :: String)]
     AutoDetect ->
       ["proxyType" .= ("AUTODETECT" :: String)]
-    PAC{autoConfigUrl = url} -> 
+    PAC{autoConfigUrl = url} ->
       ["proxyType" .= ("PAC" :: String)
       ,"autoConfigUrl" .= url
       ]
@@ -440,7 +440,7 @@ instance ToJSON ProxyType where
       ]
 
 -- |Indicates log verbosity. Used in 'Firefox' and 'Opera' configuration.
-data LogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig 
+data LogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
              | LogFine | LogFiner | LogFinest | LogAll
              deriving (Eq, Show, Ord, Bounded, Enum)
 
@@ -458,7 +458,7 @@ instance ToJSON LogPref where
     LogFiner -> "FINER"
     LogFinest -> "FINEST"
     LogAll -> "ALL"
-    
+
 instance FromJSON LogPref where
   parseJSON (String s) = return $ case s of
     "OFF" -> LogOff
