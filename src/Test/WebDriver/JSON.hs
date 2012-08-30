@@ -2,10 +2,10 @@
 -- |A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous
 -- 'BadJSON' exceptions.
--- 
+--
 -- These functions are used internally to implement webdriver commands, and may
 -- be useful for implementing non-standard commands.
-module Test.WebDriver.JSON 
+module Test.WebDriver.JSON
        ( -- * Access a JSON object key
          (!:)
          -- * Conversion from JSON within WD
@@ -14,16 +14,16 @@ module Test.WebDriver.JSON
        , parseJSON', fromJSON'
          -- * Tuple functions
          -- |Convenience functions for working with tuples.
-         
+
          -- ** JSON object constructors
        , single, pair, triple
          -- ** Extracting JSON objects into tuples
-       , parsePair, parseTriple 
+       , parsePair, parseTriple
          -- * Conversion from parser results to WD
          -- |These functions are used to implement the other functions
-         -- in this module, and could be used to implement other JSON 
+         -- in this module, and could be used to implement other JSON
          -- convenience functions
-       , apResultToWD, aesonResultToWD 
+       , apResultToWD, aesonResultToWD
          -- * Parse exception
        , BadJSON(..)
        ) where
@@ -43,21 +43,21 @@ import Data.Typeable
 
 instance Exception BadJSON
 -- |An error occured when parsing a JSON value.
-newtype BadJSON = BadJSON String 
+newtype BadJSON = BadJSON String
              deriving (Eq, Show, Typeable)
 
 -- |Construct a singleton JSON 'object' from a key and value.
 single :: ToJSON a => Text -> a -> Value
 single a x = object [a .= x]
 
--- |Construct a 2-element JSON 'object' from a pair of keys and a pair of 
--- values. 
+-- |Construct a 2-element JSON 'object' from a pair of keys and a pair of
+-- values.
 pair :: (ToJSON a, ToJSON b) => (Text,Text) -> (a,b) -> Value
 pair (a,b) (x,y) = object [a .= x, b .= y]
 
 -- |Construct a 3-element JSON 'object' from a triple of keys and a triple of
 -- values.
-triple :: (ToJSON a, ToJSON b, ToJSON c) => 
+triple :: (ToJSON a, ToJSON b, ToJSON c) =>
           (Text,Text,Text) -> (a,b,c) -> Value
 triple (a,b,c) (x,y,z) = object [a .= x, b.= y, c .= z]
 
@@ -79,25 +79,25 @@ o !: k = aesonResultToWD $ parse (.: k) o
 -- |Parse a JSON 'Object' as a pair. The first two string arguments specify the
 -- keys to extract from the object. The third string is the name of the
 -- calling function, for better error reporting.
-parsePair :: (MonadBaseControl IO wd, FromJSON a, FromJSON b) => 
+parsePair :: (MonadBaseControl IO wd, FromJSON a, FromJSON b) =>
              String -> String -> String -> Value -> wd (a, b)
-parsePair a b funcName v = 
+parsePair a b funcName v =
   case v of
     Object o -> (,) <$> o !: fromString a <*> o !: fromString b
-    _        -> throwIO . BadJSON $ funcName ++ 
-                ": cannot parse non-object JSON response as a (" ++ a  
+    _        -> throwIO . BadJSON $ funcName ++
+                ": cannot parse non-object JSON response as a (" ++ a
                 ++ ", " ++ b ++ ") pair" ++ ")"
 
 
 -- |Parse a JSON Object as a triple. The first three string arguments
--- specify the keys to extract from the object. The fourth string is the name 
+-- specify the keys to extract from the object. The fourth string is the name
 -- of the calling function, for better error reporting.
 parseTriple :: (MonadBaseControl IO wd, FromJSON a, FromJSON b, FromJSON c) =>
                String -> String -> String ->  String -> Value -> wd (a, b, c)
-parseTriple a b c funcName v = 
+parseTriple a b c funcName v =
   case v of
-    Object o -> (,,) <$> o !: fromString a 
-                     <*> o !: fromString b 
+    Object o -> (,,) <$> o !: fromString a
+                     <*> o !: fromString b
                      <*> o !: fromString c
     _        -> throwIO . BadJSON $ funcName ++
                 ": cannot parse non-object JSON response as a (" ++ a
@@ -105,7 +105,7 @@ parseTriple a b c funcName v =
 
 
 
--- |Convert an attoparsec parser result to 'WD'. 
+-- |Convert an attoparsec parser result to 'WD'.
 apResultToWD :: (MonadBaseControl IO wd, FromJSON a) => AP.Result Value -> wd a
 apResultToWD p = case p of
   Done _ res -> fromJSON' res

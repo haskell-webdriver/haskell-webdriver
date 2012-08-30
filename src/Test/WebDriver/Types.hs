@@ -1,17 +1,17 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
-    TemplateHaskell, OverloadedStrings, ExistentialQuantification, 
-    MultiParamTypeClasses, TypeFamilies, 
+    TemplateHaskell, OverloadedStrings, ExistentialQuantification,
+    MultiParamTypeClasses, TypeFamilies,
     RecordWildCards
   #-}
 {-# OPTIONS_HADDOCK not-home #-}
-module Test.WebDriver.Types 
+module Test.WebDriver.Types
        ( -- * WebDriver sessions
          WD(..), WDSession(..), defaultSession, SessionId(..)
          -- * Capabilities and configuration
        , Capabilities(..), defaultCaps, allCaps
        , Platform(..), ProxyType(..)
          -- ** Browser-specific configuration
-       , Browser(..), 
+       , Browser(..),
          -- ** Default settings for browsers
          firefox, chrome, ie, opera, iPhone, iPad, android
        , LogPref(..)
@@ -39,13 +39,3 @@ import Test.WebDriver.Classes
 import Test.WebDriver.Commands
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Capabilities
-
-  
-
-
-
-
-  
-
-
-

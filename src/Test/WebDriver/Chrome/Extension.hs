@@ -1,9 +1,9 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleContexts #-}
 -- |Functions and types for working with Google Chrome extensions.
-module Test.WebDriver.Chrome.Extension 
+module Test.WebDriver.Chrome.Extension
        ( ChromeExtension
        , loadExtension
-       , loadRawExtension 
+       , loadRawExtension
        ) where
 import Data.ByteString as BS
 import Data.ByteString.Base64 as B64
@@ -12,7 +12,7 @@ import Control.Applicative
 import Control.Monad.Base
 
 -- |An opaque type representing a Google Chrome extension. Values of this type
--- are passed to the 'Test.Webdriver.chromeExtensions' field. 
+-- are passed to the 'Test.Webdriver.chromeExtensions' field.
 newtype ChromeExtension = ChromeExtension ByteString
                         deriving (Eq, Show, Read, ToJSON, FromJSON)
 
