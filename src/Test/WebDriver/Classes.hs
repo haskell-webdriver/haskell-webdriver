@@ -62,9 +62,11 @@ monad before execution. -}
 data WDSession = WDSession { 
                              -- |Host name of the WebDriver server for this 
                              -- session
-                             wdHost   :: String
+                             wdHost     :: String
                              -- |Port number of the server
-                           , wdPort   :: Word16
+                           , wdPort     :: Word16
+                             -- |Base path (usually "/wd/hub")
+                           , wdBasePath :: String
                              -- |An opaque reference identifying the session to
                              -- use with 'WD' commands.
                              -- A value of Nothing indicates that a session 
@@ -73,13 +75,14 @@ data WDSession = WDSession {
                              -- 'Test.WebDriver.createSession', or created
                              -- and closed automatically with 
                              -- 'Test.WebDriver.runSession'
-                           , wdSessId :: Maybe SessionId 
+                           , wdSessId   :: Maybe SessionId
                            } deriving (Eq, Show)
 
 instance Default WDSession where
-  def = WDSession { wdHost   = "127.0.0.1"
-                  , wdPort   = 4444
-                  , wdSessId = Nothing
+  def = WDSession { wdHost     = "127.0.0.1"
+                  , wdPort     = 4444
+                  , wdBasePath = "/wd/hub"
+                  , wdSessId   = Nothing
                   }
 
 {- |A default session connects to localhost on port 4444, and hasn't been 
