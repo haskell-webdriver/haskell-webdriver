@@ -40,10 +40,11 @@ import Data.Word (Word, Word8)
 mkWDUri :: (SessionState s) => String -> s URI  --todo: remove String :(
 mkWDUri path = do 
   WDSession{wdHost = host, 
-            wdPort = port
+            wdPort = port,
+            wdBasePath = basePath
            } <- getSession
   let urlStr   = "http://" ++ host ++ ":" ++ show port
-      relPath  = "/wd/hub" ++ path
+      relPath  = basePath ++ path
       mBaseURI = parseAbsoluteURI urlStr
       mRelURI  = parseRelativeReference relPath
   case (mBaseURI, mRelURI) of
