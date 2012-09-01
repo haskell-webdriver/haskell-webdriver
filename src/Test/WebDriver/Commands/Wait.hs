@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables, FlexibleContexts #-}
-module Test.WebDriver.Commands.Wait 
+module Test.WebDriver.Commands.Wait
        ( -- * Wait on expected conditions
          waitUntil, waitUntil'
        , waitWhile, waitWhile'
@@ -38,20 +38,20 @@ expect b
   | b         = return ()
   | otherwise = unexpected
 
--- |Apply a monadic predicate to every element in a list, and 'expect' that 
+-- |Apply a monadic predicate to every element in a list, and 'expect' that
 -- at least one succeeds.
 expectAny :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
 expectAny p xs = expect . or =<< mapM p xs
 
--- |Apply a monadic predicate to every element in a list, and 'expect' that all 
+-- |Apply a monadic predicate to every element in a list, and 'expect' that all
 -- succeed.
 expectAll :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
 expectAll p xs = expect . and =<< mapM p xs
 
 -- |Wait until either the given action succeeds or the timeout is reached.
 -- The action will be retried every .5 seconds until no 'ExpectFailed' or
--- 'FailedCommand' 'NoSuchElement' exceptions occur. If the timeout is reached, 
--- then a 'Timeout' exception will be raised. The timeout value 
+-- 'FailedCommand' 'NoSuchElement' exceptions occur. If the timeout is reached,
+-- then a 'Timeout' exception will be raised. The timeout value
 -- is expressed in seconds.
 waitUntil :: SessionState m => Double -> m a -> m a
 waitUntil = waitUntil' 500000
@@ -67,7 +67,7 @@ waitUntil' = wait' handler
       where
         handleFailedCommand (FailedCommand NoSuchElement _) = retry
         handleFailedCommand err = throwIO err
-                              
+
         handleExpectFailed (_ :: ExpectFailed) = retry
 
 -- |Like 'waitUntil', but retries the action until it fails or until the timeout
@@ -75,12 +75,12 @@ waitUntil' = wait' handler
 waitWhile :: SessionState m => Double -> m a -> m ()
 waitWhile = waitWhile' 500000
 
--- |Like 'waitUntil'', but retries the action until it either fails or 
+-- |Like 'waitUntil'', but retries the action until it either fails or
 -- until the timeout is exceeded.
 waitWhile' :: SessionState m => Int -> Double -> m a -> m ()
 waitWhile' = wait' handler
   where
-    handler retry wd = do 
+    handler retry wd = do
       b <- (wd >> return True) `catches` [Handler handleFailedCommand
                                          ,Handler handleExpectFailed
                                          ]
@@ -88,25 +88,25 @@ waitWhile' = wait' handler
       where
         handleFailedCommand (FailedCommand NoSuchElement _) = return False
         handleFailedCommand err = throwIO err
-                               
+
         handleExpectFailed (_ :: ExpectFailed) = return False
-    
-wait' :: SessionState m => 
+
+wait' :: SessionState m =>
          (m b -> m a -> m b) -> Int -> Double -> m a -> m b
 wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
   where timeout = realToFrac t
         waitLoop startTime = handler retry wd
-          where 
+          where
             retry = do
               now <- liftBase getCurrentTime
               if diffUTCTime now startTime >= timeout
-                then 
+                then
                   failedCommand Timeout "wait': explicit wait timed out."
-                else do 
+                else do
                   liftBase . threadDelay $ waitAmnt
                   waitLoop startTime
 
--- |Convenience function to catch 'FailedCommand' 'Timeout' exceptions 
+-- |Convenience function to catch 'FailedCommand' 'Timeout' exceptions
 -- and perform some action.
 --
 -- Example:

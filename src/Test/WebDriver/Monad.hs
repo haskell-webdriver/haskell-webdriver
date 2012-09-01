@@ -5,7 +5,7 @@ module Test.WebDriver.Monad
        )where
 
 import Test.WebDriver.Classes
-import Test.WebDriver.Commands 
+import Test.WebDriver.Commands
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Internal
 
@@ -19,7 +19,7 @@ import Control.Exception.Lifted
 import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Applicative
 
-{- |A monadic interface to the WebDriver server. This monad is a simple, strict 
+{- |A monadic interface to the WebDriver server. This monad is a simple, strict
 layer over 'IO', threading session information between sequential commands
 -}
 newtype WD a = WD (StateT WDSession IO a)
@@ -30,8 +30,8 @@ instance MonadBase IO WD where
 
 instance MonadBaseControl IO WD where
   data StM WD a = StWD {unStWD :: StM (StateT WDSession IO) a}
-  
-  liftBaseWith f = WD $  
+
+  liftBaseWith f = WD $
     liftBaseWith $ \runInBase ->
     f (\(WD sT) -> liftM StWD . runInBase $ sT)
 
@@ -47,7 +47,7 @@ instance WebDriver WD where
     handleHTTPErr r
     handleHTTPResp r
 
--- |Executes a 'WD' computation within the 'IO' monad, using the given 
+-- |Executes a 'WD' computation within the 'IO' monad, using the given
 -- 'WDSession'.
 runWD :: WDSession -> WD a -> IO a
 runWD sess (WD wd) = evalStateT wd sess
@@ -63,12 +63,12 @@ runSession s caps wd = runWD s $ createSession caps >> wd  <* closeSession
 withSession :: WDSession -> WD a -> WD a
 withSession s' (WD wd) = WD . lift $ evalStateT wd s'
 
--- |A finalizer ensuring that the session is always closed at the end of 
+-- |A finalizer ensuring that the session is always closed at the end of
 -- the given 'WD' action, regardless of any exceptions.
-finallyClose:: WebDriver wd => wd a -> wd a 
+finallyClose:: WebDriver wd => wd a -> wd a
 finallyClose wd = closeOnException wd <* closeSession
 
--- |A variant of 'finallyClose' that only closes the session when an 
+-- |A variant of 'finallyClose' that only closes the session when an
 -- asynchronous exception is thrown, but otherwise leaves the session open
 -- if the action was successful.
 closeOnException :: WebDriver wd => wd a -> wd a

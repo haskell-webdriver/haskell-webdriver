@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, 
+{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts,
              GeneralizedNewtypeDeriving #-}
 module Test.WebDriver.Classes
        ( -- * WebDriver class
@@ -45,10 +45,10 @@ class MonadBaseControl IO s => SessionState s where
 -- "Test.WebDriver.Commands". For more information on the wire protocol see
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
 class SessionState wd => WebDriver wd where
-  doCommand :: (ToJSON a, FromJSON b) => 
-                RequestMethod -- ^HTTP request method 
-                -> Text       -- ^URL of request 
-                -> a          -- ^JSON parameters passed in the body 
+  doCommand :: (ToJSON a, FromJSON b) =>
+                RequestMethod -- ^HTTP request method
+                -> Text       -- ^URL of request
+                -> a          -- ^JSON parameters passed in the body
                               -- of the request. Note that, as a special case,
                               -- () will result in an empty request body.
                 -> wd b       -- ^The JSON result of the HTTP request.
@@ -59,19 +59,19 @@ modifySession f = getSession >>= putSession . f
 {- |Information about a WebDriver session. This structure is passed
 implicitly through all 'WD' computations, and is also used to configure the 'WD'
 monad before execution. -}
-data WDSession = WDSession { 
-                             -- |Host name of the WebDriver server for this 
+data WDSession = WDSession {
+                             -- |Host name of the WebDriver server for this
                              -- session
                              wdHost   :: String
                              -- |Port number of the server
                            , wdPort   :: Word16
                              -- |An opaque reference identifying the session to
                              -- use with 'WD' commands.
-                             -- A value of Nothing indicates that a session 
+                             -- A value of Nothing indicates that a session
                              -- hasn't been created yet.
                              -- Sessions can be created within 'WD' via
                              -- 'Test.WebDriver.createSession', or created
-                             -- and closed automatically with 
+                             -- and closed automatically with
                              -- 'Test.WebDriver.runSession'
                            , wdSessId :: Maybe SessionId 
                            } deriving (Eq, Show)
@@ -82,17 +82,17 @@ instance Default WDSession where
                   , wdSessId = Nothing
                   }
 
-{- |A default session connects to localhost on port 4444, and hasn't been 
+{- |A default session connects to localhost on port 4444, and hasn't been
 initialized server-side. This value is the same as 'def' but with a less
 polymorphic type. -}
 defaultSession :: WDSession
 defaultSession = def
 
 
-{- |An opaque identifier for a WebDriver session. These handles are produced by 
-the server on session creation, and act to identify a session in progress. -} 
+{- |An opaque identifier for a WebDriver session. These handles are produced by
+the server on session creation, and act to identify a session in progress. -}
 newtype SessionId = SessionId Text
-                  deriving (Eq, Ord, Show, Read, 
+                  deriving (Eq, Ord, Show, Read,
                             FromJSON, ToJSON)
 
 
@@ -171,4 +171,3 @@ instance (Monoid w, SessionState m) => SessionState (LRWS.RWST r w s m) where
 
 instance (Monoid w, WebDriver wd) => WebDriver (LRWS.RWST r w s wd) where
   doCommand rm t a = lift (doCommand rm t a)
-

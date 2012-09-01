@@ -1,11 +1,11 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable #-}
-module Test.WebDriver.Internal 
+module Test.WebDriver.Internal
        ( mkWDUri, mkRequest
        , handleHTTPErr, handleJSONErr, handleHTTPResp
-       
+
        , InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
        , UnknownCommand(..), ServerError(..)
-       
+
        , FailedCommand(..), failedCommand, mkFailedCommandInfo
        , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
        ) where
@@ -38,8 +38,8 @@ import Data.String (fromString)
 import Data.Word (Word, Word8)
 
 mkWDUri :: (SessionState s) => String -> s URI  --todo: remove String :(
-mkWDUri path = do 
-  WDSession{wdHost = host, 
+mkWDUri path = do
+  WDSession{wdHost = host,
             wdPort = port
            } <- getSession
   let urlStr   = "http://" ++ host ++ ":" ++ show port
@@ -47,73 +47,73 @@ mkWDUri path = do
       mBaseURI = parseAbsoluteURI urlStr
       mRelURI  = parseRelativeReference relPath
   case (mBaseURI, mRelURI) of
-    (Nothing, _) -> throwIO $ InvalidURL urlStr 
+    (Nothing, _) -> throwIO $ InvalidURL urlStr
     (_, Nothing) -> throwIO $ InvalidURL relPath
     (Just baseURI, Just relURI) -> return . fromJust $ relURI `relativeTo` baseURI
-  
-mkRequest :: (SessionState s, ToJSON a) => 
+
+mkRequest :: (SessionState s, ToJSON a) =>
              [Header] -> RequestMethod -> Text -> a -> s (Response ByteString)
 mkRequest headers method path args = do
   uri <- mkWDUri (T.unpack path)
   let body = case toJSON args of
         Array v | V.null v -> ""   --an ugly corner case to allow empty requests
-        other              -> encode other 
+        other              -> encode other
       req = Request { rqURI = uri             --todo: normalization of headers
                     , rqMethod = method
                     , rqBody = body
-                    , rqHeaders = headers ++ [ Header HdrAccept 
+                    , rqHeaders = headers ++ [ Header HdrAccept
                                                "application/json;charset=UTF-8"
-                                             , Header HdrContentType 
+                                             , Header HdrContentType
                                                "application/json;charset=UTF-8"
-                                             , Header HdrContentLength 
-                                               . show . BS.length $ body 
+                                             , Header HdrContentLength
+                                               . show . BS.length $ body
                                              ]
                     }
   r <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
   return r
 
 handleHTTPErr :: SessionState s => Response ByteString -> s ()
-handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} = 
-  case code of 
+handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
+  case code of
     (4,_,_)  -> err UnknownCommand
-    (5,_,_)  -> 
+    (5,_,_)  ->
       case findHeader HdrContentType r of
         Just ct
-          | "application/json;" `isInfixOf` ct -> parseJSON' body 
-                                                  >>= handleJSONErr       
+          | "application/json;" `isInfixOf` ct -> parseJSON' body
+                                                  >>= handleJSONErr
           | otherwise -> err ServerError
-        Nothing -> 
+        Nothing ->
           err (ServerError . ("Missing content type. Server response: "++))
 
     (2,_,_)  -> return ()
     (3,0,2)  -> return ()
     _        -> err (HTTPStatusUnknown code)
-    where 
+    where
       err errType = throwIO $ errType reason
-      
+
 handleHTTPResp ::  (SessionState s, FromJSON a) => Response ByteString -> s a
-handleHTTPResp resp@Response{rspBody = body, rspCode = code} = 
+handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
   case code of
     (2,0,4) -> returnEmptyArray
-    (3,0,2) -> fromJSON' =<< maybe statusErr (return . String . fromString) 
+    (3,0,2) -> fromJSON' =<< maybe statusErr (return . String . fromString)
                  (findHeader HdrLocation resp)
-               where 
-                 statusErr = throwIO . HTTPStatusUnknown code  
+               where
+                 statusErr = throwIO . HTTPStatusUnknown code
                              $ (BS.unpack body)
-    other 
+    other
       | BS.null body -> returnEmptyArray
       | otherwise -> fromJSON' . rspVal =<< parseJSON' body
   where
     returnEmptyArray = fromJSON' emptyArray
-    
+
 handleJSONErr :: SessionState s => WDResponse -> s ()
 handleJSONErr WDResponse{rspStatus = 0} = return ()
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- getSession
   errInfo <- fromJSON' val
-  let screen = B64.decodeLenient <$> errScreen errInfo 
-      errInfo' = errInfo { errSess = sess 
-                         , errScreen = screen } 
+  let screen = B64.decodeLenient <$> errScreen errInfo
+      errInfo' = errInfo { errSess = sess
+                         , errScreen = screen }
       e errType = throwIO $ FailedCommand errType errInfo'
   case status of
     7   -> e NoSuchElement
@@ -135,7 +135,7 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
     28  -> e ScriptTimeout
     29  -> e InvalidElementCoordinates
     30  -> e IMENotAvailable
-    31  -> e IMEEngineActivationFailed        
+    31  -> e IMEEngineActivationFailed
     32  -> e InvalidSelector
     34  -> e MoveTargetOutOfBounds
     51  -> e InvalidXPathSelector
@@ -149,7 +149,7 @@ data WDResponse = WDResponse { rspSessId :: Maybe SessionId
                              , rspVal    :: Value
                              }
                   deriving (Eq, Show)
-                           
+
 instance FromJSON WDResponse where
   parseJSON (Object o) = WDResponse <$> o .:? "sessionId" .!= Nothing
                                     <*> o .: "status"
@@ -159,7 +159,7 @@ instance FromJSON WDResponse where
 
 instance Exception InvalidURL
 -- |An invalid URL was given
-newtype InvalidURL = InvalidURL String 
+newtype InvalidURL = InvalidURL String
                 deriving (Eq, Show, Typeable)
 
 instance Exception HTTPStatusUnknown
@@ -174,7 +174,7 @@ newtype HTTPConnError = HTTPConnError ConnError
 
 instance Exception UnknownCommand
 -- |A command was sent to the WebDriver server that it didn't recognize.
-newtype UnknownCommand = UnknownCommand String 
+newtype UnknownCommand = UnknownCommand String
                     deriving (Eq, Show, Typeable)
 
 instance Exception ServerError
@@ -217,12 +217,12 @@ data FailedCommandType = NoSuchElement
                        deriving (Eq, Ord, Enum, Bounded, Show)
 
 -- |Detailed information about the failed command provided by the server.
-data FailedCommandInfo = 
+data FailedCommandInfo =
   FailedCommandInfo { -- |The error message.
                       errMsg    :: String
-                      -- |The session associated with 
+                      -- |The session associated with
                       -- the exception.
-                    , errSess :: WDSession 
+                    , errSess :: WDSession
                       -- |A screen shot of the focused window
                       -- when the exception occured,
                       -- if provided.
@@ -238,8 +238,8 @@ data FailedCommandInfo =
 -- |Provides a readable printout of the error information, useful for
 -- logging.
 instance Show FailedCommandInfo where
-  show i = showChar '\n' 
-           . showString "Session: " . sess 
+  show i = showChar '\n'
+           . showString "Session: " . sess
            . showChar '\n'
            . showString className . showString ": " . showString (errMsg i)
            . showChar '\n'
@@ -247,8 +247,8 @@ instance Show FailedCommandInfo where
            $ ""
     where
       className = fromMaybe "<unknown exception>" . errClass $ i
-      
-      sess = showString sessId . showString " at " 
+
+      sess = showString sessId . showString " at "
              . showString host . showChar ':' . shows port
         where
           sessId = case msid of
@@ -264,12 +264,12 @@ mkFailedCommandInfo m = do
   return $ FailedCommandInfo {errMsg = m , errSess = sess , errScreen = Nothing
                              , errClass  = Nothing , errStack  = [] }
 
--- |Convenience function to throw a 'FailedCommand' locally with no server-side 
+-- |Convenience function to throw a 'FailedCommand' locally with no server-side
 -- info present.
 failedCommand :: SessionState s => FailedCommandType -> String -> s a
 failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m
 
--- |An individual stack frame from the stack trace provided by the server 
+-- |An individual stack frame from the stack trace provided by the server
 -- during a FailedCommand.
 data StackFrame = StackFrame { sfFileName   :: String
                              , sfClassName  :: String
@@ -280,7 +280,7 @@ data StackFrame = StackFrame { sfFileName   :: String
 
 
 instance Show StackFrame where
-  show f = showString (sfClassName f) . showChar '.' 
+  show f = showString (sfClassName f) . showChar '.'
            . showString (sfMethodName f) . showChar ' '
            . showParen True ( showString (sfFileName f) . showChar ':'
                               . shows (sfLineNumber f))
@@ -288,13 +288,13 @@ instance Show StackFrame where
 
 
 instance FromJSON FailedCommandInfo where
-  parseJSON (Object o) = 
+  parseJSON (Object o) =
     FailedCommandInfo <$> (req "message" >>= maybe (return "") return)
                       <*> pure undefined
                       <*> opt "screen"     Nothing
                       <*> opt "class"      Nothing
                       <*> opt "stackTrace" []
-    where req :: FromJSON a => Text -> Parser a 
+    where req :: FromJSON a => Text -> Parser a
           req = (o .:)            --required key
           opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:? k .!= d --optional key
@@ -310,5 +310,3 @@ instance FromJSON StackFrame where
           reqStr :: Text -> Parser String
           reqStr k = req k >>= maybe (return "") return
   parseJSON v = typeMismatch "StackFrame" v
-
-
