@@ -9,7 +9,7 @@ module Test.WebDriver.Commands
          -- ** Web navigation
        , openPage, forward, back, refresh
          -- ** Page info
-       , getCurrentURL, getSource, getTitle, screenshot
+       , getCurrentURL, getSource, getTitle, screenshot, screenshotBase64
          -- * Timeouts
        , setImplicitWait, setScriptTimeout, setPageLoadTimeout
          -- * Web elements
@@ -223,8 +223,11 @@ asyncJS a s = handle timeout $ fromJSON' =<< getResult
 
 -- |Grab a screenshot of the current page as a PNG image
 screenshot :: WebDriver wd => wd SBS.ByteString
-screenshot = B64.decodeLenient <$> doSessCommand GET "/screenshot" ()
+screenshot = B64.decodeLenient <$> screenshotBase64
 
+-- |Grab a screenshot as a base-64 encoded PNG image. This is the protocol-defined format.
+screenshotBase64 :: WebDriver wd => wd SBS.ByteString
+screenshotBase64 = doSessCommand GET "/screenshot" ()
 
 availableIMEEngines :: WebDriver wd => wd [Text]
 availableIMEEngines = doSessCommand GET "/ime/available_engines" ()
