@@ -1,5 +1,9 @@
 #Change Log
 
+##upcoming release
+###new features
+* added the screenshotBase64 function to Test.WebDriver.Commands
+
 ##hs-webdriver 0.4
 
 ###API changes
