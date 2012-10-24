@@ -33,7 +33,7 @@ import Control.Applicative
 import Control.Exception (Exception)
 import Data.Typeable (Typeable)
 import Data.List (isInfixOf)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.String (fromString)
 import Data.Word (Word, Word8)
 
@@ -49,7 +49,7 @@ mkWDUri path = do
   case (mBaseURI, mRelURI) of
     (Nothing, _) -> throwIO $ InvalidURL urlStr
     (_, Nothing) -> throwIO $ InvalidURL relPath
-    (Just baseURI, Just relURI) -> return . fromJust $ relURI `relativeTo` baseURI
+    (Just baseURI, Just relURI) -> return $ relURI `relativeTo` baseURI
 
 mkRequest :: (SessionState s, ToJSON a) =>
              [Header] -> RequestMethod -> Text -> a -> s (Response ByteString)
