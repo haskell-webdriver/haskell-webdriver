@@ -11,24 +11,24 @@ Synopsis: a Haskell client for the Selenium WebDriver protocol
 Build-type: Simple
 Extra-source-files: README.md, TODO, CHANGELOG.md, .ghci
 Description:
-        A Selenium WebDriver client for Haskell. 
-        You can use it to automate browser sessions 
+        A Selenium WebDriver client for Haskell.
+        You can use it to automate browser sessions
         for testing, system administration, etc.
         .
         For more information about Selenium itself, see
         <http://seleniumhq.org/>
         .
         To find out what's been changed in this version and others,
-        see the change log at 
+        see the change log at
         <https://github.com/kallisti-dev/hs-webdriver/blob/master/CHANGELOG.md>
 
 source-repository head
   type: git
-  location: git://github.com/kallisti-dev/hs-webdriver.git  
+  location: git://github.com/kallisti-dev/hs-webdriver.git
 
 library
   hs-source-dirs: src
-  ghc-options: -Wall    
+  ghc-options: -Wall
   build-depends:   base == 4.*
                  , aeson >= 0.4 && < 0.7
                  , HTTP >= 4000.1 && < 4000.3
