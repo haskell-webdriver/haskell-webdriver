@@ -1,8 +1,12 @@
 #Change Log
 
 ##upcoming release
+###API changes
+* Test.WebDriver.Commands.Wait.unexpected now accepts a String argument, which is used as an error message
+* screenshot and uploadZipEntry from Test.WebDriver.Commands now use lazy bytestrings
+
 ###new features
-* added the screenshotBase64 function to Test.WebDriver.Commands
+* added Test.WebDriver.Commands.screenshotBase64
 
 ##hs-webdriver 0.4
 
