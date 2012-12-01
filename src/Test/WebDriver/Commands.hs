@@ -67,8 +67,9 @@ module Test.WebDriver.Commands
          -- Note that this operation isn't supported by all WebDriver servers,
          -- and the location where the file is stored is not standardized.
        , uploadFile, uploadRawFile, uploadZipEntry
-         -- * Server information
+         -- * Server information and logs
        , serverStatus
+       , getLogs, getLogTypes, LogType(..), LogEntry(..), LogLevel(..)
        ) where
 
 import Test.WebDriver.Commands.Internal
@@ -94,15 +95,10 @@ import Control.Exception (SomeException)
 import Control.Exception.Lifted (throwIO, catch, handle)
 import Data.Word
 import Data.String (fromString)
+import Data.Maybe (fromMaybe)
 import qualified Data.Char as C
 
 import Prelude hiding (catch)
-
--- |Get information from the server as a JSON 'Object'. For more information
--- about this object see
--- <http://code.google.com/p/selenium/wiki/JsonWireProtocol#/status>
-serverStatus :: (WebDriver wd) => wd Value   -- todo: make this a record type
-serverStatus = doCommand GET "/status" ()
 
 
 -- |Create a new session with the given 'Capabilities'. This command
@@ -718,6 +714,62 @@ doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
           LocalStorage -> "local_storage"
           SessionStorage -> "session_storage"
 
+-- |Get information from the server as a JSON 'Object'. For more information
+-- about this object see
+-- <http://code.google.com/p/selenium/wiki/JsonWireProtocol#/status>
+serverStatus :: (WebDriver wd) => wd Value   -- todo: make this a record type
+serverStatus = doCommand GET "/status" ()
+
+-- |A record that represents a single log entry.
+data LogEntry = LogEntry { logTime  :: Integer
+                         , logLevel :: LogLevel
+                         , logMsg   :: Text }
+              deriving (Eq, Ord, Show, Read)
+
+
+instance FromJSON LogEntry where
+  parseJSON (Object o) =
+    LogEntry <$> o .: "timestamp"
+             <*> o .: "level"
+             <*> (fromMaybe "" <$> o .: "message")
+  parseJSON v = typeMismatch "LogEntry" v
+
+-- |A type indicating the kind of log information.
+data LogType = LogClient     -- 
+             | LogDriver     -- driver logs (e.g. chromedriver, IE driver, etc)
+             | LogBrowser    -- browser logs
+             | LogServer     -- WebDriver server logs
+             | LogOther Text -- non-standard log types
+             deriving (Eq, Ord, Show, Read)
+
+instance ToJSON LogType where
+  toJSON t = 
+    String $ case t of
+      LogClient  -> "client"
+      LogDriver  -> "driver"
+      LogBrowser -> "browser"
+      LogServer  -> "server"
+      LogOther s -> s            
+    
+
+instance FromJSON LogType where
+  parseJSON (String s) = 
+    return $ case s of
+      "client"  -> LogClient
+      "driver"  -> LogDriver
+      "browser" -> LogBrowser
+      "server"  -> LogServer
+      other     -> LogOther other
+  parseJSON v = typeMismatch "LogType" v
+
+
+-- |Retrieve the log buffer for a given log type. The server-side log buffer is reset after each request.
+getLogs :: WebDriver wd => LogType -> wd [LogEntry]
+getLogs t = doSessCommand POST "/log" . object $ ["type" .= t]
+
+-- |Get a list of available log types.
+getLogTypes :: WebDriver wd => wd [LogType]
+getLogTypes = doSessCommand GET "/log/types" ()
 
 -- Moving this closer to the definition of Cookie seems to cause strange compile
 -- errors, so I'm leaving it here for now.

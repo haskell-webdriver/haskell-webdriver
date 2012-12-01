@@ -442,7 +442,7 @@ instance ToJSON ProxyType where
 -- |Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
 data LogLevel = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
               | LogFine | LogFiner | LogFinest | LogAll
-             deriving (Eq, Show, Ord, Bounded, Enum)
+             deriving (Eq, Show, Read, Ord, Bounded, Enum)
 
 instance Default LogLevel where
   def = LogInfo

@@ -5,6 +5,10 @@
 * Test.WebDriver.Internal.FailedCommandInfo now stores screenshots as lazy bytestrings
 * Test.WebDriver.Common.Profile now stores PreparedProfile as a lazy bytestring
 * Test.WebDriver.Chrome.Extension now stores ChromeExtension as a lazy bytestring
+* The LogPref type has been renamed to LogLevel to reflect its use within the new log interface
+
+###new features
+* a new log interface as specified by webdriver standard. This includes the functions getLogs and getLogTypes, and the types LogType and LogEntry. 
 
 ##hs-webdriver 0.5
 ###API changes
