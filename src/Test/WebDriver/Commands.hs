@@ -82,8 +82,7 @@ import Data.Aeson.Types
 import Data.Aeson.TH
 import qualified Data.Text as T
 import Data.Text (Text, splitOn, append, toUpper, toLower)
-import Data.ByteString as SBS (ByteString, concat)
-import Data.ByteString.Base64 as B64
+import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString, toChunks)
 import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
@@ -222,11 +221,11 @@ asyncJS a s = handle timeout $ fromJSON' =<< getResult
     timeout err = throwIO err
 
 -- |Grab a screenshot of the current page as a PNG image
-screenshot :: WebDriver wd => wd SBS.ByteString
+screenshot :: WebDriver wd => wd LBS.ByteString
 screenshot = B64.decodeLenient <$> screenshotBase64
 
 -- |Grab a screenshot as a base-64 encoded PNG image. This is the protocol-defined format.
-screenshotBase64 :: WebDriver wd => wd SBS.ByteString
+screenshotBase64 :: WebDriver wd => wd LBS.ByteString
 screenshotBase64 = doSessCommand GET "/screenshot" ()
 
 availableIMEEngines :: WebDriver wd => wd [Text]
@@ -679,8 +678,7 @@ uploadRawFile path t str = uploadZipEntry (toEntry path t str)
 -- the zip entry sent across network.
 uploadZipEntry :: WebDriver wd => Entry -> wd ()
 uploadZipEntry = doSessCommand POST "/file" . single "file"
-                 . B64.encode . SBS.concat . toChunks
-                 . fromArchive . (`addEntryToArchive` emptyArchive)
+                 . B64.encode . fromArchive . (`addEntryToArchive` emptyArchive)
 
 
 -- |Get the current number of keys in a web storage area.
