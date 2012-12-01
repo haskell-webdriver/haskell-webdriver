@@ -83,7 +83,7 @@ import Data.Aeson.TH
 import qualified Data.Text as T
 import Data.Text (Text, splitOn, append, toUpper, toLower)
 import Data.ByteString.Base64.Lazy as B64
-import Data.ByteString.Lazy as LBS (ByteString, toChunks)
+import Data.ByteString.Lazy as LBS (ByteString)
 import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
 
