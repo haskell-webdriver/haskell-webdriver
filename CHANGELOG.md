@@ -1,5 +1,11 @@
 #Change Log
 
+##upcoming release
+###API changes
+* Test.WebDriver.Internal.FailedCommandInfo now stores screenshots as lazy bytestrings
+* Test.WebDriver.Common.Profile now stores PreparedProfile as a lazy bytestring
+* Test.WebDriver.Chrome.Extension now stores ChromeExtension as a lazy bytestring
+
 ##hs-webdriver 0.5
 ###API changes
 * Test.WebDriver.Commands.Wait.unexpected now accepts a String argument, which is used as an error message
