@@ -24,11 +24,13 @@ import Prelude hiding (catch)
 
 instance Exception ExpectFailed
 -- |An exception representing the failure of an expected condition.
-data ExpectFailed = ExpectFailed deriving (Show, Eq, Typeable)
+data ExpectFailed = ExpectFailed String deriving (Show, Eq, Typeable)
 
 -- |throws 'ExpectFailed'. This is nice for writing your own abstractions.
-unexpected :: MonadBaseControl IO m => m a
-unexpected = throwIO ExpectFailed
+unexpected :: MonadBaseControl IO m =>
+              String -- ^ Reason why the expected condition failed.
+           -> m a
+unexpected = throwIO . ExpectFailed
 
 -- |An expected condition. This function allows you to express assertions in
 -- your explicit wait. This function raises 'ExpectFailed' if the given
@@ -36,7 +38,7 @@ unexpected = throwIO ExpectFailed
 expect :: MonadBaseControl IO m => Bool -> m ()
 expect b
   | b         = return ()
-  | otherwise = unexpected
+  | otherwise = unexpected "Test.WebDriver.Commands.Wait.expect"
 
 -- |Apply a monadic predicate to every element in a list, and 'expect' that
 -- at least one succeeds.
