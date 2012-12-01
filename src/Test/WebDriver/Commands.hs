@@ -735,11 +735,11 @@ instance FromJSON LogEntry where
   parseJSON v = typeMismatch "LogEntry" v
 
 -- |A type indicating the kind of log information.
-data LogType = LogClient     -- 
-             | LogDriver     -- driver logs (e.g. chromedriver, IE driver, etc)
-             | LogBrowser    -- browser logs
-             | LogServer     -- WebDriver server logs
-             | LogOther Text -- non-standard log types
+data LogType = LogClient     -- ^ client logs
+             | LogDriver     -- ^ driver logs (e.g. chromedriver, IE driver, etc)
+             | LogBrowser    -- ^ browser logs
+             | LogServer     -- ^ WebDriver server logs
+             | LogOther Text -- ^ non-standard log types
              deriving (Eq, Ord, Show, Read)
 
 instance ToJSON LogType where
