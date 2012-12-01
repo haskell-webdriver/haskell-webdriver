@@ -45,8 +45,6 @@ module Test.WebDriver.Commands
        , clickWith, MouseButton(..)
        , mouseDown, mouseUp, withMouseDown, doubleClick
          -- * HTML 5 Web Storage
-         -- |As of Selenium 2.21, Web Storage is only supported on iOS and
-         -- Android platforms
        , WebStorageType(..), storageSize, getAllKeys, deleteAllKeys
        , getKey, setKey, deleteKey
          -- * Mobile device support
@@ -721,10 +719,14 @@ serverStatus :: (WebDriver wd) => wd Value   -- todo: make this a record type
 serverStatus = doCommand GET "/status" ()
 
 -- |A record that represents a single log entry.
-data LogEntry = LogEntry { logTime  :: Integer
-                         , logLevel :: LogLevel
-                         , logMsg   :: Text }
-              deriving (Eq, Ord, Show, Read)
+data LogEntry = 
+  LogEntry { logTime  :: Integer  -- ^ timestamp for the log entry. The standard 
+                                  -- does not specify the epoch or the unit of 
+                                  -- time.
+           , logLevel :: LogLevel -- ^ log verbosity level
+           , logMsg   :: Text
+           }
+  deriving (Eq, Ord, Show, Read)
 
 
 instance FromJSON LogEntry where
@@ -749,7 +751,7 @@ instance ToJSON LogType where
       LogDriver  -> "driver"
       LogBrowser -> "browser"
       LogServer  -> "server"
-      LogOther s -> s            
+      LogOther s -> s
     
 
 instance FromJSON LogType where
