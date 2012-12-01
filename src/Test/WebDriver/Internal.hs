@@ -21,9 +21,8 @@ import Data.Aeson.Types (Parser, typeMismatch, emptyArray)
 
 import Data.Text as T (Text, unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.ByteString.Lazy.Char8 as BS (length, unpack, null)
-import qualified Data.ByteString.Char8 as SBS (ByteString)
-import qualified Data.ByteString.Base64 as B64
+import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null)
+import qualified Data.ByteString.Base64.Lazy as B64
 import qualified Data.Vector as V
 
 import Control.Monad.Base
@@ -67,7 +66,7 @@ mkRequest headers method path args = do
                                              , Header HdrContentType
                                                "application/json;charset=UTF-8"
                                              , Header HdrContentLength
-                                               . show . BS.length $ body
+                                               . show . LBS.length $ body
                                              ]
                     }
   r <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
@@ -100,9 +99,9 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
                  (findHeader HdrLocation resp)
                where
                  statusErr = throwIO . HTTPStatusUnknown code
-                             $ (BS.unpack body)
+                             $ (LBS.unpack body)
     other
-      | BS.null body -> returnEmptyArray
+      | LBS.null body -> returnEmptyArray
       | otherwise -> fromJSON' . rspVal =<< parseJSON' body
   where
     returnEmptyArray = fromJSON' emptyArray
@@ -227,7 +226,7 @@ data FailedCommandInfo =
                       -- |A screen shot of the focused window
                       -- when the exception occured,
                       -- if provided.
-                    , errScreen :: Maybe SBS.ByteString
+                    , errScreen :: Maybe ByteString
                       -- |The "class" in which the exception
                       -- was raised, if provided.
                     , errClass  :: Maybe String

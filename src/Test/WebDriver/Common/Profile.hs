@@ -32,10 +32,10 @@ import Data.Attoparsec.Number (Number(..))
 
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text, pack)
-import Data.ByteString (ByteString)
-import qualified Data.ByteString as SBS
+import Data.ByteString.Lazy (ByteString)
+--import qualified Data.ByteString as SBS
 import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Base64.Lazy as B64
 
 
 import Data.Fixed
@@ -243,5 +243,5 @@ prepareZipArchive :: Archive -> PreparedProfile a
 prepareZipArchive = prepareRawZip . fromArchive
 
 -- |Prepare a ByteString of raw zip data for network transmission
-prepareRawZip :: LBS.ByteString -> PreparedProfile a
-prepareRawZip = PreparedProfile . B64.encode . SBS.concat . LBS.toChunks
+prepareRawZip :: ByteString -> PreparedProfile a
+prepareRawZip = PreparedProfile . B64.encode

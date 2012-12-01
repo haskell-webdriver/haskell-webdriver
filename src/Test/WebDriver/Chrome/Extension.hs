@@ -5,8 +5,8 @@ module Test.WebDriver.Chrome.Extension
        , loadExtension
        , loadRawExtension
        ) where
-import Data.ByteString as BS
-import Data.ByteString.Base64 as B64
+import Data.ByteString.Lazy as LBS
+import Data.ByteString.Base64.Lazy as B64
 import Data.Aeson
 import Control.Applicative
 import Control.Monad.Base
@@ -18,7 +18,7 @@ newtype ChromeExtension = ChromeExtension ByteString
 
 -- |Load a .crx file as a 'ChromeExtension'.
 loadExtension :: MonadBase IO m => FilePath -> m ChromeExtension
-loadExtension path = liftBase $ loadRawExtension <$> BS.readFile path
+loadExtension path = liftBase $ loadRawExtension <$> LBS.readFile path
 
 -- |Load raw .crx data as a 'ChromeExtension'.
 loadRawExtension :: ByteString -> ChromeExtension
