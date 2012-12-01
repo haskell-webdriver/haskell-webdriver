@@ -1,6 +1,6 @@
 #Change Log
 
-##upcoming release
+##hs-webdriver 0.5
 ###API changes
 * Test.WebDriver.Commands.Wait.unexpected now accepts a String argument, which is used as an error message
 * screenshot and uploadZipEntry from Test.WebDriver.Commands now use lazy bytestrings
