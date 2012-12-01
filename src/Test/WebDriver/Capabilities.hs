@@ -219,7 +219,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                          -- and used.
                          ffProfile :: Maybe (PreparedProfile Firefox)
                          -- |Firefox logging preference
-                       , ffLogPref :: LogPref
+                       , ffLogPref :: LogLevel
                          -- |Server-side path to Firefox binary. If Nothing,
                          -- use a sensible system-based default.
                        , ffBinary :: Maybe FilePath
@@ -288,7 +288,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                        -- disabled.
                      , operaLogFile   :: Maybe FilePath
                        -- |Log level preference. Defaults to 'LogInfo'
-                     , operaLogPref   :: LogPref
+                     , operaLogPref   :: LogLevel
                      }
              | HTMLUnit
              | IPhone
@@ -439,15 +439,15 @@ instance ToJSON ProxyType where
       ,"httpProxy" .= http
       ]
 
--- |Indicates log verbosity. Used in 'Firefox' and 'Opera' configuration.
-data LogPref = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
-             | LogFine | LogFiner | LogFinest | LogAll
+-- |Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
+data LogLevel = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
+              | LogFine | LogFiner | LogFinest | LogAll
              deriving (Eq, Show, Ord, Bounded, Enum)
 
-instance Default LogPref where
+instance Default LogLevel where
   def = LogInfo
 
-instance ToJSON LogPref where
+instance ToJSON LogLevel where
   toJSON p= String $ case p of
     LogOff -> "OFF"
     LogSevere -> "SEVERE"
@@ -459,7 +459,7 @@ instance ToJSON LogPref where
     LogFinest -> "FINEST"
     LogAll -> "ALL"
 
-instance FromJSON LogPref where
+instance FromJSON LogLevel where
   parseJSON (String s) = return $ case s of
     "OFF" -> LogOff
     "SEVERE" -> LogSevere
@@ -471,4 +471,4 @@ instance FromJSON LogPref where
     "FINEST" -> LogFinest
     "ALL" -> LogAll
     _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
-  parseJSON other = typeMismatch "LogPref" other
+  parseJSON other = typeMismatch "LogLevel" other

@@ -565,7 +565,6 @@ instance FromJSON MouseButton where
       1 -> return MiddleButton
       2 -> return RightButton
       err -> fail $ "Invalid JSON for MouseButton: " ++ show err
-  parseJSON v = typeMismatch "MouseButton" v
 
 -- |Click at the current mouse position with the given mouse button.
 clickWith :: WebDriver wd => MouseButton -> wd ()

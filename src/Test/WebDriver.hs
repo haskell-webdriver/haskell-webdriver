@@ -13,7 +13,7 @@ module Test.WebDriver
        , Capabilities(..), defaultCaps, allCaps
        , Platform(..), ProxyType(..)
          -- ** Browser-specific configuration
-       , Browser(..), LogPref(..)
+       , Browser(..), LogLevel(..)
        , firefox, chrome, ie, opera, iPhone, iPad, android
          -- * Exceptions
        , module Test.WebDriver.Exceptions
