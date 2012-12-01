@@ -4,7 +4,7 @@
 ###API changes
 * Test.WebDriver.Commands.Wait.unexpected now accepts a String argument, which is used as an error message
 * screenshot and uploadZipEntry from Test.WebDriver.Commands now use lazy bytestrings
-*wdBasePath field added to WDSession. This allows you to specify a custom base path for all WebDriver requests. The default, as specified in the WebDriver standard, is "/wd/hub"
+* wdBasePath field added to WDSession. This allows you to specify a custom base path for all WebDriver requests. The default, as specified in the WebDriver standard, is "/wd/hub"
 
 ###new features
 * added Test.WebDriver.Commands.screenshotBase64
