@@ -101,7 +101,7 @@ import Prelude hiding (catch)
 
 -- |Convenience function to handle webdriver commands with no return value
 noReturn :: WebDriver wd => wd NoReturn -> wd ()
-noReturn = const (return ())
+noReturn = void
 
 -- |Get information from the server as a JSON 'Object'. For more information
 -- about this object see
