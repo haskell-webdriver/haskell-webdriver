@@ -87,7 +87,8 @@ handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
           err (ServerError . ("Missing content type. Server response: "++))
 
     (2,_,_)  -> return ()
-    (3,0,2)  -> return ()
+    (3,0,x) | x `elem` [2,3] 
+             -> return ()
     _        -> err (HTTPStatusUnknown code)
     where
       err errType = throwIO $ errType reason
@@ -96,10 +97,12 @@ handleHTTPResp ::  (SessionState s, FromJSON a) => Response ByteString -> s a
 handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
   case code of
     (2,0,4) -> returnEmptyArray
-    (3,0,2) -> fromJSON' =<< maybe statusErr (return . String . fromString)
-                 (findHeader HdrLocation resp)
-               where
-                 statusErr = throwIO . HTTPStatusUnknown code
+    (3,0,x)
+      | x `elem` [2,3] -> 
+        fromJSON' =<< maybe statusErr (return . String . fromString)
+        (findHeader HdrLocation resp)
+      where
+        statusErr = throwIO . HTTPStatusUnknown code
                              $ (BS.unpack body)
     other
       | BS.null body -> returnEmptyArray
