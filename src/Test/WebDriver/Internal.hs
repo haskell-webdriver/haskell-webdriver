@@ -17,14 +17,13 @@ import Network.HTTP.Headers (findHeader, Header(..), HeaderName(..))
 import Network.Stream (ConnError)
 import Network.URI
 import Data.Aeson
-import Data.Aeson.Types (Parser, typeMismatch, emptyArray)
+import Data.Aeson.Types (Parser, typeMismatch)
 
 import Data.Text as T (Text, unpack)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 as BS (length, unpack, null)
 import qualified Data.ByteString.Char8 as SBS (ByteString)
 import qualified Data.ByteString.Base64 as B64
-import qualified Data.Vector as V
 
 import Control.Monad.Base
 import Control.Exception.Lifted (throwIO)
@@ -57,8 +56,8 @@ mkRequest :: (SessionState s, ToJSON a) =>
 mkRequest headers method path args = do
   uri <- mkWDUri (T.unpack path)
   let body = case toJSON args of
-        Array v | V.null v -> ""   --an ugly corner case to allow empty requests
-        other              -> encode other
+        Null  -> ""   --passing Null as the argument indicates no request body
+        other -> encode other
       req = Request { rqURI = uri             --todo: normalization of headers
                     , rqMethod = method
                     , rqBody = body
@@ -96,7 +95,7 @@ handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
 handleHTTPResp ::  (SessionState s, FromJSON a) => Response ByteString -> s a
 handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
   case code of
-    (2,0,4) -> returnEmptyArray
+    (2,0,4) -> noReturn
     (3,0,x)
       | x `elem` [2,3] -> 
         fromJSON' =<< maybe statusErr (return . String . fromString)
@@ -105,10 +104,10 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
         statusErr = throwIO . HTTPStatusUnknown code
                              $ (BS.unpack body)
     other
-      | BS.null body -> returnEmptyArray
+      | BS.null body -> noReturn
       | otherwise -> fromJSON' . rspVal =<< parseJSON' body
   where
-    returnEmptyArray = fromJSON' emptyArray
+    noReturn = fromJSON' Null
 
 handleJSONErr :: SessionState s => WDResponse -> s ()
 handleJSONErr WDResponse{rspStatus = 0} = return ()

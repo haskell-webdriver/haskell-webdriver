@@ -107,7 +107,7 @@ noReturn = const (return ())
 -- about this object see
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol#/status>
 serverStatus :: (WebDriver wd) => wd Value   -- todo: make this a record type
-serverStatus = doCommand GET "/status" ()
+serverStatus = doCommand GET "/status" Null
 
 
 -- |Create a new session with the given 'Capabilities'. This command
@@ -122,17 +122,17 @@ createSession caps = do
 -- |Retrieve a list of active sessions and their 'Capabilities'.
 sessions :: WebDriver wd => wd [(SessionId, Capabilities)]
 sessions = do
-  objs <- doCommand GET "/sessions" ()
+  objs <- doCommand GET "/sessions" Null
   forM objs $ parsePair "id" "capabilities" "sessions"
 
 -- |Get the actual 'Capabilities' of the current session.
 getCaps :: WebDriver wd => wd Capabilities
-getCaps = doSessCommand GET "" ()
+getCaps = doSessCommand GET "" Null
 
 -- |Close the current session and the browser associated with it.
 closeSession :: WebDriver wd => wd ()
 closeSession = do s <- getSession
-                  noReturn $ doSessCommand DELETE "" ()
+                  noReturn $ doSessCommand DELETE "" Null
                   putSession s { wdSessId = Nothing }
 
 -- |Sets the amount of time we implicitly wait when searching for elements.
@@ -162,7 +162,7 @@ setPageLoadTimeout ms = noReturn $ doSessCommand POST "/timeouts" params
 
 -- |Gets the URL of the current page.
 getCurrentURL :: WebDriver wd => wd String
-getCurrentURL = doSessCommand GET "/url" ()
+getCurrentURL = doSessCommand GET "/url" Null
 
 -- |Opens a new page by the given URL.
 openPage :: WebDriver wd => String -> wd ()
@@ -172,15 +172,15 @@ openPage url
 
 -- |Navigate forward in the browser history.
 forward :: WebDriver wd => wd ()
-forward = noReturn $ doSessCommand POST "/forward" ()
+forward = noReturn $ doSessCommand POST "/forward" Null
 
 -- |Navigate backward in the browser history.
 back :: WebDriver wd => wd ()
-back = noReturn $ doSessCommand POST "/back" ()
+back = noReturn $ doSessCommand POST "/back" Null
 
 -- |Refresh the current page
 refresh :: WebDriver wd => wd ()
-refresh = noReturn $ doSessCommand POST "/refresh" ()
+refresh = noReturn $ doSessCommand POST "/refresh" Null
 
 -- |An existential wrapper for any 'ToJSON' instance. This allows us to pass
 -- parameters of many different types to Javascript code.
@@ -231,22 +231,22 @@ screenshot = B64.decodeLenient <$> screenshotBase64
 
 -- |Grab a screenshot as a base-64 encoded PNG image. This is the protocol-defined format.
 screenshotBase64 :: WebDriver wd => wd LBS.ByteString
-screenshotBase64 = doSessCommand GET "/screenshot" ()
+screenshotBase64 = doSessCommand GET "/screenshot" Null
 
 availableIMEEngines :: WebDriver wd => wd [Text]
-availableIMEEngines = doSessCommand GET "/ime/available_engines" ()
+availableIMEEngines = doSessCommand GET "/ime/available_engines" Null
 
 activeIMEEngine :: WebDriver wd => wd Text
-activeIMEEngine = doSessCommand GET "/ime/active_engine" ()
+activeIMEEngine = doSessCommand GET "/ime/active_engine" Null
 
 checkIMEActive :: WebDriver wd => wd Bool
-checkIMEActive = doSessCommand GET "/ime/activated" ()
+checkIMEActive = doSessCommand GET "/ime/activated" Null
 
 activateIME :: WebDriver wd => Text -> wd ()
 activateIME = noReturn . doSessCommand POST "/ime/activate" . single "engine"
 
 deactivateIME :: WebDriver wd => wd ()
-deactivateIME = noReturn $ doSessCommand POST "/ime/deactivate" ()
+deactivateIME = noReturn $ doSessCommand POST "/ime/deactivate" Null
 
 
 -- |Specifies the frame used by 'Test.WebDriver.Commands.focusFrame'
@@ -273,11 +273,11 @@ focusFrame s = noReturn $ doSessCommand POST "/frame" . single "id" $ s
 
 -- |Returns a handle to the currently focused window
 getCurrentWindow :: WebDriver wd => wd WindowHandle
-getCurrentWindow = doSessCommand GET "/window_handle" ()
+getCurrentWindow = doSessCommand GET "/window_handle" Null
 
 -- |Returns a list of all windows available to the session
 windows :: WebDriver wd => wd [WindowHandle]
-windows = doSessCommand GET "/window_handles" ()
+windows = doSessCommand GET "/window_handles" Null
 
 focusWindow :: WebDriver wd => WindowHandle -> wd ()
 focusWindow w = noReturn $ doSessCommand POST "/window" . single "name" $ w
@@ -288,11 +288,11 @@ closeWindow = noReturn . doSessCommand DELETE "/window" . single "name"
 
 -- |Maximizes the current  window if not already maximized
 maximize :: WebDriver wd => wd ()
-maximize = noReturn $ doWinCommand GET currentWindow "/maximize" ()
+maximize = noReturn $ doWinCommand GET currentWindow "/maximize" Null
 
 -- |Get the dimensions of the current window.
 getWindowSize :: WebDriver wd => wd (Word, Word)
-getWindowSize = doWinCommand GET currentWindow "/size" ()
+getWindowSize = doWinCommand GET currentWindow "/size" Null
                 >>= parsePair "width" "height" "getWindowSize"
 
 -- |Set the dimensions of the current window.
@@ -302,7 +302,7 @@ setWindowSize = noReturn . doWinCommand POST currentWindow "/size"
 
 -- |Get the coordinates of the current window.
 getWindowPos :: WebDriver wd => wd (Int, Int)
-getWindowPos = doWinCommand GET currentWindow "/position" ()
+getWindowPos = doWinCommand GET currentWindow "/position" Null
                >>= parsePair "x" "y" "getWindowPos"
 
 -- |Set the coordinates of the current window.
@@ -355,7 +355,7 @@ instance FromJSON Cookie where
 
 -- |Retrieve all cookies visible to the current page.
 cookies :: WebDriver wd => wd [Cookie]
-cookies = doSessCommand GET "/cookie" ()
+cookies = doSessCommand GET "/cookie" Null
 
 -- |Set a cookie. If the cookie path is not specified, it will default to \"/\".
 -- Likewise, if the domain is omitted, it will default to the current page's
@@ -366,19 +366,20 @@ setCookie = noReturn . doSessCommand POST "/cookie" . single "cookie"
 -- |Delete a cookie. This will do nothing is the cookie isn't visible to the
 -- current page.
 deleteCookie :: WebDriver wd => Cookie -> wd ()
-deleteCookie c = noReturn $ doSessCommand DELETE ("/cookie/" `append` cookName c) ()
+deleteCookie c = 
+  noReturn $ doSessCommand DELETE ("/cookie/" `append` cookName c) Null
 
 -- |Delete all visible cookies on the current page.
 deleteVisibleCookies :: WebDriver wd => wd ()
-deleteVisibleCookies = noReturn $ doSessCommand DELETE "/cookie" ()
+deleteVisibleCookies = noReturn $ doSessCommand DELETE "/cookie" Null
 
 -- |Get the current page source
 getSource :: WebDriver wd => wd Text
-getSource = doSessCommand GET "/source" ()
+getSource = doSessCommand GET "/source" Null
 
 -- |Get the title of the current page.
 getTitle :: WebDriver wd => wd Text
-getTitle = doSessCommand GET "/title" ()
+getTitle = doSessCommand GET "/title" Null
 
 -- |Specifies element(s) within a DOM tree using various selection methods.
 data Selector = ById Text
@@ -416,7 +417,7 @@ findElems = doSessCommand POST "/elements"
 
 -- |Return the element that currently has focus.
 activeElem :: WebDriver wd => wd Element
-activeElem = doSessCommand POST "/element/active" ()
+activeElem = doSessCommand POST "/element/active" Null
 
 -- |Search for an element using the given element as root.
 findElemFrom :: WebDriver wd => Element -> Selector -> wd Element
@@ -429,20 +430,20 @@ findElemsFrom e = doElemCommand POST e "/elements"
 -- |Describe the element. Returns a JSON object whose meaning is currently
 -- undefined by the WebDriver protocol.
 elemInfo :: WebDriver wd => Element -> wd Value
-elemInfo e = doElemCommand GET e "" ()
+elemInfo e = doElemCommand GET e "" Null
 
 -- |Click on an element.
 click :: WebDriver wd => Element -> wd ()
-click e = noReturn $ doElemCommand POST e "/click" ()
+click e = noReturn $ doElemCommand POST e "/click" Null
 
 -- |Submit a form element. This may be applied to descendents of a form element
 -- as well.
 submit :: WebDriver wd => Element -> wd ()
-submit e = noReturn $ doElemCommand POST e "/submit" ()
+submit e = noReturn $ doElemCommand POST e "/submit" Null
 
 -- |Get all visible text within this element.
 getText :: WebDriver wd => Element -> wd Text
-getText e = doElemCommand GET e "/text" ()
+getText e = doElemCommand GET e "/text" Null
 
 -- |Send a sequence of keystrokes to an element. All modifier keys are released
 -- at the end of the function. For more information about modifier keys, see
@@ -457,45 +458,45 @@ sendRawKeys t e = noReturn . doElemCommand POST e "/keys" . single "value" $ [t]
 
 -- |Return the tag name of the given element.
 tagName :: WebDriver wd => Element -> wd Text
-tagName e = doElemCommand GET e "/name" ()
+tagName e = doElemCommand GET e "/name" Null
 
 -- |Clear a textarea or text input element's value.
 clearInput :: WebDriver wd => Element -> wd ()
-clearInput e = noReturn $ doElemCommand POST e "/clear" ()
+clearInput e = noReturn $ doElemCommand POST e "/clear" Null
 
 -- |Determine if the element is selected.
 isSelected :: WebDriver wd => Element -> wd Bool
-isSelected e = doElemCommand GET e "/selected" ()
+isSelected e = doElemCommand GET e "/selected" Null
 
 -- |Determine if the element is enabled.
 isEnabled :: WebDriver wd => Element -> wd Bool
-isEnabled e = doElemCommand GET e "/enabled" ()
+isEnabled e = doElemCommand GET e "/enabled" Null
 
 -- |Determine if the element is displayed.
 isDisplayed :: WebDriver wd => Element -> wd Bool
-isDisplayed e = doElemCommand GET e "/displayed" ()
+isDisplayed e = doElemCommand GET e "/displayed" Null
 
 -- |Retrieve the value of an element's attribute
 attr :: WebDriver wd => Element -> Text -> wd (Maybe Text)
-attr e t = doElemCommand GET e ("/attribute/" `append` t) ()
+attr e t = doElemCommand GET e ("/attribute/" `append` t) Null
 
 -- |Retrieve the value of an element's computed CSS property
 cssProp :: WebDriver wd => Element -> Text -> wd (Maybe Text)
-cssProp e t = doElemCommand GET e ("/css/" `append` t) ()
+cssProp e t = doElemCommand GET e ("/css/" `append` t) Null
 
 -- |Retrieve an element's current position.
 elemPos :: WebDriver wd => Element -> wd (Int, Int)
-elemPos e = doElemCommand GET e "/location" () >>= parsePair "x" "y" "elemPos"
+elemPos e = doElemCommand GET e "/location" Null >>= parsePair "x" "y" "elemPos"
 
 -- |Retrieve an element's current size.
 elemSize :: WebDriver wd => Element -> wd (Word, Word)
-elemSize e = doElemCommand GET e "/size" ()
+elemSize e = doElemCommand GET e "/size" Null
              >>= parsePair "width" "height" "elemSize"
 
 infix 4 <==>
 -- |Determines if two element identifiers refer to the same element.
 (<==>) :: WebDriver wd => Element -> Element -> wd Bool
-e1 <==> (Element e2) = doElemCommand GET e1 ("/equals/" `append` e2) ()
+e1 <==> (Element e2) = doElemCommand GET e1 ("/equals/" `append` e2) Null
 
 -- |Determines if two element identifiers refer to different elements.
 infix 4 </=>
@@ -518,7 +519,7 @@ instance FromJSON Orientation where
 
 -- |Get the current screen orientation for rotatable display devices.
 getOrientation :: WebDriver wd => wd Orientation
-getOrientation = doSessCommand GET "/orientation" ()
+getOrientation = doSessCommand GET "/orientation" Null
 
 -- |Set the current screen orientation for rotatable display devices.
 setOrientation :: WebDriver wd => Orientation -> wd ()
@@ -526,7 +527,7 @@ setOrientation = noReturn . doSessCommand POST "/orientation" . single "orientat
 
 -- |Get the text of an alert dialog.
 getAlertText :: WebDriver wd => wd Text
-getAlertText = doSessCommand GET "/alert_text" ()
+getAlertText = doSessCommand GET "/alert_text" Null
 
 -- |Sends keystrokes to Javascript prompt() dialog.
 replyToAlert :: WebDriver wd => Text -> wd ()
@@ -534,11 +535,11 @@ replyToAlert = noReturn . doSessCommand POST "/alert_text" . single "text"
 
 -- |Accepts the currently displayed alert dialog.
 acceptAlert :: WebDriver wd => wd ()
-acceptAlert = noReturn $ doSessCommand POST "/accept_alert" ()
+acceptAlert = noReturn $ doSessCommand POST "/accept_alert" Null
 
 -- |Dismisses the currently displayed alert dialog.
 dismissAlert :: WebDriver wd => wd ()
-dismissAlert = noReturn $ doSessCommand POST "/dismiss_alert" ()
+dismissAlert = noReturn $ doSessCommand POST "/dismiss_alert" Null
 
 -- |Moves the mouse to the given position relative to the active element.
 moveTo :: WebDriver wd => (Int, Int) -> wd ()
@@ -584,15 +585,15 @@ withMouseDown wd = mouseDown >> wd <* mouseUp
 -- |Press and hold the left mouse button down. Note that undefined behavior
 -- occurs if the next mouse command is not mouseUp.
 mouseDown :: WebDriver wd => wd ()
-mouseDown = noReturn $ doSessCommand POST "/buttondown" ()
+mouseDown = noReturn $ doSessCommand POST "/buttondown" Null
 
 -- |Release the left mouse button.
 mouseUp :: WebDriver wd => wd ()
-mouseUp = noReturn $ doSessCommand POST "/buttonup" ()
+mouseUp = noReturn $ doSessCommand POST "/buttonup" Null
 
 -- |Double click at the current mouse location.
 doubleClick :: WebDriver wd => wd ()
-doubleClick = noReturn $ doSessCommand POST "/doubleclick" ()
+doubleClick = noReturn $ doSessCommand POST "/doubleclick" Null
 
 -- |Single tap on the touch screen at the given element's location.
 touchClick :: WebDriver wd => Element -> wd ()
@@ -664,7 +665,7 @@ touchFlickFrom s (x,y) (Element e) =
 
 -- |Get the current geographical location of the device.
 getLocation :: WebDriver wd => wd (Int, Int, Int)
-getLocation = doSessCommand GET "/location" ()
+getLocation = doSessCommand GET "/location" Null
               >>= parseTriple "latitude" "longitude" "altitude" "getLocation"
 
 -- |Set the current geographical location of the device.
@@ -698,15 +699,15 @@ uploadZipEntry = noReturn . doSessCommand POST "/file" . single "file"
 
 -- |Get the current number of keys in a web storage area.
 storageSize :: WebDriver wd => WebStorageType -> wd Integer
-storageSize s = doStorageCommand GET s "/size" ()
+storageSize s = doStorageCommand GET s "/size" Null
 
 -- |Get a list of all keys from a web storage area.
 getAllKeys :: WebDriver wd => WebStorageType -> wd [Text]
-getAllKeys s = doStorageCommand GET s "" ()
+getAllKeys s = doStorageCommand GET s "" Null
 
 -- |Delete all keys within a given web storage area.
 deleteAllKeys :: WebDriver wd => WebStorageType -> wd ()
-deleteAllKeys s = noReturn $ doStorageCommand DELETE s "" ()
+deleteAllKeys s = noReturn $ doStorageCommand DELETE s "" Null
 
 -- |An HTML 5 storage type
 data WebStorageType = LocalStorage | SessionStorage
@@ -716,7 +717,7 @@ data WebStorageType = LocalStorage | SessionStorage
 -- Unset keys result in empty strings, since the Web Storage spec
 -- makes no distinction between the empty string and an undefined value.
 getKey :: WebDriver wd => WebStorageType -> Text ->  wd Text
-getKey s k = doStorageCommand GET s ("/key/" `T.append` k) ()
+getKey s k = doStorageCommand GET s ("/key/" `T.append` k) Null
 
 -- |Set a key in the given web storage area.
 setKey :: WebDriver wd => WebStorageType -> Text -> Text -> wd Text
@@ -724,7 +725,7 @@ setKey s k v = doStorageCommand POST s "" . object $ ["key"   .= k,
                                                       "value" .= v ]
 -- |Delete a key in the given web storage area.
 deleteKey :: WebDriver wd => WebStorageType -> Text -> wd ()
-deleteKey s k = noReturn $ doStorageCommand POST s ("/key/" `T.append` k) ()
+deleteKey s k = noReturn $ doStorageCommand POST s ("/key/" `T.append` k) Null
 
 -- |A wrapper around 'doStorageCommand' to create web storage URLs.
 doStorageCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
