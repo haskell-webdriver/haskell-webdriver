@@ -26,6 +26,8 @@ module Test.WebDriver.JSON
        , apResultToWD, aesonResultToWD
          -- * Parse exception
        , BadJSON(..)
+         -- * "no return value" type
+       , NoReturn(..)
        ) where
 
 import Data.Aeson as Aeson
@@ -34,6 +36,7 @@ import Data.Text (Text)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Attoparsec.ByteString.Lazy (Result(..))
 import qualified Data.Attoparsec.ByteString.Lazy as AP
+import qualified Data.HashMap.Strict as HM
 
 import Control.Applicative
 import Control.Monad.Trans.Control
@@ -45,6 +48,18 @@ instance Exception BadJSON
 -- |An error occured when parsing a JSON value.
 newtype BadJSON = BadJSON String
              deriving (Eq, Show, Typeable)
+
+
+-- |A type indicating that we expect no return value from the webdriver request.
+-- Its FromJSON instance parses successfully for any values that indicate lack of
+-- a return value (a notion that varies from server to server).
+data NoReturn = NoReturn
+
+instance FromJSON NoReturn where
+  parseJSON Null                    = return NoReturn
+  parseJSON (Object o) | HM.null o  = return NoReturn
+  parseJSON other                   = typeMismatch "no return value" other
+
 
 -- |Construct a singleton JSON 'object' from a key and value.
 single :: ToJSON a => Text -> a -> Value
