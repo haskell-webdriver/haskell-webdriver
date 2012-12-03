@@ -10,6 +10,13 @@
 ###new features
 * a new log interface as specified by webdriver standard. This includes the functions getLogs and getLogTypes, and the types LogType and LogEntry. 
 
+##hs-webdriver 0.5.0.1
+###bug fixes
+* hs-webdriver now correctly handles a wider variety of server-specific responses when a webdriver command expects no return value.
+* An issue with the redirect status codes used during session creation has been fixed.
+* As a result of the above fixes, hs-webdriver should now work with chromedriver. Note that, prior to this version, you can still use chromedriver if you use the selenium standalone server jar as a proxy.
+
+
 ##hs-webdriver 0.5
 ###API changes
 * Test.WebDriver.Commands.Wait.unexpected now accepts a String argument, which is used as an error message
