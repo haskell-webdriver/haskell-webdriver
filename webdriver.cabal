@@ -34,7 +34,7 @@ library
                  , HTTP >= 4000.1 && < 4000.3
                  , mtl >= 2.0 && < 2.2
                  , network == 2.4.*
-                 , bytestring == 0.9.*
+                 , bytestring >= 0.9 && < 0.11
                  , text >= 0.7 && < 0.12
                  , time == 1.*
                  , transformers >= 0.2 && < 0.5
