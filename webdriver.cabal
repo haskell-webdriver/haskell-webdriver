@@ -46,7 +46,7 @@ library
                  , monad-control == 0.3.*
                  , transformers-base >= 0.1 && < 1.0
                  , vector >= 0.3 && < 0.11
-                 , lifted-base == 0.1.*
+                 , lifted-base >= 0.1 && < 0.3
                  , MonadCatchIO-transformers >= 0.3 && < 0.4
                  , filesystem-trees >= 0.1.0.2 && < 0.2
                  , data-default >= 0.2 && < 1.0
