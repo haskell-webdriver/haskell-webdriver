@@ -67,10 +67,10 @@ waitUntil' = wait' handler
                                ,Handler handleExpectFailed]
                     )
       where
-        handleFailedCommand (FailedCommand NoSuchElement _) = retry
+        handleFailedCommand e@(FailedCommand NoSuchElement _) = retry (show e)
         handleFailedCommand err = throwIO err
 
-        handleExpectFailed (_ :: ExpectFailed) = retry
+        handleExpectFailed (e :: ExpectFailed) = retry (show e)
 
 -- |Like 'waitUntil', but retries the action until it fails or until the timeout
 -- is exceeded.
@@ -83,27 +83,28 @@ waitWhile' :: SessionState m => Int -> Double -> m a -> m ()
 waitWhile' = wait' handler
   where
     handler retry wd = do
-      b <- (wd >> return True) `catches` [Handler handleFailedCommand
-                                         ,Handler handleExpectFailed
-                                         ]
-      when b retry
+      b <- (wd >> return Nothing) `catches` [Handler handleFailedCommand
+                                            ,Handler handleExpectFailed
+                                            ]
+      maybe (return ()) retry b
       where
-        handleFailedCommand (FailedCommand NoSuchElement _) = return False
+        handleFailedCommand e@(FailedCommand NoSuchElement _) = return (Just $ show e)
         handleFailedCommand err = throwIO err
 
-        handleExpectFailed (_ :: ExpectFailed) = return False
+        handleExpectFailed (e :: ExpectFailed) = return (Just $ show e)
 
 wait' :: SessionState m =>
-         (m b -> m a -> m b) -> Int -> Double -> m a -> m b
+         ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
 wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
   where timeout = realToFrac t
         waitLoop startTime = handler retry wd
           where
-            retry = do
+            retry why = do
               now <- liftBase getCurrentTime
               if diffUTCTime now startTime >= timeout
                 then
-                  failedCommand Timeout "wait': explicit wait timed out."
+                  failedCommand Timeout $
+                    "wait': explicit wait timed out (" ++ why ++ ")."
                 else do
                   liftBase . threadDelay $ waitAmnt
                   waitLoop startTime
