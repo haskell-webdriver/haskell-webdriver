@@ -67,7 +67,7 @@ module Test.WebDriver.Commands
        , uploadFile, uploadRawFile, uploadZipEntry
          -- * Server information and logs
        , serverStatus
-       , getLogs, getLogTypes, LogType(..), LogEntry(..), LogLevel(..)
+       , getLogs, getLogTypes, LogType, LogEntry(..), LogLevel(..)
        ) where
 
 import Test.WebDriver.Commands.Internal
@@ -751,34 +751,7 @@ instance FromJSON LogEntry where
              <*> (fromMaybe "" <$> o .: "message")
   parseJSON v = typeMismatch "LogEntry" v
 
--- |A type indicating the kind of log information.
-data LogType = LogClient     -- ^ client logs
-             | LogDriver     -- ^ driver logs (e.g. chromedriver, IE driver, etc)
-             | LogBrowser    -- ^ browser logs
-             | LogServer     -- ^ WebDriver server logs
-             | LogOther Text -- ^ non-standard log types
-             deriving (Eq, Ord, Show, Read)
-
-instance ToJSON LogType where
-  toJSON t = 
-    String $ case t of
-      LogClient  -> "client"
-      LogDriver  -> "driver"
-      LogBrowser -> "browser"
-      LogServer  -> "server"
-      LogOther s -> s
-    
-
-instance FromJSON LogType where
-  parseJSON (String s) = 
-    return $ case s of
-      "client"  -> LogClient
-      "driver"  -> LogDriver
-      "browser" -> LogBrowser
-      "server"  -> LogServer
-      other     -> LogOther other
-  parseJSON v = typeMismatch "LogType" v
-
+type LogType = String
 
 -- |Retrieve the log buffer for a given log type. The server-side log buffer is reset after each request.
 getLogs :: WebDriver wd => LogType -> wd [LogEntry]
