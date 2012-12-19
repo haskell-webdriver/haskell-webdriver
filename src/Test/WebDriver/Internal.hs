@@ -2,6 +2,7 @@
 module Test.WebDriver.Internal
        ( mkWDUri, mkRequest
        , handleHTTPErr, handleJSONErr, handleHTTPResp
+       , WDResponse(..)
 
        , InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
        , UnknownCommand(..), ServerError(..)
@@ -146,6 +147,7 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
     _   -> e UnknownError
 
 
+-- |Internal type representing the JSON response object
 data WDResponse = WDResponse { rspSessId :: Maybe SessionId
                              , rspStatus :: Word8
                              , rspVal    :: Value
