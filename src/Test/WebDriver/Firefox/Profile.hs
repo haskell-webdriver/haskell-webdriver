@@ -195,7 +195,7 @@ prepareTempProfile f = prepareProfile . f $ defaultProfile
 
 -- |Convenience function to load an existing Firefox profile from disk, apply
 -- a handler function, and then prepare the result for network transmission.
---
+-- 
 -- NOTE: like 'prepareProfile', the same caveat about large profiles applies.
 prepareLoadedProfile :: MonadBaseControl IO m =>
                         FilePath
@@ -207,11 +207,11 @@ prepareLoadedProfile path f = liftM f (loadProfile path) >>= prepareProfile
 
 prefsParser :: Parser [(Text, ProfilePref)]
 prefsParser = many1 $ do
-  padSpaces $ string "user_pref("
+  void . padSpaces $ string "user_pref("
   k <- prefKey <?> "preference key"
-  padSpaces $ char ','
+  void . padSpaces $ char ','
   v <- prefVal <?> "preference value"
-  padSpaces $ string ");"
+  void . padSpaces $ string ");"
   return (k,v)
   where
     prefKey = jstring

@@ -37,13 +37,13 @@ import Data.String (fromString)
 import Data.Word (Word, Word8)
 
 mkWDUri :: (SessionState s) => String -> s URI
-mkWDUri path = do 
+mkWDUri wdPath = do 
   WDSession{wdHost = host, 
             wdPort = port,
             wdBasePath = basePath
            } <- getSession
   let urlStr   = "http://" ++ host ++ ":" ++ show port
-      relPath  = basePath ++ path
+      relPath  = basePath ++ wdPath
       mBaseURI = parseAbsoluteURI urlStr
       mRelURI  = parseRelativeReference relPath
   case (mBaseURI, mRelURI) of
@@ -53,8 +53,8 @@ mkWDUri path = do
 
 mkRequest :: (SessionState s, ToJSON a) =>
              [Header] -> RequestMethod -> Text -> a -> s (Response ByteString)
-mkRequest headers method path args = do
-  uri <- mkWDUri (T.unpack path)
+mkRequest headers method wdPath args = do
+  uri <- mkWDUri (T.unpack wdPath)
   let body = case toJSON args of
         Null  -> ""   --passing Null as the argument indicates no request body
         other -> encode other
