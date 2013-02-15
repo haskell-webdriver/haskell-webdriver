@@ -8,7 +8,8 @@
 * The LogPref type has been renamed to LogLevel to reflect its use within the new log interface
 
 ###new features
-* a new log interface as specified by webdriver standard. This includes the functions getLogs and getLogTypes, and the types LogType and LogEntry. 
+* a new log interface as specified by the webdriver standard. This includes the functions getLogs and getLogTypes, and the types LogType and LogEntry. 
+* waitWhile and waitUntil now show more detailed information about why an explicit wait timed out.
 
 ##hs-webdriver 0.5.0.1
 ###bug fixes
