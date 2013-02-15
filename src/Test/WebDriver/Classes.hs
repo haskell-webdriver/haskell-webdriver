@@ -62,11 +62,11 @@ implicitly through all 'WD' computations, and is also used to configure the 'WD'
 monad before execution. -}
 data WDSession = WDSession {
                              -- |Host name of the WebDriver server for this
-                             -- session
+                             -- session (default 127.0.0.1)
                              wdHost     :: String
-                             -- |Port number of the server
+                             -- |Port number of the server (default 4444)
                            , wdPort     :: Word16
-                             -- |Base path (usually "/wd/hub")
+                             -- |Base path (default "/wd/hub")
                            , wdBasePath :: String
                              -- |An opaque reference identifying the session to
                              -- use with 'WD' commands.
