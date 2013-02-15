@@ -1,6 +1,6 @@
 #Change Log
 
-##upcoming release
+##hs-webdriver 0.5.1
 ###API changes
 * Test.WebDriver.Internal.FailedCommandInfo now stores screenshots as lazy bytestrings
 * Test.WebDriver.Common.Profile now stores PreparedProfile as a lazy bytestring
