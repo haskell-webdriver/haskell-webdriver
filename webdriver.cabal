@@ -1,6 +1,6 @@
 Name: webdriver
 Version: 0.5.1
-Cabal-Version: >= 1.6
+Cabal-Version: >= 1.8
 License: BSD3
 License-File: LICENSE
 Author: Adam Curtis
@@ -70,3 +70,11 @@ library
 
   other-modules:   Test.WebDriver.Internal
 
+Test-Suite test-example1
+  type: exitcode-stdio-1.0
+  main-is: test/example1.hs
+  ghc-options: -threaded
+  build-depends: base,
+                 webdriver,
+                 text,
+                 parallel
