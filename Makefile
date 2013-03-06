@@ -12,3 +12,6 @@ build:
 
 test: build
 	cabal-dev test
+
+start:
+	java -jar ./libs/selenium-server-standalone-2.31.0.jar -Dwebdriver.chrome.driver=./libs/chromedriver
