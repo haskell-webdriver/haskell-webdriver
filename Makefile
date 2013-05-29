@@ -15,5 +15,6 @@ build:
 test: build
 	$(CBD) test
 
+## download selenium-server and start it before run tests
 start:
-	java -jar ./libs/selenium-server-standalone-2.31.0.jar -Dwebdriver.chrome.driver=./libs/chromedriver
+	java -jar ../libs/selenium-server-standalone-2.31.0.jar
