@@ -3,6 +3,7 @@ module Main where
 
 import           Control.Concurrent
 import           Control.Parallel
+import Control.Monad (void)
 import           Data.List
 import qualified Data.Text                    as T
 import           Test.WebDriver
