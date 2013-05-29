@@ -1,10 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Control.Concurrent
-import GHC.Conc (numCapabilities)
-import System.Environment (getArgs)
+import           Control.Concurrent
+import           GHC.Conc           (numCapabilities)
+import           System.Environment (getArgs)
 
+{-
+  TODO:
+  try to run tests parallelly but doesn't work when using forkIO.
+-}
 main2 = do
   forkIO $ print "world"
   forkIO $ print "hello"

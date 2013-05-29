@@ -70,9 +70,9 @@ library
 
   other-modules:   Test.WebDriver.Internal
 
-Test-Suite test-example1
+Test-Suite test-search-baidu
   type: exitcode-stdio-1.0
-  main-is: test/example1.hs
+  main-is: test/search-baidu.hs
   ghc-options: -threaded
   build-depends: base,
                  webdriver,

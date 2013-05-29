@@ -1,17 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Test.WebDriver
-import Test.WebDriver.Classes
-import Test.WebDriver.Commands.Wait
-import Data.List
-import qualified Data.Text as T
-import Control.Concurrent
-import Control.Parallel
+import           Control.Concurrent
+import           Control.Parallel
+import           Data.List
+import qualified Data.Text                    as T
+import           Test.WebDriver
+import           Test.WebDriver.Classes
+import           Test.WebDriver.Commands.Wait
 
 capsChrome = defaultCaps { browser = chrome }
 capsFF = defaultCaps
 
+-- Have no fun with baidu but only cause it is loading fast than google in China.
+--
 baidu :: WD ()
 baidu = openPage "http://www.baidu.com/"
 
@@ -25,8 +27,8 @@ searchBaidu = do
     title <- getTitle
     return ("cheese!" `T.isSuffixOf` title)
 
-testCase c = runSession defaultSession c (baidu >> searchBaidu)
-             >> return ()
+testCase c = void $ runSession defaultSession c (baidu >> searchBaidu)
+
 testSuits = mapM_ testCase  [capsFF, capsChrome]
 
 main = do
