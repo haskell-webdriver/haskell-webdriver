@@ -1,4 +1,3 @@
-
 SANDBOX=../cabal-dev
 PKG=$(SANDBOX)/packages-7.4.2.conf/
 CBD=cabal-dev -s $(SANDBOX)
@@ -12,10 +11,9 @@ build:
 	cabal-dev --enable-tests configure -s $(SANDBOX)
 	$(CBD) build
 
+## In order to run tests, you probably need to have certain webdriver or selenium server.
+## Check details at: http://docs.seleniumhq.org/docs/03_webdriver.jsp
 test: build
 	$(CBD) test
 
-## download selenium-server and start it before run tests
-## append driver when need to run tests against drivers other than default (firefox)
-start:
-	java -jar ../libs/selenium-server-standalone-2.31.0.jar -Dwebdriver.chrome.driver=../libs/chromedriver
+
