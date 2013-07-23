@@ -47,6 +47,9 @@ module Test.WebDriver.Commands
          -- * HTML 5 Web Storage
        , WebStorageType(..), storageSize, getAllKeys, deleteAllKeys
        , getKey, setKey, deleteKey
+         -- * HTML 5 Application Cache
+       , ApplicationCacheStatus(..)
+       , getApplicationCacheStatus
          -- * Mobile device support
          -- ** Screen orientation
        , Orientation(..)
@@ -731,7 +734,7 @@ doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
 -- about this object see
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol#/status>
 serverStatus :: (WebDriver wd) => wd Value   -- todo: make this a record type
-serverStatus = doCommand GET "/status" ()
+serverStatus = doCommand GET "/status" Null
 
 -- |A record that represents a single log entry.
 data LogEntry = 
@@ -759,7 +762,24 @@ getLogs t = doSessCommand POST "/log" . object $ ["type" .= t]
 
 -- |Get a list of available log types.
 getLogTypes :: WebDriver wd => wd [LogType]
-getLogTypes = doSessCommand GET "/log/types" ()
+getLogTypes = doSessCommand GET "/log/types" Null
+
+data ApplicationCacheStatus = Uncached | Idle | Checking | Downloading | UpdateReady | Obsolete deriving (Eq, Enum, Bounded, Ord, Show, Read)
+
+instance FromJSON ApplicationCacheStatus where
+    parseJSON val = do
+        n <- parseJSON val
+        return $ case n :: Integer of
+            0 -> Uncached
+            1 -> Idle
+            2 -> Checking
+            3 -> Downloading
+            4 -> UpdateReady
+            5 -> Obsolete
+            err -> fail $ "Invalid JSON for ApplicationCacheStatus: " ++ show err
+            
+getApplicationCacheStatus :: (WebDriver wd) => wd ApplicationCacheStatus
+getApplicationCacheStatus = doSessCommand GET "/application_cache/status" Null
 
 -- Moving this closer to the definition of Cookie seems to cause strange compile
 -- errors, so I'm leaving it here for now.

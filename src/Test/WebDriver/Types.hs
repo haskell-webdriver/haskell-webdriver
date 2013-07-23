@@ -25,6 +25,8 @@ module Test.WebDriver.Types
        , Orientation(..)
        , MouseButton(..)
        , WebStorageType(..)
+       , LogType, LogEntry(..)
+       , ApplicationCacheStatus(..)
          -- * Exceptions
        , InvalidURL(..), NoSessionId(..), BadJSON(..)
        , HTTPStatusUnknown(..), HTTPConnError(..)
