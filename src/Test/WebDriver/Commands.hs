@@ -757,6 +757,9 @@ instance FromJSON LogEntry where
 type LogType = String
 
 -- |Retrieve the log buffer for a given log type. The server-side log buffer is reset after each request.
+--
+-- Which log types are available is server defined, but the wire protocol lists these as common log types:
+-- client, driver, browser, server
 getLogs :: WebDriver wd => LogType -> wd [LogEntry]
 getLogs t = doSessCommand POST "/log" . object $ ["type" .= t]
 
