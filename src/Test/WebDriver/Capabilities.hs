@@ -17,7 +17,7 @@ import Data.String (fromString)
 
 import Control.Applicative
 import Control.Exception.Lifted (throw)
-
+                   
 {- |A structure describing the capabilities of a session. This record
 serves dual roles.
 
@@ -75,6 +75,8 @@ data Capabilities =
                  -- |Whether the session is capable of generating native OS
                  -- events when simulating user input.
                , nativeEvents             :: Maybe Bool
+                 -- |How the session should handle unexpected alerts.
+               , unexpectedAlertBehaviour :: Maybe UnexpectedAlertBehaviour
                } deriving (Eq, Show)
 
 instance Default Capabilities where
@@ -94,6 +96,7 @@ instance Default Capabilities where
                      , acceptSSLCerts = Nothing
                      , nativeEvents = Nothing
                      , proxy = UseSystemSettings
+                     , unexpectedAlertBehaviour = Nothing
                      }
 
 -- |Default capabilities. This is the same as the 'Default' instance, but with
@@ -139,6 +142,7 @@ instance ToJSON Capabilities where
              , "rotatable" .= rotatable
              , "acceptSslCerts" .= acceptSSLCerts
              , "nativeEvents" .= nativeEvents
+             , "unexpectedAlertBehaviour" .= unexpectedAlertBehaviour
              ] ++ browserInfo
     where
       browserInfo = case browser of
@@ -199,6 +203,7 @@ instance FromJSON Capabilities where
                                       <*> b "rotatable"
                                       <*> b "acceptSslCerts"
                                       <*> b "nativeEvents"
+                                      <*> opt "unexpectedBrowserBehaviour" Nothing
     where req :: FromJSON a => Text -> Parser a
           req = (o .:)            -- required field
           opt :: FromJSON a => Text -> a -> Parser a
@@ -438,6 +443,25 @@ instance ToJSON ProxyType where
       ,"sslProxy"  .= ssl
       ,"httpProxy" .= http
       ]
+
+data UnexpectedAlertBehaviour = AcceptAlert | DismissAlert | IgnoreAlert 
+                              deriving (Bounded, Enum, Eq, Ord, Read, Show)
+                                       
+instance ToJSON UnexpectedAlertBehaviour where
+  toJSON AcceptAlert  = String "accept"
+  toJSON DismissAlert = String "dismiss"
+  toJSON IgnoreAlert  = String "ignore"
+  
+instance FromJSON UnexpectedAlertBehaviour where
+  parseJSON (String s) = 
+    return $ case s of
+      "accept"  -> AcceptAlert
+      "dismiss" -> DismissAlert
+      "ignore"  -> IgnoreAlert
+      err       -> throw . BadJSON 
+                   $ "Invalid string value for UnexpectedAlertBehaviour: " ++ show err
+  parseJSON v = typeMismatch "UnexpectedAlertBehaviour" v
+
 
 -- |Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
 data LogLevel = LogOff | LogSevere | LogWarning | LogInfo | LogConfig

@@ -9,7 +9,7 @@ module Test.WebDriver.Types
          WD(..), WDSession(..), defaultSession, SessionId(..)
          -- * Capabilities and configuration
        , Capabilities(..), defaultCaps, allCaps
-       , Platform(..), ProxyType(..)
+       , Platform(..), ProxyType(..), UnexpectedAlertBehaviour(..)
          -- ** Browser-specific configuration
        , Browser(..),
          -- ** Default settings for browsers
