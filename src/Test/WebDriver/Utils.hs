@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Test.WebDriver.Utils where
 
 import Data.Text (Text)
