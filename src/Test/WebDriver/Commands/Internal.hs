@@ -17,6 +17,7 @@ module Test.WebDriver.Commands.Internal
        ) where
 
 import Test.WebDriver.Classes
+import Test.WebDriver.Utils (urlEncode)
 
 import Data.Aeson
 import Data.Aeson.Types
@@ -72,7 +73,7 @@ doSessCommand method path args = do
           msg = "doSessCommand: No session ID found for relative URL "
                 ++ show path
       Just (SessionId sId) -> doCommand method
-                              (T.concat ["/session/", sId, path]) args
+                              (T.concat ["/session/", urlEncode sId, path]) args
 
 -- |A wrapper around 'doSessCommand' to create element URLs.
 -- For example, passing a URL of "/active" will expand to
@@ -81,7 +82,7 @@ doSessCommand method path args = do
 doElemCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
                   RequestMethod -> Element -> Text -> a -> wd b
 doElemCommand m (Element e) path a =
-  doSessCommand m (T.concat ["/element/", e, path]) a
+  doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
 
 -- |A wrapper around 'doSessCommand' to create window handle URLS.
 -- For example, passing a URL of \"/size\" will expand to
@@ -90,4 +91,4 @@ doElemCommand m (Element e) path a =
 doWinCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
                  RequestMethod -> WindowHandle -> Text -> a -> wd b
 doWinCommand m (WindowHandle w) path a =
-  doSessCommand m (T.concat ["/window/", w, path]) a
+  doSessCommand m (T.concat ["/window/", urlEncode w, path]) a

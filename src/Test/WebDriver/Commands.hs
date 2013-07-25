@@ -78,6 +78,7 @@ import Test.WebDriver.Classes
 import Test.WebDriver.JSON
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Internal
+import Test.WebDriver.Utils (urlEncode)
 
 import Data.Aeson
 import Data.Aeson.Types
@@ -363,7 +364,7 @@ setCookie = noReturn . doSessCommand POST "/cookie" . single "cookie"
 -- current page.
 deleteCookie :: WebDriver wd => Cookie -> wd ()
 deleteCookie c = 
-  noReturn $ doSessCommand DELETE ("/cookie/" `append` cookName c) Null
+  noReturn $ doSessCommand DELETE ("/cookie/" `append` urlEncode (cookName c)) Null
 
 -- |Delete all visible cookies on the current page.
 deleteVisibleCookies :: WebDriver wd => wd ()
@@ -474,11 +475,11 @@ isDisplayed e = doElemCommand GET e "/displayed" Null
 
 -- |Retrieve the value of an element's attribute
 attr :: WebDriver wd => Element -> Text -> wd (Maybe Text)
-attr e t = doElemCommand GET e ("/attribute/" `append` t) Null
+attr e t = doElemCommand GET e ("/attribute/" `append` urlEncode t) Null
 
 -- |Retrieve the value of an element's computed CSS property
 cssProp :: WebDriver wd => Element -> Text -> wd (Maybe Text)
-cssProp e t = doElemCommand GET e ("/css/" `append` t) Null
+cssProp e t = doElemCommand GET e ("/css/" `append` urlEncode t) Null
 
 -- |Retrieve an element's current position.
 elemPos :: WebDriver wd => Element -> wd (Int, Int)
@@ -492,7 +493,7 @@ elemSize e = doElemCommand GET e "/size" Null
 infix 4 <==>
 -- |Determines if two element identifiers refer to the same element.
 (<==>) :: WebDriver wd => Element -> Element -> wd Bool
-e1 <==> (Element e2) = doElemCommand GET e1 ("/equals/" `append` e2) Null
+e1 <==> (Element e2) = doElemCommand GET e1 ("/equals/" `append` urlEncode e2) Null
 
 -- |Determines if two element identifiers refer to different elements.
 infix 4 </=>
@@ -712,7 +713,7 @@ data WebStorageType = LocalStorage | SessionStorage
 -- Unset keys result in empty strings, since the Web Storage spec
 -- makes no distinction between the empty string and an undefined value.
 getKey :: WebDriver wd => WebStorageType -> Text ->  wd Text
-getKey s k = doStorageCommand GET s ("/key/" `T.append` k) Null
+getKey s k = doStorageCommand GET s ("/key/" `T.append` urlEncode k) Null
 
 -- |Set a key in the given web storage area.
 setKey :: WebDriver wd => WebStorageType -> Text -> Text -> wd Text
@@ -720,7 +721,7 @@ setKey s k v = doStorageCommand POST s "" . object $ ["key"   .= k,
                                                       "value" .= v ]
 -- |Delete a key in the given web storage area.
 deleteKey :: WebDriver wd => WebStorageType -> Text -> wd ()
-deleteKey s k = noReturn $ doStorageCommand POST s ("/key/" `T.append` k) Null
+deleteKey s k = noReturn $ doStorageCommand POST s ("/key/" `T.append` urlEncode k) Null
 
 -- |A wrapper around 'doStorageCommand' to create web storage URLs.
 doStorageCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>

@@ -67,6 +67,7 @@ library
                    Test.WebDriver.Capabilities
                    Test.WebDriver.Types
                    Test.WebDriver.JSON
+                   Test.WebDriver.Utils
 
   other-modules:   Test.WebDriver.Internal
 
