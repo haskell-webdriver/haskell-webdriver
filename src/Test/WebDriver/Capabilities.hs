@@ -159,8 +159,21 @@ instance ToJSON Capabilities where
                 ,"chrome.extensions" .= chromeExtensions
                 ]
         IE {..}
-          -> ["IgnoreProtectedModeSettings" .= ignoreProtectedModeSettings
-             --,"useLegacyInternalServer" .= u
+          -> ["IgnoreProtectedModeSettings" .= ieIgnoreProtectedModeSettings
+             ,"ignoreZoomSetting" .= ieIgnoreZoomSetting
+             ,"initialBrowserUrl" .= ieInitialBrowserUrl
+             ,"elementScrollBehavior" .= ieElementScrollBehavior
+             ,"enablePersistentHover" .= ieEnablePersistentHover
+             ,"enableElementCacheCleanup" .= ieEnableElementCacheCleanup
+             ,"requireWindowFocus" .= ieRequireWindowFocus
+             ,"browserAttachTimeout" .= ieBrowserAttachTimeout
+             ,"logFile" .= ieLogFile
+             ,"logLevel" .= ieLogLevel
+             ,"host" .= ieHost
+             ,"extractPath" .= ieExtractPath
+             ,"silent" .= ieSilent
+             ,"forceCreateProcess" .= ieForceCreateProcess
+             ,"internetExplorerSwitches" .= ieSwitches
              ]
         Opera{..}
           -> catMaybes [ opt "opera.binary" operaBinary
@@ -248,8 +261,63 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                     -- not set, and protected mode settings are not the same for
                     -- all zones, an exception will be thrown on driver
                     -- construction.
-                    ignoreProtectedModeSettings :: Bool
-                  --, useLegacyInternalServer     :: Bool
+                    ieIgnoreProtectedModeSettings :: Bool
+                    -- |Indicates whether to skip the check that the browser's zoom
+                    -- level is set to 100%. Value is set to false by default.
+                  , ieIgnoreZoomSetting :: Bool
+                    -- |Allows the user to specify the initial URL loaded when IE 
+                    -- starts. Intended to be used with ignoreProtectedModeSettings
+                    -- to allow the user to initialize IE in the proper Protected Mode 
+                    -- zone. Using this capability may cause browser instability or
+                    -- flaky and unresponsive code. Only "best effort" support is
+                    -- provided when using this capability.
+                  , ieInitialBrowserUrl :: Maybe Text
+                    -- |Allows the user to specify whether elements are scrolled into 
+                    -- the viewport for interaction to align with the top or bottom 
+                    -- of the viewport. The default value is to align with the top of 
+                    -- the viewport.
+                  , ieElementScrollBehavior :: IEElementScrollBehavior
+                    -- |Determines whether persistent hovering is enabled (true by 
+                    -- default). Persistent hovering is achieved by continuously firing 
+                    -- mouse over events at the last location the mouse cursor has been 
+                    -- moved to.
+                  , ieEnablePersistentHover :: Bool
+                    -- |Determines whether the driver should attempt to remove obsolete 
+                    -- elements from the element cache on page navigation (true by 
+                    -- default). This is to help manage the IE driver's memory footprint
+                    -- , removing references to invalid elements.
+                  , ieEnableElementCacheCleanup :: Bool
+                    -- |Determines whether to require that the IE window have focus 
+                    -- before performing any user interaction operations (mouse or 
+                    -- keyboard events). This capability is false by default, but
+                    -- delivers much more accurate native events interactions.
+                  , ieRequireWindowFocus :: Bool
+                    -- |The timeout, in milliseconds, that the driver will attempt to
+                    -- locate and attach to a newly opened instance of Internet Explorer
+                    -- . The default is zero, which indicates waiting indefinitely.
+                  , ieBrowserAttachTimeout :: Integer
+                    -- |The path to file where server should write log messages to. 
+                    -- By default it writes to stdout.
+                  , ieLogFile :: Maybe FilePath
+                    -- |The log level used by the server. Defaults to 'IELogFatal'
+                  , ieLogLevel :: IELogLevel
+                    -- |The address of the host adapter on which the server will listen 
+                    -- for commands.
+                  , ieHost :: Maybe Text
+                    -- |The path to the directory used to extract supporting files used 
+                    -- by the server. Defaults to the TEMP directory if not specified.
+                  , ieExtractPath :: Maybe Text
+                    -- |Suppresses diagnostic output when the server is started.
+                  , ieSilent :: Bool
+                    -- |Forces launching Internet Explorer using the CreateProcess API. 
+                    -- If this option is not specified, IE is launched using the
+                    -- IELaunchURL, if it is available. For IE 8 and above, this option 
+                    -- requires the TabProcGrowth registry value to be set to 0.
+                  , ieForceCreateProcess :: Bool
+                    -- |Specifies command-line switches with which to launch Internet 
+                    -- Explorer. This is only valid when used with the 
+                    -- forceCreateProcess.
+                  , ieSwitches :: Maybe Text
                   }
              | Opera { -- |Server-side path to the Opera binary
                        operaBinary    :: Maybe FilePath
@@ -299,6 +367,8 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
              | IPhone
              | IPad
              | Android
+             -- |some other browser, specified by a string name
+             | Browser Text
              deriving (Eq, Show)
 
 instance Default Browser where
@@ -306,11 +376,12 @@ instance Default Browser where
 
 
 instance ToJSON Browser where
-  toJSON Firefox {} = String "firefox"
-  toJSON Chrome {}  = String "chrome"
-  toJSON Opera {}   = String "opera"
-  toJSON IE {}      = String "internet explorer"
-  toJSON b = String . toLower . fromString . show $ b
+  toJSON Firefox {}  = String "firefox"
+  toJSON Chrome {}   = String "chrome"
+  toJSON Opera {}    = String "opera"
+  toJSON IE {}       = String "internet explorer"
+  toJSON (Browser b) = String b
+  toJSON b           = String . toLower . fromString . show $ b
 
 instance FromJSON Browser where
   parseJSON (String jStr) = case toLower jStr of
@@ -323,7 +394,7 @@ instance FromJSON Browser where
     "ipad"              -> return iPad
     "android"           -> return android
     "htmlunit"          -> return htmlUnit
-    err  -> fail $ "Invalid Browser string " ++ show err
+    other               -> return (Browser other)
   parseJSON v = typeMismatch "Browser" v
 
 
@@ -337,9 +408,25 @@ firefox = Firefox Nothing def Nothing
 chrome :: Browser
 chrome = Chrome Nothing Nothing [] []
 
--- |Default IE settings. 'ignoreProtectedModeSettings' is set to True.
+-- |Default IE settings. See the 'IE' constructor for more details on 
+-- |individual defaults
 ie :: Browser
-ie = IE True
+ie = IE { ieIgnoreProtectedModeSettings = True
+        , ieIgnoreZoomSetting = False
+        , ieInitialBrowserUrl = Nothing
+        , ieElementScrollBehavior = def
+        , ieEnablePersistentHover = True
+        , ieEnableElementCacheCleanup = True
+        , ieRequireWindowFocus = False
+        , ieBrowserAttachTimeout = 0
+        , ieLogFile = Nothing
+        , ieLogLevel = def
+        , ieHost = Nothing
+        , ieExtractPath = Nothing
+        , ieSilent = False
+        , ieForceCreateProcess = False
+        , ieSwitches = Nothing
+        }
 
 -- |Default Opera settings. See the 'Opera' constructor for more details on
 -- individual defaults.
@@ -462,7 +549,6 @@ instance FromJSON UnexpectedAlertBehaviour where
                    $ "Invalid string value for UnexpectedAlertBehaviour: " ++ show err
   parseJSON v = typeMismatch "UnexpectedAlertBehaviour" v
 
-
 -- |Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
 data LogLevel = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
               | LogFine | LogFiner | LogFinest | LogAll
@@ -496,3 +582,51 @@ instance FromJSON LogLevel where
     "ALL" -> LogAll
     _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
   parseJSON other = typeMismatch "LogLevel" other
+  
+
+data IELogLevel = IELogTrace | IELogDebug | IELogInfo | IELogWarn | IELogError
+                | IELogFatal
+                deriving (Eq, Show, Read, Ord, Bounded, Enum)
+
+instance Default IELogLevel where
+  def = IELogFatal
+
+
+instance ToJSON IELogLevel where
+  toJSON p= String $ case p of
+    IELogTrace -> "TRACE"
+    IELogDebug -> "DEBUG"
+    IELogInfo -> "INFO"
+    IELogWarn -> "WARN"
+    IELogError -> "ERROR"
+    IELogFatal -> "FATAL"
+
+instance FromJSON IELogLevel where
+  parseJSON (String s) = return $ case s of
+    "TRACE" -> IELogTrace
+    "DEBIG" -> IELogDebug
+    "INFO"  -> IELogInfo
+    "WARN"  -> IELogWarn
+    "ERROR" -> IELogError
+    "FATAL" -> IELogFatal
+    _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
+  parseJSON other = typeMismatch "IELogLevel" other
+
+data IEElementScrollBehavior = AlignTop | AlignBottom
+                             deriving (Eq, Ord, Show, Read, Enum, Bounded)
+                                      
+instance Default IEElementScrollBehavior where                                     
+  def = AlignTop
+  
+instance ToJSON IEElementScrollBehavior where
+  toJSON AlignTop    = toJSON (0 :: Int)
+  toJSON AlignBottom = toJSON (1 :: Int)
+  
+instance FromJSON IEElementScrollBehavior where
+  parseJSON v = do
+    n <- parseJSON v
+    case n :: Integer of 
+      0 -> return AlignTop
+      1 -> return AlignBottom
+      _ -> fail $ "Invalid integer for IEElementScrollBehavior: " ++ show n
+    
