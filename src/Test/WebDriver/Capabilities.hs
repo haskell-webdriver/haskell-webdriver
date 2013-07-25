@@ -7,7 +7,8 @@ import Test.WebDriver.Chrome.Extension
 import Test.WebDriver.JSON
 
 import Data.Aeson
-import Data.Aeson.Types (Parser, typeMismatch)
+import Data.Aeson.Types (Parser, typeMismatch, Pair)
+import qualified Data.HashMap.Strict as HM (delete, toList)
 
 import Data.Text (Text, toLower, toUpper)
 import Data.Default (Default(..))
@@ -77,6 +78,8 @@ data Capabilities =
                , nativeEvents             :: Maybe Bool
                  -- |How the session should handle unexpected alerts.
                , unexpectedAlertBehaviour :: Maybe UnexpectedAlertBehaviour
+                 -- |A list of ('Text', 'Value') pairs specifying additional non-standard capabilities.
+               , additionalCaps           :: [Pair]
                } deriving (Eq, Show)
 
 instance Default Capabilities where
@@ -97,17 +100,18 @@ instance Default Capabilities where
                      , nativeEvents = Nothing
                      , proxy = UseSystemSettings
                      , unexpectedAlertBehaviour = Nothing
+                     , additionalCaps = []
                      }
 
 -- |Default capabilities. This is the same as the 'Default' instance, but with
 -- less polymorphism. By default, we use 'firefox' of an unspecified 'version'
 -- with default system-wide 'proxy' settings on whatever 'platform' is available
--- . All Maybe Bool capabilities are set to Nothing (no preference).
+-- . All 'Maybe' capabilities are set to 'Nothing' (no preference).
 defaultCaps :: Capabilities
 defaultCaps = def
 
--- |Same as 'defaultCaps', but with all Maybe Bool capabilities set to
--- Just True.
+-- |Same as 'defaultCaps', but with all 'Maybe' 'Bool' capabilities set to
+-- 'Just' 'True'.
 allCaps :: Capabilities
 allCaps = defaultCaps { javascriptEnabled = Just True
                       , takesScreenshot = Just True
@@ -143,7 +147,9 @@ instance ToJSON Capabilities where
              , "acceptSslCerts" .= acceptSSLCerts
              , "nativeEvents" .= nativeEvents
              , "unexpectedAlertBehaviour" .= unexpectedAlertBehaviour
-             ] ++ browserInfo
+             ] 
+    ++ browserInfo
+    ++ additionalCaps
     where
       browserInfo = case browser of
         Firefox {..}
@@ -159,7 +165,7 @@ instance ToJSON Capabilities where
                 ,"chrome.extensions" .= chromeExtensions
                 ]
         IE {..}
-          -> ["IgnoreProtectedModeSettings" .= ieIgnoreProtectedModeSettings
+          -> ["ignoreProtectedModeSettings" .= ieIgnoreProtectedModeSettings
              ,"ignoreZoomSetting" .= ieIgnoreZoomSetting
              ,"initialBrowserUrl" .= ieInitialBrowserUrl
              ,"elementScrollBehavior" .= ieElementScrollBehavior
@@ -200,29 +206,92 @@ instance ToJSON Capabilities where
 
 
 instance FromJSON Capabilities where
-  parseJSON (Object o) = Capabilities <$> req "browserName"
-                                      <*> opt "version" Nothing
-                                      <*> req "platform"
-                                      <*> opt "proxy" NoProxy
-                                      <*> b "javascriptEnabled"
-                                      <*> b "takesScreenshot"
-                                      <*> b "handlesAlerts"
-                                      <*> b "databaseEnabled"
-                                      <*> b "locationContextEnabled"
-                                      <*> b "applicationCacheEnabled"
-                                      <*> b "browserConnectionEnabled"
-                                      <*> b "cssSelectorEnabled"
-                                      <*> b "webStorageEnabled"
-                                      <*> b "rotatable"
-                                      <*> b "acceptSslCerts"
-                                      <*> b "nativeEvents"
-                                      <*> opt "unexpectedBrowserBehaviour" Nothing
-    where req :: FromJSON a => Text -> Parser a
+  parseJSON (Object o) = do
+    browser <- req "browserName"
+    Capabilities <$> getBrowserCaps browser
+                 <*> opt "version" Nothing
+                 <*> req "platform"
+                 <*> opt "proxy" NoProxy
+                 <*> b "javascriptEnabled"
+                 <*> b "takesScreenshot"
+                 <*> b "handlesAlerts"
+                 <*> b "databaseEnabled"
+                 <*> b "locationContextEnabled"
+                 <*> b "applicationCacheEnabled"
+                 <*> b "browserConnectionEnabled"
+                 <*> b "cssSelectorEnabled"
+                 <*> b "webStorageEnabled"
+                 <*> b "rotatable"
+                 <*> b "acceptSslCerts"
+                 <*> b "nativeEvents"
+                 <*> opt "unexpectedAlertBehaviour" Nothing
+                 <*> pure (additionalCapabilities browser)
+                 
+    where --some helpful JSON accessor shorthands 
+          req :: FromJSON a => Text -> Parser a
           req = (o .:)            -- required field
           opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:? k .!= d -- optional field
           b :: Text -> Parser (Maybe Bool)
           b k = opt k Nothing     -- Maybe Bool field
+          
+          -- produce additionalCaps by removing known capabilities from the JSON object
+          additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
+
+          knownCapabilities browser =
+            ["browserName", "version", "platform", "proxy"
+            ,"javascriptEnabled", "takesScreenshot", "handlesAlerts"
+            ,"databaseEnabled", "locationContextEnabled"
+            ,"applicationCacheEnabled", "browserConnectionEnabled"
+            , "cssSelectorEnabled","webStorageEnabled", "rotatable"
+            , "acceptSslCerts", "nativeEvents", "unexpectedBrowserBehaviour"]
+            ++ case browser of
+              Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary"]
+              Chrome {} -> ["chrome.chromedriverVersion", "chrome.extensions", "chrome.switches", "chrome.extensions"]
+              IE {} -> ["ignoreProtectedModeSettings", "ignoreZoomSettings", "initialBrowserUrl", "elementScrollBehavior"
+                       ,"enablePersistentHover", "enableElementCacheCleanup", "requireWindowFocus", "browserAttachTimeout"
+                       ,"logFile", "logLevel", "host", "extractPath", "silent", "forceCreateProcess", "internetExplorerSwitches"]
+              Opera {} -> ["opera.binary", "opera.product", "opera.no_quit", "opera.autostart", "opera.idle", "opera.display"
+                          ,"opera.launcher", "opera.port", "opera.host", "opera.arguments", "opera.logging.file", "opera.logging.level"]
+              _ -> []                                                                                                                                                                                                
+          getBrowserCaps browser =
+            case browser of 
+              Firefox {} -> Firefox <$> opt "firefox_profile" Nothing
+                                    <*> opt "loggingPrefs" def
+                                    <*> opt "firefox_binary" Nothing
+              Chrome {} -> Chrome <$> opt "chrome.chromedriverVersion" Nothing
+                                  <*> opt "chrome.extensions" Nothing
+                                  <*> opt "chrome.switches" []
+                                  <*> opt "chrome.extensions" []
+              IE {} -> IE <$> opt "ignoreProtectedModeSettings" True
+                          <*> opt "ignoreZoomSettings" False
+                          <*> opt "initialBrowserUrl" Nothing
+                          <*> opt "elementScrollBehavior" def
+                          <*> opt "enablePersistentHover" True
+                          <*> opt "enableElementCacheCleanup" True
+                          <*> opt "requireWindowFocus" False
+                          <*> opt "browserAttachTimeout" 0
+                          <*> opt "logFile" Nothing
+                          <*> opt "logLevel" def
+                          <*> opt "host" Nothing
+                          <*> opt "extractPath" Nothing
+                          <*> opt "silent" False
+                          <*> opt "forceCreateProcess" False
+                          <*> opt "internetExplorerSwitches" Nothing
+              Opera {} -> Opera <$> opt "opera.binary" Nothing
+                                <*> opt "opera.product" Nothing
+                                <*> opt "opera.no_quit" False
+                                <*> opt "opera.autostart" True
+                                <*> opt "opera.idle" False
+                                <*> opt "opera.display" Nothing
+                                <*> opt "opera.launcher" Nothing                               
+                                <*> opt "opera.port" (Just 0)
+                                <*> opt "opera.host" Nothing
+                                <*> opt "opera.arguments" Nothing
+                                <*> opt "opera.logging.file" Nothing
+                                <*> opt "opera.logging.level" def
+              _ -> return browser
+                              
   parseJSON v = typeMismatch "Capabilities" v
 
 -- |This constructor simultaneously specifies which browser the session will
@@ -269,7 +338,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                     -- starts. Intended to be used with ignoreProtectedModeSettings
                     -- to allow the user to initialize IE in the proper Protected Mode 
                     -- zone. Using this capability may cause browser instability or
-                    -- flaky and unresponsive code. Only "best effort" support is
+                    -- flaky and unresponsive code. Only \"best effort\" support is
                     -- provided when using this capability.
                   , ieInitialBrowserUrl :: Maybe Text
                     -- |Allows the user to specify whether elements are scrolled into 
@@ -356,7 +425,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                        -- starting Opera manually you won't need this.
                      , operaHost      :: Maybe String
                        -- |Command-line arguments to pass to Opera.
-                     , operaOptions   :: String
+                     , operaOptions   :: Maybe String
                        -- |Where to send the log output. If Nothing, logging is
                        -- disabled.
                      , operaLogFile   :: Maybe FilePath
@@ -409,7 +478,7 @@ chrome :: Browser
 chrome = Chrome Nothing Nothing [] []
 
 -- |Default IE settings. See the 'IE' constructor for more details on 
--- |individual defaults
+-- individual defaults
 ie :: Browser
 ie = IE { ieIgnoreProtectedModeSettings = True
         , ieIgnoreZoomSetting = False
@@ -442,7 +511,7 @@ opera = Opera { operaBinary = Nothing
               , operaLauncher = Nothing
               , operaHost = Nothing
               , operaPort = Just 0
-              , operaOptions = []
+              , operaOptions = Nothing
               , operaLogFile = Nothing
               , operaLogPref = def
               }
@@ -584,6 +653,7 @@ instance FromJSON LogLevel where
   parseJSON other = typeMismatch "LogLevel" other
   
 
+-- |Logging levels for Internet Explorer
 data IELogLevel = IELogTrace | IELogDebug | IELogInfo | IELogWarn | IELogError
                 | IELogFatal
                 deriving (Eq, Show, Read, Ord, Bounded, Enum)
@@ -612,6 +682,7 @@ instance FromJSON IELogLevel where
     _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
   parseJSON other = typeMismatch "IELogLevel" other
 
+-- |Specifies how elements scroll into the viewport. (see 'ieElementScrollBehavior')
 data IEElementScrollBehavior = AlignTop | AlignBottom
                              deriving (Eq, Ord, Show, Read, Enum, Bounded)
                                       
