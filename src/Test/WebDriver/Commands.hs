@@ -772,13 +772,13 @@ data ApplicationCacheStatus = Uncached | Idle | Checking | Downloading | UpdateR
 instance FromJSON ApplicationCacheStatus where
     parseJSON val = do
         n <- parseJSON val
-        return $ case n :: Integer of
-            0 -> Uncached
-            1 -> Idle
-            2 -> Checking
-            3 -> Downloading
-            4 -> UpdateReady
-            5 -> Obsolete
+        case n :: Integer of
+            0 -> return Uncached
+            1 -> return Idle
+            2 -> return Checking
+            3 -> return Downloading
+            4 -> return UpdateReady
+            5 -> return Obsolete
             err -> fail $ "Invalid JSON for ApplicationCacheStatus: " ++ show err
             
 getApplicationCacheStatus :: (WebDriver wd) => wd ApplicationCacheStatus
