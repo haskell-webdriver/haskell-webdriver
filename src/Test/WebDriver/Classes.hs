@@ -12,6 +12,8 @@ module Test.WebDriver.Classes
 --import Test.WebDriver.Internal
 import Data.Aeson
 import Network.HTTP (RequestMethod(..))
+import Network.HTTP.Base (Request)
+import Data.ByteString.Lazy (ByteString)
 
 import Data.Text (Text)
 
@@ -77,13 +79,16 @@ data WDSession = WDSession {
                              -- and closed automatically with
                              -- 'Test.WebDriver.runSession'
                            , wdSessId   :: Maybe SessionId
-                           } deriving (Eq, Show)
+                             -- |The last HTTP request issued by this session. 
+                           , lastHTTPRequest :: Maybe (Request ByteString)
+                           } deriving (Show)
 
 instance Default WDSession where
-  def = WDSession { wdHost     = "127.0.0.1"
-                  , wdPort     = 4444
-                  , wdBasePath = "/wd/hub"
-                  , wdSessId   = Nothing
+  def = WDSession { wdHost          = "127.0.0.1"
+                  , wdPort          = 4444
+                  , wdBasePath      = "/wd/hub"
+                  , wdSessId        = Nothing
+                  , lastHTTPRequest = Nothing
                   }
 
 {- |A default session connects to localhost on port 4444, and hasn't been

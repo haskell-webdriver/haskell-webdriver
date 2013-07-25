@@ -70,12 +70,17 @@ mkRequest headers method wdPath args = do
                                              ]
                     }
   r <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
+  modifySession $ \s -> s {lastHTTPRequest = Just req} -- update lastHTTPRequest field
   return r
 
 handleHTTPErr :: SessionState s => Response ByteString -> s ()
 handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
   case code of
-    (4,_,_)  -> err UnknownCommand
+    (4,_,_)  -> do
+      lastReq <- lastHTTPRequest <$> getSession
+            
+      throwIO . UnknownCommand . maybe reason show  
+        $ lastReq
     (5,_,_)  ->
       case findHeader HdrContentType r of
         Just ct
@@ -190,7 +195,7 @@ instance Exception FailedCommand
 -- |This exception encapsulates a broad variety of exceptions that can
 -- occur when a command fails.
 data FailedCommand = FailedCommand FailedCommandType FailedCommandInfo
-                   deriving (Eq, Show, Typeable)
+                   deriving (Show, Typeable)
 
 -- |The type of failed command exception that occured.
 data FailedCommandType = NoSuchElement
@@ -237,7 +242,6 @@ data FailedCommandInfo =
                       -- |A stack trace of the exception.
                     , errStack  :: [StackFrame]
                     }
-  deriving (Eq)
 
 -- |Provides a readable printout of the error information, useful for
 -- logging.
