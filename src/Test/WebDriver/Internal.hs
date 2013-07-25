@@ -77,8 +77,7 @@ handleHTTPErr :: SessionState s => Response ByteString -> s ()
 handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
   case code of
     (4,_,_)  -> do
-      lastReq <- lastHTTPRequest <$> getSession
-            
+      lastReq <- lastHTTPRequest <$> getSession            
       throwIO . UnknownCommand . maybe reason show  
         $ lastReq
     (5,_,_)  ->
