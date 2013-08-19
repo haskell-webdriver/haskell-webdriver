@@ -1,5 +1,17 @@
 #Change Log
 
+##upcoming version
+###API changes
+* added many new Internet Explorer capabilities
+* added additionalCaps to Capabilities, which allows support for non-standard capabilities
+
+###new features
+* new command getApplicationCacheStatus supported
+
+###bug fixes
+* internal request URLs are now properly percent-encoded
+* improved handling of browser-specific capabilities 
+
 ##hs-webdriver 0.5.1
 ###API changes
 * Test.WebDriver.Internal.FailedCommandInfo now stores screenshots as lazy bytestrings
