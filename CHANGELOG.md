@@ -4,6 +4,7 @@
 ###API changes
 * added many new Internet Explorer capabilities
 * added additionalCaps to Capabilities, which allows support for non-standard capabilities
+* Browser type now supports non-standard browsers via the new Browser constructor
 
 ###new features
 * new command getApplicationCacheStatus supported
