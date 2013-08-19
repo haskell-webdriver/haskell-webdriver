@@ -5,9 +5,11 @@
 * added many new Internet Explorer capabilities
 * added additionalCaps to Capabilities, which allows support for non-standard capabilities
 * Browser type now supports non-standard browsers via the new Browser constructor
+* added support for the new unexpectedAlertBehaviour capability
 
 ###new features
 * new command getApplicationCacheStatus supported
+* error reporting for unknown commands now slightly improved
 
 ###bug fixes
 * internal request URLs are now properly percent-encoded
