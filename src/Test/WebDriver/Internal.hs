@@ -35,6 +35,7 @@ import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.String (fromString)
 import Data.Word (Word, Word8)
+import qualified Data.HashMap.Strict as STR
 
 mkWDUri :: (SessionState s) => String -> s URI
 mkWDUri wdPath = do 
@@ -69,8 +70,8 @@ mkRequest headers method wdPath args = do
                                                . show . LBS.length $ body
                                              ]
                     }
-  r <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
-  return r
+  liftBase (simpleHTTP req) >>=
+     either (throwIO . HTTPConnError) return
 
 handleHTTPErr :: SessionState s => Response ByteString -> s ()
 handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
@@ -93,21 +94,39 @@ handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
       err errType = throwIO $ errType reason
 
 handleHTTPResp ::  (SessionState s, FromJSON a) => Response ByteString -> s a
-handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
-  case code of
-    (2,0,4) -> noReturn
-    (3,0,x)
-      | x `elem` [2,3] -> 
-        fromJSON' =<< maybe statusErr (return . String . fromString)
-        (findHeader HdrLocation resp)
-      where
-        statusErr = throwIO . HTTPStatusUnknown code
-                             $ (LBS.unpack body)
-    other
-      | LBS.null body -> noReturn
-      | otherwise -> fromJSON' . rspVal =<< parseJSON' body
-  where
-    noReturn = fromJSON' Null
+handleHTTPResp resp@Response{rspBody = body, rspCode = code} = 
+        
+                  case code  of
+                    (2,0,4) -> noReturn
+                    (2,0,0) -> do
+                                 ses <- getSession 
+                                 case wdSessId ses of
+                                   Nothing -> fromJSON' $ frombody $ eitherDecode body
+                                   _ -> others
+                                            
+                    (3,0,x)
+                      | x `elem` [2,3] -> 
+                        fromJSON' =<< maybe statusErr (return . String . fromString)
+                        (findHeader HdrLocation resp)  
+                     
+                      where
+                        statusErr = throwIO . HTTPStatusUnknown code
+                                             $ LBS.unpack body
+                    _ -> others
+                      
+                  where
+                    noReturn = fromJSON' Null
+                    
+                    frombody :: Either String Object -> Value
+                    frombody (Right obj) = fromMaybe (error "sessionId property not found")
+                                              $ STR.lookup "sessionId" obj
+                    frombody (Left  str) = error str
+                    
+                    others = if LBS.null body
+                             then
+                               noReturn
+                             else
+                               fromJSON' . rspVal =<< parseJSON' body
 
 handleJSONErr :: SessionState s => WDResponse -> s ()
 handleJSONErr WDResponse{rspStatus = 0} = return ()
@@ -265,7 +284,7 @@ instance Show FailedCommandInfo where
 mkFailedCommandInfo :: SessionState s => String -> s FailedCommandInfo
 mkFailedCommandInfo m = do
   sess <- getSession
-  return $ FailedCommandInfo {errMsg = m , errSess = sess , errScreen = Nothing
+  return  FailedCommandInfo {errMsg = m , errSess = sess , errScreen = Nothing
                              , errClass  = Nothing , errStack  = [] }
 
 -- |Convenience function to throw a 'FailedCommand' locally with no server-side
