@@ -100,7 +100,7 @@ import Data.String (fromString)
 import Data.Maybe (fromMaybe)
 import qualified Data.Char as C
 
-import Prelude hiding (catch)
+import Prelude
 
 
 -- |Convenience function to handle webdriver commands with no return value
@@ -787,4 +787,4 @@ getApplicationCacheStatus = doSessCommand GET "/application_cache/status" Null
 
 -- Moving this closer to the definition of Cookie seems to cause strange compile
 -- errors, so I'm leaving it here for now.
-$( deriveToJSON (map C.toLower . drop 4) ''Cookie )
+$( deriveToJSON (defaultOptions{fieldLabelModifier = map C.toLower . drop 4}) ''Cookie )
