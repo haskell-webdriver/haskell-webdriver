@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable, RecordWildCards #-}
 module Test.WebDriver.Internal
        ( mkWDUri, mkRequest
        , handleHTTPErr, handleJSONErr, handleHTTPResp
@@ -107,9 +107,21 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
       where
         statusErr = throwIO . HTTPStatusUnknown code
                              $ (LBS.unpack body)
-    other
+    _
       | LBS.null body -> noReturn
-      | otherwise -> fromJSON' . rspVal =<< parseJSON' body
+      | otherwise -> do
+        WDResponse { .. }     <- parseJSON' body -- parse response body
+        sess@WDSession { .. } <- getSession      -- get current session state
+        case (wdSessId, (==) <$> wdSessId <*> rspSessId) of
+            -- if our monad has an uninitialized session ID, initialize it from the response object
+            (Nothing, _)    -> setSession sess { wdSessId = rspSessId }
+            -- if the response ID doesn't match our local ID, throw an error.
+            (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show rspSessId 
+                                                       ++ ") does not match local session ID (" ++ show wdSessId ++ ")"
+            -- otherwise nothing needs to be done
+            _ ->  return ()
+        fromJSON' rspVal 
+
   where
     noReturn = fromJSON' Null
 
