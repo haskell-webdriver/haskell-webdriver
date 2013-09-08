@@ -94,13 +94,14 @@ import Control.Applicative
 import Control.Monad.State.Strict
 import Control.Monad.Base
 import Control.Exception (SomeException)
-import Control.Exception.Lifted (throwIO, catch, handle)
+import Control.Exception.Lifted (throwIO, handle)
+import qualified Control.Exception.Lifted as L
 import Data.Word
 import Data.String (fromString)
 import Data.Maybe (fromMaybe)
 import qualified Data.Char as C
 
-import Prelude
+
 
 
 -- |Convenience function to handle webdriver commands with no return value
@@ -136,7 +137,7 @@ closeSession = do s <- getSession
 setImplicitWait :: WebDriver wd => Integer -> wd ()
 setImplicitWait ms =
   noReturn $ doSessCommand POST "/timeouts/implicit_wait" (object msField)
-    `catch` \(_ :: SomeException) ->
+    `L.catch` \(_ :: SomeException) ->
       doSessCommand POST "/timeouts" (object allFields)
   where msField   = ["ms" .= ms]
         allFields = ["type" .= ("implicit" :: String)] ++ msField
@@ -146,7 +147,7 @@ setImplicitWait ms =
 setScriptTimeout :: WebDriver wd => Integer -> wd ()
 setScriptTimeout ms =
   noReturn $ doSessCommand POST "/timeouts/async_script" (object msField)
-    `catch` \(_ :: SomeException) ->
+    `L.catch` \(_ :: SomeException) ->
       doSessCommand POST "/timeouts" (object allFields)
   where msField   = ["ms" .= ms]
         allFields = ["type" .= ("script" :: String)] ++ msField
