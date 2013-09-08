@@ -9,12 +9,12 @@ module Test.WebDriver.Types
          WD(..), WDSession(..), defaultSession, SessionId(..)
          -- * Capabilities and configuration
        , Capabilities(..), defaultCaps, allCaps
-       , Platform(..), ProxyType(..), UnexpectedAlertBehaviour(..)
+       , Platform(..), ProxyType(..), UnexpectedAlertBehavior(..)
          -- ** Browser-specific configuration
        , Browser(..),
          -- ** Default settings for browsers
          firefox, chrome, ie, opera, iPhone, iPad, android
-       , LogLevel(..)
+       , LogLevel(..), IELogLevel(..), IEElementScrollBehavior(..)
          -- * WebDriver objects and command-specific types
        , Element(..)
        , WindowHandle(..), currentWindow
