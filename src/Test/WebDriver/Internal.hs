@@ -20,7 +20,7 @@ import Network.URI
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 
-import Data.Text as T (Text, unpack)
+import Data.Text as T (Text, unpack, splitOn, null)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null)
 import qualified Data.ByteString.Base64.Lazy as B64
@@ -101,12 +101,14 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
   case code of
     (2,0,4) -> noReturn
     (3,0,x)
-      | x `elem` [2,3] -> 
-        fromJSON' =<< maybe statusErr (return . String . fromString)
-        (findHeader HdrLocation resp)
-      where
-        statusErr = throwIO . HTTPStatusUnknown code
-                             $ (LBS.unpack body)
+      | x `elem` [2,3] ->
+        case findHeader HdrLocation resp of        
+          Nothing -> throwIO . HTTPStatusUnknown code
+                     $ (LBS.unpack body)
+          Just loc -> do
+            let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ loc
+            modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
+            fromJSON' . String $ sessId
     _
       | LBS.null body -> noReturn
       | otherwise -> do

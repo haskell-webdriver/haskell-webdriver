@@ -84,7 +84,7 @@ import Data.Aeson
 import Data.Aeson.Types
 import Data.Aeson.TH
 import qualified Data.Text as T
-import Data.Text (Text, splitOn, append, toUpper, toLower)
+import Data.Text (Text, append, toUpper, toLower)
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString)
 import Network.URI hiding (path)  -- suppresses warnings
@@ -108,13 +108,14 @@ import qualified Data.Char as C
 noReturn :: WebDriver wd => wd NoReturn -> wd ()
 noReturn = void
 
--- |Create a new session with the given 'Capabilities'. This command
--- resets the current session ID to that of the new session.
+-- |Convenience function to ignore result of a webdriver command
+ignoreReturn :: WebDriver wd => wd Value -> wd ()
+ignoreReturn = void
+
+-- |Create a new session with the given 'Capabilities'.
 createSession :: WebDriver wd => Capabilities -> wd WDSession
 createSession caps = do
-  sessUrl <- doCommand POST "/session" . single "desiredCapabilities" $ caps
-  let sessId = SessionId . last . filter (not . T.null) . splitOn "/" $  sessUrl
-  modifySession $ \sess -> sess {wdSessId = Just sessId}
+  ignoreReturn . doCommand POST "/session" . single "desiredCapabilities" $ caps
   getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
