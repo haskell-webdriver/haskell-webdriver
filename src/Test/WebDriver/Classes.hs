@@ -79,7 +79,7 @@ data WDSession = WDSession {
                              -- and closed automatically with
                              -- 'Test.WebDriver.runSession'
                            , wdSessId   :: Maybe SessionId
-                             -- |The last HTTP request issued by this session. 
+                             -- |The last HTTP request issued by this session, if any. 
                            , lastHTTPRequest :: Maybe (Request ByteString)
                            } deriving (Show)
 

@@ -19,8 +19,8 @@ import Control.Exception.Lifted
 import Control.Monad.CatchIO (MonadCatchIO)
 import Control.Applicative
 
-{- |A monadic interface to the WebDriver server. This monad is a simple, strict
-layer over 'IO', threading session information between sequential commands
+{- |A monadic interface to the WebDriver server. This monad is simply a
+    state monad transformer over 'IO', threading session information between sequential webdriver commands
 -}
 newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadCatchIO)
