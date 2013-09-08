@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable, RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable #-}
 module Test.WebDriver.Internal
        ( mkWDUri, mkRequest
        , handleHTTPErr, handleJSONErr, handleHTTPResp
@@ -112,17 +112,18 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
     _
       | LBS.null body -> noReturn
       | otherwise -> do
-        WDResponse { .. }     <- parseJSON' body -- parse response body
-        sess@WDSession { .. } <- getSession      -- get current session state
-        case (wdSessId, (==) <$> wdSessId <*> rspSessId) of
+        sess@WDSession { wdSessId = sessId}   <- getSession      -- get current session state
+        WDResponse { rspSessId = sessId'
+                   , rspVal = val}  <- parseJSON' body -- parse response body
+        case (sessId, (==) <$> sessId <*> sessId') of
             -- if our monad has an uninitialized session ID, initialize it from the response object
-            (Nothing, _)    -> putSession sess { wdSessId = rspSessId }
+            (Nothing, _)    -> putSession sess { wdSessId = sessId' }
             -- if the response ID doesn't match our local ID, throw an error.
-            (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show rspSessId 
-                                                       ++ ") does not match local session ID (" ++ show wdSessId ++ ")"
+            (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show sessId' 
+                                                       ++ ") does not match local session ID (" ++ show sessId ++ ")"
             -- otherwise nothing needs to be done
             _ ->  return ()
-        fromJSON' rspVal 
+        fromJSON' val
 
   where
     noReturn = fromJSON' Null
