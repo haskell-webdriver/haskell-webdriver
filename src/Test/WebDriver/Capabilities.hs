@@ -77,7 +77,7 @@ data Capabilities =
                  -- events when simulating user input.
                , nativeEvents             :: Maybe Bool
                  -- |How the session should handle unexpected alerts.
-               , unexpectedAlertBehaviour :: Maybe UnexpectedAlertBehaviour
+               , unexpectedAlertBehavior :: Maybe UnexpectedAlertBehavior
                  -- |A list of ('Text', 'Value') pairs specifying additional non-standard capabilities.
                , additionalCaps           :: [Pair]
                } deriving (Eq, Show)
@@ -99,7 +99,7 @@ instance Default Capabilities where
                      , acceptSSLCerts = Nothing
                      , nativeEvents = Nothing
                      , proxy = UseSystemSettings
-                     , unexpectedAlertBehaviour = Nothing
+                     , unexpectedAlertBehavior = Nothing
                      , additionalCaps = []
                      }
 
@@ -146,7 +146,7 @@ instance ToJSON Capabilities where
              , "rotatable" .= rotatable
              , "acceptSslCerts" .= acceptSSLCerts
              , "nativeEvents" .= nativeEvents
-             , "unexpectedAlertBehaviour" .= unexpectedAlertBehaviour
+             , "unexpectedAlertBehavior" .= unexpectedAlertBehavior
              ] 
     ++ browserInfo
     ++ additionalCaps
@@ -600,23 +600,23 @@ instance ToJSON ProxyType where
       ,"httpProxy" .= http
       ]
 
-data UnexpectedAlertBehaviour = AcceptAlert | DismissAlert | IgnoreAlert 
+data UnexpectedAlertBehavior = AcceptAlert | DismissAlert | IgnoreAlert 
                               deriving (Bounded, Enum, Eq, Ord, Read, Show)
                                        
-instance ToJSON UnexpectedAlertBehaviour where
+instance ToJSON UnexpectedAlertBehavior where
   toJSON AcceptAlert  = String "accept"
   toJSON DismissAlert = String "dismiss"
   toJSON IgnoreAlert  = String "ignore"
   
-instance FromJSON UnexpectedAlertBehaviour where
+instance FromJSON UnexpectedAlertBehavior where
   parseJSON (String s) = 
     return $ case s of
       "accept"  -> AcceptAlert
       "dismiss" -> DismissAlert
       "ignore"  -> IgnoreAlert
       err       -> throw . BadJSON 
-                   $ "Invalid string value for UnexpectedAlertBehaviour: " ++ show err
-  parseJSON v = typeMismatch "UnexpectedAlertBehaviour" v
+                   $ "Invalid string value for UnexpectedAlertBehavior: " ++ show err
+  parseJSON v = typeMismatch "UnexpectedAlertBehavior" v
 
 -- |Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
 data LogLevel = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
