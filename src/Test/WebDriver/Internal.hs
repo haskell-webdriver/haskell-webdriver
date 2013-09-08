@@ -114,7 +114,7 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
         sess@WDSession { .. } <- getSession      -- get current session state
         case (wdSessId, (==) <$> wdSessId <*> rspSessId) of
             -- if our monad has an uninitialized session ID, initialize it from the response object
-            (Nothing, _)    -> setSession sess { wdSessId = rspSessId }
+            (Nothing, _)    -> putSession sess { wdSessId = rspSessId }
             -- if the response ID doesn't match our local ID, throw an error.
             (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show rspSessId 
                                                        ++ ") does not match local session ID (" ++ show wdSessId ++ ")"
