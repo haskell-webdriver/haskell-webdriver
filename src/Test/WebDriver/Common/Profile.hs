@@ -62,7 +62,7 @@ data Profile b = Profile
                    -- there is one unique source path going to each
                    -- destination path.
                    profileFiles   :: HM.HashMap FilePath FilePath
-                   -- |A map of Firefox preferences. These are the settings
+                   -- |A map of profile preferences. These are the settings
                    -- found in the profile's prefs.js, and entries found in
                    -- about:config
                  , profilePrefs  :: HM.HashMap Text ProfilePref
