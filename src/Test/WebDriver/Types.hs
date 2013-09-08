@@ -1,8 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveDataTypeable,
-    TemplateHaskell, OverloadedStrings, ExistentialQuantification,
-    MultiParamTypeClasses, TypeFamilies,
-    RecordWildCards
-  #-}
 {-# OPTIONS_HADDOCK not-home #-}
 module Test.WebDriver.Types
        ( -- * WebDriver sessions
