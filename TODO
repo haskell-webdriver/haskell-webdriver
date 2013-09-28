@@ -2,8 +2,6 @@ in upcoming releases
 
 -- fix loadProfile so that it doesn't cause an overlap with user addExtension calls
 
--- add support for new experimental IE capabilities
-
 -- add support for Opera profiles
 
 -- improve documentation
