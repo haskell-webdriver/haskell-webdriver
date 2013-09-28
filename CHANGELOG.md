@@ -1,6 +1,6 @@
 #Change Log
 
-##upcoming version
+##0.5.2
 ###API changes
 * added many new Internet Explorer capabilities
 * added additionalCaps to Capabilities, which allows support for non-standard capabilities
@@ -12,8 +12,10 @@
 * error reporting for unknown commands now slightly improved
 
 ###bug fixes
-* internal request URLs are now properly percent-encoded
-* improved handling of browser-specific capabilities 
+* internal request URIs are now properly percent-encoded
+* improved handling of browser-specific capabilities
+* fixed incompatability with new session creation protocol changes introduced in selenium 2.35
+* updated to work with Aeson 0.6.2 and onward
 
 ##hs-webdriver 0.5.1
 ###API changes
