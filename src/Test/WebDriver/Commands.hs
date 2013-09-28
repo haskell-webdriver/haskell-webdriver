@@ -365,8 +365,10 @@ setCookie = noReturn . doSessCommand POST "/cookie" . single "cookie"
 -- |Delete a cookie. This will do nothing is the cookie isn't visible to the
 -- current page.
 deleteCookie :: WebDriver wd => Cookie -> wd ()
-deleteCookie c = 
-  noReturn $ doSessCommand DELETE ("/cookie/" `append` urlEncode (cookName c)) Null
+deleteCookie c = noReturn $ doSessCommand DELETE ("/cookie/" `append` urlEncode (cookName c)) Null
+
+deleteCookieByName :: WebDriver wd => Text -> wd ()
+deleteCookieByName n = noReturn $ doSessCommand DELETE ("/cookie/" `append` n) Null
 
 -- |Delete all visible cookies on the current page.
 deleteVisibleCookies :: WebDriver wd => wd ()
