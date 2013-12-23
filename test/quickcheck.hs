@@ -25,7 +25,7 @@ session = defaultSession
 main :: IO ()
 main = do
     session :: WDSession <- runWD session (createSession defaultCaps)
-    runWD session $ openPage "http://openstreetmap.org/"
+    runWD session $ openPage "about:blank"
     quickCheck $ prop_cutArray session
 
 
