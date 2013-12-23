@@ -45,16 +45,16 @@ cutArrayJS = "// Array Remove - By John Resig (MIT Licensed)" :
 
 -- | reference implementation in haskell
 cutArray :: CutArray -> [Int]
-cutArray tc@(CutArray arrayIn a b) = f arrayIn a b
+cutArray (CutArray i a _)         | abs(a) > (length i - 1)  = error "cutArray: a out of bounds!"
+cutArray (CutArray i _ (Just b))  | abs(b) > (length i - 1)  = error "cutArray: b out of bounds!"
+cutArray (CutArray i a (Just b))  | a * b < 0                = error ("cutArray: a and b must have same sign! " ++ show (a, b))
+cutArray (CutArray i a (Just b))  | abs(b) < abs(a)          = error ("cutArray: negative range! " ++ show (a, b))
+cutArray (CutArray i a b) = f i a b
   where
-    f i a _         | abs(a) > (length i - 1)  = error "cutArray: a out of bounds!"
-    f i _ (Just b)  | abs(b) > (length i - 1)  = error "cutArray: b out of bounds!"
-    f i a (Just b)  | a * b < 0                = error ("cutArray: a and b must have same sign! " ++ show (a, b))
-    f i a (Just b)  | abs(b) < abs(a)          = error ("cutArray: negative range! " ++ show (a, b))
-    f i a Nothing                              = f i a (Just a)
-    f i a (Just b)  | a >= 0                   = take a i ++ drop (b + 1) i
-    f i a (Just b)  | a < 0                    = reverse (f (reverse i) (-b - 1) (Just (-a - 1)))
-    f i a (Just b)  | a < 0  && b > a          = error "cutArray: internal error!"
+    f i a Nothing = f i a (Just a)
+    f i a (Just b) = if a >= 0
+                       then take a i ++ drop (b + 1) i
+                       else reverse (f (reverse i) (-b - 1) (Just (-a - 1)))
 
 
 -- | data type with input for cutArray
