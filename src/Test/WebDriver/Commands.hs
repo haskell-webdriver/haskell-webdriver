@@ -217,7 +217,7 @@ returned as the result of asyncJS. A result of Nothing indicates that the
 Javascript function timed out (see 'setScriptTimeout')
 -}
 asyncJS :: (WebDriver wd, FromJSON a) => [JSArg] -> Text -> wd (Maybe a)
-asyncJS a s = handle timeout $ fromJSON' =<< getResult
+asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
   where
     getResult = doSessCommand POST "/execute_async" . pair ("args", "script")
                 $ (a,s)
