@@ -86,7 +86,7 @@ waitWhile' = wait' handler
       b <- (wd >> return Nothing) `catches` [Handler handleFailedCommand
                                             ,Handler handleExpectFailed
                                             ]
-      maybe (return ()) retry b
+      maybe (retry "waitWhile: action did not fail") (\_ -> return ()) b
       where
         handleFailedCommand e@(FailedCommand NoSuchElement _) = return (Just $ show e)
         handleFailedCommand err = throwIO err
