@@ -159,6 +159,7 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
     30  -> e IMENotAvailable
     31  -> e IMEEngineActivationFailed
     32  -> e InvalidSelector
+    33  -> e SessionNotCreated
     34  -> e MoveTargetOutOfBounds
     51  -> e InvalidXPathSelector
     52  -> e InvalidXPathSelectorReturnType
@@ -233,6 +234,7 @@ data FailedCommandType = NoSuchElement
                        | IMENotAvailable
                        | IMEEngineActivationFailed
                        | InvalidSelector
+                       | SessionNotCreated
                        | MoveTargetOutOfBounds
                        | InvalidXPathSelector
                        | InvalidXPathSelectorReturnType
