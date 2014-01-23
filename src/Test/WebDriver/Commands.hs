@@ -148,7 +148,7 @@ setImplicitWait ms =
 setScriptTimeout :: WebDriver wd => Integer -> wd ()
 setScriptTimeout ms =
   noReturn $ doSessCommand POST "/timeouts/async_script" (object msField)
-    `L.catch` \(_ :: SomeException) ->
+    `L.catch` \( _ :: SomeException) ->
       doSessCommand POST "/timeouts" (object allFields)
   where msField   = ["ms" .= ms]
         allFields = ["type" .= ("script" :: String)] ++ msField
@@ -221,7 +221,8 @@ asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
   where
     getResult = doSessCommand POST "/execute_async" . pair ("args", "script")
                 $ (a,s)
-    timeout (FailedCommand Timeout _) = return Nothing
+    timeout (FailedCommand Timeout _)       = return Nothing
+    timeout (FailedCommand ScriptTimeout _) = return Nothing
     timeout err = throwIO err
 
 -- |Grab a screenshot of the current page as a PNG image
