@@ -37,7 +37,7 @@ module Test.WebDriver.Commands
        , focusFrame, FrameSelector(..)
          -- * Cookies
        , Cookie(..), mkCookie
-       , cookies, setCookie, deleteCookie, deleteVisibleCookies
+       , cookies, setCookie, deleteCookie, deleteVisibleCookies, deleteCookieByName
          -- * Alerts
        , getAlertText, replyToAlert, acceptAlert, dismissAlert
          -- * Mouse gestures
