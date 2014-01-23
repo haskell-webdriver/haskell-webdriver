@@ -61,16 +61,7 @@ waitUntil = waitUntil' 500000
 -- |Similar to 'waitUntil' but allows you to also specify the poll frequency
 -- of the 'WD' action. The frequency is expressed as an integer in microseconds.
 waitUntil' :: SessionState m => Int -> Double -> m a -> m a
-waitUntil' = wait' handler
-  where
-    handler retry = (`catches` [Handler handleFailedCommand
-                               ,Handler handleExpectFailed]
-                    )
-      where
-        handleFailedCommand e@(FailedCommand NoSuchElement _) = retry (show e)
-        handleFailedCommand err = throwIO err
-
-        handleExpectFailed (e :: ExpectFailed) = retry (show e)
+waitUntil' = waitFailure id (\_ -> return)
 
 -- |Like 'waitUntil', but retries the action until it fails or until the timeout
 -- is exceeded.
@@ -80,18 +71,32 @@ waitWhile = waitWhile' 500000
 -- |Like 'waitUntil'', but retries the action until it either fails or
 -- until the timeout is exceeded.
 waitWhile' :: SessionState m => Int -> Double -> m a -> m ()
-waitWhile' = wait' handler
-  where
-    handler retry wd = do
-      b <- (wd >> return Nothing) `catches` [Handler handleFailedCommand
-                                            ,Handler handleExpectFailed
-                                            ]
-      maybe (retry "waitWhile: action did not fail") (\_ -> return ()) b
-      where
-        handleFailedCommand e@(FailedCommand NoSuchElement _) = return (Just $ show e)
-        handleFailedCommand err = throwIO err
+waitWhile' =
+  waitFailure (\_ _ -> return ())
+              (\retry _ -> retry "waitWhile: action did not fail")
 
-        handleExpectFailed (e :: ExpectFailed) = return (Just $ show e)
+instance Monad m => Functor (Handler m) where
+  fmap f (Handler h) = Handler (\e -> liftM f (h e))
+
+catchesEither :: MonadBaseControl IO m => m b -> [Handler m a] -> m (Either a b)
+catchesEither m handlers = liftM Right m `catches` map (fmap Left) handlers
+
+waitFailure :: SessionState m =>
+               ((String -> m b) -> String -> m b)
+            -> ((String -> m b) -> a -> m b)
+            -> Int -> Double -> m a -> m b
+waitFailure failure success = wait' handler
+ where
+  handler retry wd = do
+    e <- wd `catchesEither` [Handler handleFailedCommand
+                            ,Handler handleExpectFailed
+                            ]
+    either (failure retry) (success retry) e
+   where
+    handleFailedCommand e@(FailedCommand NoSuchElement _) = return (show e)
+    handleFailedCommand err = throwIO err
+
+    handleExpectFailed (e :: ExpectFailed) = return (show e)
 
 wait' :: SessionState m =>
          ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
