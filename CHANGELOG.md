@@ -1,5 +1,15 @@
 #Change Log
 
+##0.5.3
+
+###new features
+* SessionNotCreated constructor added to FailedCommandType
+* new command deleteCookieByName added
+
+###bug fixes
+* asyncJS now properly distinguishes between a null return and a script timeout
+* fixed a change in waitWhile causing the opposite of expected behavior
+
 ##0.5.2
 ###API changes
 * added many new Internet Explorer capabilities
