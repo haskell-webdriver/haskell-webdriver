@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable #-}
 module Test.WebDriver.Internal
-       ( mkWDUri, mkRequest
+       ( mkWDUri, mkRequest, sendHTTPRequest
        , handleHTTPErr, handleJSONErr, handleHTTPResp
        , WDResponse(..)
 
@@ -36,6 +36,7 @@ import Data.Maybe (fromMaybe)
 import Data.String (fromString)
 import Data.Word (Word, Word8)
 
+-- |Take a URL path and construct a full URL using the current session state
 mkWDUri :: (SessionState s) => String -> s URI
 mkWDUri wdPath = do 
   WDSession{wdHost = host, 
@@ -51,24 +52,30 @@ mkWDUri wdPath = do
     (_, Nothing) -> throwIO $ InvalidURL relPath
     (Just baseURI, Just relURI) -> return $ relURI `relativeTo` baseURI
 
+-- |Constructs a 'Request' value when given a list of headers, HTTP request method, and URL path
 mkRequest :: (SessionState s, ToJSON a) =>
-             [Header] -> RequestMethod -> Text -> a -> s (Response ByteString)
+             [Header] -> RequestMethod -> Text -> a -> s (Request ByteString)
 mkRequest headers method wdPath args = do
   uri <- mkWDUri (T.unpack wdPath)
   let body = case toJSON args of
         Null  -> ""   --passing Null as the argument indicates no request body
         other -> encode other
-      req = Request { rqURI = uri             --todo: normalization of headers
-                    , rqMethod = method
-                    , rqBody = body
-                    , rqHeaders = headers ++ [ Header HdrAccept
-                                               "application/json;charset=UTF-8"
-                                             , Header HdrContentType
-                                               "application/json;charset=UTF-8"
-                                             , Header HdrContentLength
-                                               . show . LBS.length $ body
-                                             ]
-                    }
+  return Request { rqURI = uri             --todo: normalization of headers
+                 , rqMethod = method
+                 , rqBody = body
+                 , rqHeaders = headers ++ [ Header HdrAccept
+                                            "application/json;charset=UTF-8"
+                                          , Header HdrContentType
+                                            "application/json;charset=UTF-8"
+                                          , Header HdrContentLength
+                                            . show . LBS.length $ body
+                                          ]
+                 }
+
+
+
+sendHTTPRequest :: SessionState s => Request ByteString -> s (Response ByteString) 
+sendHTTPRequest req = do
   r <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
   modifySession $ \s -> s {lastHTTPRequest = Just req} -- update lastHTTPRequest field
   return r
