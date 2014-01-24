@@ -1,5 +1,9 @@
 #Change Log
 
+##0.5.3.1
+###bug fixes
+* fixed compilation error with aeson 0.7 and greater
+
 ##0.5.3
 
 ###new features
