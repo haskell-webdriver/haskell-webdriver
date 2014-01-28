@@ -28,7 +28,12 @@ import System.FilePath hiding (addExtension, hasExtension)
 import Codec.Archive.Zip
 import Data.Aeson
 import Data.Aeson.Types
+
+#if MIN_VERSION_aeson(0,7,0)
+import Data.Scientific
+#else
 import Data.Attoparsec.Number (Number(..))
+#endif
 
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text, pack)
@@ -36,6 +41,7 @@ import Data.ByteString.Lazy (ByteString)
 --import qualified Data.ByteString as SBS
 import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Base64.Lazy as B64
+import qualified Data.Text.Lazy.Encoding as TL
 
 
 import Data.Fixed
@@ -75,10 +81,10 @@ newtype PreparedProfile b = PreparedProfile ByteString
   deriving (Eq, Show)
 
 instance FromJSON (PreparedProfile s) where
-  parseJSON v = PreparedProfile <$> parseJSON v
+  parseJSON v = PreparedProfile . TL.encodeUtf8 <$> parseJSON v
 
 instance ToJSON (PreparedProfile s) where
-  toJSON (PreparedProfile s) = toJSON s
+  toJSON (PreparedProfile s) = toJSON $ TL.decodeUtf8 s
 
 -- |A profile preference value. This is the subset of JSON values that excludes
 -- arrays, objects, and null.
@@ -98,8 +104,13 @@ instance ToJSON ProfilePref where
 instance FromJSON ProfilePref where
   parseJSON (String s) = return $ PrefString s
   parseJSON (Bool b) = return $ PrefBool b
+#if MIN_VERSION_aeson(0,7,0)
+  parseJSON (Number s) | base10Exponent s >= 0 = return $ PrefInteger (coefficient s * 10^(base10Exponent s))
+                       | otherwise = return $ PrefDouble $ realToFrac s
+#else
   parseJSON (Number (I i)) = return $ PrefInteger i
   parseJSON (Number (D d)) = return $ PrefDouble d
+#endif
   parseJSON other = typeMismatch "ProfilePref" other
 
 instance Exception ProfileParseError
