@@ -89,6 +89,7 @@ import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString)
 import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
+import qualified Data.Text.Lazy.Encoding as TL
 
 import Control.Applicative
 import Control.Monad.State.Strict
@@ -231,7 +232,7 @@ screenshot = B64.decodeLenient <$> screenshotBase64
 
 -- |Grab a screenshot as a base-64 encoded PNG image. This is the protocol-defined format.
 screenshotBase64 :: WebDriver wd => wd LBS.ByteString
-screenshotBase64 = doSessCommand GET "/screenshot" Null
+screenshotBase64 = TL.encodeUtf8 <$> doSessCommand GET "/screenshot" Null
 
 availableIMEEngines :: WebDriver wd => wd [Text]
 availableIMEEngines = doSessCommand GET "/ime/available_engines" Null
@@ -695,7 +696,7 @@ uploadRawFile path t str = uploadZipEntry (toEntry path t str)
 -- the zip entry sent across network.
 uploadZipEntry :: WebDriver wd => Entry -> wd ()
 uploadZipEntry = noReturn . doSessCommand POST "/file" . single "file"
-                 . B64.encode . fromArchive . (`addEntryToArchive` emptyArchive)
+                 . TL.decodeUtf8 . B64.encode . fromArchive . (`addEntryToArchive` emptyArchive)
 
 
 -- |Get the current number of keys in a web storage area.

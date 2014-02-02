@@ -24,6 +24,7 @@ import Data.Text as T (Text, unpack, splitOn, null)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null)
 import qualified Data.ByteString.Base64.Lazy as B64
+import qualified Data.Text.Lazy.Encoding as TL
 
 import Control.Monad.Base
 import Control.Exception.Lifted (throwIO)
@@ -322,7 +323,7 @@ instance FromJSON FailedCommandInfo where
   parseJSON (Object o) =
     FailedCommandInfo <$> (req "message" >>= maybe (return "") return)
                       <*> pure undefined
-                      <*> opt "screen"     Nothing
+                      <*> (fmap TL.encodeUtf8 <$> opt "screen" Nothing)
                       <*> opt "class"      Nothing
                       <*> opt "stackTrace" []
     where req :: FromJSON a => Text -> Parser a
