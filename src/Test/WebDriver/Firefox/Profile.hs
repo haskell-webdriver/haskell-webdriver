@@ -38,7 +38,7 @@ import qualified Data.ByteString.Lazy.Char8 as LBS
 import System.FilePath hiding (addExtension, hasExtension)
 import System.Directory
 import System.IO.Temp (createTempDirectory)
-import qualified System.File.Tree as FS
+import qualified System.Directory.Tree as DS
 
 import Control.Monad
 import Control.Monad.Base
@@ -46,9 +46,10 @@ import Control.Monad.Trans.Control
 import Control.Exception.Lifted hiding (try)
 import Control.Applicative
 import Control.Arrow
-import Data.List
 
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
+#endif
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
 data Firefox
@@ -167,8 +168,9 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
       if isDir
         then do
           createDirectoryIfMissing True dest `catch` ignoreIOException
-          FS.getDirectory src
-            >>= handle ignoreIOException . FS.copyTo_ dest
+          (_ DS.:/ dir) <- DS.readDirectoryWithL LBS.readFile src
+          handle ignoreIOException . void
+              $ DS.writeDirectoryWith LBS.writeFile (dest DS.:/ dir)
         else do
           let dir = takeDirectory dest
           when (not . null $ dir) $
