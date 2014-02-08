@@ -46,9 +46,10 @@ import Control.Monad.Trans.Control
 import Control.Exception.Lifted hiding (try)
 import Control.Applicative
 import Control.Arrow
-import Data.List
 
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
+#endif
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
 data Firefox

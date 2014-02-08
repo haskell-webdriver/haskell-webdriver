@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, ScopedTypeVariables, FlexibleContexts #-}
+{-# LANGUAGE CPP, DeriveDataTypeable, ScopedTypeVariables, FlexibleContexts #-}
 module Test.WebDriver.Commands.Wait
        ( -- * Wait on expected conditions
          waitUntil, waitUntil'
@@ -12,7 +12,6 @@ module Test.WebDriver.Commands.Wait
        ) where
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Classes
-import Control.Monad
 import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted
@@ -20,7 +19,10 @@ import Control.Concurrent
 import Data.Time.Clock
 import Data.Typeable
 import Control.Conditional (ifM, (<||>), (<&&>), notM)
+
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
+#endif
 
 instance Exception ExpectFailed
 -- |An exception representing the failure of an expected condition.
