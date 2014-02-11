@@ -1,5 +1,10 @@
 #Change Log
 
+##0.5.3.2
+###bug fixes
+* fixed remaining compilation problems with aeson. now supports aeson >= 0.6.2.0 && < 0.8
+* now depends on directory-tree instead of filesystem-trees. this fixes several problems with firefox/chrome profile support.
+
 ##0.5.3.1
 ###bug fixes
 * fixed compilation error with aeson 0.7 and greater
