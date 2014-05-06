@@ -46,7 +46,7 @@ class MonadBaseControl IO s => SessionState s where
 -- operation underlying all of the high-level commands exported in
 -- "Test.WebDriver.Commands". For more information on the wire protocol see
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
-class SessionState wd => WebDriver wd where
+class WebDriver wd where
   doCommand :: (ToJSON a, FromJSON b) =>
                 RequestMethod -- ^HTTP request method
                 -> Text       -- ^URL of request
@@ -55,6 +55,29 @@ class SessionState wd => WebDriver wd where
                               -- anything that converts to Data.Aeson.Null will 
                               -- result in an empty request body.
                 -> wd b       -- ^The JSON result of the HTTP request.
+
+  -- |This a convenient wrapper around 'doCommand' that automatically prepends
+  -- the session URL parameter to the wire command URL. For example, passing
+  -- a URL of \"/refresh\" will expand to \"/session/:sessionId/refresh\", where
+  -- :sessionId is a URL parameter as described in
+  -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
+  doSessCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+                    RequestMethod -> Text -> a -> wd b
+
+  -- |A wrapper around 'doSessCommand' to create element URLs.
+  -- For example, passing a URL of "/active" will expand to
+  -- \"/session/:sessionId/element/:id/active\", where :sessionId and :id are URL
+  -- parameters as described in the wire protocol.
+  doElemCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+                    RequestMethod -> Element -> Text -> a -> wd b
+
+  -- |A wrapper around 'doSessCommand' to create window handle URLS.
+  -- For example, passing a URL of \"/size\" will expand to
+  -- \"/session/:sessionId/window/:windowHandle/\", where :sessionId and
+  -- :windowHandle are URL parameters as described in the wire protocol
+  doWinCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+                   RequestMethod -> WindowHandle -> Text -> a -> wd b
+
 
 modifySession :: SessionState s => (WDSession -> WDSession) -> s ()
 modifySession f = getSession >>= putSession . f

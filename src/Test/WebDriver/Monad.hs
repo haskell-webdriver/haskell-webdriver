@@ -25,6 +25,40 @@ import Control.Applicative
 newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadCatchIO)
 
+
+
+{- |Free monad.  This does not actually execute the webdriver session,
+    but generates a python script that does.
+-}
+newtype WDF a = WDF (StateT [String] IO a)
+  deriving (...)
+
+{- |This is a bit silly, but it's enough to demonstrate my
+    requirements.
+-}
+newtype UnitTest = UnitTest [String]
+  deriving (Monoid, ...)
+
+instance WebDriver WDF where
+  doCommand method path args = do
+        WDF $ modify ((show (method, path, args)):)
+
+        -- FIXME: since we are not actually running the session, we
+        -- can't really return anything here.  (not sure how to fix
+        -- this...)
+
+        let JS.Success v = JS.fromJSON JS.Null
+        return v
+
+  doSessCommand = ...
+  doElemCommand = ...
+  doWinCommand = ...
+
+runWDF :: WDF a -> IO UnitTest
+runWDF = ...
+
+
+
 instance MonadBase IO WD where
   liftBase = WD . liftBase
 
@@ -47,6 +81,29 @@ instance WebDriver WD where
     res <- sendHTTPRequest req
     handleHTTPErr res
     handleHTTPResp res
+
+  doSessCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+                    RequestMethod -> Text -> a -> wd b
+  doSessCommand method path args = do
+    WDSession { wdSessId = mSessId } <- getSession
+    case mSessId of
+        Nothing -> throwIO . NoSessionId $ msg
+          where
+            msg = "doSessCommand: No session ID found for relative URL "
+                  ++ show path
+        Just (SessionId sId) -> doCommand method
+                                (T.concat ["/session/", urlEncode sId, path]) args
+
+  doElemCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+                    RequestMethod -> Element -> Text -> a -> wd b
+  doElemCommand m (Element e) path a =
+    doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
+
+  doWinCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+                   RequestMethod -> WindowHandle -> Text -> a -> wd b
+  doWinCommand m (WindowHandle w) path a =
+    doSessCommand m (T.concat ["/window/", urlEncode w, path]) a
+
 
 -- |Executes a 'WD' computation within the 'IO' monad, using the given
 -- 'WDSession'.
