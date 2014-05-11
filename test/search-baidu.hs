@@ -20,7 +20,7 @@ baidu = openPage "http://www.baidu.com/"
 
 searchBaidu :: WD Bool
 searchBaidu = do
-  searchBox <- findElem (ByName "wd")
+  searchBox <- findElem (ById "kw1")
   sendKeys "Cheese!" searchBox
   submit searchBox
   setImplicitWait 50
