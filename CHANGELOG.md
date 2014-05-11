@@ -1,4 +1,6 @@
 #Change Log
+##0.5.3.3
+*Relaxed text dependency up to 1.2
 
 ##0.5.3.2
 ###bug fixes
