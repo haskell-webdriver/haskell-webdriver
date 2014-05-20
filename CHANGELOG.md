@@ -1,4 +1,8 @@
 #Change Log
+##0.5.4
+* MonadCatchIO is deprecated in favour of exceptions
+* Relaxed dependencies on mtl, network and scientific
+
 ##0.5.3.3
 * Relaxed text dependency up to 1.2
 

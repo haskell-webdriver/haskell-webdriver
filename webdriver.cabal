@@ -1,5 +1,5 @@
 Name: webdriver
-Version: 0.5.3.3
+Version: 0.5.4
 Cabal-Version: >= 1.8
 License: BSD3
 License-File: LICENSE
@@ -32,8 +32,8 @@ library
   build-depends:   base == 4.*
                  , aeson >= 0.6.2.0 && < 0.8
                  , HTTP >= 4000.1 && < 4000.3
-                 , mtl >= 2.0 && < 2.2
-                 , network == 2.4.*
+                 , mtl >= 2.0 && < 2.3
+                 , network >= 2.4 && < 2.6
                  , bytestring >= 0.9 && < 0.11
                  , text >= 0.11.3 && < 1.2.0.0
                  , time == 1.*
@@ -47,13 +47,13 @@ library
                  , transformers-base >= 0.1 && < 1.0
                  , vector >= 0.3 && < 0.11
                  , lifted-base >= 0.1 && < 0.3
-                 , MonadCatchIO-transformers >= 0.3 && < 0.4
+                 , exceptions >= 0.4 && < 0.6
                  , directory-tree == 0.11.*
                  , data-default >= 0.2 && < 1.0
                  , temporary >= 1.0 && < 2.0
                  , base64-bytestring >= 1.0 && < 1.1
                  , cond >= 0.3 && < 0.5
-                 , scientific >= 0.2 && < 0.3
+                 , scientific >= 0.2 && < 0.4
 
   exposed-modules: Test.WebDriver
                    Test.WebDriver.Classes
