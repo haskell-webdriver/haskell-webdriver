@@ -16,14 +16,14 @@ import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
 import Control.Monad.State.Strict (StateT, MonadState, evalStateT, get, put)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Lifted
-import Control.Monad.CatchIO (MonadCatchIO)
+import Control.Monad.Catch (MonadThrow, MonadCatch)
 import Control.Applicative
 
 {- |A monadic interface to the WebDriver server. This monad is simply a
     state monad transformer over 'IO', threading session information between sequential webdriver commands
 -}
 newtype WD a = WD (StateT WDSession IO a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadCatchIO)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch)
 
 instance MonadBase IO WD where
   liftBase = WD . liftBase
