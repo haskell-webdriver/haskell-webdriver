@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
              MultiParamTypeClasses #-}
 module Test.WebDriver.Monad
-       ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException
+       ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException, dumpSessionHistory
        )where
 
 import Test.WebDriver.Classes
