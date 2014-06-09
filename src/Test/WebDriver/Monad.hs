@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
              MultiParamTypeClasses #-}
 module Test.WebDriver.Monad
-       ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException
+       ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException, dumpSessionHistory
        )where
 
 import Test.WebDriver.Classes
@@ -11,6 +11,7 @@ import Test.WebDriver.Internal
 
 import Control.Monad.Base (MonadBase, liftBase)
 import Control.Monad (liftM)
+import Control.Monad.IO.Class
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
 import Control.Monad.State.Strict (StateT, MonadState, evalStateT, get, put)
@@ -74,3 +75,14 @@ finallyClose wd = closeOnException wd <* closeSession
 -- if the action was successful.
 closeOnException :: WebDriver wd => wd a -> wd a
 closeOnException wd = wd `onException` closeSession
+
+-- |Can be called before 'closeOnException' to get more information on
+-- stdout. about what was going wrong.  (Note that the 'Show'
+-- instances in package HTTP are not very generous with the 'Response'
+-- and 'Request' type.  You might want to write your own variant of
+-- this function.)
+dumpSessionHistory :: (MonadIO wd, WebDriver wd) => wd a -> wd a
+dumpSessionHistory wd = do
+    v <- wd
+    getSession >>= liftIO . print . wdSessHist
+    return v

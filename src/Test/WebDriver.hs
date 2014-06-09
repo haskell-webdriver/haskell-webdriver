@@ -6,7 +6,7 @@ module Test.WebDriver
        ( -- * WebDriver sessions
          WD(..), WDSession(..), defaultSession, SessionId(..)
          -- * Running WebDriver tests
-       , runWD, runSession, withSession, finallyClose, closeOnException
+       , runWD, runSession, withSession, finallyClose, closeOnException, dumpSessionHistory
          -- * WebDriver commands
        , module Test.WebDriver.Commands
          -- * Capabilities and configuration
