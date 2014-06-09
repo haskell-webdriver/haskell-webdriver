@@ -11,6 +11,7 @@ import Test.WebDriver.Internal
 
 import Control.Monad.Base (MonadBase, liftBase)
 import Control.Monad (liftM)
+import Control.Monad.IO.Class
 import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
 import Control.Monad.State.Strict (StateT, MonadState, evalStateT, get, put)
