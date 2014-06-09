@@ -6,13 +6,14 @@ module Test.WebDriver.Classes
          -- * SessionState class
          SessionState(..), modifySession
          -- ** WebDriver sessions
-       , WDSession(..), SessionId(..), defaultSession
+       , WDSession(..), lastHTTPRequest, SessionId(..), defaultSession
        ) where
 
 --import Test.WebDriver.Internal
 import Data.Aeson
+import Data.Maybe
 import Network.HTTP (RequestMethod(..))
-import Network.HTTP.Base (Request)
+import Network.HTTP.Base (Request, Response)
 import Data.ByteString.Lazy (ByteString)
 
 import Data.Text (Text)
@@ -79,16 +80,22 @@ data WDSession = WDSession {
                              -- and closed automatically with
                              -- 'Test.WebDriver.runSession'
                            , wdSessId   :: Maybe SessionId
-                             -- |The last HTTP request issued by this session, if any. 
-                           , lastHTTPRequest :: Maybe (Request ByteString)
+                             -- |The complete history of HTTP requests and
+                             -- responses (updated in 'doCommand', most recent
+                             -- first).
+                           , wdSessHist :: [(Request ByteString, Response ByteString)]
                            } deriving (Show)
+
+-- |The last HTTP request issued by this session, if any.
+lastHTTPRequest :: WDSession -> Maybe (Request ByteString)
+lastHTTPRequest = fmap fst . listToMaybe . wdSessHist
 
 instance Default WDSession where
   def = WDSession { wdHost          = "127.0.0.1"
                   , wdPort          = 4444
                   , wdBasePath      = "/wd/hub"
                   , wdSessId        = Nothing
-                  , lastHTTPRequest = Nothing
+                  , wdSessHist      = []
                   }
 
 {- |A default session connects to localhost on port 4444, and hasn't been
