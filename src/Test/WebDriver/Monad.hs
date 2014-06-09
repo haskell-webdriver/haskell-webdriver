@@ -74,3 +74,14 @@ finallyClose wd = closeOnException wd <* closeSession
 -- if the action was successful.
 closeOnException :: WebDriver wd => wd a -> wd a
 closeOnException wd = wd `onException` closeSession
+
+-- |Can be called before 'closeOnException' to get more information on
+-- stdout. about what was going wrong.  (Note that the 'Show'
+-- instances in package HTTP are not very generous with the 'Response'
+-- and 'Request' type.  You might want to write your own variant of
+-- this function.)
+dumpSessionHistory :: (MonadIO wd, WebDriver wd) => wd a -> wd a
+dumpSessionHistory wd = do
+    v <- wd
+    getSession >>= liftIO . print . wdSessHist
+    return v
