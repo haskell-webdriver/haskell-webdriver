@@ -78,7 +78,7 @@ mkRequest headers method wdPath args = do
 sendHTTPRequest :: SessionState s => Request ByteString -> s (Response ByteString) 
 sendHTTPRequest req = do
   res <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
-  modifySession $ \s -> s {wdSessHist = (req, res) : wdSessHist s} -- update httpScript field
+  modifySession $ \s -> s {wdSessHist = (req, res) : if wdKeepSessHist s then wdSessHist s else []} -- update httpScript field
   return res
 
 handleHTTPErr :: SessionState s => Response ByteString -> s ()
