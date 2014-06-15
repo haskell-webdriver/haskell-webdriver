@@ -623,30 +623,30 @@ touchScroll = noReturn . doSessCommand POST "/touch/scroll" . pair ("xoffset","y
 -- to the given element.
 touchScrollFrom :: WebDriver wd => (Int, Int) -> Element -> wd ()
 touchScrollFrom (x, y) (Element e) =
-  noReturn 
+  noReturn
   . doSessCommand POST "/touch/scroll"
   . triple ("xoffset", "yoffset", "element")
   $ (x, y, e)
 
 -- |Emulate a double click on a touch device.
 touchDoubleClick :: WebDriver wd => Element -> wd ()
-touchDoubleClick (Element e) = 
+touchDoubleClick (Element e) =
   noReturn
   . doSessCommand POST "/touch/doubleclick"
   . single "element" $ e
 
 -- |Emulate a long click on a touch device.
 touchLongClick :: WebDriver wd => Element -> wd ()
-touchLongClick (Element e) = 
-  noReturn 
+touchLongClick (Element e) =
+  noReturn
   . doSessCommand POST "/touch/longclick"
   . single "element" $ e
 -- |Emulate a flick on the touch screen. The coordinates indicate x and y
 -- velocity, respectively. Use this function if you don't care where the
 -- flick starts.
 touchFlick :: WebDriver wd => (Int, Int) -> wd ()
-touchFlick = 
-  noReturn 
+touchFlick =
+  noReturn
   . doSessCommand POST "/touch/flick"
   . pair ("xSpeed", "ySpeed")
 
@@ -672,7 +672,7 @@ getLocation = doSessCommand GET "/location" Null
 
 -- |Set the current geographical location of the device.
 setLocation :: WebDriver wd => (Int, Int, Int) -> wd ()
-setLocation = noReturn . doSessCommand POST "/location" 
+setLocation = noReturn . doSessCommand POST "/location"
               . triple ("latitude",
                         "longitude",
                         "altitude")
@@ -744,9 +744,9 @@ serverStatus :: (WebDriver wd) => wd Value   -- todo: make this a record type
 serverStatus = doCommand GET "/status" Null
 
 -- |A record that represents a single log entry.
-data LogEntry = 
-  LogEntry { logTime  :: Integer  -- ^ timestamp for the log entry. The standard 
-                                  -- does not specify the epoch or the unit of 
+data LogEntry =
+  LogEntry { logTime  :: Integer  -- ^ timestamp for the log entry. The standard
+                                  -- does not specify the epoch or the unit of
                                   -- time.
            , logLevel :: LogLevel -- ^ log verbosity level
            , logMsg   :: Text
@@ -787,7 +787,7 @@ instance FromJSON ApplicationCacheStatus where
             4 -> return UpdateReady
             5 -> return Obsolete
             err -> fail $ "Invalid JSON for ApplicationCacheStatus: " ++ show err
-            
+
 getApplicationCacheStatus :: (WebDriver wd) => wd ApplicationCacheStatus
 getApplicationCacheStatus = doSessCommand GET "/application_cache/status" Null
 

@@ -18,7 +18,7 @@ import Data.String (fromString)
 
 import Control.Applicative
 import Control.Exception.Lifted (throw)
-                   
+
 {- |A structure describing the capabilities of a session. This record
 serves dual roles.
 
@@ -147,7 +147,7 @@ instance ToJSON Capabilities where
              , "acceptSslCerts" .= acceptSSLCerts
              , "nativeEvents" .= nativeEvents
              , "unexpectedAlertBehavior" .= unexpectedAlertBehavior
-             ] 
+             ]
     ++ browserInfo
     ++ additionalCaps
     where
@@ -226,15 +226,15 @@ instance FromJSON Capabilities where
                  <*> b "nativeEvents"
                  <*> opt "unexpectedAlertBehaviour" Nothing
                  <*> pure (additionalCapabilities browser)
-                 
-    where --some helpful JSON accessor shorthands 
+
+    where --some helpful JSON accessor shorthands
           req :: FromJSON a => Text -> Parser a
           req = (o .:)            -- required field
           opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:? k .!= d -- optional field
           b :: Text -> Parser (Maybe Bool)
           b k = opt k Nothing     -- Maybe Bool field
-          
+
           -- produce additionalCaps by removing known capabilities from the JSON object
           additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
 
@@ -253,9 +253,9 @@ instance FromJSON Capabilities where
                        ,"logFile", "logLevel", "host", "extractPath", "silent", "forceCreateProcess", "internetExplorerSwitches"]
               Opera {} -> ["opera.binary", "opera.product", "opera.no_quit", "opera.autostart", "opera.idle", "opera.display"
                           ,"opera.launcher", "opera.port", "opera.host", "opera.arguments", "opera.logging.file", "opera.logging.level"]
-              _ -> []                                                                                                                                                                                                
+              _ -> []
           getBrowserCaps browser =
-            case browser of 
+            case browser of
               Firefox {} -> Firefox <$> opt "firefox_profile" Nothing
                                     <*> opt "loggingPrefs" def
                                     <*> opt "firefox_binary" Nothing
@@ -284,14 +284,14 @@ instance FromJSON Capabilities where
                                 <*> opt "opera.autostart" True
                                 <*> opt "opera.idle" False
                                 <*> opt "opera.display" Nothing
-                                <*> opt "opera.launcher" Nothing                               
+                                <*> opt "opera.launcher" Nothing
                                 <*> opt "opera.port" (Just 0)
                                 <*> opt "opera.host" Nothing
                                 <*> opt "opera.arguments" Nothing
                                 <*> opt "opera.logging.file" Nothing
                                 <*> opt "opera.logging.level" def
               _ -> return browser
-                              
+
   parseJSON v = typeMismatch "Capabilities" v
 
 -- |This constructor simultaneously specifies which browser the session will
@@ -334,30 +334,30 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                     -- |Indicates whether to skip the check that the browser's zoom
                     -- level is set to 100%. Value is set to false by default.
                   , ieIgnoreZoomSetting :: Bool
-                    -- |Allows the user to specify the initial URL loaded when IE 
+                    -- |Allows the user to specify the initial URL loaded when IE
                     -- starts. Intended to be used with ignoreProtectedModeSettings
-                    -- to allow the user to initialize IE in the proper Protected Mode 
+                    -- to allow the user to initialize IE in the proper Protected Mode
                     -- zone. Using this capability may cause browser instability or
                     -- flaky and unresponsive code. Only \"best effort\" support is
                     -- provided when using this capability.
                   , ieInitialBrowserUrl :: Maybe Text
-                    -- |Allows the user to specify whether elements are scrolled into 
-                    -- the viewport for interaction to align with the top or bottom 
-                    -- of the viewport. The default value is to align with the top of 
+                    -- |Allows the user to specify whether elements are scrolled into
+                    -- the viewport for interaction to align with the top or bottom
+                    -- of the viewport. The default value is to align with the top of
                     -- the viewport.
                   , ieElementScrollBehavior :: IEElementScrollBehavior
-                    -- |Determines whether persistent hovering is enabled (true by 
-                    -- default). Persistent hovering is achieved by continuously firing 
-                    -- mouse over events at the last location the mouse cursor has been 
+                    -- |Determines whether persistent hovering is enabled (true by
+                    -- default). Persistent hovering is achieved by continuously firing
+                    -- mouse over events at the last location the mouse cursor has been
                     -- moved to.
                   , ieEnablePersistentHover :: Bool
-                    -- |Determines whether the driver should attempt to remove obsolete 
-                    -- elements from the element cache on page navigation (true by 
+                    -- |Determines whether the driver should attempt to remove obsolete
+                    -- elements from the element cache on page navigation (true by
                     -- default). This is to help manage the IE driver's memory footprint
                     -- , removing references to invalid elements.
                   , ieEnableElementCacheCleanup :: Bool
-                    -- |Determines whether to require that the IE window have focus 
-                    -- before performing any user interaction operations (mouse or 
+                    -- |Determines whether to require that the IE window have focus
+                    -- before performing any user interaction operations (mouse or
                     -- keyboard events). This capability is false by default, but
                     -- delivers much more accurate native events interactions.
                   , ieRequireWindowFocus :: Bool
@@ -365,26 +365,26 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                     -- locate and attach to a newly opened instance of Internet Explorer
                     -- . The default is zero, which indicates waiting indefinitely.
                   , ieBrowserAttachTimeout :: Integer
-                    -- |The path to file where server should write log messages to. 
+                    -- |The path to file where server should write log messages to.
                     -- By default it writes to stdout.
                   , ieLogFile :: Maybe FilePath
                     -- |The log level used by the server. Defaults to 'IELogFatal'
                   , ieLogLevel :: IELogLevel
-                    -- |The address of the host adapter on which the server will listen 
+                    -- |The address of the host adapter on which the server will listen
                     -- for commands.
                   , ieHost :: Maybe Text
-                    -- |The path to the directory used to extract supporting files used 
+                    -- |The path to the directory used to extract supporting files used
                     -- by the server. Defaults to the TEMP directory if not specified.
                   , ieExtractPath :: Maybe Text
                     -- |Suppresses diagnostic output when the server is started.
                   , ieSilent :: Bool
-                    -- |Forces launching Internet Explorer using the CreateProcess API. 
+                    -- |Forces launching Internet Explorer using the CreateProcess API.
                     -- If this option is not specified, IE is launched using the
-                    -- IELaunchURL, if it is available. For IE 8 and above, this option 
+                    -- IELaunchURL, if it is available. For IE 8 and above, this option
                     -- requires the TabProcGrowth registry value to be set to 0.
                   , ieForceCreateProcess :: Bool
-                    -- |Specifies command-line switches with which to launch Internet 
-                    -- Explorer. This is only valid when used with the 
+                    -- |Specifies command-line switches with which to launch Internet
+                    -- Explorer. This is only valid when used with the
                     -- forceCreateProcess.
                   , ieSwitches :: Maybe Text
                   }
@@ -477,7 +477,7 @@ firefox = Firefox Nothing def Nothing
 chrome :: Browser
 chrome = Chrome Nothing Nothing [] []
 
--- |Default IE settings. See the 'IE' constructor for more details on 
+-- |Default IE settings. See the 'IE' constructor for more details on
 -- individual defaults
 ie :: Browser
 ie = IE { ieIgnoreProtectedModeSettings = True
@@ -600,21 +600,21 @@ instance ToJSON ProxyType where
       ,"httpProxy" .= http
       ]
 
-data UnexpectedAlertBehavior = AcceptAlert | DismissAlert | IgnoreAlert 
+data UnexpectedAlertBehavior = AcceptAlert | DismissAlert | IgnoreAlert
                               deriving (Bounded, Enum, Eq, Ord, Read, Show)
-                                       
+
 instance ToJSON UnexpectedAlertBehavior where
   toJSON AcceptAlert  = String "accept"
   toJSON DismissAlert = String "dismiss"
   toJSON IgnoreAlert  = String "ignore"
-  
+
 instance FromJSON UnexpectedAlertBehavior where
-  parseJSON (String s) = 
+  parseJSON (String s) =
     return $ case s of
       "accept"  -> AcceptAlert
       "dismiss" -> DismissAlert
       "ignore"  -> IgnoreAlert
-      err       -> throw . BadJSON 
+      err       -> throw . BadJSON
                    $ "Invalid string value for UnexpectedAlertBehavior: " ++ show err
   parseJSON v = typeMismatch "UnexpectedAlertBehavior" v
 
@@ -651,7 +651,7 @@ instance FromJSON LogLevel where
     "ALL" -> LogAll
     _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
   parseJSON other = typeMismatch "LogLevel" other
-  
+
 
 -- |Logging levels for Internet Explorer
 data IELogLevel = IELogTrace | IELogDebug | IELogInfo | IELogWarn | IELogError
@@ -685,19 +685,19 @@ instance FromJSON IELogLevel where
 -- |Specifies how elements scroll into the viewport. (see 'ieElementScrollBehavior')
 data IEElementScrollBehavior = AlignTop | AlignBottom
                              deriving (Eq, Ord, Show, Read, Enum, Bounded)
-                                      
-instance Default IEElementScrollBehavior where                                     
+
+instance Default IEElementScrollBehavior where
   def = AlignTop
-  
+
 instance ToJSON IEElementScrollBehavior where
   toJSON AlignTop    = toJSON (0 :: Int)
   toJSON AlignBottom = toJSON (1 :: Int)
-  
+
 instance FromJSON IEElementScrollBehavior where
   parseJSON v = do
     n <- parseJSON v
-    case n :: Integer of 
+    case n :: Integer of
       0 -> return AlignTop
       1 -> return AlignBottom
       _ -> fail $ "Invalid integer for IEElementScrollBehavior: " ++ show n
-    
+

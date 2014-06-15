@@ -197,7 +197,7 @@ prepareTempProfile f = prepareProfile . f $ defaultProfile
 
 -- |Convenience function to load an existing Firefox profile from disk, apply
 -- a handler function, and then prepare the result for network transmission.
--- 
+--
 -- NOTE: like 'prepareProfile', the same caveat about large profiles applies.
 prepareLoadedProfile :: MonadBaseControl IO m =>
                         FilePath

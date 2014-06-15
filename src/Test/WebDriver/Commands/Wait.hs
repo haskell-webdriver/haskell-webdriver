@@ -99,14 +99,14 @@ waitEither failure success = wait' handler
 wait' :: SessionState m =>
          ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
 wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
-  where 
+  where
     timeout = realToFrac t
     waitLoop startTime = handler retry wd
       where
         retry why = do
           now <- liftBase getCurrentTime
-          if diffUTCTime now startTime >= timeout 
-            then 
+          if diffUTCTime now startTime >= timeout
+            then
               failedCommand Timeout $ "wait': explicit wait timed out (" ++ why ++ ")."
             else do
               liftBase . threadDelay $ waitAmnt

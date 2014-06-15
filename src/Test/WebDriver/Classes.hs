@@ -53,7 +53,7 @@ class SessionState wd => WebDriver wd where
                 -> Text       -- ^URL of request
                 -> a          -- ^JSON parameters passed in the body
                               -- of the request. Note that, as a special case,
-                              -- anything that converts to Data.Aeson.Null will 
+                              -- anything that converts to Data.Aeson.Null will
                               -- result in an empty request body.
                 -> wd b       -- ^The JSON result of the HTTP request.
 
