@@ -53,7 +53,7 @@ class SessionState wd => WebDriver wd where
                 -> Text       -- ^URL of request
                 -> a          -- ^JSON parameters passed in the body
                               -- of the request. Note that, as a special case,
-                              -- anything that converts to Data.Aeson.Null will 
+                              -- anything that converts to Data.Aeson.Null will
                               -- result in an empty request body.
                 -> wd b       -- ^The JSON result of the HTTP request.
 
@@ -84,6 +84,11 @@ data WDSession = WDSession {
                              -- responses (updated in 'doCommand', most recent
                              -- first).
                            , wdSessHist :: [(Request ByteString, Response ByteString)]
+                             -- |If 'wdKeepSessHist' is 'True', 'wdSessHist'
+                             -- contains the full session history.
+                             -- Otherwise, only the last request/response
+                             -- pair is stored (O(1) heap consumption).
+                           , wdKeepSessHist :: Bool
                            } deriving (Show)
 
 -- |The last HTTP request issued by this session, if any.
@@ -96,6 +101,7 @@ instance Default WDSession where
                   , wdBasePath      = "/wd/hub"
                   , wdSessId        = Nothing
                   , wdSessHist      = []
+                  , wdKeepSessHist  = False
                   }
 
 {- |A default session connects to localhost on port 4444, and hasn't been

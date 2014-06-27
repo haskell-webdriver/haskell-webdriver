@@ -39,8 +39,8 @@ import Data.Word (Word, Word8)
 
 -- |Take a URL path and construct a full URL using the current session state
 mkWDUri :: (SessionState s) => String -> s URI
-mkWDUri wdPath = do 
-  WDSession{wdHost = host, 
+mkWDUri wdPath = do
+  WDSession{wdHost = host,
             wdPort = port,
             wdBasePath = basePath
            } <- getSession
@@ -75,18 +75,18 @@ mkRequest headers method wdPath args = do
 
 
 
-sendHTTPRequest :: SessionState s => Request ByteString -> s (Response ByteString) 
+sendHTTPRequest :: SessionState s => Request ByteString -> s (Response ByteString)
 sendHTTPRequest req = do
   res <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
-  modifySession $ \s -> s {wdSessHist = (req, res) : wdSessHist s} -- update httpScript field
+  modifySession $ \s -> s {wdSessHist = (req, res) : if wdKeepSessHist s then wdSessHist s else []} -- update httpScript field
   return res
 
 handleHTTPErr :: SessionState s => Response ByteString -> s ()
 handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
   case code of
     (4,_,_)  -> do
-      lastReq <- lastHTTPRequest <$> getSession            
-      throwIO . UnknownCommand . maybe reason show  
+      lastReq <- lastHTTPRequest <$> getSession
+      throwIO . UnknownCommand . maybe reason show
         $ lastReq
     (5,_,_)  ->
       case findHeader HdrContentType r of
@@ -98,7 +98,7 @@ handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
           err (ServerError . ("Missing content type. Server response: "++))
 
     (2,_,_)  -> return ()
-    (3,0,x) | x `elem` [2,3] 
+    (3,0,x) | x `elem` [2,3]
              -> return ()
     _        -> err (HTTPStatusUnknown code)
     where
@@ -110,7 +110,7 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
     (2,0,4) -> noReturn
     (3,0,x)
       | x `elem` [2,3] ->
-        case findHeader HdrLocation resp of        
+        case findHeader HdrLocation resp of
           Nothing -> throwIO . HTTPStatusUnknown code
                      $ (LBS.unpack body)
           Just loc -> do
@@ -127,7 +127,7 @@ handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
             -- if our monad has an uninitialized session ID, initialize it from the response object
             (Nothing, _)    -> putSession sess { wdSessId = sessId' }
             -- if the response ID doesn't match our local ID, throw an error.
-            (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show sessId' 
+            (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show sessId'
                                                        ++ ") does not match local session ID (" ++ show sessId ++ ")"
             -- otherwise nothing needs to be done
             _ ->  return ()
