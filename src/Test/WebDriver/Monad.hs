@@ -20,6 +20,10 @@ import Control.Exception.Lifted
 import Control.Monad.Catch (MonadThrow, MonadCatch)
 import Control.Applicative
 
+import Data.Functor
+
+import Network.HTTP.Client hiding (method, path)
+
 {- |A monadic interface to the WebDriver server. This monad is simply a
     state monad transformer over 'IO', threading session information between sequential webdriver commands
 -}
@@ -44,10 +48,16 @@ instance SessionState WD where
 
 instance WebDriver WD where
   doCommand method path args = do
+    s@(WDSession { wdHTTPManager = mgr }) <- getSession
+    void $ maybe (setManager s) (const $ return ()) mgr
+
     req <- mkRequest [] method path args
     res <- sendHTTPRequest req
     handleHTTPErr res
     handleHTTPResp res
+    where setManager s = do
+              mgr <- liftBase $ newManager defaultManagerSettings
+              putSession s { wdHTTPManager = Just mgr }
 
 -- |Executes a 'WD' computation within the 'IO' monad, using the given
 -- 'WDSession'.

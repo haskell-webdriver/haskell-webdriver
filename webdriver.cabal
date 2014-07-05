@@ -54,6 +54,8 @@ library
                  , base64-bytestring >= 1.0 && < 1.1
                  , cond >= 0.3 && < 0.5
                  , scientific >= 0.2 && < 0.4
+                 , http-client >= 0.3 && < 0.4
+                 , http-types >= 0.8 && < 0.9
 
   exposed-modules: Test.WebDriver
                    Test.WebDriver.Classes

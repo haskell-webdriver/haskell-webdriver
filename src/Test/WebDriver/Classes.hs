@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts,
-             GeneralizedNewtypeDeriving #-}
+             GeneralizedNewtypeDeriving, RecordWildCards #-}
 module Test.WebDriver.Classes
        ( -- * WebDriver class
-         WebDriver(..), RequestMethod(..),
+         WebDriver(..), Method, methodDelete, methodGet, methodPost,
          -- * SessionState class
          SessionState(..), modifySession
          -- ** WebDriver sessions
@@ -12,8 +12,8 @@ module Test.WebDriver.Classes
 --import Test.WebDriver.Internal
 import Data.Aeson
 import Data.Maybe
-import Network.HTTP (RequestMethod(..))
-import Network.HTTP.Base (Request, Response)
+import Network.HTTP.Client (Request, Response)
+import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
 import Data.ByteString.Lazy (ByteString)
 
 import Data.Text (Text)
@@ -35,6 +35,8 @@ import Control.Monad.RWS.Lazy as LRWS
 import Data.Default
 import Data.Word
 
+import Network.HTTP.Client (Manager)
+
 
 -- |A class for monads that carry a WebDriver session with them. The
 -- MonadBaseControl superclass is used for exception handling through
@@ -49,7 +51,7 @@ class MonadBaseControl IO s => SessionState s where
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
 class SessionState wd => WebDriver wd where
   doCommand :: (ToJSON a, FromJSON b) =>
-                RequestMethod -- ^HTTP request method
+                Method -- ^HTTP request method
                 -> Text       -- ^URL of request
                 -> a          -- ^JSON parameters passed in the body
                               -- of the request. Note that, as a special case,
@@ -83,16 +85,22 @@ data WDSession = WDSession {
                              -- |The complete history of HTTP requests and
                              -- responses (updated in 'doCommand', most recent
                              -- first).
-                           , wdSessHist :: [(Request ByteString, Response ByteString)]
+                           , wdSessHist :: [(Request, Response ByteString)]
                              -- |If 'wdKeepSessHist' is 'True', 'wdSessHist'
                              -- contains the full session history.
                              -- Otherwise, only the last request/response
                              -- pair is stored (O(1) heap consumption).
                            , wdKeepSessHist :: Bool
-                           } deriving (Show)
+
+                             -- |HTTP manager for connection pooling and such
+                           , wdHTTPManager :: Maybe Manager
+                           } -- deriving (Show)
+
+instance Show WDSession where
+    show (WDSession {..}) = "{wdHost = " ++ show wdHost ++ ", wdPort = " ++ show wdPort ++ ", wdBasePath = " ++ show wdBasePath ++ ", wdSessId = " ++ show wdSessId ++ ", wdSessHist = " ++ show wdSessHist ++ ", wdKeepSessHist = " ++ show wdKeepSessHist ++ ", wdHttpManager = " ++ (if isNothing wdHTTPManager then "Nothing" else "Just Manager") ++ "}"
 
 -- |The last HTTP request issued by this session, if any.
-lastHTTPRequest :: WDSession -> Maybe (Request ByteString)
+lastHTTPRequest :: WDSession -> Maybe Request
 lastHTTPRequest = fmap fst . listToMaybe . wdSessHist
 
 instance Default WDSession where
@@ -102,6 +110,7 @@ instance Default WDSession where
                   , wdSessId        = Nothing
                   , wdSessHist      = []
                   , wdKeepSessHist  = False
+                  , wdHTTPManager   = Nothing
                   }
 
 {- |A default session connects to localhost on port 4444, and hasn't been
