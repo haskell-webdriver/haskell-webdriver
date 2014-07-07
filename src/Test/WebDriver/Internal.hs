@@ -97,7 +97,7 @@ handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
         Nothing ->
           err (ServerError . ("Missing content type. Server response: "++))
 
-    (2,_,_)  -> return ()
+    (2,_,_)  -> parseJSON' body >>= handleJSONErr
     (3,0,x) | x `elem` [2,3]
              -> return ()
     _        -> err (HTTPStatusUnknown code)
