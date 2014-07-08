@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, ExistentialQuantification,
-             TemplateHaskell #-}
+             TemplateHaskell, RecordWildCards #-}
 -- |This module exports basic WD actions that can be used to interact with a
 -- browser session.
 module Test.WebDriver.Commands
@@ -87,6 +87,7 @@ import qualified Data.Text as T
 import Data.Text (Text, append, toUpper, toLower)
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString)
+import Network.HTTP.Client (closeManager)
 import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
 import qualified Data.Text.Lazy.Encoding as TL
@@ -99,7 +100,7 @@ import Control.Exception.Lifted (throwIO, handle)
 import qualified Control.Exception.Lifted as L
 import Data.Word
 import Data.String (fromString)
-import Data.Maybe (fromMaybe)
+import Data.Maybe
 import qualified Data.Char as C
 
 -- |Convenience function to handle webdriver commands with no return value
@@ -128,9 +129,12 @@ getCaps = doSessCommand methodGet "" Null
 
 -- |Close the current session and the browser associated with it.
 closeSession :: WebDriver wd => wd ()
-closeSession = do s <- getSession
+closeSession = do s@WDSession {..} <- getSession
                   noReturn $ doSessCommand methodDelete "" Null
-                  putSession s { wdSessId = Nothing }
+                  when (isJust wdHTTPManager)
+                      $ liftBase $ closeManager $ fromJust wdHTTPManager
+                  putSession s { wdSessId = Nothing, wdHTTPManager = Nothing }
+
 
 -- |Sets the amount of time we implicitly wait when searching for elements.
 setImplicitWait :: WebDriver wd => Integer -> wd ()
