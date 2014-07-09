@@ -64,7 +64,7 @@ newtype NoSessionId = NoSessionId String
 -- :sessionId is a URL parameter as described in
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
 doSessCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
-                  RequestMethod -> Text -> a -> wd b
+                  Method -> Text -> a -> wd b
 doSessCommand method path args = do
   WDSession { wdSessId = mSessId } <- getSession
   case mSessId of
@@ -80,7 +80,7 @@ doSessCommand method path args = do
 -- \"/session/:sessionId/element/:id/active\", where :sessionId and :id are URL
 -- parameters as described in the wire protocol.
 doElemCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
-                  RequestMethod -> Element -> Text -> a -> wd b
+                  Method -> Element -> Text -> a -> wd b
 doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
 
@@ -89,6 +89,6 @@ doElemCommand m (Element e) path a =
 -- \"/session/:sessionId/window/:windowHandle/\", where :sessionId and
 -- :windowHandle are URL parameters as described in the wire protocol
 doWinCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
-                 RequestMethod -> WindowHandle -> Text -> a -> wd b
+                 Method -> WindowHandle -> Text -> a -> wd b
 doWinCommand m (WindowHandle w) path a =
   doSessCommand m (T.concat ["/window/", urlEncode w, path]) a

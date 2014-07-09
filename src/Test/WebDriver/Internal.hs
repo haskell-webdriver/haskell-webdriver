@@ -1,6 +1,7 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable,
+             RecordWildCards #-}
 module Test.WebDriver.Internal
-       ( mkWDUri, mkRequest, sendHTTPRequest
+       ( mkRequest, sendHTTPRequest
        , handleHTTPErr, handleJSONErr, handleHTTPResp
        , WDResponse(..)
 
@@ -13,22 +14,23 @@ module Test.WebDriver.Internal
 import Test.WebDriver.Classes
 import Test.WebDriver.JSON
 
-import Network.HTTP (simpleHTTP, Request(..), Response(..))
-import Network.HTTP.Headers (findHeader, Header(..), HeaderName(..))
-import Network.Stream (ConnError)
-import Network.URI
+import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..))
+import Network.HTTP.Types.Header
+import Network.HTTP.Types.Status (Status(..))
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 
 import Data.Text as T (Text, unpack, splitOn, null)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null)
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Base64.Lazy as B64
 import qualified Data.Text.Lazy.Encoding as TL
 
 import Control.Monad.Base
 import Control.Exception.Lifted (throwIO)
 import Control.Applicative
+import Control.Conditional
 
 import Control.Exception (Exception)
 import Data.Typeable (Typeable)
@@ -36,105 +38,94 @@ import Data.List (isInfixOf)
 import Data.Maybe (fromMaybe)
 import Data.String (fromString)
 import Data.Word (Word, Word8)
-
--- |Take a URL path and construct a full URL using the current session state
-mkWDUri :: (SessionState s) => String -> s URI
-mkWDUri wdPath = do
-  WDSession{wdHost = host,
-            wdPort = port,
-            wdBasePath = basePath
-           } <- getSession
-  let urlStr   = "http://" ++ host ++ ":" ++ show port
-      relPath  = basePath ++ wdPath
-      mBaseURI = parseAbsoluteURI urlStr
-      mRelURI  = parseRelativeReference relPath
-  case (mBaseURI, mRelURI) of
-    (Nothing, _) -> throwIO $ InvalidURL urlStr
-    (_, Nothing) -> throwIO $ InvalidURL relPath
-    (Just baseURI, Just relURI) -> return $ relURI `relativeTo` baseURI
+import Data.Default
+import Data.Maybe
 
 -- |Constructs a 'Request' value when given a list of headers, HTTP request method, and URL path
 mkRequest :: (SessionState s, ToJSON a) =>
-             [Header] -> RequestMethod -> Text -> a -> s (Request ByteString)
-mkRequest headers method wdPath args = do
-  uri <- mkWDUri (T.unpack wdPath)
+             RequestHeaders -> Method -> Text -> a -> s Request
+mkRequest headers meth wdPath args = do
+  WDSession {..} <- getSession
   let body = case toJSON args of
         Null  -> ""   --passing Null as the argument indicates no request body
         other -> encode other
-  return Request { rqURI = uri             --todo: normalization of headers
-                 , rqMethod = method
-                 , rqBody = body
-                 , rqHeaders = headers ++ [ Header HdrAccept
-                                            "application/json;charset=UTF-8"
-                                          , Header HdrContentType
-                                            "application/json;charset=UTF-8"
-                                          , Header HdrContentLength
-                                            . show . LBS.length $ body
-                                          ]
-                 }
+  return def { host = fromString wdHost
+             , port = fromIntegral wdPort
+             , path = fromString $ wdBasePath ++ T.unpack wdPath
+             , requestBody = RequestBodyLBS body
+             , requestHeaders = headers ++ [ (hAccept,
+                                             "application/json;charset=UTF-8")
+                                           , (hContentType,
+                                             "application/json;charset=UTF-8")
+                                           , (hContentLength,
+                                              fromString . show . LBS.length $ body)
+                                           ]
+             , method = meth
+             }
 
 
-
-sendHTTPRequest :: SessionState s => Request ByteString -> s (Response ByteString)
+sendHTTPRequest :: SessionState s => Request -> s (Response ByteString)
 sendHTTPRequest req = do
-  res <- liftBase (simpleHTTP req) >>= either (throwIO . HTTPConnError) return
+  WDSession { wdHTTPManager = mgr } <- getSession
+  let manager = fromJust mgr
+  res <- liftBase $ httpLbs req manager
   modifySession $ \s -> s {wdSessHist = (req, res) : if wdKeepSessHist s then wdSessHist s else []} -- update httpScript field
   return res
 
 handleHTTPErr :: SessionState s => Response ByteString -> s ()
-handleHTTPErr r@Response{rspBody = body, rspCode = code, rspReason = reason} =
-  case code of
-    (4,_,_)  -> do
-      lastReq <- lastHTTPRequest <$> getSession
-      throwIO . UnknownCommand . maybe reason show
-        $ lastReq
-    (5,_,_)  ->
-      case findHeader HdrContentType r of
-        Just ct
-          | "application/json;" `isInfixOf` ct -> parseJSON' body
-                                                  >>= handleJSONErr
-          | otherwise -> err ServerError
-        Nothing ->
-          err (ServerError . ("Missing content type. Server response: "++))
-
-    (2,_,_)  -> return ()
-    (3,0,x) | x `elem` [2,3]
-             -> return ()
-    _        -> err (HTTPStatusUnknown code)
+handleHTTPErr r =
+  cond [ (code >= 400 && code < 500, do
+           lastReq <- lastHTTPRequest <$> getSession
+           throwIO . UnknownCommand . maybe reason show $ lastReq)
+       , (code >= 500 && code < 600, case lookup hContentType headers of
+           Just ct
+             | "application/json;" `BS.isInfixOf` ct -> parseJSON' body
+                                                        >>= handleJSONErr
+             | otherwise -> err ServerError
+           Nothing ->
+             err (ServerError . ("Missing content type. Server response: "++)))
+       , (code >= 200 && code < 300, return ())
+       , (code == 302 || code == 303, return ())
+       , (otherwise, err (HTTPStatusUnknown code))
+       ]
     where
       err errType = throwIO $ errType reason
+      status = responseStatus r
+      code = statusCode status
+      reason = BS.unpack $ statusMessage status
+      body = responseBody r
+      headers = responseHeaders r
 
 handleHTTPResp ::  (SessionState s, FromJSON a) => Response ByteString -> s a
-handleHTTPResp resp@Response{rspBody = body, rspCode = code} =
-  case code of
-    (2,0,4) -> noReturn
-    (3,0,x)
-      | x `elem` [2,3] ->
-        case findHeader HdrLocation resp of
-          Nothing -> throwIO . HTTPStatusUnknown code
-                     $ (LBS.unpack body)
-          Just loc -> do
-            let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ loc
-            modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
-            fromJSON' . String $ sessId
-    _
-      | LBS.null body -> noReturn
-      | otherwise -> do
-        sess@WDSession { wdSessId = sessId}   <- getSession      -- get current session state
-        WDResponse { rspSessId = sessId'
-                   , rspVal = val}  <- parseJSON' body -- parse response body
-        case (sessId, (==) <$> sessId <*> sessId') of
-            -- if our monad has an uninitialized session ID, initialize it from the response object
-            (Nothing, _)    -> putSession sess { wdSessId = sessId' }
-            -- if the response ID doesn't match our local ID, throw an error.
-            (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show sessId'
-                                                       ++ ") does not match local session ID (" ++ show sessId ++ ")"
-            -- otherwise nothing needs to be done
-            _ ->  return ()
-        fromJSON' val
-
+handleHTTPResp resp =
+  cond [ (code == 204, noReturn)
+       , (code == 302 || code == 303, case lookup hLocation headers of
+           Nothing -> throwIO . HTTPStatusUnknown code $ (LBS.unpack body)
+           Just loc -> do
+             let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ BS.unpack loc
+             modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
+             fromJSON' . String $ sessId)
+       , (LBS.null body, noReturn)
+       , (otherwise, do
+           sess@WDSession { wdSessId = sessId}   <- getSession      -- get current session state
+           WDResponse { rspSessId = sessId'
+                      , rspVal = val}  <- parseJSON' body -- parse response body
+           case (sessId, (==) <$> sessId <*> sessId') of
+             -- if our monad has an uninitialized session ID, initialize it from the response object
+             (Nothing, _)    -> putSession sess { wdSessId = sessId' }
+               -- if the response ID doesn't match our local ID, throw an error.
+             (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show sessId'
+                                ++ ") does not match local session ID (" ++ show sessId ++ ")"
+             _ ->  return ()
+           fromJSON' val)
+       ]
   where
     noReturn = fromJSON' Null
+    status = responseStatus resp
+    code = statusCode status
+--    reason = BS.unpack $ statusMessage status
+    body = responseBody resp
+    headers = responseHeaders resp
 
 handleJSONErr :: SessionState s => WDResponse -> s ()
 handleJSONErr WDResponse{rspStatus = 0} = return ()
@@ -196,13 +187,13 @@ newtype InvalidURL = InvalidURL String
 
 instance Exception HTTPStatusUnknown
 -- |An unexpected HTTP status was sent by the server.
-data HTTPStatusUnknown = HTTPStatusUnknown (Int, Int, Int) String
+data HTTPStatusUnknown = HTTPStatusUnknown Int String
                        deriving (Eq, Show, Typeable)
 
 instance Exception HTTPConnError
 -- |HTTP connection errors.
-newtype HTTPConnError = HTTPConnError ConnError
-                     deriving (Eq, Show, Typeable)
+data HTTPConnError = HTTPConnError String Int
+                   deriving (Eq, Show, Typeable)
 
 instance Exception UnknownCommand
 -- |A command was sent to the WebDriver server that it didn't recognize.
