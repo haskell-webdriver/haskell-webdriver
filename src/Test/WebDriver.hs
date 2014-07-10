@@ -4,7 +4,7 @@ providing most of the functionality you're likely to want.
 -}
 module Test.WebDriver
        ( -- * WebDriver sessions
-         WD(..), WDSession(..), defaultSession, SessionId(..)
+         WD(..), WDConfig(..), defaultConfig
          -- * Running WebDriver tests
        , runWD, runSession, withSession, finallyClose, closeOnException, dumpSessionHistory
          -- * WebDriver commands

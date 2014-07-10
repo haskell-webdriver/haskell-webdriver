@@ -74,7 +74,8 @@ module Test.WebDriver.Commands
        ) where
 
 import Test.WebDriver.Commands.Internal
-import Test.WebDriver.Classes
+import Test.WebDriver.Class
+import Test.WebDriver.Session
 import Test.WebDriver.JSON
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Internal

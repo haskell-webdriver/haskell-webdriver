@@ -58,8 +58,10 @@ library
                  , http-types >= 0.8 && < 0.9
 
   exposed-modules: Test.WebDriver
-                   Test.WebDriver.Classes
+                   Test.WebDriver.Class
                    Test.WebDriver.Monad
+                   Test.WebDriver.Session
+                   Test.WebDriver.Config
                    Test.WebDriver.Exceptions
                    Test.WebDriver.Commands
                    Test.WebDriver.Commands.Wait

@@ -2,10 +2,12 @@
 module Test.WebDriver.Types
        ( -- * WebDriver sessions
          WD(..), WDSession(..), defaultSession, SessionId(..)
-         -- * Capabilities and configuration
+         -- * WebDriver configuration
+       , WDConfig(..), defaultConfig
+         -- * Capabilities
        , Capabilities(..), defaultCaps, allCaps
        , Platform(..), ProxyType(..), UnexpectedAlertBehavior(..)
-         -- ** Browser-specific configuration
+         -- ** Browser-specific capabilities
        , Browser(..),
          -- ** Default settings for browsers
          firefox, chrome, ie, opera, iPhone, iPad, android
@@ -32,7 +34,8 @@ module Test.WebDriver.Types
        ) where
 
 import Test.WebDriver.Monad
-import Test.WebDriver.Classes
+import Test.WebDriver.Session
+import Test.WebDriver.Config
 import Test.WebDriver.Commands
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Capabilities

@@ -16,7 +16,8 @@ module Test.WebDriver.Commands.Internal
        , NoSessionId(..)
        ) where
 
-import Test.WebDriver.Classes
+import Test.WebDriver.Class
+import Test.WebDriver.Session
 import Test.WebDriver.Utils (urlEncode)
 
 import Data.Aeson

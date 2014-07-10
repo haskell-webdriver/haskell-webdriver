@@ -10,29 +10,35 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.Function
 import Data.List as List
-import Data.String.Conversions
 import Prelude hiding ((++))
 import Test.QuickCheck as QC
 import Test.QuickCheck.Property as QC
 import Test.WebDriver
+import Test.WebDriver.Session
+import Test.WebDriver.Config
 
 import qualified Data.Text as ST
 import qualified Data.Array as AR
 
-session :: WDSession
-session = defaultSession
+config :: WDConfig
+config = defaultConfig
+
+caps :: Capabilities
+caps = defaultCaps
 
 main :: IO ()
 main = do
-    session :: WDSession <- runWD session (createSession defaultCaps)
-    runWD session $ openPage "about:blank"
-    quickCheck $ prop_cutArray session
+    runSession config caps $ do
+        session <- getSession
+        conf <- askConfig
+        openPage "about:blank"
+        liftIO . quickCheck $ prop_cutArray conf session
 
 
 -- | some javascript function i want to test (included in this haskell
 -- module for convenience; usually it would more likely be located in
 -- the test target).
-cutArrayJS :: [ST]
+cutArrayJS :: [ST.Text]
 cutArrayJS = "// Array Remove - By John Resig (MIT Licensed)" :
              "function cutArray(a, from, to) {" :
              "    var rest = a.slice((to || from) + 1 || a.length);" :
@@ -82,8 +88,8 @@ instance Arbitrary CutArray where
 
 
 -- | the quickcheck property
-prop_cutArray :: WDSession -> CutArray -> QC.Property
-prop_cutArray session tc = morallyDubiousIOProperty $ runWD session $ wd_cutArray tc
+prop_cutArray :: WDConfig -> WDSession -> CutArray -> QC.Property
+prop_cutArray conf session tc = morallyDubiousIOProperty $ runWD conf session $ wd_cutArray tc
 
 
 -- | the underlying property in the web driver monad.

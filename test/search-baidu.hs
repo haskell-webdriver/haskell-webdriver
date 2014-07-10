@@ -3,11 +3,11 @@ module Main where
 
 import           Control.Concurrent
 import           Control.Parallel
-import Control.Monad (void)
+import           Control.Monad (void)
 import           Data.List
 import qualified Data.Text                    as T
 import           Test.WebDriver
-import           Test.WebDriver.Classes
+--import           Test.WebDriver.Classes
 import           Test.WebDriver.Commands.Wait
 
 capsChrome = defaultCaps { browser = chrome }
@@ -28,7 +28,7 @@ searchBaidu = do
     title <- getTitle
     return ("cheese!" `T.isSuffixOf` title)
 
-testCase c = void $ runSession defaultSession c (baidu >> searchBaidu)
+testCase c = void $ runSession defaultConfig c (baidu >> searchBaidu)
 
 testSuits = mapM_ testCase  [capsFF, capsChrome]
 
