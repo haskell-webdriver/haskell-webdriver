@@ -30,13 +30,23 @@ data WDConfig = WDConfig {
     , wdPort     :: Word16
      -- |Base path for all API requests (default "/wd/hub")
     , wdBasePath :: String
+
+     -- |Maximum number of connections to keep in the pool for each session
+     -- (default 10)
+    , wdConnections :: Int
+
+     -- |Timeout for requests sent to WebDriver server, in microseconds
+     -- (default 5 seconds)
+    , wdResponseTimeout :: Int
 } deriving (Read, Show, Eq)
 
 instance Default WDConfig where
     def = WDConfig {
       wdHost              = "127.0.0.1"
     , wdPort              = 4444
-    , wdBasePath       = "/wd/hub"
+    , wdBasePath          = "/wd/hub"
+    , wdConnections       = 10
+    , wdResponseTimeout   = 5000000
     }
     
  
