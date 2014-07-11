@@ -83,7 +83,7 @@ handleHTTPErr r =
              | otherwise -> err ServerError
            Nothing ->
              err (ServerError . ("Missing content type. Server response: "++)))
-       , (code >= 200 && code < 300, return ())
+       , (code >= 200 && code < 300, parseJSON' body >>= handleJSONErr)
        , (code == 302 || code == 303, return ())
        , (otherwise, err (HTTPStatusUnknown code))
        ]
