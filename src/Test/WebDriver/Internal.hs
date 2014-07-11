@@ -144,11 +144,11 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   let screen = B64.decodeLenient <$> errScreen errInfo
       errInfo' = errInfo { errSess = Just (conf, sess)
                                  , errScreen = screen }
-      e errType = Just . toException $ FailedCommand errType errInfo'
-  return $ case status of
+      e errType = toException $ FailedCommand errType errInfo'
+  return . Just $ case status of
     7   -> e NoSuchElement
     8   -> e NoSuchFrame
-    9   -> Just . toException . UnknownCommand . errMsg $ errInfo
+    9   -> toException . UnknownCommand . errMsg $ errInfo
     10  -> e StaleElementReference
     11  -> e ElementNotVisible
     12  -> e InvalidElementState
