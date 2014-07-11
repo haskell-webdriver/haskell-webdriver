@@ -1,8 +1,12 @@
 {-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable,
-             RecordWildCards #-}
+             RecordWildCards, ScopedTypeVariables #-}
+-- |The HTTP/JSON plumbing used to implement the 'WD' monad.
+--
+-- These functions can be used to create your own 'WebDriver' instances, providing extra functionality for your application if desired. All exports
+-- of this module are subject to change at any point.
 module Test.WebDriver.Internal
        ( mkRequest, sendHTTPRequest
-       , handleHTTPErr, handleJSONErr, handleHTTPResp
+       , getJSONResult, handleJSONErr, handleRespSessionId
        , WDResponse(..)
 
        , InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
@@ -32,7 +36,7 @@ import qualified Data.Text.Lazy.Encoding as TL
 import Control.Monad.Base
 import Control.Exception.Lifted (throwIO)
 import Control.Applicative
-import Control.Conditional
+import Control.Exception (SomeException, toException)
 
 import Control.Exception (Exception)
 import Data.Typeable (Typeable)
@@ -41,7 +45,7 @@ import Data.String (fromString)
 import Data.Word (Word, Word8)
 import Data.Default
 
--- |Constructs a 'Request' value when given a list of headers, HTTP request method, and URL path
+-- |Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
 mkRequest :: (WDSessionState s, WDConfigReader s, ToJSON a) =>
              RequestHeaders -> Method -> Text -> a -> s Request
 mkRequest headers meth wdPath args = do
@@ -50,84 +54,89 @@ mkRequest headers meth wdPath args = do
         Null  -> ""   --passing Null as the argument indicates no request body
         other -> encode other
   return def { host = fromString wdHost
-             , port = fromIntegral wdPort
-             , path = fromString $ wdBasePath ++ T.unpack wdPath
-             , requestBody = RequestBodyLBS body
-             , requestHeaders = headers ++ [ (hAccept,
-                                             "application/json;charset=UTF-8")
-                                           , (hContentType,
-                                             "application/json;charset=UTF-8")
-                                           , (hContentLength,
-                                              fromString . show . LBS.length $ body)
-                                           ]
-             , method = meth
-             }
+                  , port = fromIntegral wdPort
+                  , path = fromString $ wdBasePath ++ T.unpack wdPath
+                  , requestBody = RequestBodyLBS body
+                  , requestHeaders = headers ++ [ (hAccept, "application/json;charset=UTF-8")
+                                                                 , (hContentType, "application/json;charset=UTF-8")
+                                                                 , (hContentLength, fromString . show . LBS.length $ body) ]
+                  , method = meth }
 
-
+-- |Sends an HTTP request to the remote WebDriver server
 sendHTTPRequest :: (WDSessionState s, WDConfigReader s) => Request -> s (Response ByteString)
 sendHTTPRequest req = do
   m <- getManager
   res <- liftBase $ httpLbs req m
   modifySession $ \s -> s {wdSessHist = (req, res) : if wdKeepSessHist s then wdSessHist s else []} 
   return res
-
-handleHTTPErr :: (WDSessionState s, WDConfigReader s) => Response ByteString -> s ()
-handleHTTPErr r =
-  cond [ (code >= 400 && code < 500, do
-           lastReq <- lastHTTPRequest <$> getSession
-           throwIO . UnknownCommand . maybe reason show $ lastReq)
-       , (code >= 500 && code < 600, case lookup hContentType headers of
-           Just ct
-             | "application/json;" `BS.isInfixOf` ct -> parseJSON' body
-                                                                        >>= handleJSONErr
-             | otherwise -> err ServerError
-           Nothing ->
-             err (ServerError . ("Missing content type. Server response: "++)))
-       , (code >= 200 && code < 300, return ())
-       , (code == 302 || code == 303, return ())
-       , (otherwise, err (HTTPStatusUnknown code))
-       ]
-    where
-      err errType = throwIO $ errType reason
-      status = responseStatus r
-      code = statusCode status
-      reason = BS.unpack $ statusMessage status
-      body = responseBody r
-      headers = responseHeaders r
-
-handleHTTPResp ::  (WDSessionState s, FromJSON a) => Response ByteString -> s a
-handleHTTPResp resp =
-  cond [ (code == 204, noReturn)
-       , (code == 302 || code == 303, case lookup hLocation headers of
-           Nothing -> throwIO . HTTPStatusUnknown code $ (LBS.unpack body)
-           Just loc -> do
-             let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ BS.unpack loc
-             modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
-             fromJSON' . String $ sessId)
-       , (LBS.null body, noReturn)
-       , (otherwise, do
-           sess@WDSession { wdSessId = sessId}   <- getSession      -- get current session state
-           WDResponse { rspSessId = sessId'
-                      , rspVal = val}  <- parseJSON' body -- parse response body
-           case (sessId, (==) <$> sessId <*> sessId') of
-             -- if our monad has an uninitialized session ID, initialize it from the response object
-             (Nothing, _)    -> putSession sess { wdSessId = sessId' }
-               -- if the response ID doesn't match our local ID, throw an error.
-             (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show sessId'
-                                ++ ") does not match local session ID (" ++ show sessId ++ ")"
-             _ ->  return ()
-           fromJSON' val)
-       ]
+  
+ 
+-- |Parses a 'WDResponse' object from a given HTTP response.
+getJSONResult :: (WDSessionState s, WDConfigReader s, FromJSON a) => Response ByteString -> s (Either SomeException a)
+getJSONResult r
+  --malformed request errors
+  | code >= 400 && code < 500 = do
+    lastReq <- lastHTTPRequest <$> getSession
+    returnErr . UnknownCommand . maybe reason show $ lastReq
+  --server-side errors
+  | code >= 500 && code < 600 = 
+    case lookup hContentType headers of
+      Just ct
+        | "application/json;" `BS.isInfixOf` ct ->
+          parseJSON' body
+          >>= handleJSONErr
+          >>= maybe noReturn returnErr
+        | otherwise -> 
+          returnHTTPErr ServerError
+      Nothing ->
+        returnHTTPErr (ServerError . ("HTTP response missing content type. Server reason was: "++))
+  --redirect case (used as a response to createSession requests) 
+  | code == 302 || code == 303 =
+    case lookup hLocation headers of
+      Nothing ->  returnErr . HTTPStatusUnknown code $ LBS.unpack body
+      Just loc -> do
+        let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ BS.unpack loc
+        modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
+        noReturn
+  -- No Content response
+  | code == 204 = noReturn
+  -- HTTP Success
+  | code >= 200 && code < 300 = 
+    if LBS.null body
+      then noReturn
+      else do
+        rsp@WDResponse {rspVal = val} <- parseJSON' body  
+        handleJSONErr rsp >>= maybe  
+          (handleRespSessionId rsp >> Right <$> fromJSON' val)
+          returnErr 
+  -- other status codes: return error
+  | otherwise = returnHTTPErr (HTTPStatusUnknown code)
   where
-    noReturn = fromJSON' Null
-    status = responseStatus resp
+    --helper functions
+    returnErr :: (Exception e, Monad m) => e -> m (Either SomeException a)
+    returnErr = return . Left . toException
+    returnHTTPErr errType = returnErr . errType $ reason
+    noReturn = Right <$> fromJSON' Null
+    --HTTP response variables
     code = statusCode status
---    reason = BS.unpack $ statusMessage status
-    body = responseBody resp
-    headers = responseHeaders resp
+    reason = BS.unpack $ statusMessage status
+    status = responseStatus r  
+    body = responseBody r  
+    headers = responseHeaders r
 
-handleJSONErr :: (WDSessionState s, WDConfigReader s) => WDResponse -> s ()
-handleJSONErr WDResponse{rspStatus = 0} = return ()
+handleRespSessionId :: (WDSessionState s) => WDResponse -> s ()
+handleRespSessionId WDResponse{rspSessId = sessId'} = do
+    sess@WDSession { wdSessId = sessId} <- getSession
+    case (sessId, (==) <$> sessId <*> sessId') of
+       -- if our monad has an uninitialized session ID, initialize it from the response object
+       (Nothing, _)    -> putSession sess { wdSessId = sessId' }
+       -- if the response ID doesn't match our local ID, throw an error.
+       (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show sessId'
+                                 ++ ") does not match local session ID (" ++ show sessId ++ ")"
+       _ ->  return ()
+    
+handleJSONErr :: (WDSessionState s, WDConfigReader s) => WDResponse -> s (Maybe SomeException)
+handleJSONErr WDResponse{rspStatus = 0} = return Nothing
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- getSession
   conf <- askConfig
@@ -135,11 +144,11 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   let screen = B64.decodeLenient <$> errScreen errInfo
       errInfo' = errInfo { errSess = Just (conf, sess)
                                  , errScreen = screen }
-      e errType = throwIO $ FailedCommand errType errInfo'
-  case status of
+      e errType = Just . toException $ FailedCommand errType errInfo'
+  return $ case status of
     7   -> e NoSuchElement
     8   -> e NoSuchFrame
-    9   -> throwIO . UnknownCommand . errMsg $ errInfo
+    9   -> Just . toException . UnknownCommand . errMsg $ errInfo
     10  -> e StaleElementReference
     11  -> e ElementNotVisible
     12  -> e InvalidElementState

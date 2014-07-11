@@ -48,11 +48,11 @@ instance WDConfigReader WD where
   askConfig = WD ask
 
 instance WebDriver WD where
-  doCommand method path args = do
-    req <- mkRequest [] method path args
-    res <- sendHTTPRequest req
-    handleHTTPErr res
-    handleHTTPResp res
+  doCommand method path args =
+    mkRequest [] method path args
+    >>= sendHTTPRequest
+    >>= getJSONResult
+    >>= either throwIO return
 
 
 -- |Executes a 'WD' computation within the 'IO' monad, using the given
