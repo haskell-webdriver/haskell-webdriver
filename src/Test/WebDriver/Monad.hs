@@ -63,7 +63,7 @@ runWD conf sess (WD wd) = runReaderT (evalStateT wd sess) conf
 -- |Automatically creates a new session beforehand and closes it
 -- afterwards. Most common use case
 runSession :: WDConfig -> Capabilities -> WD a -> IO a
-runSession c caps wd = runWD c def $ createSession caps >> wd  <* closeSession
+runSession c caps wd = runWD c def $ (createSession caps >> wd) `finally` closeSession
 
 -- |Locally sets a 'WDSession' for use within the given 'WD' action.
 -- The state of the outer action is unaffected by this function.
