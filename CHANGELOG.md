@@ -1,4 +1,12 @@
 #Change Log
+##0.6
+* Rather than WDSession serving dual roles as configuration and state, its functionality has been split into 2 respective types: WDConfig and WDSession.
+* runSession now takes a WDConfig instead of WDSession and Capabilities parameters.
+* runSession no longer closes its session on successful completion; use finallyClose or closeOnException for this behavior
+* The old Test.WebDriver.Classes module has been split into Test.WebDriver.Session and Test.WebDriver.Class
+* SessionState typeclass renamed to WDSessionState
+* We now use the http-client package instead of HTTP. This is reflected in the addition of Manager fields in both WDConfig and WDSession
+
 ##0.5.4
 * MonadCatchIO is deprecated in favour of exceptions
 * Relaxed dependencies on mtl, network and scientific
