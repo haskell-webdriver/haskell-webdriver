@@ -88,7 +88,7 @@ This line is fairly straightforward; we need to import the library so that we ca
 To configure a new WebDriver session, we use the `WDConfig` type; this is a record type with various configuration fields. To connect to the Selenium server that we spawned earlier, the `defaultConfig` is sufficient. By default, the browser is set to Firefox, but that can be changed; the following configuration will use Google Chrome instead of Firefox for our test:
 
     myConfig :: WDConfig
-    myConfig = defaultConfig { capabilities = chrome }
+    myConfig = defaultConfig { wdCapabilities = chrome }
  
 ###Initializing tests
 
