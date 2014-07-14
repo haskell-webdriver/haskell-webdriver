@@ -35,12 +35,11 @@ newtype SessionId = SessionId Text
                   deriving (Eq, Ord, Show, Read, FromJSON, ToJSON)
 
 {- |The local state of a WebDriver session. This structure is passed
-implicitly through all 'WD' computations, and is also used to configure the 'WD'
-monad before execution. -}
+implicitly through all 'WD' computations -}
 data WDSession = WDSession {
-                             -- Server hostname
+                             -- server hostname
                              wdSessHost :: BS.ByteString
-                             -- Server port
+                             -- server port
                            , wdSessPort :: Int
                              -- Base path for API requests
                            , wdSessBasePath :: BS.ByteString
