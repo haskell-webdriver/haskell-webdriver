@@ -1,7 +1,7 @@
 {-# OPTIONS_HADDOCK not-home #-}
 module Test.WebDriver.Types
        ( -- * WebDriver sessions
-         WD(..), WDSession(..), defaultSession, SessionId(..)
+         WD(..), WDSession(..), SessionId(..)
          -- * WebDriver configuration
        , WDConfig(..), defaultConfig
          -- * Capabilities

@@ -18,7 +18,6 @@ module Test.WebDriver.Internal
 import Test.WebDriver.Class
 import Test.WebDriver.JSON
 import Test.WebDriver.Session
-import Test.WebDriver.Config
 
 import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..))
 import Network.HTTP.Types.Header
@@ -26,12 +25,14 @@ import Network.HTTP.Types.Status (Status(..))
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 
-import Data.Text as T (Text, unpack, splitOn, null)
+import Data.Text as T (Text, splitOn, null)
+import qualified Data.Text.Encoding as TE
+import qualified Data.Text.Lazy.Encoding as TLE
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Base64.Lazy as B64
-import qualified Data.Text.Lazy.Encoding as TL
+
 
 import Control.Monad.Base
 import Control.Exception.Lifted (throwIO)
@@ -46,33 +47,33 @@ import Data.Word (Word, Word8)
 import Data.Default
 
 -- |Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
-mkRequest :: (WDSessionState s, WDConfigReader s, ToJSON a) =>
+mkRequest :: (WDSessionState s, ToJSON a) =>
              RequestHeaders -> Method -> Text -> a -> s Request
 mkRequest headers meth wdPath args = do
-  WDConfig {..} <- askConfig
+  WDSession {..} <- getSession
   let body = case toJSON args of
         Null  -> ""   --passing Null as the argument indicates no request body
         other -> encode other
-  return def { host = fromString wdHost
-                  , port = fromIntegral wdPort
-                  , path = fromString $ wdBasePath ++ T.unpack wdPath
-                  , requestBody = RequestBodyLBS body
-                  , requestHeaders = headers ++ [ (hAccept, "application/json;charset=UTF-8")
-                                                                 , (hContentType, "application/json;charset=UTF-8")
-                                                                 , (hContentLength, fromString . show . LBS.length $ body) ]
-                  , method = meth }
+  return def { host = wdSessHost
+             , port = wdSessPort
+             , path = wdSessBasePath `BS.append`  TE.encodeUtf8 wdPath
+             , requestBody = RequestBodyLBS body
+             , requestHeaders = headers ++ [ (hAccept, "application/json;charset=UTF-8")
+                                           , (hContentType, "application/json;charset=UTF-8")
+                                           , (hContentLength, fromString . show . LBS.length $ body) ]
+             , method = meth }
 
 -- |Sends an HTTP request to the remote WebDriver server
-sendHTTPRequest :: (WDSessionState s, WDConfigReader s) => Request -> s (Response ByteString)
+sendHTTPRequest :: (WDSessionState s) => Request -> s (Response ByteString)
 sendHTTPRequest req = do
-  m <- getManager
-  res <- liftBase $ httpLbs req m
-  modifySession $ \s -> s {wdSessHist = (req, res) : if wdKeepSessHist s then wdSessHist s else []} 
+  s@WDSession{..} <- getSession
+  res <- liftBase $ httpLbs req wdSessHTTPManager
+  putSession s {wdSessHist = wdSessHistUpdate (req, res) wdSessHist} 
   return res
   
  
 -- |Parses a 'WDResponse' object from a given HTTP response.
-getJSONResult :: (WDSessionState s, WDConfigReader s, FromJSON a) => Response ByteString -> s (Either SomeException a)
+getJSONResult :: (WDSessionState s, FromJSON a) => Response ByteString -> s (Either SomeException a)
 getJSONResult r
   --malformed request errors
   | code >= 400 && code < 500 = do
@@ -135,15 +136,14 @@ handleRespSessionId WDResponse{rspSessId = sessId'} = do
                                  ++ ") does not match local session ID (" ++ show sessId ++ ")"
        _ ->  return ()
     
-handleJSONErr :: (WDSessionState s, WDConfigReader s) => WDResponse -> s (Maybe SomeException)
+handleJSONErr :: (WDSessionState s) => WDResponse -> s (Maybe SomeException)
 handleJSONErr WDResponse{rspStatus = 0} = return Nothing
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- getSession
-  conf <- askConfig
   errInfo <- fromJSON' val
   let screen = B64.decodeLenient <$> errScreen errInfo
-      errInfo' = errInfo { errSess = Just (conf, sess)
-                                 , errScreen = screen }
+      errInfo' = errInfo { errSess = Just sess
+                         , errScreen = screen }
       e errType = toException $ FailedCommand errType errInfo'
   return . Just $ case status of
     7   -> e NoSuchElement
@@ -256,7 +256,7 @@ data FailedCommandInfo =
                       errMsg    :: String
                       -- |The session associated with
                       -- the exception.
-                    , errSess :: Maybe (WDConfig, WDSession)
+                    , errSess :: Maybe WDSession
                       -- |A screen shot of the focused window
                       -- when the exception occured,
                       -- if provided.
@@ -283,23 +283,25 @@ instance Show FailedCommandInfo where
 
       sess = case errSess i of
         Nothing -> showString "None"
-        Just (WDConfig {wdHost = host, wdPort = port}, WDSession {wdSessId = msid }) ->
-            let  sessId = maybe "<no session id>" show msid
+        Just WDSession{..} ->
+            let sessId = maybe "<no session id>" show wdSessId
             in showString sessId . showString " at "
-                . showString host . showChar ':' . shows port
+                . shows wdSessHost . showChar ':' . shows wdSessPort
 
 
 -- |Constructs a FailedCommandInfo from only an error message.
-mkFailedCommandInfo :: (WDSessionState s, WDConfigReader s) => String -> s FailedCommandInfo
+mkFailedCommandInfo :: (WDSessionState s) => String -> s FailedCommandInfo
 mkFailedCommandInfo m = do
   sess <- getSession
-  conf <- askConfig
-  return $ FailedCommandInfo {errMsg = m , errSess = Just (conf, sess) , errScreen = Nothing
-                             , errClass  = Nothing , errStack  = [] }
+  return $ FailedCommandInfo { errMsg = m 
+                             , errSess = Just sess
+                             , errScreen = Nothing
+                             , errClass = Nothing
+                             , errStack = [] }
 
 -- |Convenience function to throw a 'FailedCommand' locally with no server-side
 -- info present.
-failedCommand :: (WDSessionState s, WDConfigReader s) => FailedCommandType -> String -> s a
+failedCommand :: (WDSessionState s) => FailedCommandType -> String -> s a
 failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m
 
 -- |An individual stack frame from the stack trace provided by the server
@@ -324,7 +326,7 @@ instance FromJSON FailedCommandInfo where
   parseJSON (Object o) =
     FailedCommandInfo <$> (req "message" >>= maybe (return "") return)
                       <*> pure Nothing
-                      <*> (fmap TL.encodeUtf8 <$> opt "screen" Nothing)
+                      <*> (fmap TLE.encodeUtf8 <$> opt "screen" Nothing)
                       <*> opt "class"      Nothing
                       <*> opt "stackTrace" []
     where req :: FromJSON a => Text -> Parser a

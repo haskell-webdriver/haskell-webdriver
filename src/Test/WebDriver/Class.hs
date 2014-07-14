@@ -4,8 +4,7 @@ module Test.WebDriver.Class
        ( -- * WebDriver class
          WebDriver(..), Method, methodDelete, methodGet, methodPost,
        ) where
-import Test.WebDriver.Session
-import Test.WebDriver.Config 
+import Test.WebDriver.Session 
 
 import Data.Aeson
 import Data.Text (Text)
@@ -32,9 +31,9 @@ import Control.Monad.RWS.Lazy as LRWS
 -- operation underlying all of the high-level commands exported in
 -- "Test.WebDriver.Commands". For more information on the wire protocol see
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
-class (WDSessionState wd, WDConfigReader wd) => WebDriver wd where
+class (WDSessionState wd) => WebDriver wd where
   doCommand :: (ToJSON a, FromJSON b) =>
-                Method -- ^HTTP request method
+                Method        -- ^HTTP request method
                 -> Text       -- ^URL of request
                 -> a          -- ^JSON parameters passed in the body
                               -- of the request. Note that, as a special case,

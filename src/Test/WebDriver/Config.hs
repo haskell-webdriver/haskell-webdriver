@@ -1,89 +1,74 @@
+{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts #-}
 module Test.WebDriver.Config(
-    -- * WDConfigReader class
-      WDConfigReader(..)
     -- * WebDriver configuration
-    , WDConfig(..), defaultConfig
+    WDConfig(..), defaultConfig, mkSession   
     ) where
+import Test.WebDriver.Session
+import Test.WebDriver.Capabilities
 
-import Data.Word
-import Data.Default
+import Data.Default (Default, def)
+import Data.String (fromString)
 
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.Identity
-import Control.Monad.List
-import Control.Monad.Reader
-import Control.Monad.Error
---import Control.Monad.Cont
-import Control.Monad.Writer.Strict as SW
-import Control.Monad.Writer.Lazy as LW
-import Control.Monad.State.Strict as SS
-import Control.Monad.State.Lazy as LS
-import Control.Monad.RWS.Strict as SRWS
-import Control.Monad.RWS.Lazy as LRWS
+import Network.HTTP.Client (Manager, newManager, defaultManagerSettings) 
 
--- | WebDriver session configuration
+import Control.Monad.Base (MonadBase, liftBase)
+
+-- |WebDriver session configuration
 data WDConfig = WDConfig {
      -- |Host name of the WebDriver server for this
      -- session (default 127.0.0.1)
-     wdHost     :: String
+      wdHost :: String
      -- |Port number of the server (default 4444)
-    , wdPort     :: Word16
+    , wdPort :: Int
+     -- |Capabilities to use for this session
+    , wdCapabilities :: Capabilities
+     -- |Whether or not we should keep a history of HTTP requests/responses
+     --
+     -- By default, only the last request/response pair is stored (O(1) heap consumption).
+     -- Enable this option for more detailed debugging info for HTTP requests.
+    , wdKeepSessHist :: Bool
      -- |Base path for all API requests (default "/wd/hub")
     , wdBasePath :: String
+     -- |Use the given http-client 'Manager' instead of the default
+    , wdHTTPManager :: Maybe Manager
 
-     -- |Maximum number of connections to keep in the pool for each session
-     -- (default 10)
-    , wdConnections :: Int
-
-     -- |Timeout for requests sent to WebDriver server, in microseconds
-     -- (default 5 seconds)
-    , wdResponseTimeout :: Int
-} deriving (Read, Show, Eq)
+}
 
 instance Default WDConfig where
     def = WDConfig {
       wdHost              = "127.0.0.1"
     , wdPort              = 4444
+    , wdCapabilities      = def
+    , wdKeepSessHist      = False 
     , wdBasePath          = "/wd/hub"
-    , wdConnections       = 10
-    , wdResponseTimeout   = 5000000
+    , wdHTTPManager       = Nothing
     }
-    
- 
     
 {- |A default session config connects to localhost on port 4444, and hasn't been
 initialized server-side. This value is the same as 'def' but with a less
 polymorphic type. -}
 defaultConfig :: WDConfig
 defaultConfig = def
-
-class Monad m => WDConfigReader m where
-    askConfig :: m WDConfig
-    --localConfig :: (WDConfig -> WDConfig) -> m a -> m a
-
-instance WDConfigReader m => WDConfigReader (LS.StateT s m) where
-    askConfig = lift askConfig
-  
-instance WDConfigReader m => WDConfigReader (SS.StateT s m) where
-    askConfig = lift askConfig
     
-instance WDConfigReader m => WDConfigReader (MaybeT m) where
-    askConfig = lift askConfig
+-- |Constructs a new 'WDSession' from a given 'WDConfig'
+mkSession :: MonadBase IO m => WDConfig -> m WDSession
+mkSession WDConfig{..} = do
+  manager <- maybe createManager return wdHTTPManager
+  return WDSession { wdSessHost = fromString $ wdHost
+                   , wdSessPort = wdPort
+                   , wdSessBasePath = fromString $ wdBasePath
+                   , wdSessId = Nothing
+                   , wdSessHist = []
+                   , wdSessHistUpdate = histUpdate
+                   , wdSessHTTPManager = manager }
+  where
+    createManager = liftBase $ newManager defaultManagerSettings
+    histUpdate
+      | wdKeepSessHist = (:)
+      | otherwise      = \x _ -> [x]
+  
 
-instance WDConfigReader m => WDConfigReader (IdentityT m) where
-    askConfig = lift askConfig
-  
-instance (Monoid w, WDConfigReader m) => WDConfigReader (LW.WriterT w m) where
-    askConfig = lift askConfig
-  
-instance WDConfigReader m => WDConfigReader (ReaderT r m) where
-    askConfig = lift askConfig
-  
-instance (Error e, WDConfigReader m) => WDConfigReader (ErrorT e m) where
-    askConfig = lift askConfig
-  
-instance (Monoid w, WDConfigReader m) => WDConfigReader (SRWS.RWST r w s m) where
-    askConfig = lift askConfig
-  
-instance (Monoid w, WDConfigReader wd) => WDConfigReader (LRWS.RWST r w s wd) where
-    askConfig = lift askConfig
+
+    
+
+

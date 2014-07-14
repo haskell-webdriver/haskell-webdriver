@@ -8,7 +8,6 @@ import Test.WebDriver.Class
 import Test.WebDriver.Session
 import Test.WebDriver.Config
 import Test.WebDriver.Commands
-import Test.WebDriver.Capabilities
 import Test.WebDriver.Internal
 
 import Control.Monad.Base (MonadBase, liftBase)
@@ -20,19 +19,18 @@ import Control.Exception.Lifted
 import Control.Monad.Catch (MonadThrow, MonadCatch)
 import Control.Applicative
 
-import Data.Default
 
 {- |A monadic interface to the WebDriver server. This monad is simply a
     state monad transformer over 'IO', threading session information between sequential webdriver commands
 -}
-newtype WD a = WD (StateT WDSession (ReaderT WDConfig IO) a)
+newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch)
 
 instance MonadBase IO WD where
   liftBase = WD . liftBase
 
 instance MonadBaseControl IO WD where
-  data StM WD a = StWD {unStWD :: StM (StateT WDSession (ReaderT WDConfig IO)) a}
+  data StM WD a = StWD {unStWD :: StM (StateT WDSession IO) a}
 
   liftBaseWith f = WD $
     liftBaseWith $ \runInBase ->
@@ -43,9 +41,6 @@ instance MonadBaseControl IO WD where
 instance WDSessionState WD where
   getSession = WD get
   putSession = WD . put
-  
-instance WDConfigReader WD where
-  askConfig = WD ask
 
 instance WebDriver WD where
   doCommand method path args =
@@ -56,14 +51,17 @@ instance WebDriver WD where
 
 
 -- |Executes a 'WD' computation within the 'IO' monad, using the given
--- ''WDConfig' and 'WDSession'.
-runWD :: WDConfig -> WDSession -> WD a -> IO a
-runWD conf sess (WD wd) = runReaderT (evalStateT wd sess) conf
+-- 'WDSession'.
+runWD :: WDSession -> WD a -> IO a
+runWD sess (WD wd) = evalStateT wd sess
 
--- |Automatically creates a new session beforehand and closes it
--- afterwards. Most common use case
-runSession :: WDConfig -> Capabilities -> WD a -> IO a
-runSession c caps wd = runWD c def $ createSession caps >> wd  <* closeSession
+-- |Executes a 'WD' computation within the 'IO' monad, automatically creating a new session beforehand.
+--
+-- NOTE: session is not automatically closed. If you want this behavior, use 'finallyClose'.
+runSession :: WDConfig -> WD a -> IO a
+runSession conf wd = do
+  sess <- mkSession conf
+  runWD sess $ createSession (wdCapabilities conf) >> wd
 
 -- |Locally sets a 'WDSession' for use within the given 'WD' action.
 -- The state of the outer action is unaffected by this function.

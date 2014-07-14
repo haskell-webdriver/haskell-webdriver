@@ -4,21 +4,16 @@ module Test.WebDriver.Session(
          -- * WDSessionState class
          WDSessionState(..), modifySession
          -- ** WebDriver sessions
-       , WDSession(..), lastHTTPRequest, SessionId(..), defaultSession
-       , getManager, setManager
+       , WDSession(..), lastHTTPRequest, SessionId(..)
     ) where
-import Test.WebDriver.Config
 
 import Data.Aeson
-import Data.ByteString.Lazy (ByteString)
+import Data.ByteString as BS(ByteString) 
+import Data.ByteString.Lazy as LBS(ByteString)
 import Data.Text (Text)
-import Data.Default
 import Data.Maybe
 
-import Network.HTTP.Client (Request, Response, newManager, defaultManagerSettings)
-
 import Control.Monad.Trans.Control
-import Control.Monad.Base
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Identity
 import Control.Monad.List
@@ -32,7 +27,7 @@ import Control.Monad.State.Lazy as LS
 import Control.Monad.RWS.Strict as SRWS
 import Control.Monad.RWS.Lazy as LRWS
 
-import Network.HTTP.Client (Manager, ManagerSettings(..))
+import Network.HTTP.Client (Manager, Request, Response)
 
 {- |An opaque identifier for a WebDriver session. These handles are produced by
 the server on session creation, and act to identify a session in progress. -}
@@ -43,45 +38,31 @@ newtype SessionId = SessionId Text
 implicitly through all 'WD' computations, and is also used to configure the 'WD'
 monad before execution. -}
 data WDSession = WDSession {
+                             -- Server hostname
+                             wdSessHost :: BS.ByteString
+                             -- Server port
+                           , wdSessPort :: Int
+                             -- Base path for API requests
+                           , wdSessBasePath :: BS.ByteString
                              -- |An opaque reference identifying the session to
                              -- use with 'WD' commands.
                              -- A value of Nothing indicates that a session
                              -- hasn't been created yet.
                              -- Sessions can be created within 'WD' via
                              -- 'Test.WebDriver.createSession', or created
-                             -- and closed automatically with
-                             -- 'Test.WebDriver.runSession'
-                             wdSessId   :: Maybe SessionId
+                             -- automatically with 'Test.WebDriver.runSession'
+                           , wdSessId   :: Maybe SessionId
                              -- |The complete history of HTTP requests and
-                             -- responses (updated in 'doCommand', most recent
-                             -- first).
-                           , wdSessHist :: [(Request, Response ByteString)]
-                             -- |If 'wdKeepSessHist' is 'True', 'wdSessHist'
-                             -- contains the full session history.
-                             -- Otherwise, only the last request/response
-                             -- pair is stored (O(1) heap consumption).
-                           , wdKeepSessHist :: Bool
-
+                             -- responses, most recent first.
+                           , wdSessHist :: [(Request, Response LBS.ByteString)]
+                             -- Update function used to append new entries to session history
+                           , wdSessHistUpdate :: (Request, Response LBS.ByteString)
+                                                 -> [(Request, Response LBS.ByteString)]
+                                                 -> [(Request, Response LBS.ByteString)]
                              -- |HTTP 'Manager' used for connection pooling by the http-client library.
-                           , wdHTTPManager :: Maybe Manager
-                           } -- deriving (Show)
-                           
-instance Default WDSession where
-  def = WDSession {
-    wdSessId        = Nothing
-  , wdSessHist      = []
-  , wdKeepSessHist  = False
-  , wdHTTPManager   = Nothing
-  }
-
-{- |A default session state that hasn't been initialized server-side connects to localhost on port 4444 -}
-defaultSession :: WDSession
-defaultSession = def
-
-instance Show WDSession where
-    show (WDSession {..}) = "{ wdSessId = " ++ show wdSessId ++ ", wdSessHist = " ++ show wdSessHist ++ ", wdKeepSessHist = " ++ show wdKeepSessHist ++ ", wdHttpManager = " ++ (if isNothing wdHTTPManager then "Nothing" else "Just Manager") ++ "}"
-
-                  
+                           , wdSessHTTPManager :: Manager
+                           }
+    
  -- |The last HTTP request issued by this session, if any.
 lastHTTPRequest :: WDSession -> Maybe Request
 lastHTTPRequest = fmap fst . listToMaybe . wdSessHist
@@ -96,24 +77,6 @@ class MonadBaseControl IO s => WDSessionState s where
 
 modifySession :: WDSessionState s => (WDSession -> WDSession) -> s ()
 modifySession f = getSession >>= putSession . f
-
--- |Gets the HTTP 'Manager' for this session. If the manager is uninitialized, a default manager is created
-getManager :: (WDConfigReader s, WDSessionState s) => s Manager
-getManager = do
-    s <- getSession
-    maybe (createManager s) return . wdHTTPManager $ s
-    where createManager s = do
-              WDConfig {..} <- askConfig
-              m <- liftBase $ newManager defaultManagerSettings {
-                  managerConnCount = wdConnections
-                , managerResponseTimeout = Just wdResponseTimeout
-                }
-              putSession s { wdHTTPManager = Just m }
-              return m
-              
--- |Use the given HTTP 'Manager' for subsequent webdriver requests
-setManager :: WDSessionState s => Manager -> s ()
-setManager m = modifySession (\s-> s {wdHTTPManager = Just m})
                             
 instance WDSessionState m => WDSessionState (LS.StateT s m) where
   getSession = lift getSession

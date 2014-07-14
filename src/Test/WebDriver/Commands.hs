@@ -88,7 +88,6 @@ import qualified Data.Text as T
 import Data.Text (Text, append, toUpper, toLower)
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString)
-import Network.HTTP.Client (closeManager)
 import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
 import qualified Data.Text.Lazy.Encoding as TL
@@ -132,9 +131,7 @@ getCaps = doSessCommand methodGet "" Null
 closeSession :: WebDriver wd => wd ()
 closeSession = do s@WDSession {..} <- getSession
                   noReturn $ doSessCommand methodDelete "" Null
-                  when (isJust wdHTTPManager)
-                      $ liftBase $ closeManager $ fromJust wdHTTPManager
-                  putSession s { wdSessId = Nothing, wdHTTPManager = Nothing }
+                  putSession s { wdSessId = Nothing }
 
 
 -- |Sets the amount of time we implicitly wait when searching for elements.
