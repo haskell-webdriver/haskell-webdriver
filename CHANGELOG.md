@@ -7,9 +7,12 @@
 * SessionState typeclass renamed to WDSessionState
 * We now use the http-client package instead of HTTP. This is reflected in the addition of Manager fields in both WDConfig and WDSession
 
+##0.5.5
+* Added optional HTTP history tracking for debugging purposes.
+
 ##0.5.4
-* MonadCatchIO is deprecated in favour of exceptions
-* Relaxed dependencies on mtl, network and scientific
+* MonadCatchIO is deprecated in favour of exceptions.
+* Relaxed dependencies on mtl, network and scientific.
 
 ##0.5.3.3
 * Relaxed text dependency up to 1.2
