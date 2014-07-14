@@ -7,6 +7,8 @@ module Test.WebDriver.Session(
        , WDSession(..), lastHTTPRequest, SessionId(..), defaultSession
        , getManager, setManager
     ) where
+import Test.WebDriver.Config
+
 import Data.Aeson
 import Data.ByteString.Lazy (ByteString)
 import Data.Text (Text)
@@ -30,7 +32,7 @@ import Control.Monad.State.Lazy as LS
 import Control.Monad.RWS.Strict as SRWS
 import Control.Monad.RWS.Lazy as LRWS
 
-import Network.HTTP.Client (Manager)
+import Network.HTTP.Client (Manager, ManagerSettings(..))
 
 {- |An opaque identifier for a WebDriver session. These handles are produced by
 the server on session creation, and act to identify a session in progress. -}
@@ -96,12 +98,16 @@ modifySession :: WDSessionState s => (WDSession -> WDSession) -> s ()
 modifySession f = getSession >>= putSession . f
 
 -- |Gets the HTTP 'Manager' for this session. If the manager is uninitialized, a default manager is created
-getManager :: WDSessionState s => s Manager
+getManager :: (WDConfigReader s, WDSessionState s) => s Manager
 getManager = do
     s <- getSession
     maybe (createManager s) return . wdHTTPManager $ s
     where createManager s = do
-              m <- liftBase $ newManager defaultManagerSettings
+              WDConfig {..} <- askConfig
+              m <- liftBase $ newManager defaultManagerSettings {
+                  managerConnCount = wdConnections
+                , managerResponseTimeout = Just wdResponseTimeout
+                }
               putSession s { wdHTTPManager = Just m }
               return m
               
