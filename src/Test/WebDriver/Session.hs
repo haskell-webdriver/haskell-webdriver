@@ -54,7 +54,7 @@ data WDSession = WDSession {
                              -- |The complete history of HTTP requests and
                              -- responses, most recent first.
                            , wdSessHist :: [(Request, Response LBS.ByteString)]
-                             -- Update function used to append new entries to session history
+                             -- |Update function used to append new entries to session history
                            , wdSessHistUpdate :: (Request, Response LBS.ByteString)
                                                  -> [(Request, Response LBS.ByteString)]
                                                  -> [(Request, Response LBS.ByteString)]
@@ -62,7 +62,7 @@ data WDSession = WDSession {
                            , wdSessHTTPManager :: Manager
                            }
     
- -- |The last HTTP request issued by this session, if any.
+-- |The last HTTP request issued by this session, if any.
 lastHTTPRequest :: WDSession -> Maybe Request
 lastHTTPRequest = fmap fst . listToMaybe . wdSessHist
 
