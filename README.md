@@ -54,17 +54,20 @@ The server should now be up and running at localhost on port 4444.
 ##Hello, World!
 With the Selenium server running locally, you're ready to write browser automation scripts in Haskell. Let's start with a simple example.
 ```hs
-    {-# LANGUAGE OverloadedStrings #-}
-    import Test.WebDriver
-    
-    myConfig :: WDConfig
-    myConfig = defaultConfig
-    
-    main :: IO ()
-    main = runSession config $ do
-      openPage "http://google.com"
-      searchInput <- findElem (ByCSS "input[type='text']")
-      sendKeys "Hello, World!" searchInput
+{-# LANGUAGE OverloadedStrings #-}
+import Test.WebDriver
+
+sess :: WDSession
+sess = defaultSession
+
+caps :: Capabilities
+caps = defaultCaps { browser = chrome }
+
+main :: IO ()
+main = runSession sess caps $ do
+  openPage "http://google.com"
+  searchInput <- findElem (ByCSS "input[type='text']")
+  sendKeys "Hello, World!" searchInput
 ```
 hs-webdriver uses a very simple EDSL implemented within a state monad. Interacting with the remote browser is done via a sequence of commands within this monad. The state monad maintains implicit information about the WebDriver session between commands, so that individual commands only need to specify parameters relevant to the action they perform. If you're new to monads, there are plenty of resources available for learning on the web, but for now you can think of the  `WD` monad as a very simple imperative language operating on an implicitly defined session object.
 
@@ -82,28 +85,26 @@ This line is fairly straightforward; we need to import the library so that we ca
 
 ###Configuring a WebDriver session
 
-    myConfig :: WDConfig
-    myConfig = defaultConfig
-   
-To configure a new WebDriver session, we use the `WDConfig` type; this is a record type with various configuration fields. To connect to the Selenium server that we spawned earlier, the `defaultConfig` is sufficient. By default, the browser is set to Firefox, but that can be changed; the following configuration will use Google Chrome instead of Firefox for our test:
+    caps :: Capabilities
+    caps = defaultCaps { browser = chrome }
 
-    myConfig :: WDConfig
-    myConfig = defaultConfig { wdCapabilities = chrome }
- 
+To configure a new WebDriver session, we use the `Capabilities` type; this is a record type with various configuration fields. To connect to the Selenium server that we spawned earlier, the `defaultCaps` is sufficient. By default, the browser is set to Firefox, but that can be changed as we did above.
+
+
 ###Initializing tests
 
     main :: IO ()
-    main = runSession config $ do
+    main = runSession sess caps $ do
 
 `main` is the standard entry point for a Haskell program, defined as a value of type `IO a`. In order to transform our `WD` action into an `IO` action, we use the `runSession` function, which has the type:
 
-    runSession :: WDConfig -> WD a -> IO a
+    runSession :: WDSession -> Capabilities -> WD () -> IO ()
  
-So we pass to `runSession` our configuration record along with a WebDriver "script" to perform, and it transforms the script into a side-effectful `IO` action. The `WDConfig` record is used to automatically initialize our session with the remote server.
+So we pass to `runSession` our configuration record along with a WebDriver "script" to perform, and it transforms the script into a side-effectful `IO` action. The `WDSession` record is used to automatically initialize our session with the remote server.
 
-NOTE: `runSession` does not automatically close the session it creates. This is intentional, as you may want to manually inspect the browser state after your code executes. If you want to have the session automatically close, you can use the `finallyClose` function to provide this behavior.
+NOTE: `runSession` does not automatically close the session. This is intentional, as you may want to manually inspect the browser state after your code executes. If you want to have the session automatically close, you can use the `finallyClose` function to provide this behavior.
 
-    main = runSession config . finallyClose $ do
+    main = runSession sess caps . finallyClose $ do
 
 
 ###Actually writing tests!
