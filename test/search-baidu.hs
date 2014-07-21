@@ -28,7 +28,7 @@ searchBaidu = do
     title <- getTitle
     return ("cheese!" `T.isSuffixOf` title)
 
-testCase c = void $ runSession defaultConfig c (baidu >> searchBaidu)
+testCase c = void $ runSession (defaultConfig { wdCapabilities = c }) (baidu >> searchBaidu)
 
 testSuits = mapM_ testCase  [capsFF, capsChrome]
 
