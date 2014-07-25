@@ -61,7 +61,7 @@ With the Selenium server running locally, you're ready to write browser automati
     myConfig = defaultConfig
     
     main :: IO ()
-    main = runSession config $ do
+    main = runSession myConfig $ do
       openPage "http://google.com"
       searchInput <- findElem (ByCSS "input[type='text']")
       sendKeys "Hello, World!" searchInput
