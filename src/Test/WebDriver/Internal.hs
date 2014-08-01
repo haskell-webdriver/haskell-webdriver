@@ -61,6 +61,7 @@ mkRequest headers meth wdPath args = do
              , requestHeaders = headers ++ [ (hAccept, "application/json;charset=UTF-8")
                                            , (hContentType, "application/json;charset=UTF-8")
                                            , (hContentLength, fromString . show . LBS.length $ body) ]
+             , checkStatus = \_ _ _ -> Nothing -- all status codes handled by getJSONResult
              , method = meth }
 
 -- |Sends an HTTP request to the remote WebDriver server
