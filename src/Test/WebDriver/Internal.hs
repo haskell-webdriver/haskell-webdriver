@@ -172,7 +172,6 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
     34  -> e MoveTargetOutOfBounds
     51  -> e InvalidXPathSelector
     52  -> e InvalidXPathSelectorReturnType
-    405 -> e MethodNotAllowed
     _   -> e UnknownError
 
 
@@ -248,7 +247,6 @@ data FailedCommandType = NoSuchElement
                        | MoveTargetOutOfBounds
                        | InvalidXPathSelector
                        | InvalidXPathSelectorReturnType
-                       | MethodNotAllowed
                        deriving (Eq, Ord, Enum, Bounded, Show)
 
 -- |Detailed information about the failed command provided by the server.
