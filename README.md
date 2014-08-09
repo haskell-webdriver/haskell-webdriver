@@ -93,7 +93,7 @@ To configure a new WebDriver session, we use the `WDConfig` type; this is a reco
 ###Initializing tests
 
     main :: IO ()
-    main = runSession config $ do
+    main = runSession myConfig $ do
 
 `main` is the standard entry point for a Haskell program, defined as a value of type `IO a`. In order to transform our `WD` action into an `IO` action, we use the `runSession` function, which has the type:
 
@@ -103,7 +103,7 @@ So we pass to `runSession` our configuration record along with a WebDriver "scri
 
 NOTE: `runSession` does not automatically close the session it creates. This is intentional, as you may want to manually inspect the browser state after your code executes. If you want to have the session automatically close, you can use the `finallyClose` function to provide this behavior.
 
-    main = runSession config . finallyClose $ do
+    main = runSession myConfig . finallyClose $ do
 
 
 ###Actually writing tests!
