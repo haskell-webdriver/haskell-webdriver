@@ -29,7 +29,7 @@ import Data.Text as T (Text, splitOn, null)
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.Lazy.Encoding as TLE
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null)
+import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null, fromChunks)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Base64.Lazy as B64
 
@@ -84,8 +84,9 @@ getJSONResult r
   | code >= 500 && code < 600 = 
     case lookup hContentType headers of
       Just ct
-        | "application/json;" `BS.isInfixOf` ct ->
-          parseJSON' body
+        | "application/json" `BS.isInfixOf` ct ->
+          parseJSON' 
+            (maybe body (LBS.fromChunks . (:[])) (lookup "X-Response-Body-Start" headers))
           >>= handleJSONErr
           >>= maybe noReturn returnErr
         | otherwise -> 
