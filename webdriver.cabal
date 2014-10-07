@@ -26,13 +26,16 @@ source-repository head
   type: git
   location: git://github.com/kallisti-dev/hs-webdriver.git
 
+flag network-uri
+  description: Get Network.URI from the network-uri package
+  default: True
+
 library
   hs-source-dirs: src
   ghc-options: -Wall
   build-depends:   base == 4.*
                  , aeson >= 0.6.2.0 && < 0.9
-                 , network >= 2.4 && < 2.6
-                 , http-client >= 0.3 && < 0.4
+                 , http-client >= 0.3 && < 0.5
                  , http-types >= 0.8 && < 0.9
                  , text >= 0.11.3 && < 1.2.0.0
                  , bytestring >= 0.9 && < 0.11
@@ -55,6 +58,12 @@ library
                  , scientific >= 0.2 && < 0.4
                  , data-default >= 0.2 && < 1.0
                  , cond >= 0.3 && < 0.5
+  if flag(network-uri)
+    build-depends: network-uri >= 2.6
+                 , network >= 2.4 && <= 2.6.0.2
+  else
+    build-depends: network-uri < 2.6
+                 , network >= 2.4 && <= 2.6.0.2
 
   exposed-modules: Test.WebDriver
                    Test.WebDriver.Class
