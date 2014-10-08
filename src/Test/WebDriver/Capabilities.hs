@@ -127,10 +127,10 @@ allCaps = defaultCaps { javascriptEnabled = Just True
                       , nativeEvents = Just True
                       }
 
-
 instance ToJSON Capabilities where
   toJSON Capabilities{..} =
-    object $ [ "browserName" .= browser
+    object $ filter (\p -> snd p /= Null)
+           $ [ "browserName" .= browser
              , "version" .= version
              , "platform" .= platform
              , "proxy" .= proxy
