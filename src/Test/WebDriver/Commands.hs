@@ -134,7 +134,7 @@ closeSession = do s@WDSession {..} <- getSession
                   putSession s { wdSessId = Nothing }
 
 
--- |Sets the amount of time we implicitly wait when searching for elements.
+-- |Sets the amount of time (ms) we implicitly wait when searching for elements.
 setImplicitWait :: WebDriver wd => Integer -> wd ()
 setImplicitWait ms =
   noReturn $ doSessCommand methodPost "/timeouts/implicit_wait" (object msField)
@@ -143,7 +143,7 @@ setImplicitWait ms =
   where msField   = ["ms" .= ms]
         allFields = ["type" .= ("implicit" :: String)] ++ msField
 
--- |Sets the amount of time we wait for an asynchronous script to return a
+-- |Sets the amount of time (ms) we wait for an asynchronous script to return a
 -- result.
 setScriptTimeout :: WebDriver wd => Integer -> wd ()
 setScriptTimeout ms =
@@ -153,7 +153,7 @@ setScriptTimeout ms =
   where msField   = ["ms" .= ms]
         allFields = ["type" .= ("script" :: String)] ++ msField
 
--- |Sets the amount of time to wait for a page to finish loading before throwing a 'Timeout' exception
+-- |Sets the amount of time (ms) to wait for a page to finish loading before throwing a 'Timeout' exception.
 setPageLoadTimeout :: WebDriver wd => Integer -> wd ()
 setPageLoadTimeout ms = noReturn $ doSessCommand methodPost "/timeouts" params
   where params = object ["type" .= ("page load" :: String)
