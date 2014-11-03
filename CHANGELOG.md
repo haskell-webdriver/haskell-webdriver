@@ -1,4 +1,8 @@
 #Change Log
+
+##0.6.0.2
+* Relaxed version bounds for GHC 7.8.3
+
 ##0.6
 * Rather than WDSession serving dual roles as configuration and state, its functionality has been split into 2 respective types: WDConfig and WDSession.
 * runSession now takes a WDConfig instead of WDSession and Capabilities parameters.
