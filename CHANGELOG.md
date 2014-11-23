@@ -1,7 +1,8 @@
 #Change Log
 ##0.6.0.2
 * Added support for aeson > 0.8 and network > 2.6
-* Added support for the "X-Response-Body-Start" HTTP header used for error responses in newer WebDriver server implementations.
+* Added support for the "X-Response-Body-Start" HTTP header used for error responses in newer http-client versions
+* 
 ##0.6
 * Rather than WDSession serving dual roles as configuration and state, its functionality has been split into 2 respective types: WDConfig and WDSession.
 * runSession now takes a WDConfig instead of WDSession and Capabilities parameters.
