@@ -139,7 +139,11 @@ loadProfile path = liftBase $ do
                          ,"parent.lock", ".parentlock", ".lock"
                          ,userPrefFile])
 
-    getPrefs = HM.fromList <$> (parsePrefs =<< BS.readFile userPrefFile)
+    getPrefs = do
+       prefFileExists <- doesFileExist userPrefFile
+       if prefFileExists
+        then HM.fromList <$> (parsePrefs =<< BS.readFile userPrefFile)
+        else return HM.empty
       where parsePrefs s = either (throwIO . ProfileParseError) return
                            $ parseOnly prefsParser s
 
