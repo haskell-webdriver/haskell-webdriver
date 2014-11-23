@@ -1,4 +1,7 @@
 #Change Log
+##0.6.0.3
+* Relaxed upper bounds on text and http-client versions 
+
 ##0.6.0.2
 * Added support for aeson > 0.8 and network > 2.6
 * Added support for the "X-Response-Body-Start" HTTP header used for error responses in newer http-client versions
