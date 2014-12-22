@@ -43,7 +43,7 @@ library
                  , base64-bytestring >= 1.0 && < 1.1
                  , mtl >= 2.0 && < 2.3
                  , transformers >= 0.2 && < 0.5
-                 , monad-control == 0.3.*     
+                 , monad-control >= 0.3 && < 1.1
                  , transformers-base >= 0.1 && < 1.0
                  , lifted-base >= 0.1 && < 0.3
                  , zip-archive >= 0.1.1.8 && < 0.3
