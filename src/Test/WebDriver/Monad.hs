@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
-             MultiParamTypeClasses #-}
+             MultiParamTypeClasses, CPP, UndecidableInstances #-}
 module Test.WebDriver.Monad
        ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException, dumpSessionHistory
        ) where
@@ -30,6 +30,15 @@ instance MonadBase IO WD where
   liftBase = WD . liftBase
 
 instance MonadBaseControl IO WD where
+#if MIN_VERSION_monad_control(1,0,0)
+  type StM WD a = StM (StateT WDSession IO) a
+
+  liftBaseWith f = WD $
+    liftBaseWith $ \runInBase ->
+    f (\(WD sT) -> runInBase $ sT)
+
+  restoreM = WD . restoreM
+#else
   data StM WD a = StWD {unStWD :: StM (StateT WDSession IO) a}
 
   liftBaseWith f = WD $
@@ -37,6 +46,7 @@ instance MonadBaseControl IO WD where
     f (\(WD sT) -> liftM StWD . runInBase $ sT)
 
   restoreM = WD . restoreM . unStWD
+#endif
 
 instance WDSessionState WD where
   getSession = WD get
