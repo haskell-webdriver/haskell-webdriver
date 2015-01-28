@@ -114,10 +114,10 @@ NOTE: `runSession` does not automatically close the session it creates. This is 
 
 Interaction with the browser is accomplished via WebDriver "commands", which are just function calls within the `WD` monad. Most of these commands are defined in the `Test.WebDriver.Commands` modules, and are fairly self-explanatory. In this example, `openPage` opens a new URL, and `findElem` searches for a DOM element on the current page which matches the given selector (possible selectors include `ById`, `ByName`, `ByClass`, `ByTag`, `ByLinkText`, `ByCSS`, and `ByXPath`). The DOM Element found by the result of the search is bound to the local variable `searchInput`, and `sendKeys` sends a sequence of emulated keystrokes to the given element.
 
-This example contains all of the basic elements of a simple WebDriver test. For complete documentation on each command, check out the documentation for `Test.WebDriver.Commands` (see [#Documentation](Documentation)).
+This example contains all of the basic elements of a simple WebDriver test. For complete documentation on each command, check out the documentation for `Test.WebDriver.Commands` (see [Documentation](#Documentation)).
 
 
-#Documentation
+#Documentation<a name="Documentation"></a>
 
 Documentation for hs-webdriver is available on Hackage at <http://hackage.haskell.org/package/webdriver>. However, here's how to generate local HTML documentation from this source revision:
 
