@@ -1,4 +1,4 @@
-#known issue
+#known issues
 - fix loadProfile so that it doesn't cause an overlap with user addExtension calls
 
 #features
