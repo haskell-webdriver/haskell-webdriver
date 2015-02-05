@@ -53,8 +53,8 @@ instance WDSessionState WD where
   putSession = WD . put
 
 instance WebDriver WD where
-  doCommand method path args =
-    mkRequest [] method path args
+  doCommand headers method path args =
+    mkRequest headers method path args
     >>= sendHTTPRequest
     >>= getJSONResult
     >>= either throwIO return
@@ -71,7 +71,7 @@ runWD sess (WD wd) = evalStateT wd sess
 runSession :: WDConfig -> WD a -> IO a
 runSession conf wd = do
   sess <- mkSession conf
-  runWD sess $ createSession (wdCapabilities conf) >> wd
+  runWD sess $ createSession (wdRequestHeaders conf) (wdCapabilities conf) >> wd
 
 -- |Locally sets a 'WDSession' for use within the given 'WD' action.
 -- The state of the outer action is unaffected by this function.
