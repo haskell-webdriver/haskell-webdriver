@@ -21,7 +21,7 @@ data WDConfig = WDConfig {
       wdHost :: String
      -- |Port number of the server (default 4444)
     , wdPort :: Int
-     -- |Additional request headers to send to the server (default [])
+     -- |Additional request headers to send to the server during session creation (default [])
     , wdRequestHeaders :: RequestHeaders
      -- |Capabilities to use for this session
     , wdCapabilities :: Capabilities
