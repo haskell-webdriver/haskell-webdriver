@@ -3,8 +3,7 @@
 
 #features
 - add support for Opera profiles
-- improve documentation
-- 
+
 #documentation
 - document errors.
 - provide examples
