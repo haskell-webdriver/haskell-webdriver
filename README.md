@@ -87,7 +87,7 @@ Let's take a closer look at each piece of this example.
 ```hs
     {-# LANGUAGE OverloadedStrings #-}
 ```
-hs-webdriver uses the `Text` type to represent Unicode character sequences, which is significantly more efficient than the standard Haskell structure for strings. This directive tells GHC to overload string literals so that they can be used to represent `Text` values (or, more generally, any other instance of (IsString)[http://hackage.haskell.org/package/base-4.7.0.2/docs/Data-String.html]).
+hs-webdriver uses the `Text` type to represent Unicode character sequences, which is significantly more efficient than the standard Haskell structure for strings. This directive tells GHC to overload string literals so that they can be used to represent `Text` values (or, more generally, any other instance of [IsString](http://hackage.haskell.org/package/base-4.7.0.2/docs/Data-String.html]).
 ```hs
     import Test.WebDriver
 ```
@@ -103,7 +103,7 @@ To configure a new WebDriver session, we use the `WDConfig` type; this is a reco
     myConfig :: WDConfig
     myConfig = defaultConfig { wdCapabilities = defaultCaps { browser = chrome } }
 ```
-*Note*: To use Google Chrome, you need to install Google's proprietary (ChromeDriver)[https://sites.google.com/a/chromium.org/chromedriver/] in a directory where it can be recognized by Selenium Server (see: https://code.google.com/p/selenium/wiki/ChromeDriver).
+*Note*: To use Google Chrome, you need to install Google's proprietary [ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/) in a directory where it can be recognized by Selenium Server (see: https://code.google.com/p/selenium/wiki/ChromeDriver).
  
 ###Initializing tests
 ```hs
