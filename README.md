@@ -13,6 +13,7 @@ For more information about Selenium itself, see http://seleniumhq.org/
         * [Configuring a WebDriver session](#configuring-a-webdriver-session)
         * [Initializing tests](#initializing-tests)
         * [Actually writing tests!](#actually-writing-tests)
+* [Integration with Haskell Testing Frameworks](#integration-with-haskell-testing-frameworks)
 * [Documentation](#documentation)
 
 # Installation
@@ -130,6 +131,12 @@ Interaction with the browser is accomplished via WebDriver "commands", which are
 
 This example contains all of the basic elements of a simple WebDriver test. For complete documentation on each command, check out the documentation for [Test.WebDriver.Commands](https://hackage.haskell.org/package/webdriver-0.6.0.4/docs/Test-WebDriver-Commands.html)
 
+#Integration with Haskell Testing Frameworks
+
+This package does not provide utilities to integrate with popular Haskell testing frameworks. However, other packages exist for this purpose:
+
+* [hspec-webdriver](https://hackage.haskell.org/package/hspec-webdriver)
+* [quickcheck-webdriver](https://hackage.haskell.org/package/quickcheck-webdriver)
 
 #Documentation
 
