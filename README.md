@@ -4,8 +4,8 @@ For more information about Selenium itself, see http://seleniumhq.org/
 
 # Contents
 * [Installation](#installation)
-    * [Installation from Hackage](#from-hackage)
-    * [Installation from This Repository](#from-this-repository)
+    * [Installation from Hackage](#installation-from-hackage)
+    * [Installation from This Repository](#installation-from-this-repository)
 * [Getting Started](#getting-started)
     * [Using the Selenium Server](#using-the-selenium-server)
     * [Hello, World!](#hello-world)
