@@ -3,6 +3,8 @@
 
 #features
 - add support for Opera profiles
+- overload URL inputs/outputs to implicitly support structured URL types
+- provide exception handling utilities (maybeNotFound, ignoreNotFound, ...)
 
 #documentation
 - document errors.
