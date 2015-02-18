@@ -158,12 +158,14 @@ instance ToJSON Capabilities where
              ,"firefox_binary" .= ffBinary
              ]
         Chrome {..}
-          -> catMaybes [ opt "chrome.chromedriverVersion" chromeDriverVersion
-                       , opt "chrome.binary" chromeBinary
-                       ]
-             ++ ["chrome.switches" .= chromeOptions
-                ,"chrome.extensions" .= chromeExtensions
-                ]
+          -> catMaybes [ opt "chrome.chromedriverVersion" chromeDriverVersion ]
+             ++ [ "chromeOptions" .= object (catMaybes
+                  [ opt "binary" chromeBinary
+                  ] ++
+                  [ "args"       .= chromeOptions
+                  , "extensions" .= chromeExtensions
+                  ]
+                )]
         IE {..}
           -> ["ignoreProtectedModeSettings" .= ieIgnoreProtectedModeSettings
              ,"ignoreZoomSetting" .= ieIgnoreZoomSetting
