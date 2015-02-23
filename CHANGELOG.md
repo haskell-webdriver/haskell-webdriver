@@ -1,4 +1,13 @@
 #Change Log
+
+##0.6.1
+* Added the ability to pass HTTP request headers at session creation
+* Fixed an issue involving an obsolete JSON representation of Chrome capabilities
+* Relax upper bound on exceptions dependency
+
+##0.6.0.4
+* Support for monad-control 1.0
+
 ##0.6.0.3
 * Relaxed upper bounds on text and http-client versions 
 
