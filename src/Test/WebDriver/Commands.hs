@@ -336,10 +336,6 @@ mkCookie name value = Cookie { cookName = name, cookValue = value,
                                cookSecure = Nothing, cookExpiry = Nothing
                              }
 
--- This line causes a strange out of scope error. Moving to the bottom of the
--- file fixed it.
--- $( deriveToJSON (map C.toLower . drop 4) ''Cookie )
-
 instance FromJSON Cookie where
   parseJSON (Object o) = Cookie <$> req "name"
                                 <*> req "value"
