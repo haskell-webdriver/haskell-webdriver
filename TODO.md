@@ -5,6 +5,7 @@
 - add support for Opera profiles
 - overload URL inputs/outputs to implicitly support structured URL types
 - provide exception handling utilities (maybeNotFound, ignoreNotFound, ...)
+- POST "/session/{sessionId}/phantom/execute"
 
 #documentation
 - document errors.
