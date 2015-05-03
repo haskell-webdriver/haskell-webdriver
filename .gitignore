@@ -1,3 +1,5 @@
 cabal-dev
 dist
 chromedriver.log
+.cabal-sandbox
+cabal.sandbox.config
