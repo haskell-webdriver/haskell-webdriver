@@ -67,7 +67,9 @@ runWD sess (WD wd) = evalStateT wd sess
 
 -- |Executes a 'WD' computation within the 'IO' monad, automatically creating a new session beforehand.
 --
--- NOTE: session is not automatically closed. If you want this behavior, use 'finallyClose'.
+-- NOTE: session is not automatically closed when complete. If you want this behavior, use 'finallyClose'.
+-- Example:
+-- >    runSessionThenClose action = runSession myConfig . finallyClose $ action
 runSession :: WDConfig -> WD a -> IO a
 runSession conf wd = do
   sess <- mkSession conf
