@@ -1,4 +1,8 @@
 #Change Log
+##0.6.2
+* Supports GHC 7.10
+* Supports reworked Chrome capabilities used by newer versions of WebDriver
+* Servers that return empty JSON strings for commands with no return value will no longer cause parse errors 
 
 ##0.6.1
 * Added the ability to pass HTTP request headers at session creation
