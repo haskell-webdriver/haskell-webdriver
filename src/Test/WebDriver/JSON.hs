@@ -58,6 +58,7 @@ data NoReturn = NoReturn
 instance FromJSON NoReturn where
   parseJSON Null                    = return NoReturn
   parseJSON (Object o) | HM.null o  = return NoReturn
+  parseJSON (String "")             = return NoReturn
   parseJSON other                   = typeMismatch "no return value" other
 
 
