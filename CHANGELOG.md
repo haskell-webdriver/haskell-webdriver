@@ -1,4 +1,7 @@
 #Change Log
+##0.6.2.1
+* Supports vector 0.11, aeson 0.9, attoparsec 0.13
+
 ##0.6.2
 * Supports GHC 7.10
 * Supports reworked Chrome capabilities used by newer versions of WebDriver
