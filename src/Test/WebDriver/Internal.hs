@@ -19,7 +19,7 @@ import Test.WebDriver.Class
 import Test.WebDriver.JSON
 import Test.WebDriver.Session
 
-import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..))
+import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..), HttpException(ResponseTimeout))
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Data.Aeson
@@ -32,12 +32,12 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null, fromStrict)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Base64.Lazy as B64
-
+import System.IO (hPutStrLn, stderr)
 
 import Control.Monad.Base
 import Control.Exception.Lifted (throwIO)
 import Control.Applicative
-import Control.Exception (SomeException, toException)
+import Control.Exception (SomeException, toException, catch)
 
 import Control.Exception (Exception)
 import Data.Typeable (Typeable)
@@ -68,10 +68,19 @@ mkRequest headers meth wdPath args = do
 sendHTTPRequest :: (WDSessionState s) => Request -> s (Response ByteString)
 sendHTTPRequest req = do
   s@WDSession{..} <- getSession
-  res <- liftBase $ httpLbs req wdSessHTTPManager
+  res <- liftBase $ retryOnTimeout 10 $ httpLbs req wdSessHTTPManager
   putSession s {wdSessHist = wdSessHistUpdate (req, res) wdSessHist} 
   return res
-  
+
+retryOnTimeout :: Int -> IO a -> IO a
+retryOnTimeout retryCount go = go `catch` handleTimeout
+  where
+  handleTimeout ResponseTimeout
+    | retryCount > 0 = do
+        hPutStrLn stderr "HTTP request timed out - retrying"
+        retryOnTimeout (retryCount - 1) go
+
+  handleTimeout e = throwIO e
  
 -- |Parses a 'WDResponse' object from a given HTTP response.
 getJSONResult :: (WDSessionState s, FromJSON a) => Response ByteString -> s (Either SomeException a)
