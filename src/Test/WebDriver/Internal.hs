@@ -68,7 +68,7 @@ mkRequest headers meth wdPath args = do
 sendHTTPRequest :: (WDSessionState s) => Request -> s (Response ByteString)
 sendHTTPRequest req = do
   s@WDSession{..} <- getSession
-  res <- liftBase $ retryOnTimeout 10 $ httpLbs req wdSessHTTPManager
+  res <- liftBase $ retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
   putSession s {wdSessHist = wdSessHistUpdate (req, res) wdSessHist} 
   return res
 
