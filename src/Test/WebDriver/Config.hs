@@ -34,7 +34,7 @@ data WDConfig = WDConfig {
     , wdBasePath :: String
      -- |Use the given http-client 'Manager' instead of the default
     , wdHTTPManager :: Maybe Manager
-     -- |Number of times to retry a HTTP request if it times out
+     -- |Number of times to retry a HTTP request if it times out (default 0)
     , wdHTTPRetryCount :: Int
 
 }
