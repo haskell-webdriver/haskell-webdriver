@@ -1,5 +1,5 @@
 Name: webdriver
-Version: 0.6.2.1
+Version: 0.6.3
 Cabal-Version: >= 1.8
 License: BSD3
 License-File: LICENSE
@@ -34,7 +34,7 @@ library
   hs-source-dirs: src
   ghc-options: -Wall
   build-depends:   base == 4.*
-                 , aeson >= 0.6.2.0 && < 0.10
+                 , aeson >= 0.6.2.0 && < 0.11
                  , http-client >= 0.3 && < 0.5
                  , http-types >= 0.8 && < 0.9
                  , text >= 0.11.3 && < 1.3

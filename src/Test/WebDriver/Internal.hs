@@ -185,9 +185,9 @@ data WDResponse = WDResponse {
                   deriving (Eq, Show)
 
 instance FromJSON WDResponse where
-  parseJSON (Object o) = WDResponse <$> o .:? "sessionId" .!= Nothing
+  parseJSON (Object o) = WDResponse <$> o .:?? "sessionId" .!= Nothing
                                     <*> o .: "status"
-                                    <*> o .:? "value" .!= Null
+                                    <*> o .:?? "value" .!= Null
   parseJSON v = typeMismatch "WDResponse" v
 
 
@@ -332,7 +332,7 @@ instance FromJSON FailedCommandInfo where
     where req :: FromJSON a => Text -> Parser a
           req = (o .:)            --required key
           opt :: FromJSON a => Text -> a -> Parser a
-          opt k d = o .:? k .!= d --optional key
+          opt k d = o .:?? k .!= d --optional key
   parseJSON v = typeMismatch "FailedCommandInfo" v
 
 instance FromJSON StackFrame where

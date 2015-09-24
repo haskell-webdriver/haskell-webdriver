@@ -233,7 +233,7 @@ instance FromJSON Capabilities where
           req :: FromJSON a => Text -> Parser a
           req = (o .:)            -- required field
           opt :: FromJSON a => Text -> a -> Parser a
-          opt k d = o .:? k .!= d -- optional field
+          opt k d = o .:?? k .!= d -- optional field
           b :: Text -> Parser (Maybe Bool)
           b k = opt k Nothing     -- Maybe Bool field
 

@@ -7,7 +7,7 @@
 -- be useful for implementing non-standard commands.
 module Test.WebDriver.JSON
        ( -- * Access a JSON object key
-         (!:)
+         (!:), (.:??)
          -- * Conversion from JSON within WD
          -- |Apostrophes are used to disambiguate these functions
          -- from their "Data.Aeson" counterparts.
@@ -90,6 +90,17 @@ fromJSON' = aesonResultToWD . fromJSON
 -- |This operator is a wrapper over Aeson's '.:' operator.
 (!:) :: (MonadBaseControl IO wd, FromJSON a) => Object -> Text -> wd a
 o !: k = aesonResultToWD $ parse (.: k) o
+
+
+-- |Emulates the behavior of '.:?' in Aeson versions \< 0.10, allowing the field to be either missing or 'Null' if the result type is a 'Maybe'
+-- In newer Aeson versions (\>= 0.10) this is equivalent to:
+-- > fmap join (o .:? k)
+(.:??) :: FromJSON a => Object -> Text -> Parser (Maybe a)
+#if MIN_VERSION_aeson(0,10,0)
+o .:?? k = fmap join (o .:? k)
+#else
+(.:??) = (.:?)
+#end
 
 
 -- |Parse a JSON 'Object' as a pair. The first two string arguments specify the

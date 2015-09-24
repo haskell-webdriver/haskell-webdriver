@@ -347,7 +347,7 @@ instance FromJSON Cookie where
       req :: FromJSON a => Text -> Parser a
       req = (o .:)
       opt :: FromJSON a => Text -> a -> Parser a
-      opt k d = o .:? k .!= d
+      opt k d = o .:?? k .!= d
   parseJSON v = typeMismatch "Cookie" v
 
 -- |Retrieve all cookies visible to the current page.

@@ -1,4 +1,8 @@
 #Change Log
+##0.6.3
+* Support aeson 0.10
+* Added support for multiple HTTP attempts per command request, using the new WDConfig field wdHTTPRetryCount
+
 ##0.6.2.1
 * Supports vector 0.11, aeson 0.9, attoparsec 0.13
 
