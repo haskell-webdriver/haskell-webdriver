@@ -34,6 +34,8 @@ data WDConfig = WDConfig {
     , wdBasePath :: String
      -- |Use the given http-client 'Manager' instead of the default
     , wdHTTPManager :: Maybe Manager
+     -- |Number of times to retry a HTTP request if it times out (default 0)
+    , wdHTTPRetryCount :: Int
 
 }
 
@@ -46,6 +48,7 @@ instance Default WDConfig where
     , wdKeepSessHist      = False
     , wdBasePath          = "/wd/hub"
     , wdHTTPManager       = Nothing
+    , wdHTTPRetryCount    = 0
     }
 
 {- |A default session config connects to localhost on port 4444, and hasn't been
@@ -64,7 +67,8 @@ mkSession WDConfig{..} = do
                    , wdSessId = Nothing
                    , wdSessHist = []
                    , wdSessHistUpdate = histUpdate
-                   , wdSessHTTPManager = manager }
+                   , wdSessHTTPManager = manager
+                   , wdSessHTTPRetryCount = wdHTTPRetryCount }
   where
     createManager = liftBase $ newManager defaultManagerSettings
     histUpdate
