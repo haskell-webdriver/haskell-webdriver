@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable #-}
 -- |A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous
 -- 'BadJSON' exceptions.
@@ -38,6 +38,7 @@ import Data.Attoparsec.ByteString.Lazy (Result(..))
 import qualified Data.Attoparsec.ByteString.Lazy as AP
 import qualified Data.HashMap.Strict as HM
 
+import Control.Monad (join)
 import Control.Applicative
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted
@@ -91,17 +92,12 @@ fromJSON' = aesonResultToWD . fromJSON
 (!:) :: (MonadBaseControl IO wd, FromJSON a) => Object -> Text -> wd a
 o !: k = aesonResultToWD $ parse (.: k) o
 
-
 -- |Emulates the behavior of '.:?' in Aeson versions \< 0.10, allowing the field to be either missing or 'Null' if the result type is a 'Maybe'.
 -- In newer Aeson versions (\>= 0.10), this is equivalent to:
 --
 -- > fmap join (o .:? k)
 (.:??) :: FromJSON a => Object -> Text -> Parser (Maybe a)
-#if MIN_VERSION_aeson(0,10,0)
 o .:?? k = fmap join (o .:? k)
-#else
-(.:??) = (.:?)
-#endif
 
 
 -- |Parse a JSON 'Object' as a pair. The first two string arguments specify the
