@@ -92,8 +92,9 @@ fromJSON' = aesonResultToWD . fromJSON
 o !: k = aesonResultToWD $ parse (.: k) o
 
 
--- |Emulates the behavior of '.:?' in Aeson versions \< 0.10, allowing the field to be either missing or 'Null' if the result type is a 'Maybe'
--- In newer Aeson versions (\>= 0.10) this is equivalent to:
+-- |Emulates the behavior of '.:?' in Aeson versions \< 0.10, allowing the field to be either missing or 'Null' if the result type is a 'Maybe'.
+-- In newer Aeson versions (\>= 0.10), this is equivalent to:
+--
 -- > fmap join (o .:? k)
 (.:??) :: FromJSON a => Object -> Text -> Parser (Maybe a)
 #if MIN_VERSION_aeson(0,10,0)
