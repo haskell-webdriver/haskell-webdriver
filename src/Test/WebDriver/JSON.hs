@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP #-}
 -- |A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous
 -- 'BadJSON' exceptions.
@@ -100,7 +100,7 @@ o !: k = aesonResultToWD $ parse (.: k) o
 o .:?? k = fmap join (o .:? k)
 #else
 (.:??) = (.:?)
-#end
+#endif
 
 
 -- |Parse a JSON 'Object' as a pair. The first two string arguments specify the
