@@ -60,6 +60,9 @@ data WDSession = WDSession {
                                                  -> [(Request, Response LBS.ByteString)]
                              -- |HTTP 'Manager' used for connection pooling by the http-client library.
                            , wdSessHTTPManager :: Manager
+
+                             -- |Number of times to retry a HTTP request if it times out
+                           , wdSessHTTPRetryCount :: Int
                            }
     
 -- |The last HTTP request issued by this session, if any.
