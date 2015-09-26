@@ -20,8 +20,7 @@ import Control.Monad.Catch (MonadThrow, MonadCatch)
 import Control.Applicative
 
 
-{- |A monadic interface to the WebDriver server. This monad is simply a
-    state monad transformer over 'IO', threading session information between sequential webdriver commands
+{- |A state monad for WebDriver commands.
 -}
 newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch)
@@ -61,7 +60,7 @@ instance WebDriver WD where
 
 
 -- |Executes a 'WD' computation within the 'IO' monad, using the given
--- 'WDSession'.
+-- 'WDSession' as state for WebDriver requests.
 runWD :: WDSession -> WD a -> IO a
 runWD sess (WD wd) = evalStateT wd sess
 
