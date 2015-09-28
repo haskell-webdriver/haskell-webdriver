@@ -5,11 +5,15 @@ module Test.WebDriver.Commands.Wait
        , waitWhile, waitWhile'
          -- * Expected conditions
        , ExpectFailed, expect, unexpected
+       , expectAny, expectAll
+       , expectNotStale, expectAlertOpen
+       , catchFailedCommand
          -- ** Convenience functions
        , onTimeout
-       , expectAny, expectAll
        , ifM, (<||>), (<&&>), notM
        ) where
+import Test.WebDriver.Commands
+import Test.WebDriver.Class
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Session
 
@@ -21,6 +25,7 @@ import Control.Conditional (ifM, (<||>), (<&&>), notM)
 
 import Data.Time.Clock
 import Data.Typeable
+import Data.Text (Text)
 
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
@@ -54,6 +59,24 @@ expectAny p xs = expect . or =<< mapM p xs
 -- succeed.
 expectAll :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
 expectAll p xs = expect . and =<< mapM p xs
+
+-- | 'expect' the given 'Element' to not be stale and returns it
+expectNotStale :: WebDriver wd => Element -> wd Element
+expectNotStale e = catchFailedCommand StaleElementReference $ do
+    _ <- isEnabled e -- Any command will force a staleness check
+    return e
+
+-- | 'expect' an alert to be present on the page, and returns its text.
+expectAlertOpen :: WebDriver wd => wd Text
+expectAlertOpen = catchFailedCommand NoAlertOpen getAlertText
+
+-- |Catches any `FailedCommand` exceptions with the given `FailedCommandType` and rethrows as 'ExpectFailed'
+catchFailedCommand :: MonadBaseControl IO m => FailedCommandType -> m a -> m a
+catchFailedCommand t1 m = m `catch` handler
+    where 
+        handler e@(FailedCommand t2 _) 
+            | t1 == t2 = unexpected . show $ e
+        handler e = throwIO e
 
 -- |Wait until either the given action succeeds or the timeout is reached.
 -- The action will be retried every .5 seconds until no 'ExpectFailed' or
