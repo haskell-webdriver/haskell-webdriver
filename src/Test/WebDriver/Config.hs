@@ -1,7 +1,9 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts #-}
 module Test.WebDriver.Config(
     -- * WebDriver configuration
-    WDConfig(..), defaultConfig, mkSession
+      WDConfig(..), defaultConfig, mkSession
+    -- * WDConfig transformers / helpers
+    , modifyCaps, useBrowser, useVersion, usePlatform, useProxy
     ) where
 import Test.WebDriver.Session
 import Test.WebDriver.Capabilities
@@ -76,7 +78,25 @@ mkSession WDConfig{..} = do
       | otherwise      = \x _ -> [x]
 
 
+-- |Modifies the 'wdCapabilities' field of a 'WDConfig' by applying the given function.
+modifyCaps :: (Capabilities -> Capabilities) -> WDConfig -> WDConfig
+modifyCaps f c = c { wdCapabilities = f (wdCapabilities c) }
 
+-- |A helper function for setting the 'browser' capability of a 'WDConfig'
+useBrowser :: Browser -> WDConfig -> WDConfig
+useBrowser b = modifyCaps $ \c -> c { browser = b }
+
+-- |A helper function for setting the 'version' capability of a 'WDConfig'
+useVersion :: String -> WDConfig -> WDConfig
+useVersion v = modifyCaps $ \c -> c { version = Just v }
+
+-- |A helper function for setting the 'platform' capability of a 'WDConfig'   
+usePlatform :: Platform -> WDConfig -> WDConfig
+usePlatform p = modifyCaps $ \c -> c { platform = p }
+
+-- |A helper function for setting the 'useProxy' capability of a 'WDConfig'
+useProxy :: ProxyType -> WDConfig -> WDConfig
+useProxy p = modifyCaps $ \c -> c { proxy = p }
 
 
 

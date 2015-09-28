@@ -12,6 +12,8 @@ module Test.WebDriver
          -- * Capabilities and configuration
        , Capabilities(..), defaultCaps, allCaps
        , Platform(..), ProxyType(..)
+         -- ** Configuration helper functions
+       , modifyCaps, useBrowser, useVersion, usePlatform, useProxy
          -- ** Browser-specific configuration
        , Browser(..), LogLevel(..)
        , firefox, chrome, ie, opera, iPhone, iPad, android
@@ -23,3 +25,4 @@ import Test.WebDriver.Types
 import Test.WebDriver.Commands
 import Test.WebDriver.Monad
 import Test.WebDriver.Exceptions
+import Test.WebDriver.Config

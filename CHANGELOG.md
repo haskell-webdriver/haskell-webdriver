@@ -1,4 +1,7 @@
 #Change Log
+##Upcoming Release
+* Added several new `WDConfig` helper functions: `modifyCaps`, `useBrowser`, `useVersion`, `usePlatform`, `useProxy`
+
 ##0.6.3.1
 * Fixed an issue with aeson 0.10 support
 
