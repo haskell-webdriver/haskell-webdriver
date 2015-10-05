@@ -206,7 +206,7 @@ instance ToJSON (Capabilities b) where
           opt k = fmap (k .=)
 
 
-instance FromJSON (Capabilities b) where
+instance FromJSON (Browser b) => FromJSON (Capabilities b) where
   parseJSON (Object o) = do
     browserName <- req "browserName"
     browser <- getBrowserCaps browserName
