@@ -27,6 +27,8 @@ module Test.WebDriver.Firefox.Profile
        , ProfileParseError(..)
        ) where
 import Test.WebDriver.Common.Profile
+import Test.WebDriver.Browser (Firefox)
+
 import Data.Aeson
 import Data.Aeson.Parser (jstring, value')
 import Data.Attoparsec.Char8 as AP
@@ -50,9 +52,6 @@ import Control.Arrow
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
 #endif
-
--- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
-data Firefox
 
 -- |Default Firefox Profile, used when no profile is supplied.
 defaultProfile :: Profile Firefox
