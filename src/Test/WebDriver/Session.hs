@@ -1,10 +1,10 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts,
+{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, ScopedTypeVariables,
              GeneralizedNewtypeDeriving, RecordWildCards, ConstraintKinds #-}
 module Test.WebDriver.Session
   ( -- * WDSessionState class
-    WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession
+    WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession
     -- ** WebDriver sessions
-  , WDSession(..), mkSession, mostRecentHistory, mostRecentHTTPRequest, SessionId(..)
+  , WDSession(..), mkSession, mostRecentHistory, mostRecentHTTPRequest, SessionId(..), SessionHistory(..)
     -- * SessionHistoryConfig options
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
   ) where
@@ -35,6 +35,7 @@ import Control.Monad.RWS.Strict as SRWS
 import Control.Monad.RWS.Lazy as LRWS
 
 import Network.HTTP.Types.Header (RequestHeaders)
+import Control.Exception.Lifted (SomeException, try, throwIO)
 import Network.HTTP.Client (Manager, Request, newManager, defaultManagerSettings)
 
 {- |An opaque identifier for a WebDriver session. These handles are produced by
@@ -74,9 +75,13 @@ data WDSession = WDSession {
 -- |A class for monads that carry a WebDriver session with them. The
 -- MonadBaseControl superclass is used for exception handling through
 -- the lifted-base package.
-class (Monad s, Applicative s) => WDSessionState s where
-  getSession :: s WDSession
-  putSession :: WDSession -> s ()
+class (Monad m, Applicative m) => WDSessionState m where
+  
+  -- |Retrieves the current session state of the monad
+  getSession :: m WDSession
+  
+  -- |Sets a new session state for the monad
+  putSession :: WDSession -> m ()
 
 -- |Constraint synonym for the common pairing of 'WDSessionState' and 'MonadBase' 'IO'.
 type WDSessionStateIO s = (WDSessionState s, MonadBase IO s)
@@ -87,6 +92,17 @@ type WDSessionStateControl s = (WDSessionState s, MonadBaseControl IO s)
 
 modifySession :: WDSessionState s => (WDSession -> WDSession) -> s ()
 modifySession f = getSession >>= putSession . f
+
+-- |Locally sets a session state for use within the given action.
+-- The state of any outside action is unaffected by this function.
+-- This function is useful if you need to work with multiple sessions simultaneously.
+withSession :: WDSessionStateControl m => WDSession -> m a -> m a
+withSession s m = do
+  s' <- getSession
+  putSession s
+  (a :: Either SomeException a) <- try m
+  putSession s'
+  either throwIO return a
 
 -- |Constructs a new 'WDSession' from a given 'WDConfig'
 mkSession :: MonadBase IO m => WDConfig -> m WDSession
@@ -147,4 +163,3 @@ instance (Monoid w, WDSessionState m) => WDSessionState (SRWS.RWST r w s m) wher
 instance (Monoid w, WDSessionState wd) => WDSessionState (LRWS.RWST r w s wd) where
   getSession = lift getSession
   putSession = lift . putSession
-  

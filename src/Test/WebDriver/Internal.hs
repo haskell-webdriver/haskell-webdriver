@@ -11,7 +11,6 @@ module Test.WebDriver.Internal
 import Test.WebDriver.Class
 import Test.WebDriver.JSON
 import Test.WebDriver.Session
-import Test.WebDriver.Session.History
 import Test.WebDriver.Exceptions.Internal
 
 import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..), HttpException(ResponseTimeout))

@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
              MultiParamTypeClasses, CPP, UndecidableInstances #-}
 module Test.WebDriver.Monad
-       ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException, getSessionHistory, dumpSessionHistory
+       ( WD(..), runWD, runSession, finallyClose, closeOnException, getSessionHistory, dumpSessionHistory
        ) where
 
 import Test.WebDriver.Class
@@ -73,12 +73,6 @@ runSession :: WDConfig -> WD a -> IO a
 runSession conf wd = do
   sess <- mkSession conf
   runWD sess $ createSession (wdRequestHeaders conf) (wdCapabilities conf) >> wd
-
--- |Locally sets a 'WDSession' for use within the given 'WD' action.
--- The state of the outer action is unaffected by this function.
--- This function is useful if you need to work with multiple sessions at once.
-withSession :: WDSession -> WD a -> WD a
-withSession s' (WD wd) = WD . lift $ evalStateT wd s'
 
 -- |A finalizer ensuring that the session is always closed at the end of
 -- the given 'WD' action, regardless of any exceptions.
