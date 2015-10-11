@@ -41,6 +41,12 @@ data WDConfig = WDConfig {
 
 }
 
+instance GetCapabilities WDConfig where
+  getCaps = wdCapabilities
+
+instance SetCapabilities WDConfig where
+  setCaps caps conf = conf { wdCapabilities = caps }
+
 instance Default WDConfig where
     def = WDConfig {
       wdHost              = "127.0.0.1"

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds
   #-}
 module Test.WebDriver.Capabilities where
 
@@ -18,6 +18,38 @@ import Data.String (fromString)
 
 import Control.Applicative
 import Control.Exception.Lifted (throw)
+
+-- |A typeclass for readable 'Capabilities'
+class GetCapabilities t where
+  getCaps :: t -> Capabilities
+
+-- |A typeclass for writable 'Capabilities'
+class SetCapabilities t where
+  setCaps :: Capabilities -> t -> t
+
+-- |Read/write 'Capabilities'
+type HasCapabilities t = (GetCapabilities t, SetCapabilities t)
+
+-- |Modifies the 'wdCapabilities' field of a 'WDConfig' by applying the given function. Overloaded to work with any 'HasCapabilities' instance.
+modifyCaps :: HasCapabilities t => (Capabilities -> Capabilities) -> t -> t
+modifyCaps f c = setCaps (f (getCaps c)) c
+
+-- |A helper function for setting the 'browser' capability of a 'HasCapabilities' instance
+useBrowser :: HasCapabilities t => Browser -> t -> t
+useBrowser b = modifyCaps $ \c -> c { browser = b }
+
+-- |A helper function for setting the 'version' capability of a 'HasCapabilities' instance
+useVersion :: HasCapabilities t => String -> t -> t
+useVersion v = modifyCaps $ \c -> c { version = Just v }
+
+-- |A helper function for setting the 'platform' capability of a 'HasCapabilities' instance 
+usePlatform :: HasCapabilities t => Platform -> t -> t
+usePlatform p = modifyCaps $ \c -> c { platform = p }
+
+-- |A helper function for setting the 'useProxy' capability of a 'HasCapabilities' instance
+useProxy :: HasCapabilities t => ProxyType -> t -> t
+useProxy p = modifyCaps $ \c -> c { proxy = p }
+
 
 {- |A structure describing the capabilities of a session. This record
 serves dual roles.
