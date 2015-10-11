@@ -11,12 +11,9 @@ import Test.WebDriver.Capabilities
 import Test.WebDriver.Session.History
 
 import Data.Default (Default, def)
-import Data.String (fromString)
 
-import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
+import Network.HTTP.Client (Manager)
 import Network.HTTP.Types (RequestHeaders)
-
-import Control.Monad.Base (MonadBase, liftBase)
 
 -- |WebDriver session configuration
 data WDConfig = WDConfig {
@@ -33,7 +30,7 @@ data WDConfig = WDConfig {
     , wdHistoryConfig :: SessionHistoryConfig
      -- |Base path for all API requests (default "/wd/hub")
     , wdBasePath :: String
-     -- |Use the given http-client 'Manager' instead of the default
+     -- |Use the given http-client 'Manager' instead of automatically creating one.
     , wdHTTPManager :: Maybe Manager
      -- |Number of times to retry a HTTP request if it times out (default 0)
     , wdHTTPRetryCount :: Int

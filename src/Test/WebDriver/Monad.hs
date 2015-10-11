@@ -13,7 +13,7 @@ import Test.WebDriver.Internal
 import Control.Monad.Base (MonadBase, liftBase)
 import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
-import Control.Monad.State.Strict (StateT, MonadState, evalStateT, get, put)
+import Control.Monad.State.Strict (StateT, evalStateT, get, put)
 --import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Lifted
 import Control.Monad.Catch (MonadThrow, MonadCatch)
@@ -86,9 +86,9 @@ closeOnException :: WebDriver wd => wd a -> wd a
 closeOnException wd = wd `onException` closeSession
 
 -- |Gets the command history for the current session.
-getSessionHistory :: WDSessionState wd => wd SessionHistory
+getSessionHistory :: WDSessionState wd => wd [SessionHistory]
 getSessionHistory = fmap wdSessHist getSession 
 
 -- |Prints a history of API requests to stdout after computing the given action.
 dumpSessionHistory :: (MonadIO wd, WebDriver wd) => wd a -> wd a
-dumpSessionHistory = (`finally` getSession >>= liftIO . print . wdSessHist)
+dumpSessionHistory = (`finally` (getSession >>= liftIO . print . wdSessHist))
