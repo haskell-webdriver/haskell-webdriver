@@ -6,8 +6,8 @@ import Control.Exception (SomeException)
 
 
 data SessionHistory = SessionHistory 
-	{ histRequest :: Request
+    { histRequest :: Request
     , histResponse :: Either SomeException (Response ByteString)
     , histRetryCount :: Int
-	}
-	deriving (Show)
+    }
+    deriving (Show)
