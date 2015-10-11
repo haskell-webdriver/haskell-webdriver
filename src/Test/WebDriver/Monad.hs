@@ -93,7 +93,4 @@ closeOnException wd = wd `onException` closeSession
 
 -- |Prints a history of API requests to stdout after computing the given action.
 dumpSessionHistory :: (MonadIO wd, WebDriver wd) => wd a -> wd a
-dumpSessionHistory wd = do
-    v <- wd
-    getSession >>= liftIO . print . wdSessHist
-    return v
+dumpSessionHistory = (`finally` getSession >>= liftIO . print . wdSessHist)
