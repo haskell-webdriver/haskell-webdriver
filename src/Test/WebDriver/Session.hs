@@ -34,8 +34,9 @@ import Control.Monad.State.Lazy as LS
 import Control.Monad.RWS.Strict as SRWS
 import Control.Monad.RWS.Lazy as LRWS
 
-import Network.HTTP.Types.Header (RequestHeaders)
 import Control.Exception.Lifted (SomeException, try, throwIO)
+
+--import Network.HTTP.Types.Header (RequestHeaders)
 import Network.HTTP.Client (Manager, Request, newManager, defaultManagerSettings)
 
 {- |An opaque identifier for a WebDriver session. These handles are produced by
@@ -69,7 +70,7 @@ data WDSession = WDSession {
                            , wdSessHTTPManager :: Manager
                              -- |Number of times to retry a HTTP request if it times out
                            , wdSessHTTPRetryCount :: Int
-                           , wdSessRequestHeaders :: RequestHeaders
+                           --, wdSessRequestHeaders :: RequestHeaders
                            }
 
 -- |A class for monads that carry a WebDriver session with them. The
