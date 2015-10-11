@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
              MultiParamTypeClasses, CPP, UndecidableInstances #-}
 module Test.WebDriver.Monad
-       ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException, dumpSessionHistory
+       ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException, getSessionHistory, dumpSessionHistory
        ) where
 
 import Test.WebDriver.Class
@@ -90,6 +90,10 @@ finallyClose wd = closeOnException wd <* closeSession
 -- if the action was successful.
 closeOnException :: WebDriver wd => wd a -> wd a
 closeOnException wd = wd `onException` closeSession
+
+-- |Gets the command history for the current session.
+getSessionHistory :: WDSessionState wd => wd SessionHistory
+getSessionHistory = fmap wdSessHist getSession 
 
 -- |Prints a history of API requests to stdout after computing the given action.
 dumpSessionHistory :: (MonadIO wd, WebDriver wd) => wd a -> wd a
