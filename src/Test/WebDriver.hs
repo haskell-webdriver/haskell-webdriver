@@ -28,7 +28,7 @@ module Test.WebDriver
   , finallyClose, closeOnException
   , module Test.WebDriver.Exceptions
     -- * Accessing session history
-  , getSessionHistory, dumpSessionHistory
+  , SessionHistory(..), getSessionHistory, dumpSessionHistory
   ) where
 
 import Test.WebDriver.Types
