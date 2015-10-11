@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, DeriveDataTypeable, ScopedTypeVariables, FlexibleContexts #-}
+{-# LANGUAGE CPP, DeriveDataTypeable, ScopedTypeVariables, FlexibleContexts, ConstraintKinds #-}
 module Test.WebDriver.Commands.Wait
        ( -- * Wait on expected conditions
          waitUntil, waitUntil'
@@ -26,7 +26,6 @@ import Control.Conditional (ifM, (<||>), (<&&>), notM)
 import Data.Time.Clock
 import Data.Typeable
 import Data.Text (Text)
-
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
@@ -83,29 +82,29 @@ catchFailedCommand t1 m = m `catch` handler
 -- 'FailedCommand' 'NoSuchElement' exceptions occur. If the timeout is reached,
 -- then a 'Timeout' exception will be raised. The timeout value
 -- is expressed in seconds.
-waitUntil :: (WDSessionState m) => Double -> m a -> m a
+waitUntil :: (WDSessionStateControl m) => Double -> m a -> m a
 waitUntil = waitUntil' 500000
 
 -- |Similar to 'waitUntil' but allows you to also specify the poll frequency
 -- of the 'WD' action. The frequency is expressed as an integer in microseconds.
-waitUntil' :: (WDSessionState m) => Int -> Double -> m a -> m a
+waitUntil' :: (WDSessionStateControl m) => Int -> Double -> m a -> m a
 waitUntil' = waitEither id (\_ -> return)
 
 -- |Like 'waitUntil', but retries the action until it fails or until the timeout
 -- is exceeded.
-waitWhile :: (WDSessionState m)  => Double -> m a -> m ()
+waitWhile :: (WDSessionStateControl m)  => Double -> m a -> m ()
 waitWhile = waitWhile' 500000
 
 -- |Like 'waitUntil'', but retries the action until it either fails or
 -- until the timeout is exceeded.
-waitWhile' :: (WDSessionState m)  => Int -> Double -> m a -> m ()
+waitWhile' :: (WDSessionStateControl m)  => Int -> Double -> m a -> m ()
 waitWhile' =
   waitEither  (\_ _ -> return ())
               (\retry _ -> retry "waitWhile: action did not fail")
 
 
 -- |Internal function used to implement explicit wait commands using success and failure continuations
-waitEither :: (WDSessionState m) =>
+waitEither :: (WDSessionStateControl m) =>
                ((String -> m b) -> String -> m b)
             -> ((String -> m b) -> a -> m b)
             -> Int -> Double -> m a -> m b
@@ -122,7 +121,7 @@ waitEither failure success = wait' handler
 
     handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
 
-wait' :: (WDSessionState m) =>
+wait' :: (WDSessionStateIO m) =>
          ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
 wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
   where

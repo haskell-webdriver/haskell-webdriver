@@ -55,9 +55,9 @@ instance WebDriver WD where
   doCommand headers method path args =
     mkRequest headers method path args
     >>= sendHTTPRequest
+    >>= either throwIO return
     >>= getJSONResult
     >>= either throwIO return
-
 
 -- |Executes a 'WD' computation within the 'IO' monad, using the given
 -- 'WDSession' as state for WebDriver requests.

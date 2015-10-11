@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, DeriveDataTypeable,
-             RecordWildCards, ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ConstraintKinds, PatternGuards #-}
 -- |The HTTP/JSON plumbing used to implement the 'WD' monad.
 --
 -- These functions can be used to create your own 'WebDriver' instances, providing extra functionality for your application if desired. All exports
@@ -8,42 +7,33 @@ module Test.WebDriver.Internal
        ( mkRequest, sendHTTPRequest
        , getJSONResult, handleJSONErr, handleRespSessionId
        , WDResponse(..)
-
-       , InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
-       , UnknownCommand(..), ServerError(..)
-
-       , FailedCommand(..), failedCommand, mkFailedCommandInfo
-       , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
        ) where
 import Test.WebDriver.Class
 import Test.WebDriver.JSON
 import Test.WebDriver.Session
+import Test.WebDriver.Session.History
+import Test.WebDriver.Exceptions.Internal
 
 import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..), HttpException(ResponseTimeout))
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Data.Aeson
-import Data.Aeson.Types (Parser, typeMismatch)
+import Data.Aeson.Types (typeMismatch)
 
 import Data.Text as T (Text, splitOn, null)
 import qualified Data.Text.Encoding as TE
-import qualified Data.Text.Lazy.Encoding as TLE
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null, fromStrict)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Base64.Lazy as B64
-import System.IO (hPutStrLn, stderr)
 
 import Control.Monad.Base
 import Control.Exception.Lifted (throwIO)
 import Control.Applicative
-import Control.Exception (SomeException, toException, catch)
+import Control.Exception (Exception, SomeException(..), toException, fromException, try)
 
-import Control.Exception (Exception)
-import Data.Typeable (Typeable)
-import Data.Maybe (fromMaybe)
 import Data.String (fromString)
-import Data.Word (Word, Word8)
+import Data.Word (Word8)
 import Data.Default
 
 -- |Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
@@ -65,29 +55,35 @@ mkRequest headers meth wdPath args = do
              , method = meth }
 
 -- |Sends an HTTP request to the remote WebDriver server
-sendHTTPRequest :: (WDSessionState s) => Request -> s (Response ByteString)
+sendHTTPRequest :: (WDSessionStateIO s) => Request -> s (Either SomeException (Response ByteString))
 sendHTTPRequest req = do
   s@WDSession{..} <- getSession
-  res <- liftBase $ retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
-  putSession s {wdSessHist = wdSessHistUpdate (req, res) wdSessHist} 
-  return res
+  (nRetries, tryRes) <- liftBase . retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
+  let h = SessionHistory { histRequest = req
+                         , histResponse = tryRes
+                         , histRetryCount = nRetries
+                         }
+  putSession s { wdSessHist = wdSessHistUpdate h wdSessHist } 
+  return tryRes
 
-retryOnTimeout :: Int -> IO a -> IO a
-retryOnTimeout retryCount go = go `catch` handleTimeout
+retryOnTimeout :: Int -> IO a -> IO (Int, (Either SomeException a))
+retryOnTimeout maxRetry go = retry' 0
   where
-  handleTimeout ResponseTimeout
-    | retryCount > 0 = do
-        hPutStrLn stderr "HTTP request timed out - retrying"
-        retryOnTimeout (retryCount - 1) go
-
-  handleTimeout e = throwIO e
+    retry' nRetries = do
+      eitherV <- try go
+      case eitherV of
+        (Left e)
+          | Just ResponseTimeout <- fromException e
+          , maxRetry > nRetries 
+          -> retry' (succ nRetries)
+        other -> return (nRetries, other)
  
 -- |Parses a 'WDResponse' object from a given HTTP response.
-getJSONResult :: (WDSessionState s, FromJSON a) => Response ByteString -> s (Either SomeException a)
+getJSONResult :: (WDSessionStateControl s, FromJSON a) => Response ByteString -> s (Either SomeException a)
 getJSONResult r
   --malformed request errors
   | code >= 400 && code < 500 = do
-    lastReq <- lastHTTPRequest <$> getSession
+    lastReq <- mostRecentHTTPRequest <$> getSession
     returnErr . UnknownCommand . maybe reason show $ lastReq
   --server-side errors
   | code >= 500 && code < 600 = 
@@ -136,7 +132,7 @@ getJSONResult r
     body = responseBody r  
     headers = responseHeaders r
 
-handleRespSessionId :: (WDSessionState s) => WDResponse -> s ()
+handleRespSessionId :: (WDSessionStateIO s) => WDResponse -> s ()
 handleRespSessionId WDResponse{rspSessId = sessId'} = do
     sess@WDSession { wdSessId = sessId} <- getSession
     case (sessId, (==) <$> sessId <*> sessId') of
@@ -147,7 +143,7 @@ handleRespSessionId WDResponse{rspSessId = sessId'} = do
                                  ++ ") does not match local session ID (" ++ show sessId ++ ")"
        _ ->  return ()
     
-handleJSONErr :: (WDSessionState s) => WDResponse -> s (Maybe SomeException)
+handleJSONErr :: (WDSessionStateControl s) => WDResponse -> s (Maybe SomeException)
 handleJSONErr WDResponse{rspStatus = 0} = return Nothing
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- getSession
@@ -200,157 +196,3 @@ instance FromJSON WDResponse where
   parseJSON v = typeMismatch "WDResponse" v
 
 
-instance Exception InvalidURL
--- |An invalid URL was given
-newtype InvalidURL = InvalidURL String
-                deriving (Eq, Show, Typeable)
-
-instance Exception HTTPStatusUnknown
--- |An unexpected HTTP status was sent by the server.
-data HTTPStatusUnknown = HTTPStatusUnknown Int String
-                       deriving (Eq, Show, Typeable)
-
-instance Exception HTTPConnError
--- |HTTP connection errors.
-data HTTPConnError = HTTPConnError String Int
-                   deriving (Eq, Show, Typeable)
-
-instance Exception UnknownCommand
--- |A command was sent to the WebDriver server that it didn't recognize.
-newtype UnknownCommand = UnknownCommand String
-                    deriving (Eq, Show, Typeable)
-
-instance Exception ServerError
--- |A server-side exception occured
-newtype ServerError = ServerError String
-                      deriving (Eq, Show, Typeable)
-
-instance Exception FailedCommand
--- |This exception encapsulates a broad variety of exceptions that can
--- occur when a command fails.
-data FailedCommand = FailedCommand FailedCommandType FailedCommandInfo
-                   deriving (Show, Typeable)
-
--- |The type of failed command exception that occured.
-data FailedCommandType = NoSuchElement
-                       | NoSuchFrame
-                       | UnknownFrame
-                       | StaleElementReference
-                       | ElementNotVisible
-                       | InvalidElementState
-                       | UnknownError
-                       | ElementIsNotSelectable
-                       | JavascriptError
-                       | XPathLookupError
-                       | Timeout
-                       | NoSuchWindow
-                       | InvalidCookieDomain
-                       | UnableToSetCookie
-                       | UnexpectedAlertOpen
-                       | NoAlertOpen
-                       | ScriptTimeout
-                       | InvalidElementCoordinates
-                       | IMENotAvailable
-                       | IMEEngineActivationFailed
-                       | InvalidSelector
-                       | SessionNotCreated
-                       | MoveTargetOutOfBounds
-                       | InvalidXPathSelector
-                       | InvalidXPathSelectorReturnType
-                       deriving (Eq, Ord, Enum, Bounded, Show)
-
--- |Detailed information about the failed command provided by the server.
-data FailedCommandInfo =
-  FailedCommandInfo { -- |The error message.
-                      errMsg    :: String
-                      -- |The session associated with
-                      -- the exception.
-                    , errSess :: Maybe WDSession
-                      -- |A screen shot of the focused window
-                      -- when the exception occured,
-                      -- if provided.
-                    , errScreen :: Maybe ByteString
-                      -- |The "class" in which the exception
-                      -- was raised, if provided.
-                    , errClass  :: Maybe String
-                      -- |A stack trace of the exception.
-                    , errStack  :: [StackFrame]
-                    }
-
--- |Provides a readable printout of the error information, useful for
--- logging.
-instance Show FailedCommandInfo where
-  show i = showChar '\n'
-           . showString "Session: " . sess
-           . showChar '\n'
-           . showString className . showString ": " . showString (errMsg i)
-           . showChar '\n'
-           . foldl (\f s-> f . showString "  " . shows s) id (errStack i)
-           $ ""
-    where
-      className = fromMaybe "<unknown exception>" . errClass $ i
-
-      sess = case errSess i of
-        Nothing -> showString "None"
-        Just WDSession{..} ->
-            let sessId = maybe "<no session id>" show wdSessId
-            in showString sessId . showString " at "
-                . shows wdSessHost . showChar ':' . shows wdSessPort
-
-
--- |Constructs a FailedCommandInfo from only an error message.
-mkFailedCommandInfo :: (WDSessionState s) => String -> s FailedCommandInfo
-mkFailedCommandInfo m = do
-  sess <- getSession
-  return $ FailedCommandInfo { errMsg = m 
-                             , errSess = Just sess
-                             , errScreen = Nothing
-                             , errClass = Nothing
-                             , errStack = [] }
-
--- |Convenience function to throw a 'FailedCommand' locally with no server-side
--- info present.
-failedCommand :: (WDSessionState s) => FailedCommandType -> String -> s a
-failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m
-
--- |An individual stack frame from the stack trace provided by the server
--- during a FailedCommand.
-data StackFrame = StackFrame { sfFileName   :: String
-                             , sfClassName  :: String
-                             , sfMethodName :: String
-                             , sfLineNumber :: Word
-                             }
-                deriving (Eq)
-
-
-instance Show StackFrame where
-  show f = showString (sfClassName f) . showChar '.'
-           . showString (sfMethodName f) . showChar ' '
-           . showParen True ( showString (sfFileName f) . showChar ':'
-                              . shows (sfLineNumber f))
-           $ "\n"
-
-
-instance FromJSON FailedCommandInfo where
-  parseJSON (Object o) =
-    FailedCommandInfo <$> (req "message" >>= maybe (return "") return)
-                      <*> pure Nothing
-                      <*> (fmap TLE.encodeUtf8 <$> opt "screen" Nothing)
-                      <*> opt "class"      Nothing
-                      <*> opt "stackTrace" []
-    where req :: FromJSON a => Text -> Parser a
-          req = (o .:)            --required key
-          opt :: FromJSON a => Text -> a -> Parser a
-          opt k d = o .:?? k .!= d --optional key
-  parseJSON v = typeMismatch "FailedCommandInfo" v
-
-instance FromJSON StackFrame where
-  parseJSON (Object o) = StackFrame <$> reqStr "fileName"
-                                    <*> reqStr "className"
-                                    <*> reqStr "methodName"
-                                    <*> req    "lineNumber"
-    where req :: FromJSON a => Text -> Parser a
-          req = (o .:) -- all keys are required
-          reqStr :: Text -> Parser String
-          reqStr k = req k >>= maybe (return "") return
-  parseJSON v = typeMismatch "StackFrame" v
