@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
-             MultiParamTypeClasses, CPP, UndecidableInstances #-}
+             MultiParamTypeClasses, CPP, UndecidableInstances, ConstraintKinds #-}
 module Test.WebDriver.Monad
        ( WD(..), runWD, runSession, finallyClose, closeOnException, getSessionHistory, dumpSessionHistory
        ) where
@@ -90,5 +90,5 @@ getSessionHistory :: WDSessionState wd => wd [SessionHistory]
 getSessionHistory = fmap wdSessHist getSession 
 
 -- |Prints a history of API requests to stdout after computing the given action.
-dumpSessionHistory :: (MonadIO wd, WebDriver wd) => wd a -> wd a
-dumpSessionHistory = (`finally` (getSession >>= liftIO . print . wdSessHist))
+dumpSessionHistory :: WDSessionStateControl wd => wd a -> wd a
+dumpSessionHistory = (`finally` (getSession >>= liftBase . print . wdSessHist))
