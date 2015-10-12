@@ -68,6 +68,7 @@ library
                    Test.WebDriver.Class
                    Test.WebDriver.Monad
                    Test.WebDriver.Session
+                   Test.WebDriver.Session.History
                    Test.WebDriver.Config
                    Test.WebDriver.Exceptions
                    Test.WebDriver.Commands
@@ -82,6 +83,7 @@ library
                    Test.WebDriver.Utils
 
   other-modules:   Test.WebDriver.Internal
+                   Test.WebDriver.Exceptions.Internal
 
 Test-Suite test-search-baidu
   type: exitcode-stdio-1.0
@@ -91,3 +93,11 @@ Test-Suite test-search-baidu
                  webdriver,
                  text,
                  parallel
+
+--Test-Suite all-tests
+--  type: detailed-0.9
+--  test-module: all-tests.hs
+--  ghc-options: -Wall -threaded
+--  build-depends:  base,
+--                  webdriver,
+--                  hspec
