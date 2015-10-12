@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts, TypeFamilies, ConstraintKinds, UndecidableInstances #-}
 module Test.WebDriver.Config(
     -- * WebDriver configuration
       WDConfig(..), defaultConfig
@@ -8,6 +8,7 @@ module Test.WebDriver.Config(
     , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
     ) where
 import Test.WebDriver.Capabilities
+import Test.WebDriver.Browser
 import Test.WebDriver.Session.History
 
 import Data.Default (Default, def)
@@ -16,7 +17,7 @@ import Network.HTTP.Client (Manager)
 import Network.HTTP.Types (RequestHeaders)
 
 -- |WebDriver session configuration
-data WDConfig = WDConfig {
+data WDConfig b = WDConfig {
      -- |Host name of the WebDriver server for this
      -- session (default 127.0.0.1)
       wdHost :: String
@@ -25,7 +26,7 @@ data WDConfig = WDConfig {
      -- |Additional request headers to send to the server during session creation (default [])
     , wdRequestHeaders :: RequestHeaders
      -- |Capabilities to use for this session
-    , wdCapabilities :: Capabilities
+    , wdCapabilities :: Capabilities b
      -- |Specifies behavior of HTTP request/response history. By default we use 'unlimitedHistory'.
     , wdHistoryConfig :: SessionHistoryConfig
      -- |Base path for all API requests (default "/wd/hub")
@@ -36,10 +37,13 @@ data WDConfig = WDConfig {
     , wdHTTPRetryCount :: Int
 }
 
-instance GetCapabilities WDConfig where
+instance BrowserTag b => HasBrowserTag (WDConfig b) where
+    type BrowserTagOf (WDConfig b) = b
+
+instance GetCapabilities (WDConfig b) where
   getCaps = wdCapabilities
 
-instance SetCapabilities WDConfig where
+instance SetCapabilities (WDConfig b) where
   setCaps caps conf = conf { wdCapabilities = caps }
 
 -- |A function used to append new requests/responses to session history.
@@ -57,7 +61,7 @@ unlimitedHistory = (:)
 onlyMostRecentHistory :: SessionHistoryConfig
 onlyMostRecentHistory h _ = [h]
 
-instance Default WDConfig where
+instance Default (Browser b) => Default (WDConfig b) where
     def = WDConfig {
       wdHost              = "127.0.0.1"
     , wdPort              = 4444
@@ -72,5 +76,5 @@ instance Default WDConfig where
 {- |A default session config connects to localhost on port 4444, and hasn't been
 initialized server-side. This value is the same as 'def' but with a less
 polymorphic type. -}
-defaultConfig :: WDConfig
+defaultConfig :: Default (Browser b) => WDConfig b
 defaultConfig = def

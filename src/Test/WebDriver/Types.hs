@@ -39,3 +39,4 @@ import Test.WebDriver.Config
 import Test.WebDriver.Commands
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Capabilities
+import Test.WebDriver.Browser

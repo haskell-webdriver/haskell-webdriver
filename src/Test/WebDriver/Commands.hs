@@ -79,6 +79,7 @@ import Test.WebDriver.Class
 import Test.WebDriver.Session
 import Test.WebDriver.JSON
 import Test.WebDriver.Capabilities
+import Test.WebDriver.Browser
 import Test.WebDriver.Utils (urlEncode)
 
 import Data.Aeson
@@ -113,19 +114,19 @@ ignoreReturn :: WebDriver wd => wd Value -> wd ()
 ignoreReturn = void
 
 -- |Create a new session with the given 'Capabilities'.
-createSession :: WebDriver wd => RequestHeaders -> Capabilities -> wd WDSession
+createSession :: (BrowserTag b, WebDriver wd) => RequestHeaders -> Capabilities b -> wd WDSession
 createSession headers caps = do
   ignoreReturn . doCommand headers methodPost "/session" . single "desiredCapabilities" $ caps
   getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
-sessions :: WebDriver wd => RequestHeaders -> wd [(SessionId, Capabilities)]
+sessions :: (BrowserTag b, WebDriver wd) => RequestHeaders -> wd [(SessionId, Capabilities b)]
 sessions headers = do
   objs <- doCommand headers methodGet "/sessions" Null
   forM objs $ parsePair "id" "capabilities" "sessions"
 
 -- |Get the actual server-side 'Capabilities' of the current session.
-getActualCaps :: WebDriver wd => wd Capabilities
+getActualCaps :: (BrowserTag b, WebDriver wd) => wd (Capabilities b)
 getActualCaps = doSessCommand methodGet "" Null
 
 -- |Close the current session and the browser associated with it.

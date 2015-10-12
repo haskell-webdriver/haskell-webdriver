@@ -9,6 +9,7 @@ import Test.WebDriver.Session
 import Test.WebDriver.Config
 import Test.WebDriver.Commands
 import Test.WebDriver.Internal
+import Test.WebDriver.Browser
 
 import Control.Monad.Base (MonadBase, liftBase)
 import Control.Monad.Reader
@@ -69,7 +70,7 @@ runWD sess (WD wd) = evalStateT wd sess
 -- NOTE: session is not automatically closed when complete. If you want this behavior, use 'finallyClose'.
 -- Example:
 -- >    runSessionThenClose action = runSession myConfig . finallyClose $ action
-runSession :: WDConfig -> WD a -> IO a
+runSession :: BrowserTag b => WDConfig b -> WD a -> IO a
 runSession conf wd = do
   sess <- mkSession conf
   runWD sess $ createSession (wdRequestHeaders conf) (wdCapabilities conf) >> wd

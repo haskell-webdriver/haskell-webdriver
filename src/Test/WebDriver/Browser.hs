@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, EmptyDataDecls, GADTs, FlexibleInstances, StandaloneDeriving
+{-# LANGUAGE OverloadedStrings, RecordWildCards, EmptyDataDecls, GADTs, FlexibleInstances, StandaloneDeriving, 
+    TypeFamilies, FlexibleContexts, ConstraintKinds, UndecidableInstances, ScopedTypeVariables
   #-}
 module Test.WebDriver.Browser where
 
@@ -8,13 +9,14 @@ import Test.WebDriver.JSON
 
 import Data.Default
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
-import Data.Text (Text, toLower)
+import Data.Aeson.Types (Parser, typeMismatch)
+import Data.Text as T (Text, toLower, unpack)
 import Data.String (fromString)
 import Data.Word (Word16)
 
+import Control.Applicative
+import Control.Monad (when)
 import Control.Exception.Lifted (throw)
-
 
 -- GADT Browser tags
 data Firefox
@@ -25,6 +27,112 @@ data HTMLUnit
 data IPhone
 data IPad
 data Android
+
+class BrowserTag t where
+  expectedBrowserName :: t -> Text
+  browserCapabilities :: t -> [Text]
+  parseBrowserJSON :: Object -> Parser (Browser t)
+
+instance BrowserTag Firefox  where
+  expectedBrowserName _ = "firefox"
+  browserCapabilities _ = ["firefox_profile", "loggingPrefs", "firefox_binary"]
+  parseBrowserJSON o = 
+    Firefox <$> opt "firefox_profile" Nothing
+            <*> opt "loggingPrefs" def
+            <*> opt "firefox_binary" Nothing
+    where
+      opt :: FromJSON a => Text -> a -> Parser a
+      opt k d = o .:?? k .!= d -- optional field
+
+instance BrowserTag Chrome  where
+  expectedBrowserName _ = "chrome"
+  browserCapabilities _ = ["chrome.chromedriverVersion", "chrome.extensions", "chrome.switches", "chrome.extensions"]
+  parseBrowserJSON o =
+    Chrome <$> opt "chrome.chromedriverVersion" Nothing
+           <*> opt "chrome.extensions" Nothing
+           <*> opt "chrome.switches" []
+           <*> opt "chrome.extensions" []
+    where
+      opt :: FromJSON a => Text -> a -> Parser a
+      opt k d = o .:?? k .!= d -- optional field
+
+instance BrowserTag IE  where
+  expectedBrowserName _ = "internet explorer"
+  browserCapabilities _ = ["ignoreProtectedModeSettings", "ignoreZoomSettings", "initialBrowserUrl", "elementScrollBehavior"
+                          ,"enablePersistentHover", "enableElementCacheCleanup", "requireWindowFocus", "browserAttachTimeout"
+                          ,"logFile", "logLevel", "host", "extractPath", "silent", "forceCreateProcess", "internetExplorerSwitches"]
+  parseBrowserJSON o =
+    IE <$> opt "ignoreProtectedModeSettings" True
+       <*> opt "ignoreZoomSettings" False
+       <*> opt "initialBrowserUrl" Nothing
+       <*> opt "elementScrollBehavior" def
+       <*> opt "enablePersistentHover" True
+       <*> opt "enableElementCacheCleanup" True
+       <*> opt "requireWindowFocus" False
+       <*> opt "browserAttachTimeout" 0
+       <*> opt "logFile" Nothing
+       <*> opt "logLevel" def
+       <*> opt "host" Nothing
+       <*> opt "extractPath" Nothing
+       <*> opt "silent" False
+       <*> opt "forceCreateProcess" False
+       <*> opt "internetExplorerSwitches" Nothing
+    where
+      opt :: FromJSON a => Text -> a -> Parser a
+      opt k d = o .:?? k .!= d -- optional field
+
+instance BrowserTag Opera  where
+  expectedBrowserName _ = "opera"
+  browserCapabilities _ = ["opera.binary", "opera.product", "opera.no_quit", "opera.autostart", "opera.idle", "opera.display"
+                          ,"opera.launcher", "opera.port", "opera.host", "opera.arguments", "opera.logging.file", "opera.logging.level"]
+  parseBrowserJSON o =
+    Opera <$> opt "opera.binary" Nothing
+          <*> opt "opera.product" Nothing
+          <*> opt "opera.no_quit" False
+          <*> opt "opera.autostart" True
+          <*> opt "opera.idle" False
+          <*> opt "opera.display" Nothing
+          <*> opt "opera.launcher" Nothing
+          <*> opt "opera.port" (Just 0)
+          <*> opt "opera.host" Nothing
+          <*> opt "opera.arguments" Nothing
+          <*> opt "opera.logging.file" Nothing
+          <*> opt "opera.logging.level" def
+    where
+      opt :: FromJSON a => Text -> a -> Parser a
+      opt k d = o .:?? k .!= d -- optional field
+
+instance BrowserTag HTMLUnit where
+  expectedBrowserName _ = "htmlunit"
+  browserCapabilities _ = []
+  parseBrowserJSON _ = return HTMLUnit
+
+instance BrowserTag IPhone  where
+  expectedBrowserName _ = "iphone" 
+  browserCapabilities _ = []
+  parseBrowserJSON _ = return IPhone
+
+instance BrowserTag IPad  where
+  expectedBrowserName _ = "ipad"
+  browserCapabilities _ = []
+  parseBrowserJSON _ = return IPad
+
+instance BrowserTag Android  where
+  expectedBrowserName _ = "Android"
+  browserCapabilities _ = []
+  parseBrowserJSON _ = return Android
+
+class BrowserTag (BrowserTagOf t) => HasBrowserTag t where
+  type BrowserTagOf t
+
+
+instance BrowserTag t => HasBrowserTag (Browser t) where
+  type BrowserTagOf (Browser t) = t
+
+browserTagOf :: HasBrowserTag t => t -> BrowserTagOf t
+browserTagOf = undefined
+
+type BrowserOf t = Browser (BrowserTagOf t)
 
 -- |This constructor simultaneously specifies which browser the session will
 -- use, while also providing browser-specific configuration. Default
@@ -209,38 +317,19 @@ instance ToJSON (Browser b) where
   toJSON (Browser b) = String b
   toJSON b           = String . toLower . fromString . show $ b
 
-instance FromJSON (Browser Firefox) where
-  parseJSON (String "firefox") = return firefox
-  parseJSON v = typeMismatch "Browser Firefox" v
-  
-instance FromJSON (Browser Chrome) where
-  parseJSON (String "chrome") = return chrome
-  parseJSON v = typeMismatch "Browser Chrome" v
-  
-instance FromJSON (Browser IE) where
-  parseJSON (String "internet explorer") = return ie
-  parseJSON v = typeMismatch "Browser IE" v
-  
-instance FromJSON (Browser IPhone) where
-  parseJSON (String "iphone") = return iPhone
-  parseJSON v = typeMismatch "Browser IPhone" v
-  
-instance FromJSON (Browser IPad) where
-  parseJSON (String "ipad") = return IPad
-  parseJSON v = typeMismatch "Browser IPad" v
-  
-instance FromJSON (Browser Android) where
-  parseJSON (String "android") = return Android
-  parseJSON v = typeMismatch "Browser Android" v
-  
-instance FromJSON (Browser HTMLUnit) where
-  parseJSON (String "htmlunit") = return htmlUnit
-  parseJSON v = typeMismatch "Browser HTMLUnit" v
-   
-instance FromJSON (Browser b) where
-  parseJSON (String other) = return $ Browser other
-  parseJSON v = typeMismatch "Browser" v
 
+instance BrowserTag b => FromJSON (Browser b) where
+  parseJSON (Object o) = do
+    browserName <- o .: "browserName" -- TODO: check that browser name matches our browser tag
+    when (toLower browserName /= toLower expected) $
+      fail $ "Expected browser " ++ T.unpack expected ++ " but got " ++ T.unpack browserName
+    parseBrowserJSON o
+    where
+      expected = expectedBrowserName (undefined :: b)
+
+  parseJSON v = typeMismatch ("Browser " ++ T.unpack expected) v
+    where
+        expected = expectedBrowserName (undefined :: b)
 
 -- |Default Firefox settings. All Maybe fields are set to Nothing. ffLogPref
 -- is set to 'LogInfo'.

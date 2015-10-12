@@ -1,9 +1,7 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds, FlexibleContexts, UndecidableInstances, GADTs, TypeFamilies
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds, FlexibleContexts, UndecidableInstances, GADTs,  TypeFamilies, ScopedTypeVariables
   #-}
 module Test.WebDriver.Capabilities where
 
-import Test.WebDriver.Firefox.Profile
-import Test.WebDriver.Chrome.Extension
 import Test.WebDriver.JSON
 import Test.WebDriver.Browser
 
@@ -11,20 +9,18 @@ import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch, Pair)
 import qualified Data.HashMap.Strict as HM (delete, toList)
 
-import Data.Text (Text, toLower, toUpper)
+import Data.Text as T (Text, toLower, toUpper)
 import Data.Default (Default(..))
-import Data.Word (Word16)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.String (fromString)
 
 import Control.Applicative
 import Control.Exception.Lifted (throw)
 
-type family BrowserTagOf t
-
-type BrowserOf t = Browser (BrowserTagOf t)
-
 type CapabilitiesOf t = Capabilities (BrowserTagOf t)
+
+instance BrowserTag t => HasBrowserTag (Capabilities t) where
+  type BrowserTagOf (Capabilities t) = t
 
 -- |A typeclass for readable 'Capabilities'
 class GetCapabilities t where
@@ -164,7 +160,7 @@ allCaps = defaultCaps { javascriptEnabled = Just True
                       , nativeEvents = Just True
                       }
 
-instance ToJSON (Capabilities b) where
+instance (ToJSON (Browser b)) => ToJSON (Capabilities b) where
   toJSON Capabilities{..} =
     object $ filter (\p -> snd p /= Null)
            $ [ "browserName" .= browser
@@ -244,11 +240,9 @@ instance ToJSON (Capabilities b) where
           opt k = fmap (k .=)
 
 
-instance FromJSON (Browser b) => FromJSON (Capabilities b) where
-  parseJSON (Object o) = do
-    browserName <- req "browserName"
-    browser <- getBrowserCaps browserName
-    Capabilities <$> return browser
+instance (BrowserTag b, FromJSON (Browser b)) => FromJSON (Capabilities b) where
+  parseJSON (Object o) = 
+    Capabilities <$> parseJSON (Object o)  -- parse browser specific capabilities
                  <*> opt "version" Nothing
                  <*> req "platform"
                  <*> opt "proxy" NoProxy
@@ -265,74 +259,29 @@ instance FromJSON (Browser b) => FromJSON (Capabilities b) where
                  <*> b "acceptSslCerts"
                  <*> b "nativeEvents"
                  <*> opt "unexpectedAlertBehaviour" Nothing
-                 <*> pure (additionalCapabilities browser)
+                 <*> pure additionalCapabilities
 
     where --some helpful JSON accessor shorthands
-          req :: FromJSON a => Text -> Parser a
-          req = (o .:)            -- required field
-          opt :: FromJSON a => Text -> a -> Parser a
-          opt k d = o .:?? k .!= d -- optional field
-          b :: Text -> Parser (Maybe Bool)
-          b k = opt k Nothing     -- Maybe Bool field
+      req :: FromJSON a => Text -> Parser a
+      req = (o .:)            -- required field
+      opt :: FromJSON a => Text -> a -> Parser a
+      opt k d = o .:?? k .!= d -- optional field
+      b :: Text -> Parser (Maybe Bool)
+      b k = opt k Nothing     -- Maybe Bool field
 
-          -- produce additionalCaps by removing known capabilities from the JSON object
-          additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
+      -- produce additionalCaps by removing known capabilities from the JSON object
+      additionalCapabilities :: [Pair]
+      additionalCapabilities = HM.toList . foldr HM.delete o $ knownCapabilities
 
-          knownCapabilities browser =
-            ["browserName", "version", "platform", "proxy"
-            ,"javascriptEnabled", "takesScreenshot", "handlesAlerts"
-            ,"databaseEnabled", "locationContextEnabled"
-            ,"applicationCacheEnabled", "browserConnectionEnabled"
-            , "cssSelectorEnabled","webStorageEnabled", "rotatable"
-            , "acceptSslCerts", "nativeEvents", "unexpectedBrowserBehaviour"]
-            ++ case browser of
-              Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary"]
-              Chrome {} -> ["chrome.chromedriverVersion", "chrome.extensions", "chrome.switches", "chrome.extensions"]
-              IE {} -> ["ignoreProtectedModeSettings", "ignoreZoomSettings", "initialBrowserUrl", "elementScrollBehavior"
-                       ,"enablePersistentHover", "enableElementCacheCleanup", "requireWindowFocus", "browserAttachTimeout"
-                       ,"logFile", "logLevel", "host", "extractPath", "silent", "forceCreateProcess", "internetExplorerSwitches"]
-              Opera {} -> ["opera.binary", "opera.product", "opera.no_quit", "opera.autostart", "opera.idle", "opera.display"
-                          ,"opera.launcher", "opera.port", "opera.host", "opera.arguments", "opera.logging.file", "opera.logging.level"]
-              _ -> []
-          getBrowserCaps :: Text -> Parser (Browser b)
-          getBrowserCaps browser =
-            case toLower browser of
-              "firefox" -> Firefox <$> opt "firefox_profile" Nothing
-                                   <*> opt "loggingPrefs" def
-                                   <*> opt "firefox_binary" Nothing
-              "chrome" -> Chrome <$> opt "chrome.chromedriverVersion" Nothing
-                                 <*> opt "chrome.extensions" Nothing
-                                 <*> opt "chrome.switches" []
-                                 <*> opt "chrome.extensions" []
-              "internet explorer" 
-                -> IE <$> opt "ignoreProtectedModeSettings" True
-                      <*> opt "ignoreZoomSettings" False
-                      <*> opt "initialBrowserUrl" Nothing
-                      <*> opt "elementScrollBehavior" def
-                      <*> opt "enablePersistentHover" True
-                      <*> opt "enableElementCacheCleanup" True
-                      <*> opt "requireWindowFocus" False
-                      <*> opt "browserAttachTimeout" 0
-                      <*> opt "logFile" Nothing
-                      <*> opt "logLevel" def
-                      <*> opt "host" Nothing
-                      <*> opt "extractPath" Nothing
-                      <*> opt "silent" False
-                      <*> opt "forceCreateProcess" False
-                      <*> opt "internetExplorerSwitches" Nothing
-              "opera" -> Opera <$> opt "opera.binary" Nothing
-                               <*> opt "opera.product" Nothing
-                               <*> opt "opera.no_quit" False
-                               <*> opt "opera.autostart" True
-                               <*> opt "opera.idle" False
-                               <*> opt "opera.display" Nothing
-                               <*> opt "opera.launcher" Nothing
-                               <*> opt "opera.port" (Just 0)
-                               <*> opt "opera.host" Nothing
-                               <*> opt "opera.arguments" Nothing
-                               <*> opt "opera.logging.file" Nothing
-                               <*> opt "opera.logging.level" def
-              other -> parseJSON (String other)
+      knownCapabilities :: [Text]
+      knownCapabilities =
+        ["browserName", "version", "platform", "proxy"
+        ,"javascriptEnabled", "takesScreenshot", "handlesAlerts"
+        ,"databaseEnabled", "locationContextEnabled"
+        ,"applicationCacheEnabled", "browserConnectionEnabled"
+        , "cssSelectorEnabled","webStorageEnabled", "rotatable"
+        , "acceptSslCerts", "nativeEvents", "unexpectedBrowserBehaviour"]
+        ++ browserCapabilities (undefined :: b)
 
   parseJSON v = typeMismatch "Capabilities" v
 

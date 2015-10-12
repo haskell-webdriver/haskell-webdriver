@@ -106,7 +106,7 @@ withSession s m = do
   either throwIO return a
 
 -- |Constructs a new 'WDSession' from a given 'WDConfig'
-mkSession :: MonadBase IO m => WDConfig -> m WDSession
+mkSession :: MonadBase IO m => WDConfig b -> m WDSession
 mkSession WDConfig{..} = do
   manager <- maybe createManager return wdHTTPManager
   return WDSession { wdSessHost = fromString $ wdHost
