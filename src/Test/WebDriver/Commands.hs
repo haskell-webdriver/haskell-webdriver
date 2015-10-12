@@ -4,7 +4,7 @@
 -- browser session.
 module Test.WebDriver.Commands
        ( -- * Sessions
-         createSession, closeSession, sessions, getCaps
+         createSession, closeSession, sessions, getActualCaps
          -- * Browser interaction
          -- ** Web navigation
        , openPage, forward, back, refresh
@@ -74,11 +74,11 @@ module Test.WebDriver.Commands
        ) where
 
 import Test.WebDriver.Commands.Internal
+import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.Class
 import Test.WebDriver.Session
 import Test.WebDriver.JSON
 import Test.WebDriver.Capabilities
-import Test.WebDriver.Internal
 import Test.WebDriver.Utils (urlEncode)
 
 import Data.Aeson
@@ -124,9 +124,9 @@ sessions headers = do
   objs <- doCommand headers methodGet "/sessions" Null
   forM objs $ parsePair "id" "capabilities" "sessions"
 
--- |Get the actual 'Capabilities' of the current session.
-getCaps :: WebDriver wd => wd Capabilities
-getCaps = doSessCommand methodGet "" Null
+-- |Get the actual server-side 'Capabilities' of the current session.
+getActualCaps :: WebDriver wd => wd Capabilities
+getActualCaps = doSessCommand methodGet "" Null
 
 -- |Close the current session and the browser associated with it.
 closeSession :: WebDriver wd => wd ()
@@ -725,7 +725,7 @@ setKey s k v = doStorageCommand methodPost s "" . object $ ["key"   .= k,
 deleteKey :: WebDriver wd => WebStorageType -> Text -> wd ()
 deleteKey s k = noReturn $ doStorageCommand methodPost s ("/key/" `T.append` urlEncode k) Null
 
--- |A wrapper around 'doStorageCommand' to create web storage URLs.
+-- |A wrapper around 'doSessCommand' to create web storage requests.
 doStorageCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
                      Method -> WebStorageType -> Text -> a -> wd b
 doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a

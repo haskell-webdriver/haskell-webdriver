@@ -5,7 +5,7 @@ module Test.WebDriver.Exceptions
        , FailedCommand(..), FailedCommandType(..)
        , FailedCommandInfo(..), StackFrame(..)
        , mkFailedCommandInfo, failedCommand
-       )where
-import Test.WebDriver.Internal
+       ) where
 import Test.WebDriver.JSON
 import Test.WebDriver.Commands.Internal
+import Test.WebDriver.Exceptions.Internal

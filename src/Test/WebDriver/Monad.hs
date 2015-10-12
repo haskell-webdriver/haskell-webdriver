@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
-             MultiParamTypeClasses, CPP, UndecidableInstances #-}
+             MultiParamTypeClasses, CPP, UndecidableInstances, ConstraintKinds #-}
 module Test.WebDriver.Monad
-       ( WD(..), runWD, runSession, withSession, finallyClose, closeOnException, dumpSessionHistory
+       ( WD(..), runWD, runSession, finallyClose, closeOnException, getSessionHistory, dumpSessionHistory
        ) where
 
 import Test.WebDriver.Class
@@ -13,7 +13,7 @@ import Test.WebDriver.Internal
 import Control.Monad.Base (MonadBase, liftBase)
 import Control.Monad.Reader
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
-import Control.Monad.State.Strict (StateT, MonadState, evalStateT, get, put)
+import Control.Monad.State.Strict (StateT, evalStateT, get, put)
 --import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Lifted
 import Control.Monad.Catch (MonadThrow, MonadCatch)
@@ -55,9 +55,9 @@ instance WebDriver WD where
   doCommand headers method path args =
     mkRequest headers method path args
     >>= sendHTTPRequest
+    >>= either throwIO return
     >>= getJSONResult
     >>= either throwIO return
-
 
 -- |Executes a 'WD' computation within the 'IO' monad, using the given
 -- 'WDSession' as state for WebDriver requests.
@@ -74,12 +74,6 @@ runSession conf wd = do
   sess <- mkSession conf
   runWD sess $ createSession (wdRequestHeaders conf) (wdCapabilities conf) >> wd
 
--- |Locally sets a 'WDSession' for use within the given 'WD' action.
--- The state of the outer action is unaffected by this function.
--- This function is useful if you need to work with multiple sessions at once.
-withSession :: WDSession -> WD a -> WD a
-withSession s' (WD wd) = WD . lift $ evalStateT wd s'
-
 -- |A finalizer ensuring that the session is always closed at the end of
 -- the given 'WD' action, regardless of any exceptions.
 finallyClose:: WebDriver wd => wd a -> wd a
@@ -91,9 +85,10 @@ finallyClose wd = closeOnException wd <* closeSession
 closeOnException :: WebDriver wd => wd a -> wd a
 closeOnException wd = wd `onException` closeSession
 
+-- |Gets the command history for the current session.
+getSessionHistory :: WDSessionState wd => wd [SessionHistory]
+getSessionHistory = fmap wdSessHist getSession 
+
 -- |Prints a history of API requests to stdout after computing the given action.
-dumpSessionHistory :: (MonadIO wd, WebDriver wd) => wd a -> wd a
-dumpSessionHistory wd = do
-    v <- wd
-    getSession >>= liftIO . print . wdSessHist
-    return v
+dumpSessionHistory :: WDSessionStateControl wd => wd a -> wd a
+dumpSessionHistory = (`finally` (getSession >>= liftBase . print . wdSessHist))

@@ -1,20 +1,19 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts #-}
 module Test.WebDriver.Config(
     -- * WebDriver configuration
-      WDConfig(..), defaultConfig, mkSession
-    -- * WDConfig transformers / helpers
+      WDConfig(..), defaultConfig
+    -- * Capabilities helpers
     , modifyCaps, useBrowser, useVersion, usePlatform, useProxy
+    -- * SessionHistoryConfig options
+    , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
     ) where
-import Test.WebDriver.Session
 import Test.WebDriver.Capabilities
+import Test.WebDriver.Session.History
 
 import Data.Default (Default, def)
-import Data.String (fromString)
 
-import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
+import Network.HTTP.Client (Manager)
 import Network.HTTP.Types (RequestHeaders)
-
-import Control.Monad.Base (MonadBase, liftBase)
 
 -- |WebDriver session configuration
 data WDConfig = WDConfig {
@@ -27,19 +26,36 @@ data WDConfig = WDConfig {
     , wdRequestHeaders :: RequestHeaders
      -- |Capabilities to use for this session
     , wdCapabilities :: Capabilities
-     -- |Whether or not we should keep a history of HTTP requests/responses
-     --
-     -- By default, only the last request/response pair is stored (O(1) heap consumption).
-     -- Enable this option for more detailed debugging info for HTTP requests.
-    , wdKeepSessHist :: Bool
+     -- |Specifies behavior of HTTP request/response history. By default we use 'unlimitedHistory'.
+    , wdHistoryConfig :: SessionHistoryConfig
      -- |Base path for all API requests (default "/wd/hub")
     , wdBasePath :: String
-     -- |Use the given http-client 'Manager' instead of the default
+     -- |Use the given http-client 'Manager' instead of automatically creating one.
     , wdHTTPManager :: Maybe Manager
      -- |Number of times to retry a HTTP request if it times out (default 0)
     , wdHTTPRetryCount :: Int
-
 }
+
+instance GetCapabilities WDConfig where
+  getCaps = wdCapabilities
+
+instance SetCapabilities WDConfig where
+  setCaps caps conf = conf { wdCapabilities = caps }
+
+-- |A function used to append new requests/responses to session history.
+type SessionHistoryConfig = SessionHistory -> [SessionHistory] -> [SessionHistory]
+
+-- |No session history is saved.
+noHistory :: SessionHistoryConfig
+noHistory _ _ = []
+
+-- |Keep unlimited history
+unlimitedHistory :: SessionHistoryConfig
+unlimitedHistory = (:)
+
+-- |Saves only the most recent history
+onlyMostRecentHistory :: SessionHistoryConfig
+onlyMostRecentHistory h _ = [h]
 
 instance Default WDConfig where
     def = WDConfig {
@@ -47,7 +63,7 @@ instance Default WDConfig where
     , wdPort              = 4444
     , wdRequestHeaders    = []
     , wdCapabilities      = def
-    , wdKeepSessHist      = False
+    , wdHistoryConfig     = unlimitedHistory
     , wdBasePath          = "/wd/hub"
     , wdHTTPManager       = Nothing
     , wdHTTPRetryCount    = 0
@@ -58,45 +74,3 @@ initialized server-side. This value is the same as 'def' but with a less
 polymorphic type. -}
 defaultConfig :: WDConfig
 defaultConfig = def
-
--- |Constructs a new 'WDSession' from a given 'WDConfig'
-mkSession :: MonadBase IO m => WDConfig -> m WDSession
-mkSession WDConfig{..} = do
-  manager <- maybe createManager return wdHTTPManager
-  return WDSession { wdSessHost = fromString $ wdHost
-                   , wdSessPort = wdPort
-                   , wdSessBasePath = fromString $ wdBasePath
-                   , wdSessId = Nothing
-                   , wdSessHist = []
-                   , wdSessHistUpdate = histUpdate
-                   , wdSessHTTPManager = manager
-                   , wdSessHTTPRetryCount = wdHTTPRetryCount }
-  where
-    createManager = liftBase $ newManager defaultManagerSettings
-    histUpdate
-      | wdKeepSessHist = (:)
-      | otherwise      = \x _ -> [x]
-
-
--- |Modifies the 'wdCapabilities' field of a 'WDConfig' by applying the given function.
-modifyCaps :: (Capabilities -> Capabilities) -> WDConfig -> WDConfig
-modifyCaps f c = c { wdCapabilities = f (wdCapabilities c) }
-
--- |A helper function for setting the 'browser' capability of a 'WDConfig'
-useBrowser :: Browser -> WDConfig -> WDConfig
-useBrowser b = modifyCaps $ \c -> c { browser = b }
-
--- |A helper function for setting the 'version' capability of a 'WDConfig'
-useVersion :: String -> WDConfig -> WDConfig
-useVersion v = modifyCaps $ \c -> c { version = Just v }
-
--- |A helper function for setting the 'platform' capability of a 'WDConfig'   
-usePlatform :: Platform -> WDConfig -> WDConfig
-usePlatform p = modifyCaps $ \c -> c { platform = p }
-
--- |A helper function for setting the 'useProxy' capability of a 'WDConfig'
-useProxy :: ProxyType -> WDConfig -> WDConfig
-useProxy p = modifyCaps $ \c -> c { proxy = p }
-
-
-

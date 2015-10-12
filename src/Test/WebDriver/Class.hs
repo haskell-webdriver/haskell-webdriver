@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts,
-             GeneralizedNewtypeDeriving, RecordWildCards #-}
+             GeneralizedNewtypeDeriving, RecordWildCards, ConstraintKinds #-}
 module Test.WebDriver.Class
        ( -- * WebDriver class
          WebDriver(..), Method, methodDelete, methodGet, methodPost,
@@ -32,7 +32,7 @@ import Control.Monad.RWS.Lazy as LRWS
 -- operation underlying all of the high-level commands exported in
 -- "Test.WebDriver.Commands". For more information on the wire protocol see
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
-class (WDSessionState wd) => WebDriver wd where
+class (WDSessionStateControl wd) => WebDriver wd where
   doCommand :: (ToJSON a, FromJSON b) =>
                 RequestHeaders -- ^Additional headers
                 -> Method      -- ^HTTP request method

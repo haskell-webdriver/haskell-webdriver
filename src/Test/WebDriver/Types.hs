@@ -1,9 +1,9 @@
 {-# OPTIONS_HADDOCK not-home #-}
 module Test.WebDriver.Types
        ( -- * WebDriver sessions
-         WD(..), WDSession(..), SessionId(..)
+         WD(..), WDSession(..), SessionId(..), SessionHistory
          -- * WebDriver configuration
-       , WDConfig(..), defaultConfig
+       , WDConfig(..), defaultConfig, SessionHistoryConfig
          -- * Capabilities
        , Capabilities(..), defaultCaps, allCaps
        , Platform(..), ProxyType(..), UnexpectedAlertBehavior(..)
