@@ -58,6 +58,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
         -- |Read/write 'Capabilities'
         type HasCapabilities t = (GetCapabilities t, SetCapabilities t)
       ```
+      
 ###Minor API changes (not exposed to `Test.WebDriver` module)
 * `Test.WebDriver.Session` changes
   * new function `mostRecentHistory` added
