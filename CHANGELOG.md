@@ -1,7 +1,74 @@
 #Change Log
+
 ##Upcoming Release
-* Added several new `WDConfig` helper functions: `modifyCaps`, `useBrowser`, `useVersion`, `usePlatform`, `useProxy`
-* Added functions for checking some expected conditions in explicit waits: `expectNotStale`, `expectedAlertOpen`, `catchFailedCommand`
+
+Because this is a fairly major update, changes have been described in detail and organized into categories. Most of the potentially breaking changes are to the "intermediate" API that might affect library code or advanced applications; changes that are not entirely "user-facing" but also not quite "internal".
+
+Basic web test code only has to contend with a few additional symbol exports, overloading of type signatures on some existing functions, and the reworked session history API.
+
+###Top-level API (exposed by`Test.WebDriver` module)
+  * `withSession` is now overloaded over the new constraint alias `WDSessionStateControl` ([see below](#typeclass-api)). This means that it can be used with monad transformer stacks over `WD` without any lifting required.
+  * Added several new `WDConfig` convenience functions: `modifyCaps`, `useBrowser`, `useVersion`, `usePlatform`, `useProxy`; these functions are overloaded over the new `HasCapabilities` constraint alias ([see below](#typeclass-api))
+  * Reworked and improved session history API
+    * Added a `SessionHistory` record type to replace the old `(Request, Response ByteString)` type. The new type has the same data as the previous tuple, but additionally records the number of attempted HTTP retries, and instead of `Response ByteString` uses `Either SomeException (Response ByteString)` so that HTTP request errors can be logged.
+    * Removed `wdKeepSessHist` field from `WDConfig` and replaced it with `wdHistoryConfig`, which uses a new `SessionHistoryConfig` type.
+      
+      ```hs
+        -- |A function used to append new requests/responses to session history.
+        type SessionHistoryConfig = SessionHistory -> [SessionHistory] -> [SessionHistory]
+      ```
+    * The new field can be configured using several new constants: `noHistory`, `onlyMostRecentHistory`, and `unlimitedHistory`. Note: `unlimitedHistory` is now the default configuration for history. For the old behavior, use `onlyMostRecentHistory`.
+    * New top-level functions for accessing session history
+      
+      ```hs
+        -- |Gets the command history for the current session.
+        getSessionHistory :: WDSessionState wd => wd [SessionHistory]
+        
+        -- |Prints a history of API requests to stdout after computing the given action
+        --  or after an exception is thrown
+        dumpSessionHistory :: WDSessionStateControl wd => wd a -> wd a
+      ```
+
+###Implicit waits API (`Test.WebDriver.Commands.Wait`)
+* Added functions for checking some expected conditions in explicit waits: `expectNotStale`, `expectAlertOpen`, `catchFailedCommand`
+
+###Typeclass API
+* `WDSessionState` is now a superclass of `Monad` and `Applicative` instead of `MonadBaseControl IO`. This makes the class significantly more flexible in how it can be used, as it no longer requires `IO` as a base monad.
+  * For convenience the following constraint aliases were added (requires `ConstraintKinds` extension to use). Several existing API functions have been updated to use these new constraints where appropriate.
+    
+    ```hs
+      type WDSessionStateIO s = (WDSessionState s, MonadBase IO s)
+      type WDSessionStateControl s = (WDSessionState s, MonadBaseControl IO s)
+    ```
+    
+  * The `WDSessionStateControl` constraint is equivalent to the previous `WDSessionState` constraint.
+  * The `WebDriver` class is unaffected (it is now a superclass of `WDSessionStateControl`), so code using the basic `Test.WebDriver` API will not be affected.
+
+* New typeclasses added to `Test.WebDriver.Capabilities`: `GetCapabilities` and `SetCapabilities`; for convenience a constraint alias `HasCapabilities` has been added to work with both of these classes (requires `ConstraintKinds` extension to use)
+      
+      ```hs
+        -- |A typeclass for readable 'Capabilities'
+        class GetCapabilities t where
+          getCaps :: t -> Capabilities
+        
+        -- |A typeclass for writable 'Capabilities'
+        class SetCapabilities t where
+          setCaps :: Capabilities -> t -> t
+        
+        -- |Read/write 'Capabilities'
+        type HasCapabilities t = (GetCapabilities t, SetCapabilities t)
+      ```
+###Minor API changes (not exposed to `Test.WebDriver` module)
+* `Test.WebDriver.Session` changes
+  * new function `mostRecentHistory` added
+  * `lastHTTPRequest` renamed to `mostRecentHTTPRequest` (for consistency)
+  * `mkSession` moved from `Test.WebDriver.Config` to `Test.WebDriver.Session`
+* `Test.WebDriver.Internal` changes
+  * `sendHTTPRequest` now returns `(Either SomeException (Response ByteString))` and catches any exceptions that occur during the request. When using default configuration, the exceptions are also saved in 'wdSessHist'.
+  * `Test.WebDriver.Internal` no longer defines and exports exception types. All exception defined here previously have been moved to an unexposed `Test.WebDriver.Exceptions.Internal` module. These types are still exported in the usual places.
+
+###Dependencies
+* Now supports http-types up to 0.9
 
 ##0.6.3.1
 * Fixed an issue with aeson 0.10 support
