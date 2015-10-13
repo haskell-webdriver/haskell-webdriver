@@ -2,21 +2,16 @@
 - fix loadProfile so that it doesn't cause an overlap with user addExtension calls
 
 #features
-- add support for Opera profiles
+- support new w3c webdriver spec: http://www.w3.org/TR/webdriver/
+  - try to support backwards compatibility with old wire protocol, otherwise provide legacy API in submodule (?) 
+  - mock-up example of actions API: http://lpaste.net/3484676197546196992
+- allow WDConfig to automatically load drivers. add modules with driver loading functions
 - overload URL inputs/outputs to implicitly support structured URL types
-- provide exception handling utilities (maybeNotFound, ignoreNotFound, ...)
+- add support for Opera profiles
 - POST "/session/{sessionId}/phantom/execute"
 
 #documentation
 - document errors.
-- provide examples
-  - basic runSession usage
-  - intermediate usage
-  - exception handling with lifted-base
-  - explicit waits usage
-  - firefox profile usage
-  - REPL usage
-- allow WDConfig to automatically load drivers. add modules with driver loading functions
 
 
 #considerations
