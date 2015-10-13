@@ -68,6 +68,7 @@ runWD sess (WD wd) = evalStateT wd sess
 --
 -- NOTE: session is not automatically closed when complete. If you want this behavior, use 'finallyClose'.
 -- Example:
+--
 -- >    runSessionThenClose action = runSession myConfig . finallyClose $ action
 runSession :: WDConfig -> WD a -> IO a
 runSession conf wd = do

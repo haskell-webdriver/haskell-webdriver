@@ -28,7 +28,7 @@ data WDConfig = WDConfig {
     , wdCapabilities :: Capabilities
      -- |Specifies behavior of HTTP request/response history. By default we use 'unlimitedHistory'.
     , wdHistoryConfig :: SessionHistoryConfig
-     -- |Base path for all API requests (default "/wd/hub")
+     -- |Base path for all API requests (default "\/wd\/hub")
     , wdBasePath :: String
      -- |Use the given http-client 'Manager' instead of automatically creating one.
     , wdHTTPManager :: Maybe Manager
@@ -42,7 +42,7 @@ instance GetCapabilities WDConfig where
 instance SetCapabilities WDConfig where
   setCaps caps conf = conf { wdCapabilities = caps }
 
--- |A function used to append new requests/responses to session history.
+-- |A function used by 'wdHistoryConfig' to append new entries to session history.
 type SessionHistoryConfig = SessionHistory -> [SessionHistory] -> [SessionHistory]
 
 -- |No session history is saved.
