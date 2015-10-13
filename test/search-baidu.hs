@@ -7,11 +7,10 @@ import           Control.Monad (void)
 import           Data.List
 import qualified Data.Text                    as T
 import           Test.WebDriver
---import           Test.WebDriver.Classes
 import           Test.WebDriver.Commands.Wait
 
-capsChrome = defaultCaps { browser = chrome }
-capsFF = defaultCaps
+chromeConf = useBrowser chrome defaultConfig
+ffConf = defaultConfig
 
 -- Have no fun with baidu but only cause it is loading fast than google in China.
 --
@@ -20,7 +19,7 @@ baidu = openPage "http://www.baidu.com/"
 
 searchBaidu :: WD Bool
 searchBaidu = do
-  searchBox <- findElem (ById "kw1")
+  searchBox <- findElem (ById "kw")
   sendKeys "Cheese!" searchBox
   submit searchBox
   setImplicitWait 50
@@ -28,9 +27,9 @@ searchBaidu = do
     title <- getTitle
     return ("cheese!" `T.isSuffixOf` title)
 
-testCase c = void $ runSession (defaultConfig { wdCapabilities = c }) (baidu >> searchBaidu)
+testCase c = void . runSession c . finallyClose $ (baidu >> searchBaidu)
 
-testSuits = mapM_ testCase  [capsFF, capsChrome]
+testSuits = mapM_ testCase  [ffConf, chromeConf]
 
 main = do
   --testCase capsChrome `seq` testCase capsFF
