@@ -19,6 +19,8 @@ import Control.Exception.Lifted
 import Control.Monad.Catch (MonadThrow, MonadCatch)
 import Control.Applicative
 
+import Prelude -- hides some "unused import" warnings
+
 
 {- |A state monad for WebDriver commands.
 -}

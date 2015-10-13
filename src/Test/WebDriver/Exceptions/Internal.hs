@@ -23,6 +23,8 @@ import Data.Typeable (Typeable)
 import Data.Maybe (fromMaybe)
 import Data.Word (Word)
 
+import Prelude -- hides some "unused import" warnings
+
 instance Exception InvalidURL
 -- |An invalid URL was given
 newtype InvalidURL = InvalidURL String

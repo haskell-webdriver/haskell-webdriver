@@ -29,6 +29,8 @@ import Data.Typeable
 import Data.Default
 import Control.Applicative
 
+import Prelude -- hides some "unused import" warnings
+
 {- |An opaque identifier for a web page element. -}
 newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)

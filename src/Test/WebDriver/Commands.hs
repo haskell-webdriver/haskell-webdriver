@@ -104,6 +104,8 @@ import Data.String (fromString)
 import Data.Maybe
 import qualified Data.Char as C
 
+import Prelude -- hides some "unused import" warnings
+
 -- |Convenience function to handle webdriver commands with no return value
 noReturn :: WebDriver wd => wd NoReturn -> wd ()
 noReturn = void
