@@ -35,6 +35,8 @@ import Data.String (fromString)
 import Data.Word (Word8)
 import Data.Default
 
+import Prelude -- hides some "unused import" warnings
+
 -- |Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
 mkRequest :: (WDSessionState s, ToJSON a) =>
              RequestHeaders -> Method -> Text -> a -> s Request
