@@ -1,6 +1,6 @@
 #Change Log
 
-##Upcoming Release
+##0.7
 
 Because this is a fairly major update, changes have been described in detail and organized into categories. Most of the potentially breaking changes are to the "intermediate" API that might affect library code or advanced applications; changes that are not entirely "user-facing" but also not quite "internal".
 
