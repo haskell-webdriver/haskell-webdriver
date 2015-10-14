@@ -11,7 +11,7 @@
 It is now possible to define custom configuration types that can be used to initialize webdriver sessions.
 
 `runSession` now has the following type:
-```
+```hs
   runSession :: WebDriverConfig conf => conf -> WD a -> IO a
 ```
 And the typeclass to create new config types looks like this:
@@ -26,10 +26,10 @@ And the typeclass to create new config types looks like this:
     mkSession :: MonadBase IO m => c -> m WDSession
 ```
 
-Of course you can still use `WDConfig`, as it now an instance of `WebDriverConfig`.
+Of course you can still use `WDConfig`, as it is now an instance of `WebDriverConfig`.
 
 ###Reworked custom HTTP headers interface
-* Support for custom request headers was added rather hastily, resulting in several functions having explicit RequestHeaders parameters. The interface has been reworked now so that custom request headers are stored inside `WDSession` and explicit `RequestHeaders` parameters have been removed.
+* Support for custom request headers was added rather hastily, resulting in several functions having explicit `RequestHeaders` parameters. The interface has been reworked now so that custom request headers are stored inside `WDSession` and explicit `RequestHeaders` parameters have been removed.
 * There's also now a distinction in configuration between `wdAuthHeaders` which are used only during initial session creation, and `wdRequestHeaders`, which are used with all other HTTP requests
 * Two new utility functions were added to make working with custom HTTP headers easier: `withRequestHeaders` and `withAuthHeaders`
 
