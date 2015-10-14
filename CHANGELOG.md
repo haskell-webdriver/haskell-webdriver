@@ -1,5 +1,8 @@
 #Change Log
 
+##0.8.0.1
+* findElems and and findElemsFrom were accidentally changed to return a single Element in the last release. This has been fixed. 
+
 ##0.8
 
 ###Command changes
