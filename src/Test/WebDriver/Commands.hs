@@ -239,7 +239,7 @@ screenshot = B64.decodeLenient <$> screenshotBase64
 screenshotBase64 :: WebDriver wd => wd LBS.ByteString
 screenshotBase64 = TL.encodeUtf8 <$> doSessCommand methodGet "/screenshot" Null
 
-availableIMEEngines :: WebDriver wd => wd Text
+availableIMEEngines :: WebDriver wd => wd [Text]
 availableIMEEngines = doSessCommand methodGet "/ime/available_engines" Null
 
 activeIMEEngine :: WebDriver wd => wd Text
@@ -416,7 +416,7 @@ findElem :: WebDriver wd => Selector -> wd Element
 findElem = doSessCommand methodPost "/element"
 
 -- |Find all elements on the page matching the given selector.
-findElems :: WebDriver wd => Selector -> wd Element
+findElems :: WebDriver wd => Selector -> wd [Element]
 findElems = doSessCommand methodPost "/elements"
 
 -- |Return the element that currently has focus.
@@ -428,7 +428,7 @@ findElemFrom :: WebDriver wd => Element -> Selector -> wd Element
 findElemFrom e = doElemCommand methodPost e "/element"
 
 -- |Find all elements matching a selector, using the given element as root.
-findElemsFrom :: WebDriver wd => Element -> Selector -> wd Element
+findElemsFrom :: WebDriver wd => Element -> Selector -> wd [Element]
 findElemsFrom e = doElemCommand methodPost e "/elements"
 
 -- |Describe the element. Returns a JSON object whose meaning is currently
