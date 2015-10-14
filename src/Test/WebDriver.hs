@@ -6,7 +6,7 @@ module Test.WebDriver
   ( -- * WebDriver monad
     WD(..) 
     -- * Running WebDriver commands
-  , runWD, runSession, withSession
+  , runSession, withSession, runWD
     -- * WebDriver configuration
   , WDConfig(..), defaultConfig
     -- ** Configuration helper functions
@@ -15,6 +15,8 @@ module Test.WebDriver
   , useBrowser, useProxy, useVersion, usePlatform 
     -- ** Session history configuration
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
+    -- ** HTTP request header utilities
+  , withRequestHeaders, withAuthHeaders
     -- * WebDriver commands
   , module Test.WebDriver.Commands
     -- * Capabilities (advanced configuration)

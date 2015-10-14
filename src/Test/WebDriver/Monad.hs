@@ -55,8 +55,8 @@ instance WDSessionState WD where
   putSession = WD . put
 
 instance WebDriver WD where
-  doCommand headers method path args =
-    mkRequest headers method path args
+  doCommand method path args =
+    mkRequest method path args
     >>= sendHTTPRequest
     >>= either throwIO return
     >>= getJSONResult
@@ -73,10 +73,11 @@ runWD sess (WD wd) = evalStateT wd sess
 -- Example:
 --
 -- >    runSessionThenClose action = runSession myConfig . finallyClose $ action
-runSession :: WDConfig -> WD a -> IO a
+runSession :: WebDriverConfig conf => conf -> WD a -> IO a
 runSession conf wd = do
   sess <- mkSession conf
-  runWD sess $ createSession (wdRequestHeaders conf) (wdCapabilities conf) >> wd
+  caps <- mkCaps conf
+  runWD sess $ createSession caps >> wd
 
 -- |A finalizer ensuring that the session is always closed at the end of
 -- the given 'WD' action, regardless of any exceptions.

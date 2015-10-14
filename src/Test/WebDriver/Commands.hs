@@ -91,7 +91,6 @@ import Data.ByteString.Lazy as LBS (ByteString)
 import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
 import qualified Data.Text.Lazy.Encoding as TL
-import Network.HTTP.Types.Header (RequestHeaders)
 
 import Control.Monad
 import Control.Applicative
@@ -116,16 +115,18 @@ noReturn = void
 ignoreReturn :: WebDriver wd => wd Value -> wd ()
 ignoreReturn = void
 
--- |Create a new session with the given 'Capabilities'.
-createSession :: WebDriver wd => RequestHeaders -> Capabilities -> wd WDSession
-createSession headers caps = do
-  ignoreReturn . doCommand headers methodPost "/session" . single "desiredCapabilities" $ caps
+-- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action. 
+-- 
+-- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
+createSession :: WebDriver wd => Capabilities -> wd WDSession
+createSession caps = do
+  ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "desiredCapabilities" $ caps
   getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
-sessions :: WebDriver wd => RequestHeaders -> wd [(SessionId, Capabilities)]
-sessions headers = do
-  objs <- doCommand headers methodGet "/sessions" Null
+sessions :: WebDriver wd => wd [(SessionId, Capabilities)]
+sessions = do
+  objs <- doCommand methodGet "/sessions" Null
   mapM (parsePair "id" "capabilities" "sessions") objs
 
 -- |Get the actual server-side 'Capabilities' of the current session.
@@ -740,8 +741,8 @@ doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
 -- |Get information from the server as a JSON 'Object'. For more information
 -- about this object see
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol#/status>
-serverStatus :: (WebDriver wd) => RequestHeaders -> wd Value   -- todo: make this a record type
-serverStatus headers = doCommand headers methodGet "/status" Null
+serverStatus :: (WebDriver wd) => wd Value   -- todo: make this a record type
+serverStatus = doCommand methodGet "/status" Null
 
 -- |A record that represents a single log entry.
 data LogEntry =

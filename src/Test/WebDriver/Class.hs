@@ -13,7 +13,6 @@ import Data.Aeson
 import Data.Text (Text)
 
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
-import Network.HTTP.Types.Header (RequestHeaders)
 
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Maybe
@@ -36,8 +35,7 @@ import Control.Monad.Trans.RWS.Lazy as LRWS
 -- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
 class (WDSessionStateControl wd) => WebDriver wd where
   doCommand :: (ToJSON a, FromJSON b) =>
-                RequestHeaders -- ^Additional headers
-                -> Method      -- ^HTTP request method
+                   Method      -- ^HTTP request method
                 -> Text        -- ^URL of request
                 -> a           -- ^JSON parameters passed in the body
                                -- of the request. Note that, as a special case,
@@ -46,36 +44,36 @@ class (WDSessionStateControl wd) => WebDriver wd where
                 -> wd b        -- ^The JSON result of the HTTP request.
 
 instance WebDriver wd => WebDriver (SS.StateT s wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 instance WebDriver wd => WebDriver (LS.StateT s wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 
 instance WebDriver wd => WebDriver (MaybeT wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 instance WebDriver wd => WebDriver (IdentityT wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 instance WebDriver wd => WebDriver (ListT wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 instance (Monoid w, WebDriver wd) => WebDriver (LW.WriterT w wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 instance (Monoid w, WebDriver wd) => WebDriver (SW.WriterT w wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 instance WebDriver wd => WebDriver (ReaderT r wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 instance (Error e, WebDriver wd) => WebDriver (ErrorT e wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 
 instance (Monoid w, WebDriver wd) => WebDriver (SRWS.RWST r w s wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)
 
 instance (Monoid w, WebDriver wd) => WebDriver (LRWS.RWST r w s wd) where
-  doCommand rh rm t a = lift (doCommand rh rm t a)
+  doCommand rm t a = lift (doCommand rm t a)

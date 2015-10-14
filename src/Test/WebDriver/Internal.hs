@@ -39,8 +39,8 @@ import Prelude -- hides some "unused import" warnings
 
 -- |Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
 mkRequest :: (WDSessionState s, ToJSON a) =>
-             RequestHeaders -> Method -> Text -> a -> s Request
-mkRequest headers meth wdPath args = do
+             Method -> Text -> a -> s Request
+mkRequest meth wdPath args = do
   WDSession {..} <- getSession
   let body = case toJSON args of
         Null  -> ""   --passing Null as the argument indicates no request body
@@ -49,9 +49,10 @@ mkRequest headers meth wdPath args = do
              , port = wdSessPort
              , path = wdSessBasePath `BS.append`  TE.encodeUtf8 wdPath
              , requestBody = RequestBodyLBS body
-             , requestHeaders = headers ++ [ (hAccept, "application/json;charset=UTF-8")
-                                           , (hContentType, "application/json;charset=UTF-8")
-                                           , (hContentLength, fromString . show . LBS.length $ body) ]
+             , requestHeaders = wdSessRequestHeaders
+                                ++ [ (hAccept, "application/json;charset=UTF-8")
+                                   , (hContentType, "application/json;charset=UTF-8")
+                                   , (hContentLength, fromString . show . LBS.length $ body) ]
              , checkStatus = \_ _ _ -> Nothing -- all status codes handled by getJSONResult
              , method = meth }
 

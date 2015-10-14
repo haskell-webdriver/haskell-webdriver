@@ -12,6 +12,8 @@ module Test.WebDriver.Session
   , WDSession(..), mostRecentHistory, mostRecentHTTPRequest, SessionId(..), SessionHistory(..)
     -- * SessionHistoryConfig options
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
+    -- * Using custom HTTP request headers
+  , withRequestHeaders, withAuthHeaders
   ) where
 
 import Test.WebDriver.Session.History
@@ -42,6 +44,7 @@ import Control.Exception.Lifted (SomeException, try, throwIO)
 
 --import Network.HTTP.Types.Header (RequestHeaders)
 import Network.HTTP.Client (Manager, Request)
+import Network.HTTP.Types (RequestHeaders)
 
 import Prelude -- hides some "unused import" warnings
 
@@ -76,7 +79,11 @@ data WDSession = WDSession {
                            , wdSessHTTPManager :: Manager
                              -- |Number of times to retry a HTTP request if it times out
                            , wdSessHTTPRetryCount :: Int
-                           --, wdSessRequestHeaders :: RequestHeaders
+                             -- |Custom request headers to add to every HTTP request. 
+                           , wdSessRequestHeaders :: RequestHeaders
+                             -- |Custom request headers to add *only* to session creation requests. This is usually done
+                             --  when a WebDriver server requires HTTP auth.
+                           , wdSessAuthHeaders :: RequestHeaders
                            }
 
 
@@ -135,6 +142,23 @@ mostRecentHistory = listToMaybe . wdSessHist
 mostRecentHTTPRequest :: WDSession -> Maybe Request
 mostRecentHTTPRequest = fmap histRequest . mostRecentHistory
 
+-- |Set a temporary list of custom 'RequestHeaders' to use within the given action.
+-- All previous custom headers are temporarily removed, and then restored at the end.
+withRequestHeaders :: WDSessionStateControl m => RequestHeaders -> m a -> m a
+withRequestHeaders h m = do
+  h' <- fmap wdSessRequestHeaders getSession
+  modifySession $ \s -> s { wdSessRequestHeaders = h }
+  (a :: Either SomeException a) <- try m
+  modifySession $ \s -> s { wdSessRequestHeaders = h' }
+  either throwIO return a
+
+-- |Makes all webdriver HTTP requests in the given action use the session\'s auth headers, typically
+-- configured by setting the 'wdAuthHeaders' config. This is useful if you want to temporarily use
+-- the same auth headers you used for session creation with other HTTP requests.
+withAuthHeaders :: WDSessionStateControl m => m a -> m a
+withAuthHeaders wd = do
+  authHeaders <- fmap wdSessAuthHeaders getSession
+  withRequestHeaders authHeaders wd
                             
 instance WDSessionState m => WDSessionState (LS.StateT s m) where
   getSession = lift getSession

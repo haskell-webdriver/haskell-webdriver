@@ -25,6 +25,9 @@ import Prelude -- hides some "unused import" warnings
 class GetCapabilities t where
   getCaps :: t -> Capabilities
 
+instance GetCapabilities Capabilities where
+  getCaps = id
+
 -- |A typeclass for writable 'Capabilities'
 class SetCapabilities t where
   setCaps :: Capabilities -> t -> t

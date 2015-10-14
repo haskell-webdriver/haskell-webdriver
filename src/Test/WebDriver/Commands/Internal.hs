@@ -75,7 +75,7 @@ doSessCommand method path args = do
         where
           msg = "doSessCommand: No session ID found for relative URL "
                 ++ show path
-      Just (SessionId sId) -> doCommand [] method
+      Just (SessionId sId) -> doCommand method
                               (T.concat ["/session/", urlEncode sId, path]) args
 
 -- |A wrapper around 'doSessCommand' to create element URLs.
