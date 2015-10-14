@@ -10,7 +10,6 @@ module Test.WebDriver.Commands.Wait
        , catchFailedCommand
          -- ** Convenience functions
        , onTimeout
-       , ifM, (<||>), (<&&>), notM
        ) where
 import Test.WebDriver.Commands
 import Test.WebDriver.Class
@@ -21,7 +20,6 @@ import Control.Monad.Base
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted
 import Control.Concurrent
-import Control.Conditional (ifM, (<||>), (<&&>), notM)
 
 import Data.Time.Clock
 import Data.Typeable
