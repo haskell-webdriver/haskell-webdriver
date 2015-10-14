@@ -1,43 +1,49 @@
 {-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, ScopedTypeVariables,
-             GeneralizedNewtypeDeriving, RecordWildCards, ConstraintKinds #-}
+             GeneralizedNewtypeDeriving, RecordWildCards, ConstraintKinds, CPP #-}
+
+#ifndef CABAL_BUILD_DEVELOPER
+{-# OPTIONS_GHC  -fno-warn-warnings-deprecations #-}
+#endif
+
 module Test.WebDriver.Session
   ( -- * WDSessionState class
     WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession
     -- ** WebDriver sessions
-  , WDSession(..), mkSession, mostRecentHistory, mostRecentHTTPRequest, SessionId(..), SessionHistory(..)
+  , WDSession(..), mostRecentHistory, mostRecentHTTPRequest, SessionId(..), SessionHistory(..)
     -- * SessionHistoryConfig options
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
   ) where
 
-import Test.WebDriver.Config
 import Test.WebDriver.Session.History
 
 import Data.Aeson
 import Data.ByteString as BS(ByteString) 
 import Data.Text (Text)
 import Data.Maybe (listToMaybe)
-import Data.String (fromString)
 
 import Control.Applicative
 import Control.Monad.Base
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Identity
-import Control.Monad.List
-import Control.Monad.Reader
-import Control.Monad.Error
+import Control.Monad.Trans.List
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Error
 --import Control.Monad.Cont
-import Control.Monad.Writer.Strict as SW
-import Control.Monad.Writer.Lazy as LW
-import Control.Monad.State.Strict as SS
-import Control.Monad.State.Lazy as LS
-import Control.Monad.RWS.Strict as SRWS
-import Control.Monad.RWS.Lazy as LRWS
+import Control.Monad.Trans.Writer.Strict as SW
+import Control.Monad.Trans.Writer.Lazy as LW
+import Control.Monad.Trans.State.Strict as SS
+import Control.Monad.Trans.State.Lazy as LS
+import Control.Monad.Trans.RWS.Strict as SRWS
+import Control.Monad.Trans.RWS.Lazy as LRWS
 
 import Control.Exception.Lifted (SomeException, try, throwIO)
 
 --import Network.HTTP.Types.Header (RequestHeaders)
-import Network.HTTP.Client (Manager, Request, newManager, defaultManagerSettings)
+import Network.HTTP.Client (Manager, Request)
+
+import Prelude -- hides some "unused import" warnings
 
 {- |An opaque identifier for a WebDriver session. These handles are produced by
 the server on session creation, and act to identify a session in progress. -}
@@ -73,6 +79,22 @@ data WDSession = WDSession {
                            --, wdSessRequestHeaders :: RequestHeaders
                            }
 
+
+-- |A function used by 'wdHistoryConfig' to append new entries to session history.
+type SessionHistoryConfig = SessionHistory -> [SessionHistory] -> [SessionHistory]
+
+-- |No session history is saved.
+noHistory :: SessionHistoryConfig
+noHistory _ _ = []
+
+-- |Keep unlimited history
+unlimitedHistory :: SessionHistoryConfig
+unlimitedHistory = (:)
+
+-- |Saves only the most recent history
+onlyMostRecentHistory :: SessionHistoryConfig
+onlyMostRecentHistory h _ = [h]
+
 -- |A class for monads that carry a WebDriver session with them. The
 -- MonadBaseControl superclass is used for exception handling through
 -- the lifted-base package.
@@ -105,21 +127,6 @@ withSession s m = do
   putSession s'
   either throwIO return a
 
--- |Constructs a new 'WDSession' from a given 'WDConfig'
-mkSession :: MonadBase IO m => WDConfig -> m WDSession
-mkSession WDConfig{..} = do
-  manager <- maybe createManager return wdHTTPManager
-  return WDSession { wdSessHost = fromString $ wdHost
-                   , wdSessPort = wdPort
-                   , wdSessBasePath = fromString $ wdBasePath
-                   , wdSessId = Nothing
-                   , wdSessHist = []
-                   , wdSessHistUpdate = wdHistoryConfig
-                   , wdSessHTTPManager = manager
-                   , wdSessHTTPRetryCount = wdHTTPRetryCount }
-  where
-    createManager = liftBase $ newManager defaultManagerSettings
-
 -- |The most recent SessionHistory entry recorded by this session, if any.
 mostRecentHistory :: WDSession -> Maybe SessionHistory
 mostRecentHistory = listToMaybe . wdSessHist
@@ -144,8 +151,16 @@ instance WDSessionState m => WDSessionState (MaybeT m) where
 instance WDSessionState m => WDSessionState (IdentityT m) where
   getSession = lift getSession
   putSession = lift . putSession
+
+instance WDSessionState m => WDSessionState (ListT m) where
+  getSession = lift getSession
+  putSession = lift . putSession
   
 instance (Monoid w, WDSessionState m) => WDSessionState (LW.WriterT w m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
+instance (Monoid w, WDSessionState m) => WDSessionState (SW.WriterT w m) where
   getSession = lift getSession
   putSession = lift . putSession
   

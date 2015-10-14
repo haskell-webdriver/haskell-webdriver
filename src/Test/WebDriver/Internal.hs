@@ -33,7 +33,7 @@ import Control.Exception (Exception, SomeException(..), toException, fromExcepti
 
 import Data.String (fromString)
 import Data.Word (Word8)
-import Data.Default
+import Data.Default.Class
 
 import Prelude -- hides some "unused import" warnings
 

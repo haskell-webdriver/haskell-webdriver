@@ -93,8 +93,9 @@ import Codec.Archive.Zip
 import qualified Data.Text.Lazy.Encoding as TL
 import Network.HTTP.Types.Header (RequestHeaders)
 
+import Control.Monad
 import Control.Applicative
-import Control.Monad.State.Strict
+--import Control.Monad.State.Strict
 import Control.Monad.Base
 import Control.Exception (SomeException)
 import Control.Exception.Lifted (throwIO, handle)
@@ -102,6 +103,7 @@ import qualified Control.Exception.Lifted as L
 import Data.Word
 import Data.String (fromString)
 import Data.Maybe
+import Data.Foldable
 import qualified Data.Char as C
 
 import Prelude -- hides some "unused import" warnings
@@ -124,7 +126,7 @@ createSession headers caps = do
 sessions :: WebDriver wd => RequestHeaders -> wd [(SessionId, Capabilities)]
 sessions headers = do
   objs <- doCommand headers methodGet "/sessions" Null
-  forM objs $ parsePair "id" "capabilities" "sessions"
+  mapM (parsePair "id" "capabilities" "sessions") objs
 
 -- |Get the actual server-side 'Capabilities' of the current session.
 getActualCaps :: WebDriver wd => wd Capabilities
@@ -196,7 +198,7 @@ context of the currently selected frame. The executed script is
 assumed to be synchronous and the result of evaluating the script is
 returned and converted to an instance of FromJSON.
 
-The first parameter defines arguments to pass to the javascript
+The first parameter defines a sequence of arguments to pass to the javascript
 function. Arguments of type Element will be converted to the
 corresponding DOM element. Likewise, any elements in the script result
 will be returned to the client as Elements.
@@ -207,7 +209,7 @@ the client. The function will be invoked with the provided argument
 list and the values may be accessed via the arguments object in the
 order specified.
 -}
-executeJS :: (WebDriver wd, FromJSON a) => [JSArg] -> Text -> wd a
+executeJS :: (Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
 executeJS a s = fromJSON' =<< getResult
   where
     getResult = doSessCommand methodPost "/execute" . pair ("args", "script") $ (a,s)
@@ -219,7 +221,7 @@ to signal that it has finished executing, passing to it a value that will be
 returned as the result of asyncJS. A result of Nothing indicates that the
 Javascript function timed out (see 'setScriptTimeout')
 -}
-asyncJS :: (WebDriver wd, FromJSON a) => [JSArg] -> Text -> wd (Maybe a)
+asyncJS :: (Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd (Maybe a)
 asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
   where
     getResult = doSessCommand methodPost "/execute_async" . pair ("args", "script")
@@ -236,7 +238,7 @@ screenshot = B64.decodeLenient <$> screenshotBase64
 screenshotBase64 :: WebDriver wd => wd LBS.ByteString
 screenshotBase64 = TL.encodeUtf8 <$> doSessCommand methodGet "/screenshot" Null
 
-availableIMEEngines :: WebDriver wd => wd [Text]
+availableIMEEngines :: WebDriver wd => wd Text
 availableIMEEngines = doSessCommand methodGet "/ime/available_engines" Null
 
 activeIMEEngine :: WebDriver wd => wd Text
@@ -413,7 +415,7 @@ findElem :: WebDriver wd => Selector -> wd Element
 findElem = doSessCommand methodPost "/element"
 
 -- |Find all elements on the page matching the given selector.
-findElems :: WebDriver wd => Selector -> wd [Element]
+findElems :: WebDriver wd => Selector -> wd Element
 findElems = doSessCommand methodPost "/elements"
 
 -- |Return the element that currently has focus.
@@ -425,7 +427,7 @@ findElemFrom :: WebDriver wd => Element -> Selector -> wd Element
 findElemFrom e = doElemCommand methodPost e "/element"
 
 -- |Find all elements matching a selector, using the given element as root.
-findElemsFrom :: WebDriver wd => Element -> Selector -> wd [Element]
+findElemsFrom :: WebDriver wd => Element -> Selector -> wd Element
 findElemsFrom e = doElemCommand methodPost e "/elements"
 
 -- |Describe the element. Returns a JSON object whose meaning is currently

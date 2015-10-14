@@ -11,13 +11,15 @@ import Data.Aeson.Types (Parser, typeMismatch, Pair)
 import qualified Data.HashMap.Strict as HM (delete, toList)
 
 import Data.Text (Text, toLower, toUpper)
-import Data.Default (Default(..))
+import Data.Default.Class (Default(..))
 import Data.Word (Word16)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.String (fromString)
 
 import Control.Applicative
 import Control.Exception.Lifted (throw)
+
+import Prelude -- hides some "unused import" warnings
 
 -- |A typeclass for readable 'Capabilities'
 class GetCapabilities t where

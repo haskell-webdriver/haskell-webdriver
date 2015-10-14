@@ -13,6 +13,8 @@ import Data.Aeson
 import Control.Applicative
 import Control.Monad.Base
 
+import Prelude -- hides some "unused import" warnings
+
 -- |An opaque type representing a Google Chrome extension. Values of this type
 -- are passed to the 'Test.Webdriver.chromeExtensions' field.
 newtype ChromeExtension = ChromeExtension Text

@@ -6,13 +6,18 @@ module Test.WebDriver.Config(
     , modifyCaps, useBrowser, useVersion, usePlatform, useProxy
     -- * SessionHistoryConfig options
     , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
+    -- * Overloadable configuration
+    , WebDriverConfig(..)
     ) where
 import Test.WebDriver.Capabilities
-import Test.WebDriver.Session.History
+import Test.WebDriver.Session
 
-import Data.Default (Default, def)
+import Data.Default.Class (Default(..))
+import Data.String (fromString)
 
-import Network.HTTP.Client (Manager)
+import Control.Monad.Base
+
+import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import Network.HTTP.Types (RequestHeaders)
 
 -- |WebDriver session configuration
@@ -42,21 +47,6 @@ instance GetCapabilities WDConfig where
 instance SetCapabilities WDConfig where
   setCaps caps conf = conf { wdCapabilities = caps }
 
--- |A function used by 'wdHistoryConfig' to append new entries to session history.
-type SessionHistoryConfig = SessionHistory -> [SessionHistory] -> [SessionHistory]
-
--- |No session history is saved.
-noHistory :: SessionHistoryConfig
-noHistory _ _ = []
-
--- |Keep unlimited history
-unlimitedHistory :: SessionHistoryConfig
-unlimitedHistory = (:)
-
--- |Saves only the most recent history
-onlyMostRecentHistory :: SessionHistoryConfig
-onlyMostRecentHistory h _ = [h]
-
 instance Default WDConfig where
     def = WDConfig {
       wdHost              = "127.0.0.1"
@@ -74,3 +64,22 @@ initialized server-side. This value is the same as 'def' but with a less
 polymorphic type. -}
 defaultConfig :: WDConfig
 defaultConfig = def
+
+-- |Class of types that can configure a WebDriver session.
+class WebDriverConfig c where
+    -- |Produces a 'WDSession' from the given configuration.
+    mkSession :: MonadBase IO m => c -> m WDSession
+
+instance WebDriverConfig WDConfig where
+    mkSession WDConfig{..} = do
+      manager <- maybe createManager return wdHTTPManager
+      return WDSession { wdSessHost = fromString $ wdHost
+                       , wdSessPort = wdPort
+                       , wdSessBasePath = fromString $ wdBasePath
+                       , wdSessId = Nothing
+                       , wdSessHist = []
+                       , wdSessHistUpdate = wdHistoryConfig
+                       , wdSessHTTPManager = manager
+                       , wdSessHTTPRetryCount = wdHTTPRetryCount }
+      where
+        createManager = liftBase $ newManager defaultManagerSettings

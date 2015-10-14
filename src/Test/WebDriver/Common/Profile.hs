@@ -54,6 +54,8 @@ import Control.Exception
 import Control.Applicative
 import Control.Monad.Base
 
+import Prelude -- hides some "unused import" warnings
+
 -- |This structure allows you to construct and manipulate profiles in pure code,
 -- deferring execution of IO operations until the profile is \"prepared\". This
 -- type is shared by both Firefox and Opera profiles; when a distinction

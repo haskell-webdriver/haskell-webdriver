@@ -30,9 +30,16 @@ flag network-uri
   description: Get Network.URI from the network-uri package
   default: True
 
+flag developer
+  description: Package development mode
+  default: False
+  manual: True
+
 library
   hs-source-dirs: src
   ghc-options: -Wall
+  if flag(developer)
+    cpp-options: -DCABAL_BUILD_DEVELOPER
   build-depends:   base == 4.*
                  , aeson >= 0.6.2.0 && < 0.11
                  , http-client >= 0.3 && < 0.5
@@ -41,7 +48,6 @@ library
                  , bytestring >= 0.9 && < 0.11
                  , attoparsec >= 0.10 && < 0.14
                  , base64-bytestring >= 1.0 && < 1.1
-                 , mtl >= 2.0 && < 2.3
                  , transformers >= 0.2 && < 0.5
                  , monad-control >= 0.3 && < 1.1
                  , transformers-base >= 0.1 && < 1.0
@@ -56,7 +62,7 @@ library
                  , vector >= 0.3 && < 0.12
                  , exceptions >= 0.4 && < 0.9
                  , scientific >= 0.2 && < 0.4
-                 , data-default >= 0.2 && < 1.0
+                 , data-default-class < 0.1
                  , cond >= 0.3 && < 0.5
                  
   if flag(network-uri)
@@ -97,6 +103,7 @@ Test-Suite test-search-baidu
 --Test-Suite all-tests
 --  type: detailed-0.9
 --  test-module: all-tests.hs
+--  extensions: OverloadedStrings
 --  ghc-options: -Wall -threaded
 --  build-depends:  base,
 --                  webdriver,

@@ -1,5 +1,8 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts,
+{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, CPP,
              GeneralizedNewtypeDeriving, RecordWildCards, ConstraintKinds #-}
+#ifndef CABAL_BUILD_DEVELOPER
+{-# OPTIONS_GHC  -fno-warn-warnings-deprecations #-}
+#endif
 module Test.WebDriver.Class
        ( -- * WebDriver class
          WebDriver(..), Method, methodDelete, methodGet, methodPost,
@@ -12,20 +15,19 @@ import Data.Text (Text)
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
 import Network.HTTP.Types.Header (RequestHeaders)
 
+import Control.Monad.Trans.Class
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Identity
-import Control.Monad.List
-import Control.Monad.Reader
-import Control.Monad.Error
+import Control.Monad.Trans.List
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Error
 --import Control.Monad.Cont
-import Control.Monad.Writer.Strict as SW
-import Control.Monad.Writer.Lazy as LW
-import Control.Monad.State.Strict as SS
-import Control.Monad.State.Lazy as LS
-import Control.Monad.RWS.Strict as SRWS
-import Control.Monad.RWS.Lazy as LRWS
-
-
+import Control.Monad.Trans.Writer.Strict as SW
+import Control.Monad.Trans.Writer.Lazy as LW
+import Control.Monad.Trans.State.Strict as SS
+import Control.Monad.Trans.State.Lazy as LS
+import Control.Monad.Trans.RWS.Strict as SRWS
+import Control.Monad.Trans.RWS.Lazy as LRWS
 
 
 -- |A class for monads that can handle wire protocol requests. This is the
@@ -53,14 +55,17 @@ instance WebDriver wd => WebDriver (LS.StateT s wd) where
 instance WebDriver wd => WebDriver (MaybeT wd) where
   doCommand rh rm t a = lift (doCommand rh rm t a)
 
-
 instance WebDriver wd => WebDriver (IdentityT wd) where
   doCommand rh rm t a = lift (doCommand rh rm t a)
 
+instance WebDriver wd => WebDriver (ListT wd) where
+  doCommand rh rm t a = lift (doCommand rh rm t a)
 
 instance (Monoid w, WebDriver wd) => WebDriver (LW.WriterT w wd) where
   doCommand rh rm t a = lift (doCommand rh rm t a)
 
+instance (Monoid w, WebDriver wd) => WebDriver (SW.WriterT w wd) where
+  doCommand rh rm t a = lift (doCommand rh rm t a)
 
 instance WebDriver wd => WebDriver (ReaderT r wd) where
   doCommand rh rm t a = lift (doCommand rh rm t a)

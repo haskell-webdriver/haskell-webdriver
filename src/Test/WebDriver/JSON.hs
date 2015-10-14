@@ -45,6 +45,8 @@ import Control.Exception.Lifted
 import Data.String
 import Data.Typeable
 
+import Prelude -- hides some "unused import" warnings
+
 instance Exception BadJSON
 -- |An error occured when parsing a JSON value.
 newtype BadJSON = BadJSON String

@@ -26,7 +26,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Control.Exception.Lifted
 import Data.Typeable
-import Data.Default
+import Data.Default.Class
 import Control.Applicative
 
 import Prelude -- hides some "unused import" warnings

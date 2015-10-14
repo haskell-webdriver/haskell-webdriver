@@ -11,9 +11,10 @@ import Test.WebDriver.Commands
 import Test.WebDriver.Internal
 
 import Control.Monad.Base (MonadBase, liftBase)
-import Control.Monad.Reader
+import Control.Monad.IO.Class
+import Control.Monad.Fix
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
-import Control.Monad.State.Strict (StateT, evalStateT, get, put)
+import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
 --import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Lifted
 import Control.Monad.Catch (MonadThrow, MonadCatch)
@@ -25,7 +26,7 @@ import Prelude -- hides some "unused import" warnings
 {- |A state monad for WebDriver commands.
 -}
 newtype WD a = WD (StateT WDSession IO a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix)
 
 instance MonadBase IO WD where
   liftBase = WD . liftBase
