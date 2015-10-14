@@ -1,5 +1,45 @@
 #Change Log
 
+##0.8
+
+###Command changes
+* All commands that previously accepted a list parameter now accepts any instance of `Foldable` instead.
+
+
+
+###Overloadable configuration
+It is now possible to define custom configuration types that can be used to initialize webdriver sessions.
+
+`runSession` now has the following type:
+```
+  runSession :: WebDriverConfig conf => conf -> WD a -> IO a
+```
+And the typeclass to create new config types looks like this:
+
+```hs
+  -- |Class of types that can configure a WebDriver session.
+  class WebDriverConfig c where
+    -- |Produces a 'Capabilities' from the given configuration.
+    mkCaps :: MonadBase IO m => c -> m Capabilities
+
+    -- |Produces a 'WDSession' from the given configuration.
+    mkSession :: MonadBase IO m => c -> m WDSession
+```
+
+Of course you can still use `WDConfig`, as it now an instance of `WebDriverConfig`.
+
+###Reworked custom HTTP headers interface
+* Support for custom request headers was added rather hastily, resulting in several functions having explicit RequestHeaders parameters. The interface has been reworked now so that custom request headers are stored inside `WDSession` and explicit `RequestHeaders` parameters have been removed.
+* There's also now a distinction in configuration between `wdAuthHeaders` which are used only during initial session creation, and `wdRequestHeaders`, which are used with all other HTTP requests
+* Two new utility functions were added to make working with custom HTTP headers easier: `withRequestHeaders` and `withAuthHeaders`
+
+###Clean-up and dependency changes
+* Removed a whole mess of unusued import and deprecation warnings when building with GHC 7.10
+* We now enforce an attoparsec lower bound of 0.10 (there was no lower bound before)
+* The unnecessary dependency on mtl is now removed.
+* Added some monad transformer instances for WebDriver and WDSessionState that were mysteriously missing: strict WriterT, ReaderT, ListT
+* data-default dependency was changed to data-default-class
+
 ##0.7
 
 Because this is a fairly major update, changes have been described in detail and organized into categories. Most of the potentially breaking changes are to the "intermediate" API that might affect library code or advanced applications; changes that are not entirely "user-facing" but also not quite "internal".
