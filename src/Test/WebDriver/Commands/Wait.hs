@@ -25,10 +25,13 @@ import Control.Conditional (ifM, (<||>), (<&&>), notM)
 
 import Data.Time.Clock
 import Data.Typeable
+import Data.Foldable
 import Data.Text (Text)
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
+#else
+import Prelude -- hides some "redundant import" warnings
 #endif
 
 instance Exception ExpectFailed
@@ -51,13 +54,13 @@ expect b
 
 -- |Apply a monadic predicate to every element in a list, and 'expect' that
 -- at least one succeeds.
-expectAny :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
-expectAny p xs = expect . or =<< mapM p xs
+expectAny :: (Foldable f, MonadBaseControl IO m) => (a -> m Bool) -> f a -> m ()
+expectAny p xs = expect . or =<< mapM p (toList xs)
 
 -- |Apply a monadic predicate to every element in a list, and 'expect' that all
 -- succeed.
-expectAll :: MonadBaseControl IO m => (a -> m Bool) -> [a] -> m ()
-expectAll p xs = expect . and =<< mapM p xs
+expectAll :: (Foldable f, MonadBaseControl IO m) => (a -> m Bool) -> f a -> m ()
+expectAll p xs = expect . and =<< mapM p (toList xs)
 
 -- | 'expect' the given 'Element' to not be stale and returns it
 expectNotStale :: WebDriver wd => Element -> wd Element
