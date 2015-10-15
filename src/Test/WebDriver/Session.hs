@@ -22,6 +22,7 @@ import Data.Aeson
 import Data.ByteString as BS(ByteString) 
 import Data.Text (Text)
 import Data.Maybe (listToMaybe)
+import Data.Monoid
 
 import Control.Applicative
 import Control.Monad.Base
@@ -46,7 +47,7 @@ import Control.Exception.Lifted (SomeException, try, throwIO)
 import Network.HTTP.Client (Manager, Request)
 import Network.HTTP.Types (RequestHeaders)
 
-import Prelude -- hides some "unused import" warnings
+import Prelude -- hides some "redundant import" warnings
 
 {- |An opaque identifier for a WebDriver session. These handles are produced by
 the server on session creation, and act to identify a session in progress. -}

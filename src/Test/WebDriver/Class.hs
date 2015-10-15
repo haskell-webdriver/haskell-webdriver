@@ -11,6 +11,9 @@ import Test.WebDriver.Session
 
 import Data.Aeson
 import Data.Text (Text)
+#if !MIN_VERSION_base(4,8,0)
+import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't work with "import Data.Monoid"
+#endif
 
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
 

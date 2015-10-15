@@ -102,7 +102,7 @@ import qualified Control.Exception.Lifted as L
 import Data.Word
 import Data.String (fromString)
 import Data.Maybe
-import Data.Foldable
+import qualified Data.Foldable as F
 import qualified Data.Char as C
 
 import Prelude -- hides some "unused import" warnings
@@ -210,10 +210,10 @@ the client. The function will be invoked with the provided argument
 list and the values may be accessed via the arguments object in the
 order specified.
 -}
-executeJS :: (Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
+executeJS :: (F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
 executeJS a s = fromJSON' =<< getResult
   where
-    getResult = doSessCommand methodPost "/execute" . pair ("args", "script") $ (toList a,s)
+    getResult = doSessCommand methodPost "/execute" . pair ("args", "script") $ (F.toList a,s)
 
 {- |Executes a snippet of Javascript code asynchronously. This function works
 similarly to 'executeJS', except that the Javascript is passed a callback
@@ -222,11 +222,11 @@ to signal that it has finished executing, passing to it a value that will be
 returned as the result of asyncJS. A result of Nothing indicates that the
 Javascript function timed out (see 'setScriptTimeout')
 -}
-asyncJS :: (Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd (Maybe a)
+asyncJS :: (F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd (Maybe a)
 asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
   where
     getResult = doSessCommand methodPost "/execute_async" . pair ("args", "script")
-                $ (toList a,s)
+                $ (F.toList a,s)
     timeout (FailedCommand Timeout _)       = return Nothing
     timeout (FailedCommand ScriptTimeout _) = return Nothing
     timeout err = throwIO err
