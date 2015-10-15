@@ -1,4 +1,6 @@
 #Change Log
+##0.8.0.2
+* Fixed issue introduced in 0.8 that caused build failure when using aeson < 0.10
 
 ##0.8.0.1
 * findElems and and findElemsFrom were accidentally changed to return a single Element in the last release. This has been fixed. 

@@ -213,7 +213,7 @@ order specified.
 executeJS :: (Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
 executeJS a s = fromJSON' =<< getResult
   where
-    getResult = doSessCommand methodPost "/execute" . pair ("args", "script") $ (a,s)
+    getResult = doSessCommand methodPost "/execute" . pair ("args", "script") $ (toList a,s)
 
 {- |Executes a snippet of Javascript code asynchronously. This function works
 similarly to 'executeJS', except that the Javascript is passed a callback
@@ -226,7 +226,7 @@ asyncJS :: (Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd (Mayb
 asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
   where
     getResult = doSessCommand methodPost "/execute_async" . pair ("args", "script")
-                $ (a,s)
+                $ (toList a,s)
     timeout (FailedCommand Timeout _)       = return Nothing
     timeout (FailedCommand ScriptTimeout _) = return Nothing
     timeout err = throwIO err
