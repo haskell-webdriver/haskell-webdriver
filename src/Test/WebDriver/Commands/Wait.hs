@@ -26,7 +26,7 @@ import Data.Typeable
 import qualified Data.Foldable as F
 import Data.Text (Text)
 
-#if MIN_VERSION_base(4,5,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
+#if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
 #endif
 
@@ -51,12 +51,12 @@ expect b
 -- |Apply a monadic predicate to every element in a list, and 'expect' that
 -- at least one succeeds.
 expectAny :: (F.Foldable f, MonadBaseControl IO m) => (a -> m Bool) -> f a -> m ()
-expectAny p xs = expect . F.or =<< mapM p (toList xs)
+expectAny p xs = expect . F.or =<< mapM p (F.toList xs)
 
 -- |Apply a monadic predicate to every element in a list, and 'expect' that all
 -- succeed.
 expectAll :: (F.Foldable f, MonadBaseControl IO m) => (a -> m Bool) -> f a -> m ()
-expectAll p xs = expect . F.and =<< mapM p (toList xs)
+expectAll p xs = expect . F.and =<< mapM p (F.toList xs)
 
 -- | 'expect' the given 'Element' to not be stale and returns it
 expectNotStale :: WebDriver wd => Element -> wd Element
