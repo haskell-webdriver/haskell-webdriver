@@ -4,5 +4,9 @@ ghc:
   - 7.8
   - 7.6
   - 7.4
+branches:
+	only:
+		- master
+		- travis
 notifications:
   email: false
