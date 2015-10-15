@@ -6,6 +6,7 @@ License-File: LICENSE
 Author: Adam Curtis
 Maintainer: kallisti.dev@gmail.com
 Homepage: https://github.com/kallisti-dev/hs-webdriver
+Bug-reports: https://github.com/kallisti-dev/hs-webdriver/issues
 Category: Web, Browser, Testing
 Synopsis: a Haskell client for the Selenium WebDriver protocol
 Build-type: Simple
@@ -90,7 +91,7 @@ library
   other-modules:   Test.WebDriver.Internal
                    Test.WebDriver.Exceptions.Internal
 
-Test-Suite test-search-baidu
+Test-Suite search-baidu
   type: exitcode-stdio-1.0
   main-is: test/search-baidu.hs
   ghc-options: -threaded
