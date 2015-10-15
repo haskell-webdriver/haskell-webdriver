@@ -47,7 +47,7 @@ import Control.Exception.Lifted hiding (try)
 import Control.Applicative
 import Control.Arrow
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
+#if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
 #endif
 
