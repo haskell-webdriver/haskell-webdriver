@@ -22,9 +22,10 @@ import Data.Aeson.Types (typeMismatch)
 import Data.Text as T (Text, splitOn, null)
 import qualified Data.Text.Encoding as TE
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null, fromStrict)
+import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.Base64.Lazy as B64
+import qualified Data.ByteString.Lazy.Internal as LBS (ByteString(..)) 
 
 import Control.Monad.Base
 import Control.Exception.Lifted (throwIO)
@@ -36,6 +37,11 @@ import Data.Word (Word8)
 import Data.Default.Class
 
 import Prelude -- hides some "unused import" warnings
+
+--This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
+fromStrict :: BS.ByteString -> LBS.ByteString
+fromStrict bs | BS.null bs = LBS.Empty
+              | otherwise = LBS.Chunk bs LBS.Empty
 
 -- |Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
 mkRequest :: (WDSessionState s, ToJSON a) =>
@@ -93,7 +99,7 @@ getJSONResult r
       Just ct
         | "application/json" `BS.isInfixOf` ct ->
           parseJSON' 
-            (maybe body LBS.fromStrict $ lookup "X-Response-Body-Start" headers)
+            (maybe body fromStrict $ lookup "X-Response-Body-Start" headers)
           >>= handleJSONErr
           >>= maybe noReturn returnErr
         | otherwise -> 
