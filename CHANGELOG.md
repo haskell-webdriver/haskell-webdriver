@@ -2,6 +2,7 @@
 
 ##0.8.0.3
 * Fixed build errors for GHC < 7.10. webdriver now builds with GHC stable releases 7.4.2, 7.6.3, and 7.8.4
+* Fixed support for bytestring 0.9.*
 
 ##0.8.0.2
 * Fixed issue introduced in 0.8 that caused build failure when using aeson < 0.10
