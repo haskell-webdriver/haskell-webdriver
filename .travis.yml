@@ -4,6 +4,7 @@ ghc:
   - 7.8
   - 7.6
   - 7.4
+  - 7.2
 script:
   - cabal configure --enable-tests && cabal build #configure and build with tests but don't run tests
 notifications:
