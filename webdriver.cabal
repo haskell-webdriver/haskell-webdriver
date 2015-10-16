@@ -6,12 +6,12 @@ License-File: LICENSE
 Author: Adam Curtis
 Maintainer: kallisti.dev@gmail.com
 Homepage: https://github.com/kallisti-dev/hs-webdriver
-Bug-reports: https://github.com/kallisti-dev/hs-webdriver/issues
+Bug-Reports: https://github.com/kallisti-dev/hs-webdriver/issues
 Category: Web, Browser, Testing
 Synopsis: a Haskell client for the Selenium WebDriver protocol
-Build-type: Simple
-Extra-source-files: README.md, TODO.md, CHANGELOG.md, .ghci
-Tested-with: GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.2 
+Build-Type: Simple
+Extra-Source-Files: README.md, TODO.md, CHANGELOG.md, .ghci
+Tested-With: GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.2 
 Description:
         A Selenium WebDriver client for Haskell.
         You can use it to automate browser sessions
@@ -24,20 +24,20 @@ Description:
         see the change log at
         <https://github.com/kallisti-dev/hs-webdriver/blob/master/CHANGELOG.md>
 
-source-repository head
+Source-Repository head
   type: git
   location: git://github.com/kallisti-dev/hs-webdriver.git
   
-flag network-uri
+Flag network-uri
   description: Get Network.URI from the network-uri package
   default: True
 
-flag developer
+Flag developer
   description: Package development mode
   default: False
   manual: True
 
-library
+Library
   hs-source-dirs: src
   ghc-options: -Wall
   if flag(developer)
@@ -92,19 +92,21 @@ library
   other-modules:   Test.WebDriver.Internal
                    Test.WebDriver.Exceptions.Internal
 
-Test-Suite search-baidu
+Test-Suite etc
   type: exitcode-stdio-1.0
-  main-is: test/search-baidu.hs
-  ghc-options: -threaded
+  main-is: test/etc/all.hs
+  ghc-options: -O2, -threaded
   build-depends: base,
                  webdriver,
-                 text
+                 text,
+                 quickcheck
 
---Test-Suite all-tests
---  type: detailed-0.9
---  test-module: all-tests.hs
---  extensions: OverloadedStrings
---  ghc-options: -Wall -threaded
---  build-depends:  base,
---                  webdriver,
---                  hspec
+Test-Suite local-webserver
+  type: exitcode-stdio-1.0
+  main-is: test/local-webserver.hs
+  ghc-options: -O2 -threaded
+  build-depends: base,
+                 webdriver,
+                 text,
+                 hspec,
+                 wai-app-static

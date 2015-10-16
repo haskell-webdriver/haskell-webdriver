@@ -3,7 +3,7 @@
 
 {-# OPTIONS -fwarn-unused-imports #-}
 
-module Main where
+module Test.Etc.QuickCheck where
 
 import Control.Applicative
 import Control.Monad
@@ -23,16 +23,12 @@ import qualified Data.Array as AR
 config :: WDConfig
 config = defaultConfig
 
-caps :: Capabilities
-caps = defaultCaps
-
 main :: IO ()
 main = do
-    runSession config caps $ do
+    runSession config $ do
         session <- getSession
-        conf <- askConfig
         openPage "about:blank"
-        liftIO . quickCheck $ prop_cutArray conf session
+        liftIO . quickCheck $ prop_cutArray session
 
 
 -- | some javascript function i want to test (included in this haskell
@@ -88,8 +84,8 @@ instance Arbitrary CutArray where
 
 
 -- | the quickcheck property
-prop_cutArray :: WDConfig -> WDSession -> CutArray -> QC.Property
-prop_cutArray conf session tc = morallyDubiousIOProperty $ runWD conf session $ wd_cutArray tc
+prop_cutArray :: WDSession -> CutArray -> QC.Property
+prop_cutArray session tc = morallyDubiousIOProperty $ runWD session $ wd_cutArray tc
 
 
 -- | the underlying property in the web driver monad.

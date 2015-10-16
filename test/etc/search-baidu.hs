@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Main where
+module Test.Etc.SearchBaidu where
 
 import Control.Monad
 import Control.Applicative
