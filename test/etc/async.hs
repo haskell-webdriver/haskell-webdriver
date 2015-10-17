@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Async where
+module Test.Etc.Async where
 
 import Test.WebDriver
 import qualified Data.Aeson as A
