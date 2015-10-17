@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, ExistentialQuantification,
-             TemplateHaskell, RecordWildCards, FlexibleContexts #-}
+             TemplateHaskell, RecordWildCards, FlexibleContexts, DataKinds #-}
 -- |This module exports basic WD actions that can be used to interact with a
 -- browser session.
 module Test.WebDriver.Commands
@@ -118,19 +118,19 @@ ignoreReturn = void
 -- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action. 
 -- 
 -- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
-createSession :: WebDriver wd => Capabilities -> wd WDSession
+createSession :: WebDriver wd => Capabilities Requested LegacyWireProtocol -> wd WDSession
 createSession caps = do
   ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "desiredCapabilities" $ caps
   getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
-sessions :: WebDriver wd => wd [(SessionId, Capabilities)]
+sessions :: WebDriver wd => wd [(SessionId, Capabilities Resultant LegacyWireProtocol)]
 sessions = do
   objs <- doCommand methodGet "/sessions" Null
   mapM (parsePair "id" "capabilities" "sessions") objs
 
 -- |Get the actual server-side 'Capabilities' of the current session.
-getActualCaps :: WebDriver wd => wd Capabilities
+getActualCaps :: WebDriver wd => wd (Capabilities Resultant LegacyWireProtocol)
 getActualCaps = doSessCommand methodGet "" Null
 
 -- |Close the current session and the browser associated with it.

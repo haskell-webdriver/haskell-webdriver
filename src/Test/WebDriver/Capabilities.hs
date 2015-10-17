@@ -1,5 +1,7 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds, DataKinds, PolyKinds, TypeFamilies, FlexibleContexts, FlexibleInstances, NoMonomorphismRestriction,
+             GADTs, TypeSynonymInstances, TemplateHaskell, FunctionalDependencies, TypeOperators, UndecidableInstances
   #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.WebDriver.Capabilities where
 
 import Test.WebDriver.Firefox.Profile
@@ -15,323 +17,178 @@ import Data.Default.Class (Default(..))
 import Data.Word (Word16)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.String (fromString)
+import qualified Data.Typeable as T (Proxy(..))
+import Data.Vinyl
+import Data.Vinyl.TypeLevel
+import qualified Data.Vinyl.Functor as Functor
+import Data.Singletons (Sing, fromSing, singByProxy, SingI(sing))
+import Data.Singletons.TH (genSingletons)
 
 import Control.Applicative
 import Control.Exception.Lifted (throw)
 
 import Prelude -- hides some "unused import" warnings
 
--- |A typeclass for readable 'Capabilities'
-class GetCapabilities t where
-  getCaps :: t -> Capabilities
+type Capabilities ckind fields = Rec (Capability ckind) fields
 
-instance GetCapabilities Capabilities where
-  getCaps = id
+data CapabilityField =
+    SpecificationLevel
+  | Browser
+  | Version -- |browser version (deprecated in w3c)
+  | BrowserVersion
+  | Platform
+  | PlatformVersion
+  | Proxy
+  | JavascriptEnabled
+  | TakesScreenshot
+  | TakesElementScreenshot
+  | HandlesAlerts
+  | DatabaseEnabled
+  | LocationContextEnabled
+  | ApplicationCacheEnabled
+  | BrowserConnectionEnabled
+  | CSSSelectorsEnabled
+  | WebStorageEnabled
+  | Rotatable
+  | AcceptSSLCerts
+  | NativeEvents
+  | UnexpectedAlertBehavior
+  | AdditionalCaps
+  | AdditionalCapKeyValuePair -- |The field type for (Text, Value) pair elements of AdditionalCaps
+  deriving (Eq, Ord, Bounded, Enum, Show, Read)
 
--- |A typeclass for writable 'Capabilities'
-class SetCapabilities t where
-  setCaps :: Capabilities -> t -> t
+-- |List of fields common protocol fields
+type CommonFields = 
+  [ 'Browser
+  , 'Platform
+  , Proxy
+  , AcceptSSLCerts
+  , TakesScreenshot
+  , AdditionalCaps
+  ]
 
--- |Read/write 'Capabilities'
-type HasCapabilities t = (GetCapabilities t, SetCapabilities t)
+-- |Fields used by the legacy wire protocol
+type LegacyWireProtocol =
+  CommonFields ++ 
+ [ Version
+ , JavascriptEnabled
+ , HandlesAlerts
+ , DatabaseEnabled
+ , LocationContextEnabled
+ , ApplicationCacheEnabled
+ , BrowserConnectionEnabled
+ , CSSSelectorsEnabled
+ , WebStorageEnabled
+ , Rotatable
+ , NativeEvents
+ , 'UnexpectedAlertBehavior
+ ]
 
--- |Modifies the 'wdCapabilities' field of a 'WDConfig' by applying the given function. Overloaded to work with any 'HasCapabilities' instance.
-modifyCaps :: HasCapabilities t => (Capabilities -> Capabilities) -> t -> t
-modifyCaps f c = setCaps (f (getCaps c)) c
+-- |Fields used by the W3C protocol specification
+type W3C =
+  CommonFields ++
+  [ SpecificationLevel
+  , BrowserVersion
+  , PlatformVersion
+  , AcceptSSLCerts
+  , TakesScreenshot
+  , TakesElementScreenshot
+  , AdditionalCaps
+  ]
 
--- |A helper function for setting the 'browser' capability of a 'HasCapabilities' instance
-useBrowser :: HasCapabilities t => Browser -> t -> t
-useBrowser b = modifyCaps $ \c -> c { browser = b }
+data CapabilityKind = Requested | Resultant
+  deriving (Eq, Ord, Bounded, Enum, Show, Read)
 
--- |A helper function for setting the 'version' capability of a 'HasCapabilities' instance
-useVersion :: HasCapabilities t => String -> t -> t
-useVersion v = modifyCaps $ \c -> c { version = Just v }
+data Capability (ckind :: CapabilityKind) (f :: CapabilityField) where
+  -- |The actual value of a capability server-side
+  Actual :: CapabilityFamily f -> Capability Resultant f
+  -- |A desired capability requested by the client
+  Desired  :: CapabilityFamily f -> Capability Requested f
+  -- |A required capability requested by the client
+  Required :: CapabilityFamily f -> Capability Requested f
+  -- |Unspecified capability. Assume default value.
+  Unspecified :: Capability ckind f
 
--- |A helper function for setting the 'platform' capability of a 'HasCapabilities' instance 
-usePlatform :: HasCapabilities t => Platform -> t -> t
-usePlatform p = modifyCaps $ \c -> c { platform = p }
+capToMaybe :: Capability ckind f -> Maybe (CapabilityFamily f)
+capToMaybe c = case c of
+  Required v -> Just v
+  Desired v -> Just v
+  Actual v -> Just v
+  Unspecified -> Nothing
 
--- |A helper function for setting the 'useProxy' capability of a 'HasCapabilities' instance
-useProxy :: HasCapabilities t => ProxyType -> t -> t
-useProxy p = modifyCaps $ \c -> c { proxy = p }
+instance Default (Capability ctype f) where
+  def = Unspecified
+
+instance ToJSON (CapabilityFamily f) => ToJSON (Capability ctype f) where
+  toJSON = toJSON . capToMaybe
+
+instance FromJSON (CapabilityFamily f) => FromJSON (Capability Resultant f) where
+  parseJSON Null = return Unspecified
+  parseJSON v = Actual <$> parseJSON v
 
 
-{- |A structure describing the capabilities of a session. This record
-serves dual roles.
 
-* It's used to specify the desired capabilities for a session before
-it's created. In this usage, fields that are set to Nothing indicate
-that we have no preference for that capability.
+-- |Associates capability field names with their types
+type family CapabilityFamily (f :: CapabilityField) where
+  CapabilityFamily 'Browser                  = Browser
+  CapabilityFamily BrowserVersion            = String
+  CapabilityFamily 'Platform                 = Platform
+  CapabilityFamily PlatformVersion           = String
+  CapabilityFamily Proxy                     = ProxyType
+  CapabilityFamily AcceptSSLCerts            = Bool
+  CapabilityFamily TakesScreenshot           = Bool
+  CapabilityFamily TakesElementScreenshot    = Bool
+  CapabilityFamily AdditionalCaps            = [ Capability Requested AdditionalCapKeyValuePair ]
+  CapabilityFamily AdditionalCapKeyValuePair = Pair
+  -- |legacy wire protocol fields below
+  CapabilityFamily JavascriptEnabled         = Bool
+  CapabilityFamily HandlesAlerts             = Bool
+  CapabilityFamily DatabaseEnabled           = Bool
+  CapabilityFamily LocationContextEnabled    = Bool
+  CapabilityFamily ApplicationCacheEnabled   = Bool
+  CapabilityFamily BrowserConnectionEnabled  = Bool
+  CapabilityFamily CSSSelectorsEnabled       = Bool
+  CapabilityFamily WebStorageEnabled         = Bool
+  CapabilityFamily Rotatable                 = Bool
+  CapabilityFamily NativeEvents              = Bool
+  CapabilityFamily 'UnexpectedAlertBehavior  = UnexpectedAlertBehavior
+  CapabilityFamily Version                   = String
 
-* When received from the server , it's used to
-describe the actual capabilities given to us by the WebDriver
-server. Here a value of Nothing indicates that the server doesn't
-support the capability. Thus, for Maybe Bool fields, both Nothing and
-Just False indicate a lack of support for the desired capability.
--}
-data Capabilities =
-  Capabilities { -- |Browser choice and browser specific settings.
-                 browser                  :: Browser
-                 -- |Browser version to use.
-               , version                  :: Maybe String
-                 -- |Platform on which the browser should run.
-               , platform                 :: Platform
-                 -- |Proxy configuration settings.
-               , proxy                    :: ProxyType
-                 -- |Whether the session supports executing JavaScript via
-                 -- 'executeJS' and 'asyncJS'.
-               , javascriptEnabled        :: Maybe Bool
-                 -- |Whether the session supports taking screenshots of the
-                 -- current page with the 'screenshot' command
-               , takesScreenshot          :: Maybe Bool
-                 -- |Whether the session can interact with modal popups,
-                 -- such as window.alert and window.confirm via
-                 -- 'acceptAlerts', 'dismissAlerts', etc.
-               , handlesAlerts            :: Maybe Bool
-                 -- |Whether the session can interact with database storage.
-               , databaseEnabled          :: Maybe Bool
-                 -- |Whether the session can set and query the browser's
-                 -- location context with 'setLocation' and 'getLocation'.
-               , locationContextEnabled   :: Maybe Bool
-                 -- |Whether the session can interact with the application cache
-                 -- .
-               , applicationCacheEnabled  :: Maybe Bool
-                 -- |Whether the session can query for the browser's
-                 -- connectivity and disable it if desired
-               , browserConnectionEnabled :: Maybe Bool
-                 -- |Whether the session supports CSS selectors when searching
-                 -- for elements.
-               , cssSelectorsEnabled      :: Maybe Bool
-                 -- |Whether Web Storage ('getKey', 'setKey', etc) support is
-                 -- enabled
-               , webStorageEnabled        :: Maybe Bool
-                 -- |Whether the session can rotate the current page's current
-                 -- layout between 'Portrait' and 'Landscape' orientations.
-               , rotatable                :: Maybe Bool
-                 -- |Whether the session should accept all SSL certs by default
-               , acceptSSLCerts           :: Maybe Bool
-                 -- |Whether the session is capable of generating native OS
-                 -- events when simulating user input.
-               , nativeEvents             :: Maybe Bool
-                 -- |How the session should handle unexpected alerts.
-               , unexpectedAlertBehavior :: Maybe UnexpectedAlertBehavior
-                 -- |A list of ('Text', 'Value') pairs specifying additional non-standard capabilities.
-               , additionalCaps           :: [Pair]
-               } deriving (Eq, Show)
+instance (RecApplicative fields, RecAll (Capability ctype) fields Default) => Default (Rec (Capability ctype) fields) where
+  def = rpure def
 
-instance Default Capabilities where
-  def = Capabilities { browser = firefox
-                     , version = Nothing
-                     , platform = Any
-                     , javascriptEnabled = Nothing
-                     , takesScreenshot = Nothing
-                     , handlesAlerts = Nothing
-                     , databaseEnabled = Nothing
-                     , locationContextEnabled = Nothing
-                     , applicationCacheEnabled = Nothing
-                     , browserConnectionEnabled = Nothing
-                     , cssSelectorsEnabled = Nothing
-                     , webStorageEnabled = Nothing
-                     , rotatable = Nothing
-                     , acceptSSLCerts = Nothing
-                     , nativeEvents = Nothing
-                     , proxy = UseSystemSettings
-                     , unexpectedAlertBehavior = Nothing
-                     , additionalCaps = []
-                     }
-
--- |Default capabilities. This is the same as the 'Default' instance, but with
--- less polymorphism. By default, we use 'firefox' of an unspecified 'version'
--- with default system-wide 'proxy' settings on whatever 'platform' is available
--- . All 'Maybe' capabilities are set to 'Nothing' (no preference).
-defaultCaps :: Capabilities
-defaultCaps = def
-
--- |Same as 'defaultCaps', but with all 'Maybe' 'Bool' capabilities set to
--- 'Just' 'True'.
-allCaps :: Capabilities
-allCaps = defaultCaps { javascriptEnabled = Just True
-                      , takesScreenshot = Just True
-                      , handlesAlerts = Just True
-                      , databaseEnabled = Just True
-                      , locationContextEnabled = Just True
-                      , applicationCacheEnabled = Just True
-                      , browserConnectionEnabled = Just True
-                      , cssSelectorsEnabled = Just True
-                      , webStorageEnabled = Just True
-                      , rotatable = Just True
-                      , acceptSSLCerts = Just True
-                      , nativeEvents = Just True
-                      }
-
-instance ToJSON Capabilities where
-  toJSON Capabilities{..} =
-    object $ filter (\p -> snd p /= Null)
-           $ [ "browserName" .= browser
-             , "version" .= version
-             , "platform" .= platform
-             , "proxy" .= proxy
-             , "javascriptEnabled" .= javascriptEnabled
-             , "takesScreenshot" .= takesScreenshot
-             , "handlesAlerts" .= handlesAlerts
-             , "databaseEnabled" .= databaseEnabled
-             , "locationContextEnabled" .= locationContextEnabled
-             , "applicationCacheEnabled" .= applicationCacheEnabled
-             , "browserConnectionEnabled" .= browserConnectionEnabled
-             , "cssSelectorsEnabled" .= cssSelectorsEnabled
-             , "webStorageEnabled" .= webStorageEnabled
-             , "rotatable" .= rotatable
-             , "acceptSslCerts" .= acceptSSLCerts
-             , "nativeEvents" .= nativeEvents
-             , "unexpectedAlertBehavior" .= unexpectedAlertBehavior
-             ]
-    ++ browserInfo
-    ++ additionalCaps
+instance RecAll (Capability Requested) fields ToJSON => ToJSON (Rec (Capability Requested) fields) where
+  toJSON c =
+    toJSON
+    . object
+    . recordToList
+    . rmap (\(Functor.Compose (Dict v)) -> Functor.Const (toJSONKey v, toJSON v)) 
+    $ reifyConstraint (T.Proxy :: T.Proxy ToJSON) c
     where
-      browserInfo = case browser of
-        Firefox {..}
-          -> ["firefox_profile" .= ffProfile
-             ,"loggingPrefs" .= object ["driver" .= ffLogPref]
-             ,"firefox_binary" .= ffBinary
-             ]
-        Chrome {..}
-          -> catMaybes [ opt "chrome.chromedriverVersion" chromeDriverVersion ]
-             ++ [ "chromeOptions" .= object (catMaybes
-                  [ opt "binary" chromeBinary
-                  ] ++
-                  [ "args"       .= chromeOptions
-                  , "extensions" .= chromeExtensions
-                  ]
-                )]
-        IE {..}
-          -> ["ignoreProtectedModeSettings" .= ieIgnoreProtectedModeSettings
-             ,"ignoreZoomSetting" .= ieIgnoreZoomSetting
-             ,"initialBrowserUrl" .= ieInitialBrowserUrl
-             ,"elementScrollBehavior" .= ieElementScrollBehavior
-             ,"enablePersistentHover" .= ieEnablePersistentHover
-             ,"enableElementCacheCleanup" .= ieEnableElementCacheCleanup
-             ,"requireWindowFocus" .= ieRequireWindowFocus
-             ,"browserAttachTimeout" .= ieBrowserAttachTimeout
-             ,"logFile" .= ieLogFile
-             ,"logLevel" .= ieLogLevel
-             ,"host" .= ieHost
-             ,"extractPath" .= ieExtractPath
-             ,"silent" .= ieSilent
-             ,"forceCreateProcess" .= ieForceCreateProcess
-             ,"internetExplorerSwitches" .= ieSwitches
-             ]
-        Opera{..}
-          -> catMaybes [ opt "opera.binary" operaBinary
-                       , opt "opera.display" operaDisplay
-                       , opt "opera.product" operaProduct
-                       , opt "opera.launcher" operaLauncher
-                       , opt "opera.host" operaHost
-                       , opt "opera.logging.file" operaLogFile
-                       ]
-             ++ ["opera.detatch" .= operaDetach
-                ,"opera.no_quit" .= operaDetach --backwards compatability
-                ,"opera.autostart" .= operaAutoStart
-                , "opera.idle" .= operaIdle
-                -- ,"opera.profile" .= operaProfile
-                ,"opera.port" .= fromMaybe (-1) operaPort
-                 --note: consider replacing operaOptions with a list of options
-                ,"opera.arguments" .= operaOptions
-                ,"opera.logging.level" .= operaLogPref
-                ]
-        _ -> []
+      singFromCap :: Capability Requested f -> Sing f
+      singFromCap _ = sing
 
-        where
-          opt k = fmap (k .=)
+      toKeyName :: Capability Requested f -> Text
+      toKeyName = toJSONKey . fromSing . singFromCap
 
 
-instance FromJSON Capabilities where
-  parseJSON (Object o) = do
-    browser <- req "browserName"
-    Capabilities <$> getBrowserCaps browser
-                 <*> opt "version" Nothing
-                 <*> req "platform"
-                 <*> opt "proxy" NoProxy
-                 <*> b "javascriptEnabled"
-                 <*> b "takesScreenshot"
-                 <*> b "handlesAlerts"
-                 <*> b "databaseEnabled"
-                 <*> b "locationContextEnabled"
-                 <*> b "applicationCacheEnabled"
-                 <*> b "browserConnectionEnabled"
-                 <*> b "cssSelectorEnabled"
-                 <*> b "webStorageEnabled"
-                 <*> b "rotatable"
-                 <*> b "acceptSslCerts"
-                 <*> b "nativeEvents"
-                 <*> opt "unexpectedAlertBehaviour" Nothing
-                 <*> pure (additionalCapabilities browser)
+class ToJSONKey t where
+  toJSONKey :: t -> Text
 
-    where --some helpful JSON accessor shorthands
-          req :: FromJSON a => Text -> Parser a
-          req = (o .:)            -- required field
-          opt :: FromJSON a => Text -> a -> Parser a
-          opt k d = o .:?? k .!= d -- optional field
-          b :: Text -> Parser (Maybe Bool)
-          b k = opt k Nothing     -- Maybe Bool field
+instance ToJSONKey CapabilityField  where
+  toJSONKey = fromString . normalize . show
+    where 
+      normalize "CSSSelectorsEnabled" = "cssSelectorsEnabled"
+      normalize "AcceptSSLCerts" = "acceptSslCerts"
+      normalize (c : cs) = toLower c : cs
 
-          -- produce additionalCaps by removing known capabilities from the JSON object
-          additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
+instance ToJSONKey (Sing (t :: CapabilityField)) where
+  toJSONKey = toJSONKey . fromSing
 
-          knownCapabilities browser =
-            ["browserName", "version", "platform", "proxy"
-            ,"javascriptEnabled", "takesScreenshot", "handlesAlerts"
-            ,"databaseEnabled", "locationContextEnabled"
-            ,"applicationCacheEnabled", "browserConnectionEnabled"
-            , "cssSelectorEnabled","webStorageEnabled", "rotatable"
-            , "acceptSslCerts", "nativeEvents", "unexpectedBrowserBehaviour"]
-            ++ case browser of
-              Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary"]
-              Chrome {} -> ["chrome.chromedriverVersion", "chrome.extensions", "chrome.switches", "chrome.extensions"]
-              IE {} -> ["ignoreProtectedModeSettings", "ignoreZoomSettings", "initialBrowserUrl", "elementScrollBehavior"
-                       ,"enablePersistentHover", "enableElementCacheCleanup", "requireWindowFocus", "browserAttachTimeout"
-                       ,"logFile", "logLevel", "host", "extractPath", "silent", "forceCreateProcess", "internetExplorerSwitches"]
-              Opera {} -> ["opera.binary", "opera.product", "opera.no_quit", "opera.autostart", "opera.idle", "opera.display"
-                          ,"opera.launcher", "opera.port", "opera.host", "opera.arguments", "opera.logging.file", "opera.logging.level"]
-              _ -> []
-          getBrowserCaps browser =
-            case browser of
-              Firefox {} -> Firefox <$> opt "firefox_profile" Nothing
-                                    <*> opt "loggingPrefs" def
-                                    <*> opt "firefox_binary" Nothing
-              Chrome {} -> Chrome <$> opt "chrome.chromedriverVersion" Nothing
-                                  <*> opt "chrome.extensions" Nothing
-                                  <*> opt "chrome.switches" []
-                                  <*> opt "chrome.extensions" []
-              IE {} -> IE <$> opt "ignoreProtectedModeSettings" True
-                          <*> opt "ignoreZoomSettings" False
-                          <*> opt "initialBrowserUrl" Nothing
-                          <*> opt "elementScrollBehavior" def
-                          <*> opt "enablePersistentHover" True
-                          <*> opt "enableElementCacheCleanup" True
-                          <*> opt "requireWindowFocus" False
-                          <*> opt "browserAttachTimeout" 0
-                          <*> opt "logFile" Nothing
-                          <*> opt "logLevel" def
-                          <*> opt "host" Nothing
-                          <*> opt "extractPath" Nothing
-                          <*> opt "silent" False
-                          <*> opt "forceCreateProcess" False
-                          <*> opt "internetExplorerSwitches" Nothing
-              Opera {} -> Opera <$> opt "opera.binary" Nothing
-                                <*> opt "opera.product" Nothing
-                                <*> opt "opera.no_quit" False
-                                <*> opt "opera.autostart" True
-                                <*> opt "opera.idle" False
-                                <*> opt "opera.display" Nothing
-                                <*> opt "opera.launcher" Nothing
-                                <*> opt "opera.port" (Just 0)
-                                <*> opt "opera.host" Nothing
-                                <*> opt "opera.arguments" Nothing
-                                <*> opt "opera.logging.file" Nothing
-                                <*> opt "opera.logging.level" def
-              _ -> return browser
+instance SingI field => ToJSONKey (Capability ctype field) where
+  toJSONKey = toJSONKey (sing :: Sing field)
+    where 
 
-  parseJSON v = typeMismatch "Capabilities" v
 
 -- |This constructor simultaneously specifies which browser the session will
 -- use, while also providing browser-specific configuration. Default
@@ -340,7 +197,8 @@ instance FromJSON Capabilities where
 --
 -- This library uses 'firefox' as its 'Default' browser configuration, when no
 -- browser choice is specified.
-data Browser = Firefox { -- |The firefox profile to use. If Nothing,
+data Browser = 
+               Firefox { -- |The firefox profile to use. If Nothing,
                          -- a default temporary profile is automatically created
                          -- and used.
                          ffProfile :: Maybe (PreparedProfile Firefox)
@@ -476,7 +334,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
              | IPad
              | Android
              -- |some other browser, specified by a string name
-             | Browser Text
+             | OtherBrowser Text
              deriving (Eq, Show)
 
 instance Default Browser where
@@ -484,12 +342,12 @@ instance Default Browser where
 
 
 instance ToJSON Browser where
-  toJSON Firefox {}  = String "firefox"
-  toJSON Chrome {}   = String "chrome"
-  toJSON Opera {}    = String "opera"
-  toJSON IE {}       = String "internet explorer"
-  toJSON (Browser b) = String b
-  toJSON b           = String . toLower . fromString . show $ b
+  toJSON Firefox {} = String "firefox"
+  toJSON Chrome {} = String "chrome"
+  toJSON Opera {} = String "opera"
+  toJSON IE {} = String "internet explorer"
+  toJSON (OtherBrowser b) = String b
+  toJSON b = String . toLower . fromString . show $ b
 
 instance FromJSON Browser where
   parseJSON (String jStr) = case toLower jStr of
@@ -502,7 +360,7 @@ instance FromJSON Browser where
     "ipad"              -> return iPad
     "android"           -> return android
     "htmlunit"          -> return htmlUnit
-    other               -> return (Browser other)
+    other               -> return (OtherBrowser other)
   parseJSON v = typeMismatch "Browser" v
 
 
@@ -572,11 +430,12 @@ android = Android
 
 -- |Represents platform options supported by WebDriver. The value Any represents
 -- no preference.
-data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
-              deriving (Eq, Show, Ord, Bounded, Enum)
+data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any | OtherPlatform Text
+              deriving (Eq, Show, Ord)
 
 instance ToJSON Platform where
-  toJSON = String . toUpper . fromString . show
+  toJSON (OtherPlatform txt) = String txt
+  toJSON p = String . toUpper . fromString . show $ p
 
 instance FromJSON Platform where
   parseJSON (String jStr) = case toLower jStr of
@@ -587,7 +446,7 @@ instance FromJSON Platform where
     "linux"   -> return Linux
     "unix"    -> return Unix
     "any"     -> return Any
-    err -> fail $ "Invalid Platform string " ++ show err
+    other     -> return $ OtherPlatform other
   parseJSON v = typeMismatch "Platform" v
 
 -- |Available settings for the proxy 'Capabilities' field
@@ -740,3 +599,27 @@ instance FromJSON IEElementScrollBehavior where
       1 -> return AlignBottom
       _ -> fail $ "Invalid integer for IEElementScrollBehavior: " ++ show n
 
+genSingletons([''CapabilityField])
+
+specificationLevel = SSpecificationLevel
+browser = SBrowser 
+version = SVersion 
+browserVersion = SBrowserVersion 
+platform = SPlatform 
+platformVersion = SPlatformVersion 
+proxy = SProxy 
+acceptSSLCerts = SAcceptSSLCerts 
+takesScreenshot = STakesScreenshot 
+takesElementScreenshot = STakesElementScreenshot 
+additionalCaps = SAdditionalCaps 
+javascriptEnabled = SJavascriptEnabled 
+handlesAlerts = SHandlesAlerts 
+databaseEnabled = SDatabaseEnabled 
+locationContextEnabled = SLocationContextEnabled 
+applicationCacheEnabled = SApplicationCacheEnabled 
+browserConnectionEnabled = SBrowserConnectionEnabled 
+cssSelectorsEnabled = SCSSSelectorsEnabled 
+webStorageEnabled = SWebStorageEnabled 
+rotatable = SRotatable 
+nativeEvents = SNativeEvents 
+unexpectedAlertBehavior = SUnexpectedAlertBehavior 

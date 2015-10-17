@@ -1,9 +1,7 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts, DataKinds, KindSignatures, MultiParamTypeClasses, FlexibleInstances, UndecidableInstances #-}
 module Test.WebDriver.Config(
     -- * WebDriver configuration
-      WDConfig(..), defaultConfig
-    -- * Capabilities helpers
-    , modifyCaps, useBrowser, useVersion, usePlatform, useProxy
+      WDConfig'(..), defaultConfig
     -- * SessionHistoryConfig options
     , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
     -- * Overloadable configuration
@@ -20,15 +18,18 @@ import Control.Monad.Base
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import Network.HTTP.Types (RequestHeaders)
 
+
+type WDConfig = WDConfig' LegacyWireProtocol
+
 -- |WebDriver session configuration
-data WDConfig = WDConfig {
+data WDConfig' (cfields :: [CapabilityField] ) = WDConfig' {
      -- |Host name of the WebDriver server for this
      -- session (default 127.0.0.1)
       wdHost :: String
      -- |Port number of the server (default 4444)
     , wdPort :: Int
      -- |Capabilities to use for this session
-    , wdCapabilities :: Capabilities
+    , wdCapabilities :: Capabilities Requested cfields
      -- |Base path for all API requests (default "\/wd\/hub")
     , wdBasePath :: String
     -- |Custom request headers to add to every HTTP request.
@@ -44,14 +45,8 @@ data WDConfig = WDConfig {
     , wdHTTPRetryCount :: Int
 }
 
-instance GetCapabilities WDConfig where
-  getCaps = wdCapabilities
-
-instance SetCapabilities WDConfig where
-  setCaps caps conf = conf { wdCapabilities = caps }
-
-instance Default WDConfig where
-    def = WDConfig {
+instance Default (Capabilities Requested cfields) => Default (WDConfig' cfields) where
+    def = WDConfig' {
       wdHost              = "127.0.0.1"
     , wdPort              = 4444
     , wdRequestHeaders    = []
@@ -70,17 +65,17 @@ defaultConfig :: WDConfig
 defaultConfig = def
 
 -- |Class of types that can configure a WebDriver session.
-class WebDriverConfig c where
+class WebDriverConfig c fields where
     -- |Produces a 'Capabilities' from the given configuration.
-    mkCaps :: MonadBase IO m => c -> m Capabilities
+    mkCaps :: MonadBase IO m => c -> m (Capabilities Requested fields)
 
     -- |Produces a 'WDSession' from the given configuration.
     mkSession :: MonadBase IO m => c -> m WDSession
 
-instance WebDriverConfig WDConfig where
-    mkCaps = return . getCaps
+instance WebDriverConfig (WDConfig' cfields) cfields where
+    mkCaps = return . wdCapabilities
 
-    mkSession WDConfig{..} = do
+    mkSession WDConfig'{..} = do
       manager <- maybe createManager return wdHTTPManager
       return WDSession { wdSessHost = fromString $ wdHost
                        , wdSessPort = wdPort

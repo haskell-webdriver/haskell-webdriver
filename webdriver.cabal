@@ -43,7 +43,7 @@ Library
   ghc-options: -Wall
   if flag(developer)
     cpp-options: -DCABAL_BUILD_DEVELOPER
-  build-depends:   base == 4.*
+  build-depends:   base >= 4.0 && < 5
                  , aeson >= 0.6.2.0 && < 0.11
                  , http-client >= 0.3 && < 0.5
                  , http-types >= 0.8 && < 0.10
@@ -51,6 +51,8 @@ Library
                  , bytestring >= 0.9 && < 0.11
                  , attoparsec >= 0.10 && < 0.14
                  , base64-bytestring >= 1.0 && < 1.1
+                 , vinyl >= 0.5 && < 0.6
+                 , singletons >= 0.6 && < 2.1
                  , transformers >= 0.2 && < 0.5
                  , monad-control >= 0.3 && < 1.1
                  , transformers-base >= 0.1 && < 1.0
