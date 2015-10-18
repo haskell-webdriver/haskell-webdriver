@@ -109,7 +109,7 @@ infix 4 :=
 
 type family CapabilityKey (ckind :: CapabilityKind) (name :: CapabilityName) where
   CapabilityKey Requested name = Sing name
-  CapabilityKey Resultant name = Either (T.Proxy name) (Demote name)
+  CapabilityKey Resultant name = T.Proxy name
 
 data Capability (ckind :: CapabilityKind) (name :: CapabilityName) where
   -- |The actual value of a capability server-side
@@ -204,8 +204,8 @@ instance ParseCapabilities '[] where
 instance (FromJSON (CapabilityFamily Resultant f), ParseCapabilities fs) => ParseCapabilities (f ': fs) where
   parseField (Object o) = (:&) <$> parseFromKeys (HM.keys o) <*> parseField (Object o)
     where
-      parseFromKeys k = maybe (return (Left T.Proxy := Unspecified )) mkField $ tryAllKeys k
-      mkField (key, name) = (Right name :=) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
+      parseFromKeys k = maybe (return (T.Proxy := Unspecified )) mkField $ tryAllKeys k
+      mkField (key, name) = (T.Proxy :=) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
       tryAllKeys = foldr mplus Nothing . map tryKey
       tryKey k = (k ,) <$> keyToCapName k
 
