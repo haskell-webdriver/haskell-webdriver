@@ -3,9 +3,9 @@ module Test.WebDriver.Types
        ( -- * WebDriver sessions
          WD(..), WDSession(..), SessionId(..), SessionHistory
          -- * WebDriver configuration
-       , WDConfig(..), defaultConfig, SessionHistoryConfig
+       , WDConfig'(..), defaultConfig, SessionHistoryConfig
          -- * Capabilities
-       , Capabilities(..), defaultCaps, allCaps
+       , Capabilities(..)
        , Platform(..), ProxyType(..), UnexpectedAlertBehavior(..)
          -- ** Browser-specific capabilities
        , Browser(..),

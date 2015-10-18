@@ -118,7 +118,7 @@ ignoreReturn = void
 -- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action. 
 -- 
 -- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
-createSession :: WebDriver wd => Capabilities Requested LegacyWireProtocol -> wd WDSession
+createSession :: (ToJSON (Capabilities Requested fields),  WebDriver wd) => Capabilities Requested fields -> wd WDSession
 createSession caps = do
   ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "desiredCapabilities" $ caps
   getSession

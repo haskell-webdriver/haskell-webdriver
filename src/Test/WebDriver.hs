@@ -8,11 +8,7 @@ module Test.WebDriver
     -- * Running WebDriver commands
   , runSession, withSession, runWD
     -- * WebDriver configuration
-  , WDConfig(..), defaultConfig
-    -- ** Configuration helper functions
-    -- | Instead of working with the 'Capabilities' record directly, you can use 
-    --   these config modifier functions to specify common options.
-  , useBrowser, useProxy, useVersion, usePlatform 
+  , WDConfig'(..), defaultConfig
     -- ** Session history configuration
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
     -- ** HTTP request header utilities
@@ -20,7 +16,7 @@ module Test.WebDriver
     -- * WebDriver commands
   , module Test.WebDriver.Commands
     -- * Capabilities (advanced configuration)
-  , Capabilities(..), defaultCaps, allCaps, modifyCaps
+  , Capabilities(..)
   , Platform(..), ProxyType(..)
     -- ** Browser-specific capabilities
   , Browser(..), LogLevel(..)
