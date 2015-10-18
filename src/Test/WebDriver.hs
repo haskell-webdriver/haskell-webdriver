@@ -8,7 +8,7 @@ module Test.WebDriver
     -- * Running WebDriver commands
   , runSession, withSession, runWD
     -- * WebDriver configuration
-  , WDConfig'(..), defaultConfig
+  , WDConfig, WDConfig'(..), defaultConfig
     -- ** Session history configuration
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
     -- ** HTTP request header utilities
@@ -16,8 +16,7 @@ module Test.WebDriver
     -- * WebDriver commands
   , module Test.WebDriver.Commands
     -- * Capabilities (advanced configuration)
-  , Capabilities(..)
-  , Platform(..), ProxyType(..)
+  , module Test.WebDriver.Capabilities
     -- ** Browser-specific capabilities
   , Browser(..), LogLevel(..)
     -- *** Browser defaults
@@ -35,3 +34,4 @@ import Test.WebDriver.Monad
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Config
 import Test.WebDriver.Session
+import Test.WebDriver.Capabilities
