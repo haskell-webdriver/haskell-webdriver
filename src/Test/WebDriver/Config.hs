@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts, DataKinds, KindSignatures, MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts, DataKinds, KindSignatures, MultiParamTypeClasses, FlexibleInstances, UndecidableInstances, TypeFamilies, ConstraintKinds #-}
 module Test.WebDriver.Config(
     -- * WebDriver configuration
       WDConfig'(..), defaultConfig
