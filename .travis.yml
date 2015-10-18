@@ -2,7 +2,12 @@ language: haskell
 ghc:
   #- '7.10'  #travis currently doesn't have GHC 7.10; need to install manually if we want to test with it
   - 7.8
+<<<<<<< HEAD
 script:
   - cabal install --enable-tests --only-dependencies && cabal install  #configure and build with tests but don't run tests
+=======
+  - 7.6
+  - 7.4
+>>>>>>> remove all tests from cabal/travis until we can get them to build
 notifications:
   email: false
