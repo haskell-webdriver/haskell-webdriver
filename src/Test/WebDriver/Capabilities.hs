@@ -204,7 +204,7 @@ instance ParseCapabilities '[] where
 instance (FromJSON (CapabilityFamily Resultant f), ParseCapabilities fs) => ParseCapabilities (f ': fs) where
   parseField (Object o) = (:&) <$> parseFromKeys (HM.keys o) <*> parseField (Object o)
     where
-      parseFromKeys k = maybe (return (T.Proxy := Unspecified )) mkField $ tryAllKeys k
+      parseFromKeys = maybe (return (T.Proxy := Unspecified )) mkField . tryAllKeys
       mkField (key, name) = (T.Proxy :=) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
       tryAllKeys = foldr mplus Nothing . map tryKey
       tryKey k = (k ,) <$> keyToCapName k
