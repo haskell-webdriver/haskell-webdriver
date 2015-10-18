@@ -42,7 +42,7 @@ Library
   default-language: Haskell2010
   ghc-options: -Wall 
   if impl(ghc >= 7.8.1)
-    ghc-options: -fwarn-typed-hole
+    ghc-options: -fwarn-typed-holes
   if impl(ghc >= 7.10.1) 
     ghc-options: -fno-warn-unticked-promoted-constructors
   if flag(developer)
