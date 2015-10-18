@@ -13,11 +13,11 @@ import Data.Aeson.Types (Parser, typeMismatch, Pair)
 import qualified Data.HashMap.Strict as HM (keys)
 import Text.Read (readMaybe)
 
-import Data.Text as T (Text, toLower, toUpper, unpack)
+import Data.Text as T (Text, toLower, toUpper, unpack, pack)
 import Data.Default.Class (Default(..))
 import Data.Word (Word16)
 import Data.Maybe (isNothing)
-import Data.String (fromString)
+import Data.String (IsString(..))
 import Data.Char as C (toLower, toUpper)
 
 import qualified Data.Typeable as T (Proxy(..))
@@ -29,6 +29,7 @@ import Data.Singletons.TH (genSingletons)
 
 import Control.Monad
 import Control.Applicative
+import Control.Lens.TH
 import Control.Exception.Lifted (throw)
 
 import Prelude -- hides some "unused import" warnings
@@ -60,8 +61,7 @@ data CapabilityName =
   | AcceptSSLCerts
   | NativeEvents
   | UnexpectedAlertBehavior
-  | AdditionalCaps
-  | AdditionalCapKeyValuePair -- |The field type for (Text, Value) pair elements of AdditionalCaps
+  | RawCapability
   deriving (Eq, Ord, Bounded, Enum, Show, Read)
 
 -- |List of fields common protocol fields
@@ -71,7 +71,6 @@ type CommonFields =
   , Proxy
   , AcceptSSLCerts
   , TakesScreenshot
-  , AdditionalCaps
   ]
 
 -- |Fields used by the legacy wire protocol
@@ -100,108 +99,121 @@ type W3C =
   , AcceptSSLCerts
   , TakesScreenshot
   , TakesElementScreenshot
-  , AdditionalCaps
   ]
+
+-- |Associates capability field names with their types
+type family CapabilityFamily (name :: CapabilityName) where
+  CapabilityFamily 'Browser                  = Browser
+  CapabilityFamily BrowserVersion            = String
+  CapabilityFamily 'Platform                 = Platform
+  CapabilityFamily PlatformVersion           = String
+  CapabilityFamily Proxy                     = ProxyType
+  CapabilityFamily AcceptSSLCerts            = Bool
+  CapabilityFamily TakesScreenshot           = Bool
+  CapabilityFamily TakesElementScreenshot    = Bool
+  CapabilityFamily RawCapability             = Value
+  -- |legacy wire protocol fields below
+  CapabilityFamily JavascriptEnabled         = Bool
+  CapabilityFamily HandlesAlerts             = Bool
+  CapabilityFamily DatabaseEnabled           = Bool
+  CapabilityFamily LocationContextEnabled    = Bool
+  CapabilityFamily ApplicationCacheEnabled   = Bool
+  CapabilityFamily BrowserConnectionEnabled  = Bool
+  CapabilityFamily CSSSelectorsEnabled       = Bool
+  CapabilityFamily WebStorageEnabled         = Bool
+  CapabilityFamily Rotatable                 = Bool
+  CapabilityFamily NativeEvents              = Bool
+  CapabilityFamily 'UnexpectedAlertBehavior  = UnexpectedAlertBehavior
+  CapabilityFamily Version                   = String
+
 
 data CapabilityField (ckind :: CapabilityKind) (name :: CapabilityName) =
  CapabilityKey ckind name := Capability ckind name
 infix 4 :=
 
 type family CapabilityKey (ckind :: CapabilityKind) (name :: CapabilityName) where
-  CapabilityKey Requested name = Sing name
+  CapabilityKey Requested RawCapability = Text
+  CapabilityKey Requested name = Demote name
   CapabilityKey Resultant name = T.Proxy name
 
 data Capability (ckind :: CapabilityKind) (name :: CapabilityName) where
   -- |The actual value of a capability server-side
-  Actual :: CapabilityFamily Resultant name -> Capability Resultant name
+  Actual :: CapabilityFamily name -> Capability Resultant name
   -- |A desired capability requested by the client
-  Desired  :: CapabilityFamily Requested name -> Capability Requested name
+  Desired  :: CapabilityFamily name -> Capability Requested name
   -- |A required capability requested by the client
-  Required :: CapabilityFamily Requested name -> Capability Requested name
+  Required :: CapabilityFamily name -> Capability Requested name
   -- |Unspecified capability. Assume default value.
   Unspecified :: Capability ckind name
 
-capToMaybe :: Capability ckind name -> Maybe (CapabilityFamily ckind name)
+capToMaybe :: Capability ckind name -> Maybe (CapabilityFamily name)
 capToMaybe c = case c of
   Required v -> Just v
   Desired v -> Just v
   Actual v -> Just v
   Unspecified -> Nothing
 
+isRequired :: Capability Requested name -> Bool
+isRequired (Required _) = True
+isRequired _ = False
+
+isDesired :: Capability Requested name -> Bool
+isDesired (Desired _) = True
+isDesired _ = False
+
+isActual :: Capability Resultant name -> Bool
+isActual (Actual _) = True
+isActual _ = False
+
+isUnspecified :: Capability ckind name -> Bool
+isUnspecified Unspecified = True
+isUnspecified _ = False
+
+requestedToResultant :: Capability Requested name -> Capability Resultant name
+requestedToResultant c = case c of
+  Required v -> Actual v
+  Desired v -> Actual v
+  Unspecified -> Unspecified
+
+actualToRequired :: Capability Resultant name -> Capability Requested name
+actualToRequired Unspecified = Unspecified
+actualToRequired (Actual c) = Required c
+
+actualToDesired :: Capability Resultant name -> Capability Requested name
+actualToDesired Unspecified = Unspecified
+actualToDesired (Actual c) = Desired c
+
+
+-- Capability instances
+
 instance Default (Capability ctype name) where
   def = Unspecified
 
-instance ToJSON (CapabilityFamily ckind name) => ToJSON (Capability ckind name) where
+instance ToJSON (CapabilityFamily name) => ToJSON (Capability ckind name) where
   toJSON = toJSON . capToMaybe
 
-{-
-instance ToJSON (Capability ckind name) => ToJSON (CapabilityField ckind name) where
-  toJSON (_ := v) = toJSON v
--}
-
-instance FromJSON (CapabilityFamily Resultant name) => FromJSON (Capability Resultant name) where
+instance FromJSON (CapabilityFamily name) => FromJSON (Capability Resultant name) where
   parseJSON Null = return Unspecified
   parseJSON v = Actual <$> parseJSON v
 
+-- Capabilities instances
 
-
-
--- |Associates capability field names with their types
-type family CapabilityFamily (ckind :: CapabilityKind) (name :: CapabilityName) where
-  CapabilityFamily ckind 'Browser                  = Browser
-  CapabilityFamily ckind BrowserVersion            = String
-  CapabilityFamily ckind 'Platform                 = Platform
-  CapabilityFamily ckind PlatformVersion           = String
-  CapabilityFamily ckind Proxy                     = ProxyType
-  CapabilityFamily ckind AcceptSSLCerts            = Bool
-  CapabilityFamily ckind TakesScreenshot           = Bool
-  CapabilityFamily ckind TakesElementScreenshot    = Bool
-  CapabilityFamily ckind AdditionalCaps        = [ Capability ckind AdditionalCapKeyValuePair ]
-  CapabilityFamily ckind AdditionalCapKeyValuePair = Pair
-  -- |legacy wire protocol fields below
-  CapabilityFamily ckind JavascriptEnabled         = Bool
-  CapabilityFamily ckind HandlesAlerts             = Bool
-  CapabilityFamily ckind DatabaseEnabled           = Bool
-  CapabilityFamily ckind LocationContextEnabled    = Bool
-  CapabilityFamily ckind ApplicationCacheEnabled   = Bool
-  CapabilityFamily ckind BrowserConnectionEnabled  = Bool
-  CapabilityFamily ckind CSSSelectorsEnabled       = Bool
-  CapabilityFamily ckind WebStorageEnabled         = Bool
-  CapabilityFamily ckind Rotatable                 = Bool
-  CapabilityFamily ckind NativeEvents              = Bool
-  CapabilityFamily ckind 'UnexpectedAlertBehavior  = UnexpectedAlertBehavior
-  CapabilityFamily ckind Version                   = String
-
-instance CapsAll Requested fields ToJSON => ToJSON (Rec (CapabilityField Requested) fields) where
+instance (GetCapsKeys fields, CapsAll Requested fields ToJSON) => ToJSON (Capabilities Requested fields) where
   toJSON caps = toJSON . object $ zip names values
     where
-      names = map capNameToKey $ getCapNames caps
+      names = getCapsKeys caps
       values = recordToList 
              . rmap (\(F.Compose (Dict v)) -> F.Const $ toJSON v)
              . reifyConstraint (T.Proxy :: T.Proxy ToJSON)
              $ getCapValues caps
 
-{-
-instance (RecApplicative f, (RecAll (CapabilityField Resultant) f FromJSON)) => FromJSON (Rec (CapabilityField Resultant) f) where
-  parseJSON (Object o) = (foldr1 (.) <$> mapM parsePair nameAssoc) <*> pure (rpure undefined :: Rec (CapabilityField Resultant) f)
-    where
-      parsePair (n, s) = fmap (rput . (n :=) . Actual) . parseJSON =<< (o .:? s .!= Null)
-      
-      nameAssoc = map (\n -> (toName n, n)) . HM.keys $ o
-      
-      toName = read . normalize . T.unpack
-      
-
--}
-
-
 class ParseCapabilities fs where
-  parseField :: Value -> Parser (Rec (CapabilityField Resultant) fs)
+  parseField :: Value -> Parser (Capabilities Resultant fs)
 
 instance ParseCapabilities '[] where
   parseField _ = return RNil
 
-instance (FromJSON (CapabilityFamily Resultant f), ParseCapabilities fs) => ParseCapabilities (f ': fs) where
+instance (FromJSON (CapabilityFamily f), ParseCapabilities fs) => ParseCapabilities (f ': fs) where
   parseField (Object o) = (:&) <$> parseFromKeys (HM.keys o) <*> parseField (Object o)
     where
       parseFromKeys = maybe (return (T.Proxy := Unspecified )) mkField . tryAllKeys
@@ -211,16 +223,17 @@ instance (FromJSON (CapabilityFamily Resultant f), ParseCapabilities fs) => Pars
 
   parseField other = typeMismatch "Capabilities" other
 
-instance ParseCapabilities fields => FromJSON (Rec (CapabilityField Resultant) fields) where
+instance ParseCapabilities fields => FromJSON (Capabilities Resultant fields) where
   parseJSON = parseField
 
+{-
 instance FromJSON [Capability Resultant AdditionalCapKeyValuePair] where
   parseJSON (Object o) = mkPairs . filterKnownKeys $ HM.keys o
     where
       filterKnownKeys = filter (isNothing . keyToCapName)
       mkPairs = mapM (\k -> Actual . (k ,) <$> o .: k)
   parseJSON other = typeMismatch "AdditionalCaps" other
-
+-}
 
 keyToCapName :: Text -> Maybe CapabilityName
 keyToCapName = readMaybe . normalize . T.unpack
@@ -231,48 +244,49 @@ keyToCapName = readMaybe . normalize . T.unpack
       (c : cs) -> C.toUpper c : cs
       [] -> []
 
-capNameToKey :: CapabilityName -> Text
-capNameToKey = fromString . normalize . show
-  where
-    normalize s = case s of
-     "CSSSelectorsEnabled" -> "cssSelectorsEnabled"
-     "AcceptSSLCerts" -> "acceptSslCerts"
-     (c : cs) -> C.toLower c : cs
-     [] -> []
 
+class KeyToText name where
+  keyToText :: CapabilityKey Requested name -> Text
 
+instance KeyToText RawCapability where
+  keyToText = id
 
-
-
-{-
-instance (RecApplicative f, (RecAll (CapabilityField Resultant) f FromJSON)) => FromJSON (Rec (CapabilityField Resultant) f) where
-  parseJSON (Object o) =
-    fmap ( rmap (\(F.Compose (Dict f)) -> f)
-         . reifyConstraint (T.Proxy :: T.Proxy FromJSON))
-    . rtraverse (\(F.Const parse) -> parse (HM.keys o))
-    $ rpure (F.Const parseFromKeys)  
+instance Show (CapabilityKey Requested name) => KeyToText name where
+  keyToText = fromString . normalize . show
     where
-      parseFromKeys :: [Text] -> Parser (CapabilityField Resultant f1)
-      parseFromKeys k = maybe (return (Left T.Proxy := Unspecified )) mkField $ tryAllKeys k
-      mkField (key, name) = (Right name :=) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
-      tryAllKeys = foldr mplus Nothing . map tryKey
-      tryKey k = (k ,) <$> (readMaybe . normalize . T.unpack $ k)
       normalize s = case s of
-        "cssSelectorEnabled" -> "CSSSelectorEnabled"
-        "AcceptSslCerts" -> "AcceptSSLCerts"
-        (c : cs) -> C.toUpper c : cs
-        [] -> []
--}
+       "CSSSelectorsEnabled" -> "cssSelectorsEnabled"
+       "AcceptSSLCerts" -> "acceptSslCerts"
+       (c : cs) -> C.toLower c : cs
+       [] -> []
 
-getCapNames :: Rec (CapabilityField Requested) names -> [CapabilityName]
-getCapNames = recordToList . rmap (F.Const . f)
-  where f (n := _) = fromSing n
+class GetCapsKeys names where
+  getCapsKeys :: Capabilities Requested names -> [Text]
 
-getCapValues :: Rec (CapabilityField ctype) names -> Rec (Capability ctype) names
+instance GetCapsKeys '[] where
+  getCapsKeys RNil = []
+
+instance (KeyToText n, GetCapsKeys ns) => GetCapsKeys (n ': ns) where
+  getCapsKeys ((k := _) :& fs) = keyToText k : getCapsKeys fs
+
+getCapValues :: Capabilities ctype names -> Rec (Capability ctype) names
 getCapValues = rmap (\(_ := v) -> v)
 
+emptyCaps :: Capabilities ctype '[]
+emptyCaps = RNil
 
 type CapsAll ckind fields c = RecAll (Capability ckind) fields c
+
+type family CapabilityNamesOf t :: [CapabilityName]
+
+class GetCapabilities t (ckind :: CapabilityKind) where
+  getCaps :: t -> Capabilities ckind (CapabilityNamesOf t)
+
+class SetCapabilities t (ckind :: CapabilityKind) where
+  setCaps :: t -> Capabilities ckind (CapabilityNamesOf t) -> Capabilities ckind (CapabilityNamesOf t)
+
+--instance (fields :: [CapabilityName]) ⊆ ('[] :: [CapabilityName]) where
+
 
 -- |This constructor simultaneously specifies which browser the session will
 -- use, while also providing browser-specific configuration. Default
@@ -684,6 +698,7 @@ instance FromJSON IEElementScrollBehavior where
       _ -> fail $ "Invalid integer for IEElementScrollBehavior: " ++ show n
 
 genSingletons([''CapabilityName])
+makeLenses ''CapabilityField
 
 specificationLevel = SSpecificationLevel
 browser = SBrowser 
@@ -695,7 +710,6 @@ proxy = SProxy
 acceptSSLCerts = SAcceptSSLCerts 
 takesScreenshot = STakesScreenshot 
 takesElementScreenshot = STakesElementScreenshot 
-additionalCaps = SAdditionalCaps 
 javascriptEnabled = SJavascriptEnabled 
 handlesAlerts = SHandlesAlerts 
 databaseEnabled = SDatabaseEnabled 

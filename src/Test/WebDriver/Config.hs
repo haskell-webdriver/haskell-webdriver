@@ -50,13 +50,13 @@ data WDConfig' (allowedFields :: [CapabilityName] ) (definedFields :: [Capabilit
     , wdHTTPRetryCount :: Int
   }
 
-instance (allowedFields ⊆ '[]) => Default (WDConfig' allowedFields '[]) where
+instance Default (WDConfig' allowedFields '[]) where
     def = WDConfig' {
       wdHost              = "127.0.0.1"
     , wdPort              = 4444
     , wdRequestHeaders    = []
     , wdAuthHeaders       = []
-    , wdCapabilities      = RNil
+    , wdCapabilities      = emptyCaps
     , wdHistoryConfig     = unlimitedHistory
     , wdBasePath          = "/wd/hub"
     , wdHTTPManager       = Nothing
@@ -66,11 +66,11 @@ instance (allowedFields ⊆ '[]) => Default (WDConfig' allowedFields '[]) where
 {- |A default session config connects to localhost on port 4444, and hasn't been
 initialized server-side. This value is the same as 'def' but with a less
 polymorphic type. -}
-defaultConfig :: (fields ⊆ '[]) => WDConfig' fields '[]
+defaultConfig :: WDConfig' (allowedFields :: [CapabilityName]) '[]
 defaultConfig = def
 
 -- |Class of types that can configure a WebDriver session.
-class (AllowedCapabilities c ⊆ DefinedCapabilities c, (CapsAll Requested (DefinedCapabilities c) ToJSON)) => WebDriverConfig c where
+class ( DefinedCapabilities c ⊆ AllowedCapabilities c , (CapsAll Requested (DefinedCapabilities c) ToJSON)) => WebDriverConfig c where
     type AllowedCapabilities c :: [CapabilityName]
     type DefinedCapabilities c :: [CapabilityName]
     -- |Produces a 'Capabilities' from the given configuration.
@@ -79,7 +79,7 @@ class (AllowedCapabilities c ⊆ DefinedCapabilities c, (CapsAll Requested (Defi
     -- |Produces a 'WDSession' from the given configuration.
     mkSession :: MonadBase IO m => c -> m WDSession
 
-instance (cfields ⊆ cfields', CapsAll Requested cfields' ToJSON) => WebDriverConfig (WDConfig' cfields cfields') where
+instance ((cfields' :: [CapabilityName]) ⊆ (cfields :: [CapabilityName]), CapsAll Requested cfields' ToJSON) => WebDriverConfig (WDConfig' cfields cfields') where
     type AllowedCapabilities (WDConfig' cfields cfields') = cfields
     type DefinedCapabilities (WDConfig' cfields cfields') = cfields'
     mkCaps = return . wdCapabilities
