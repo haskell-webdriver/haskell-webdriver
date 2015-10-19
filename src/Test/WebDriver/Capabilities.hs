@@ -36,7 +36,7 @@ import Control.Exception.Lifted (throw)
 
 import Prelude -- hides some "unused import" warnings
 
-type Capabilities ckind fields = Rec (CapabilityField ckind) fields
+type Capabilities ckind names = Rec (CapabilityField ckind) names
 
 data CapabilityKind = Requested | Resultant
   deriving (Eq, Ord, Bounded, Enum, Show, Read)
@@ -172,6 +172,19 @@ isUnspecified :: Capability ckind name -> Bool
 isUnspecified Unspecified = True
 isUnspecified _ = False
 
+-- splits a requested capability record into (required, desired). Each subrecord has the same number of fields, but fields
+-- that were not the correct required/desired constructor are converted to 'Unspecified'
+splitRequestedCaps :: Capabilities Requested names -> (Capabilities Requested names, Capabilities Requested names)
+splitRequestedCaps RNil = (RNil, RNil)
+splitRequestedCaps (f@(CapabilityField k v) :& cs) = (r :& otherRequired, d :& otherDesired)
+  where
+    (r, d) = case v of
+      Required _ -> (f, noF)
+      Desired  _ -> (noF, f)
+      Unspecified -> (noF, noF)
+    noF = CapabilityField k Unspecified
+    (otherRequired, otherDesired) = splitRequestedCaps cs
+
 requestedToResultant :: Capability Requested name -> Capability Resultant name
 requestedToResultant c = case c of
   Required v -> Actual v
@@ -211,23 +224,23 @@ instance (KeysHaveText names, CapsAreParseable names) => ToJSON (Capabilities Re
              $ getCapValues caps
 
 class ParseCapabilities fs where
-  parseField :: Value -> Parser (Capabilities Resultant fs)
+  parseFields :: Value -> Parser (Capabilities Resultant fs)
 
 instance ParseCapabilities '[] where
-  parseField _ = return RNil
+  parseFields _ = return RNil
 
 instance (FromJSON (CapabilityFamily f), ParseCapabilities fs) => ParseCapabilities (f ': fs) where
-  parseField (Object o) = (:&) <$> parseFromKeys (HM.keys o) <*> parseField (Object o)
+  parseFields (Object o) = (:&) <$> parseFromKeys (HM.keys o) <*> parseFields (Object o)
     where
       parseFromKeys = maybe (return (CapabilityField T.Proxy Unspecified )) mkField . tryAllKeys
       mkField (key, name) = (CapabilityField T.Proxy) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
       tryAllKeys = foldr mplus Nothing . map tryKey
       tryKey k = (k ,) <$> keyToCapName k
 
-  parseField other = typeMismatch "Capabilities" other
+  parseFields other = typeMismatch "Capabilities" other
 
-instance ParseCapabilities fields => FromJSON (Capabilities Resultant fields) where
-  parseJSON = parseField
+instance ParseCapabilities names => FromJSON (Capabilities Resultant names) where
+  parseJSON = parseFields
 
 {-
 instance FromJSON [Capability Resultant AdditionalCapKeyValuePair] where
@@ -304,9 +317,9 @@ getTextFromKeys = rmap (\(F.Compose (Dict f)) -> F.Const $ keyToText f)
 emptyCaps :: Capabilities ctype '[]
 emptyCaps = RNil
 
-type CapsAll ckind fields c = RecAll (Capability ckind) fields c
+type CapsAll ckind names c = RecAll (Capability ckind) names c
 
-type FieldsAll ckind fields c = RecAll (CapabilityField ckind) fields c
+type FieldsAll ckind names c = RecAll (CapabilityField ckind) names c
 
 type KeysHaveText names = FieldsAll Requested names KeyToText
 
@@ -319,8 +332,6 @@ class GetCapabilities t (ckind :: CapabilityKind) where
 
 class SetCapabilities t (ckind :: CapabilityKind) where
   setCaps :: t -> Capabilities ckind (CapabilityNamesOf t) -> Capabilities ckind (CapabilityNamesOf t)
-
---instance (fields :: [CapabilityName]) ⊆ ('[] :: [CapabilityName]) where
 
 
 -- |This constructor simultaneously specifies which browser the session will
