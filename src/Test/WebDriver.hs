@@ -18,7 +18,7 @@ module Test.WebDriver
     -- * Capabilities (advanced configuration)
   , module Test.WebDriver.Capabilities
     -- ** Browser-specific capabilities
-  , Browser(..), LogLevel(..)
+  , BrowserType(..), LogLevel(..)
     -- *** Browser defaults
   , firefox, chrome, ie, opera, iPhone, iPad, android
    -- * Exception handling

@@ -66,37 +66,37 @@ data CapabilityName =
   | RawCapability
   deriving (Eq, Ord, Bounded, Enum, Show, Read)
 
--- |List of fields common protocol fields
-type CommonFields = 
+-- |Fields used by the legacy wire protocol
+type LegacyWireProtocol =
   [ 'Browser
   , 'Platform
   , Proxy
   , AcceptSSLCerts
   , TakesScreenshot
-  , RawCapability
+  --, RawCapability
+  , Version
+  , JavascriptEnabled
+  , HandlesAlerts
+  , DatabaseEnabled
+  , LocationContextEnabled
+  , ApplicationCacheEnabled
+  , BrowserConnectionEnabled
+  , CSSSelectorsEnabled
+  , WebStorageEnabled
+  , Rotatable
+  , NativeEvents
+  , 'UnexpectedAlertBehavior
   ]
-
--- |Fields used by the legacy wire protocol
-type LegacyWireProtocol =
-  CommonFields ++ 
- [ Version
- , JavascriptEnabled
- , HandlesAlerts
- , DatabaseEnabled
- , LocationContextEnabled
- , ApplicationCacheEnabled
- , BrowserConnectionEnabled
- , CSSSelectorsEnabled
- , WebStorageEnabled
- , Rotatable
- , NativeEvents
- , 'UnexpectedAlertBehavior
- ]
 
 -- |Fields used by the W3C protocol specification
 type W3C =
-  CommonFields ++
-  [ SpecificationLevel
+  [ 'Browser
+  , 'Platform
+  , Proxy
+  , AcceptSSLCerts
+  , TakesScreenshot
+  --, RawCapability
+  , SpecificationLevel
   , BrowserVersion
   , PlatformVersion
   , AcceptSSLCerts
@@ -106,9 +106,9 @@ type W3C =
 
 -- |Associates capability field names with their types
 type family CapabilityFamily (name :: CapabilityName) where
-  CapabilityFamily 'Browser                  = Browser
+  CapabilityFamily Browser                   = BrowserType
   CapabilityFamily BrowserVersion            = String
-  CapabilityFamily 'Platform                 = Platform
+  CapabilityFamily Platform                  = PlatformType
   CapabilityFamily PlatformVersion           = String
   CapabilityFamily Proxy                     = ProxyType
   CapabilityFamily AcceptSSLCerts            = Bool
@@ -131,11 +131,9 @@ type family CapabilityFamily (name :: CapabilityName) where
 
 
 data CapabilityField (ckind :: CapabilityKind) (name :: CapabilityName) =
- CapabilityKey ckind name := Capability ckind name
-infix 4 :=
+ CapabilityField (CapabilityKey ckind name) (Capability ckind name)
 
 type family CapabilityKey (ckind :: CapabilityKind) (name :: CapabilityName) where
-  CapabilityKey Requested RawCapability = Text
   CapabilityKey Requested name = CapabilityName
   CapabilityKey Resultant name = T.Proxy name
 
@@ -221,8 +219,8 @@ instance ParseCapabilities '[] where
 instance (FromJSON (CapabilityFamily f), ParseCapabilities fs) => ParseCapabilities (f ': fs) where
   parseField (Object o) = (:&) <$> parseFromKeys (HM.keys o) <*> parseField (Object o)
     where
-      parseFromKeys = maybe (return (T.Proxy := Unspecified )) mkField . tryAllKeys
-      mkField (key, name) = (T.Proxy :=) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
+      parseFromKeys = maybe (return (CapabilityField T.Proxy Unspecified )) mkField . tryAllKeys
+      mkField (key, name) = (CapabilityField T.Proxy) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
       tryAllKeys = foldr mplus Nothing . map tryKey
       tryKey k = (k ,) <$> keyToCapName k
 
@@ -244,6 +242,7 @@ keyToCapName :: Text -> Maybe CapabilityName
 keyToCapName = readMaybe . normalize . T.unpack
   where
     normalize s = case s of
+      "browserName" -> "Browser"
       "cssSelectorEnabled" -> "CSSSelectorEnabled"
       "AcceptSslCerts" -> "AcceptSSLCerts"
       (c : cs) -> C.toUpper c : cs
@@ -259,13 +258,14 @@ instance KeyToText CapabilityName where
   keyToText  = fromString . normalize . show
     where
       normalize s = case s of
-       "CSSSelectorsEnabled" -> "cssSelectorsEnabled"
-       "AcceptSSLCerts" -> "acceptSslCerts"
-       (c : cs) -> C.toLower c : cs
-       [] -> []
+        "Browser" -> "browserName"
+        "CSSSelectorsEnabled" -> "cssSelectorsEnabled"
+        "AcceptSSLCerts" -> "acceptSslCerts"
+        (c : cs) -> C.toLower c : cs
+        [] -> []
 
 instance KeyToText (CapabilityKey ckind name) => KeyToText (CapabilityField ckind name) where
-  keyToText (k := _) = keyToText k
+  keyToText (CapabilityField k _) = keyToText k
 
 {-
 class GetCapsKeys names where
@@ -293,7 +293,7 @@ getKeysAsText = recordToList
               . getTextFromKeys
 
 getCapValues :: Capabilities ctype names -> Rec (Capability ctype) names
-getCapValues = rmap (\(_ := v) -> v)
+getCapValues = rmap (\(CapabilityField _ v) -> v)
 
 
 getTextFromKeys :: KeysHaveText names => Capabilities Requested names -> Rec (F.Const Text) names
@@ -330,7 +330,7 @@ class SetCapabilities t (ckind :: CapabilityKind) where
 --
 -- This library uses 'firefox' as its 'Default' browser configuration, when no
 -- browser choice is specified.
-data Browser = 
+data BrowserType = 
                Firefox { -- |The firefox profile to use. If Nothing,
                          -- a default temporary profile is automatically created
                          -- and used.
@@ -470,11 +470,11 @@ data Browser =
              | OtherBrowser Text
              deriving (Eq, Show)
 
-instance Default Browser where
+instance Default BrowserType where
   def = firefox
 
 
-instance ToJSON Browser where
+instance ToJSON BrowserType where
   toJSON Firefox {} = String "firefox"
   toJSON Chrome {} = String "chrome"
   toJSON Opera {} = String "opera"
@@ -482,7 +482,7 @@ instance ToJSON Browser where
   toJSON (OtherBrowser b) = String b
   toJSON b = String . T.toLower . fromString . show $ b
 
-instance FromJSON Browser where
+instance FromJSON BrowserType where
   parseJSON (String jStr) = case T.toLower jStr of
     "firefox"           -> return firefox
     "chrome"            -> return chrome
@@ -499,17 +499,17 @@ instance FromJSON Browser where
 
 -- |Default Firefox settings. All Maybe fields are set to Nothing. ffLogPref
 -- is set to 'LogInfo'.
-firefox :: Browser
+firefox :: BrowserType
 firefox = Firefox Nothing def Nothing
 
 -- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
 -- specified, and no extensions are used.
-chrome :: Browser
+chrome :: BrowserType
 chrome = Chrome Nothing Nothing [] []
 
 -- |Default IE settings. See the 'IE' constructor for more details on
 -- individual defaults
-ie :: Browser
+ie :: BrowserType
 ie = IE { ieIgnoreProtectedModeSettings = True
         , ieIgnoreZoomSetting = False
         , ieInitialBrowserUrl = Nothing
@@ -529,7 +529,7 @@ ie = IE { ieIgnoreProtectedModeSettings = True
 
 -- |Default Opera settings. See the 'Opera' constructor for more details on
 -- individual defaults.
-opera :: Browser
+opera :: BrowserType
 opera = Opera { operaBinary = Nothing
               --, operaNoRestart = Nothing
               , operaProduct = Nothing
@@ -549,28 +549,28 @@ opera = Opera { operaBinary = Nothing
 --safari :: Browser
 --safari = Safari
 
-htmlUnit :: Browser
+htmlUnit :: BrowserType
 htmlUnit = HTMLUnit
 
-iPhone :: Browser
+iPhone :: BrowserType
 iPhone = IPhone
 
-iPad :: Browser
+iPad :: BrowserType
 iPad = IPad
 
-android :: Browser
+android :: BrowserType
 android = Android
 
 -- |Represents platform options supported by WebDriver. The value Any represents
 -- no preference.
-data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any | OtherPlatform Text
+data PlatformType = Windows | XP | Vista | Mac | Linux | Unix | Any | OtherPlatform Text
               deriving (Eq, Show, Ord)
 
-instance ToJSON Platform where
+instance ToJSON PlatformType where
   toJSON (OtherPlatform txt) = String txt
   toJSON p = String . T.toUpper . fromString . show $ p
 
-instance FromJSON Platform where
+instance FromJSON PlatformType where
   parseJSON (String jStr) = case T.toLower jStr of
     "windows" -> return Windows
     "xp"      -> return XP
@@ -735,8 +735,16 @@ instance FromJSON IEElementScrollBehavior where
 genSingletons([''CapabilityName])
 --makeLenses ''CapabilityField
 
-specificationLevel = SSpecificationLevel
-browser = SBrowser 
+
+(=:) :: Sing name -> Capability Requested name -> CapabilityField Requested name
+k =: v = CapabilityField (fromSing k) v
+infix 4 =:
+
+(&) = (:&)
+infixr 9 &
+
+specificationLevel = SpecificationLevel
+browser = SBrowser
 version = SVersion 
 browserVersion = SBrowserVersion 
 platform = SPlatform 

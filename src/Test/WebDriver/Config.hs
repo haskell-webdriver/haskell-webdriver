@@ -50,7 +50,7 @@ data WDConfig' (allowedNames :: [CapabilityName] ) (definedNames :: [CapabilityN
     , wdHTTPRetryCount :: Int
   }
 
-instance Default (WDConfig' allowedNames '[]) where
+instance Default (WDConfig' LegacyWireProtocol '[]) where
     def = WDConfig' {
       wdHost              = "127.0.0.1"
     , wdPort              = 4444
@@ -70,7 +70,7 @@ defaultConfig :: WDConfig' LegacyWireProtocol '[]
 defaultConfig = def
 
 
-type WebDriverConfigConstraint allowedNames definedNames = (allowedNames ⊆ definedNames, KeysHaveText definedNames, CapsAreParseable definedNames, 'Browser ∈ definedNames)
+type WebDriverConfigConstraint (allowedNames :: [CapabilityName]) definedNames = (KeysHaveText definedNames, CapsAreParseable definedNames, 'Browser ∈ definedNames)
 
 -- |Class of types that can configure a WebDriver session.
 class WebDriverConfigConstraint (AllowedNames c) (DefinedNames c) => WebDriverConfig c where

@@ -5,10 +5,10 @@ module Test.WebDriver.Types
          -- * WebDriver configuration
        , WDConfig'(..), defaultConfig, SessionHistoryConfig
          -- * Capabilities
-       , Capabilities, CapabilityName(..), CommonFields, W3C, LegacyWireProtocol, (++), CapabilityField(..), Capability(..), CapabilityFamily, CapsAll
-       , Platform(..), ProxyType(..), UnexpectedAlertBehavior(..)
+       , Capabilities, CapabilityName(..), W3C, LegacyWireProtocol, (++), CapabilityField(..), Capability(..), CapabilityFamily, CapsAll
+       , PlatformType(..), ProxyType(..), UnexpectedAlertBehavior(..)
          -- ** Browser-specific capabilities
-       , Browser(..),
+       , BrowserType(..),
          -- ** Default settings for browsers
          firefox, chrome, ie, opera, iPhone, iPad, android
        , LogLevel(..), IELogLevel(..), IEElementScrollBehavior(..)
