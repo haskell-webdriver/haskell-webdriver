@@ -1,6 +1,7 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds, DataKinds, PolyKinds, TypeFamilies, FlexibleContexts, FlexibleInstances, NoMonomorphismRestriction,
-             GADTs, TypeSynonymInstances, TemplateHaskell, FunctionalDependencies, TypeOperators, UndecidableInstances, TupleSections, ScopedTypeVariables
-  #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds, DataKinds, PolyKinds, TypeFamilies, 
+             FlexibleContexts, FlexibleInstances, NoMonomorphismRestriction,
+             GADTs, TypeSynonymInstances, TemplateHaskell, FunctionalDependencies, TypeOperators, UndecidableInstances,
+             TupleSections, ScopedTypeVariables, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 module Test.WebDriver.Capabilities where
 
@@ -26,6 +27,7 @@ import Data.Vinyl.TypeLevel
 import qualified Data.Vinyl.Functor as F
 import Data.Singletons
 import Data.Singletons.TH (genSingletons)
+import GHC.Exts (Constraint)
 
 import Control.Monad
 import Control.Applicative
@@ -71,6 +73,7 @@ type CommonFields =
   , Proxy
   , AcceptSSLCerts
   , TakesScreenshot
+  , RawCapability
   ]
 
 -- |Fields used by the legacy wire protocol
@@ -133,8 +136,10 @@ infix 4 :=
 
 type family CapabilityKey (ckind :: CapabilityKind) (name :: CapabilityName) where
   CapabilityKey Requested RawCapability = Text
-  CapabilityKey Requested name = Demote name
+  CapabilityKey Requested name = Sing name
   CapabilityKey Resultant name = T.Proxy name
+
+--newtype RawKey = RawKey Text deriving (IsString, ToJSON, FromJSON)
 
 data Capability (ckind :: CapabilityKind) (name :: CapabilityName) where
   -- |The actual value of a capability server-side
@@ -198,10 +203,10 @@ instance FromJSON (CapabilityFamily name) => FromJSON (Capability Resultant name
 
 -- Capabilities instances
 
-instance (GetCapsKeys fields, CapsAll Requested fields ToJSON) => ToJSON (Capabilities Requested fields) where
+instance (KeysHaveText names, CapsAreParseable names) => ToJSON (Capabilities Requested names) where
   toJSON caps = toJSON . object $ zip names values
     where
-      names = getCapsKeys caps
+      names = getKeysAsText caps
       values = recordToList 
              . rmap (\(F.Compose (Dict v)) -> F.Const $ toJSON v)
              . reifyConstraint (T.Proxy :: T.Proxy ToJSON)
@@ -245,14 +250,15 @@ keyToCapName = readMaybe . normalize . T.unpack
       [] -> []
 
 
-class KeyToText name where
-  keyToText :: CapabilityKey Requested name -> Text
+class KeyToText key where
+  keyToText ::  key -> Text
 
-instance KeyToText RawCapability where
-  keyToText = id
 
-instance Show (CapabilityKey Requested name) => KeyToText name where
-  keyToText = fromString . normalize . show
+instance KeyToText Text where
+  keyToText  = id
+
+instance KeyToText (Sing (name :: CapabilityName)) where
+  keyToText  = fromString . normalize . show . fromSing
     where
       normalize s = case s of
        "CSSSelectorsEnabled" -> "cssSelectorsEnabled"
@@ -260,22 +266,53 @@ instance Show (CapabilityKey Requested name) => KeyToText name where
        (c : cs) -> C.toLower c : cs
        [] -> []
 
+instance KeyToText (CapabilityKey ckind name) => KeyToText (CapabilityField ckind name) where
+  keyToText (k := _) = keyToText k
+
+{-
 class GetCapsKeys names where
   getCapsKeys :: Capabilities Requested names -> [Text]
 
 instance GetCapsKeys '[] where
   getCapsKeys RNil = []
 
-instance (KeyToText n, GetCapsKeys ns) => GetCapsKeys (n ': ns) where
+instance GetCapsKeys ns => GetCapsKeys (RawCapability ': ns) where
+  getCapsKeys ((k := _) :& fs) = k : getCapsKeys fs
+
+instance (Show (CapabilityKey Requested n), GetCapsKeys ns) => GetCapsKeys (n ': ns) where
   getCapsKeys ((k := _) :& fs) = keyToText k : getCapsKeys fs
+    where 
+      keyToText = fromString . normalize . show
+      normalize s = case s of
+       "CSSSelectorsEnabled" -> "cssSelectorsEnabled"
+       "AcceptSSLCerts" -> "acceptSslCerts"
+       (c : cs) -> C.toLower c : cs
+       [] -> []
+-}
+
+getKeysAsText :: KeysHaveText names => Capabilities Requested names -> [Text]
+getKeysAsText = recordToList
+              . getTextFromKeys
 
 getCapValues :: Capabilities ctype names -> Rec (Capability ctype) names
 getCapValues = rmap (\(_ := v) -> v)
+
+
+getTextFromKeys :: KeysHaveText names => Capabilities Requested names -> Rec (F.Const Text) names
+getTextFromKeys = rmap (\(F.Compose (Dict f)) -> F.Const $ keyToText f)
+                  . reifyConstraint (T.Proxy :: T.Proxy KeyToText)
+
 
 emptyCaps :: Capabilities ctype '[]
 emptyCaps = RNil
 
 type CapsAll ckind fields c = RecAll (Capability ckind) fields c
+
+type FieldsAll ckind fields c = RecAll (CapabilityField ckind) fields c
+
+type KeysHaveText names = FieldsAll Requested names KeyToText
+
+type CapsAreParseable names = CapsAll Requested names ToJSON
 
 type family CapabilityNamesOf t :: [CapabilityName]
 
@@ -698,7 +735,7 @@ instance FromJSON IEElementScrollBehavior where
       _ -> fail $ "Invalid integer for IEElementScrollBehavior: " ++ show n
 
 genSingletons([''CapabilityName])
-makeLenses ''CapabilityField
+--makeLenses ''CapabilityField
 
 specificationLevel = SSpecificationLevel
 browser = SBrowser 
@@ -720,4 +757,4 @@ cssSelectorsEnabled = SCSSSelectorsEnabled
 webStorageEnabled = SWebStorageEnabled 
 rotatable = SRotatable 
 nativeEvents = SNativeEvents 
-unexpectedAlertBehavior = SUnexpectedAlertBehavior 
+unexpectedAlertBehavior = SUnexpectedAlertBehavior

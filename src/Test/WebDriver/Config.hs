@@ -26,7 +26,7 @@ import Network.HTTP.Types (RequestHeaders)
 type WDConfig = WDConfig' LegacyWireProtocol
 
 -- |WebDriver session configuration
-data WDConfig' (allowedFields :: [CapabilityName] ) (definedFields :: [CapabilityName]) =
+data WDConfig' (allowedNames :: [CapabilityName] ) (definedNames :: [CapabilityName]) =
   WDConfig' {
      -- |Host name of the WebDriver server for this
      -- session (default 127.0.0.1)
@@ -34,7 +34,7 @@ data WDConfig' (allowedFields :: [CapabilityName] ) (definedFields :: [Capabilit
      -- |Port number of the server (default 4444)
     , wdPort :: Int
      -- |Capabilities to use for this session
-    , wdCapabilities :: Capabilities Requested definedFields
+    , wdCapabilities :: Capabilities Requested definedNames
      -- |Base path for all API requests (default "\/wd\/hub")
     , wdBasePath :: String
     -- |Custom request headers to add to every HTTP request.
@@ -50,7 +50,7 @@ data WDConfig' (allowedFields :: [CapabilityName] ) (definedFields :: [Capabilit
     , wdHTTPRetryCount :: Int
   }
 
-instance Default (WDConfig' allowedFields '[]) where
+instance Default (WDConfig' allowedNames '[]) where
     def = WDConfig' {
       wdHost              = "127.0.0.1"
     , wdPort              = 4444
@@ -66,22 +66,26 @@ instance Default (WDConfig' allowedFields '[]) where
 {- |A default session config connects to localhost on port 4444, and hasn't been
 initialized server-side. This value is the same as 'def' but with a less
 polymorphic type. -}
-defaultConfig :: WDConfig' (allowedFields :: [CapabilityName]) '[]
+defaultConfig :: WDConfig' allowedNames '[]
 defaultConfig = def
 
+
+type WebDriverConfigConstraint f f' = ((f' :: [CapabilityName]) ⊆ (f :: [CapabilityName]), KeysHaveText f', CapsAreParseable f')
+
 -- |Class of types that can configure a WebDriver session.
-class ( DefinedCapabilities c ⊆ AllowedCapabilities c , (CapsAll Requested (DefinedCapabilities c) ToJSON)) => WebDriverConfig c where
-    type AllowedCapabilities c :: [CapabilityName]
-    type DefinedCapabilities c :: [CapabilityName]
+class WebDriverConfigConstraint (AllowedNames c) (DefinedNames c) => WebDriverConfig c where
+    type AllowedNames c :: [CapabilityName]
+    type DefinedNames c :: [CapabilityName]
     -- |Produces a 'Capabilities' from the given configuration.
-    mkCaps :: (MonadBase IO m) => c -> m (Capabilities Requested (DefinedCapabilities c))
+    mkCaps :: (MonadBase IO m) => c -> m (Capabilities Requested (DefinedNames c))
 
     -- |Produces a 'WDSession' from the given configuration.
     mkSession :: MonadBase IO m => c -> m WDSession
 
-instance ((cfields' :: [CapabilityName]) ⊆ (cfields :: [CapabilityName]), CapsAll Requested cfields' ToJSON) => WebDriverConfig (WDConfig' cfields cfields') where
-    type AllowedCapabilities (WDConfig' cfields cfields') = cfields
-    type DefinedCapabilities (WDConfig' cfields cfields') = cfields'
+instance WebDriverConfigConstraint f f' => WebDriverConfig (WDConfig' f f') where
+    type AllowedNames (WDConfig' f f') = f
+    type DefinedNames (WDConfig' f f') = f'
+    
     mkCaps = return . wdCapabilities
 
     mkSession WDConfig'{..} = do

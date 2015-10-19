@@ -1,2 +1,2 @@
 :set -XOverloadedStrings -XScopedTypeVariables
-:m Test.WebDriver Data.Default.Class
+:m Test.WebDriver Data.Default.Class Data.Vinyl
