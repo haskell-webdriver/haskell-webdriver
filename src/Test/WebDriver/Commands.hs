@@ -120,19 +120,22 @@ ignoreReturn = void
 -- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action. 
 -- 
 -- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
-createSession :: (ToJSON (Capabilities Requested fields),  'Browser ∈ fields, WebDriver wd) => Capabilities Requested fields -> wd WDSession
+createSession :: (ToJSON (Capabilities Requested fields),  'Browser ∈ fields, WebDriver wd) => 
+                 Capabilities Requested fields -> wd WDSession
 createSession caps = do
   ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . pair ("requiredCapabilities", "desiredCapabilities") . splitRequestedCaps $ caps
   getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
-sessions :: WebDriver wd => wd [(SessionId, Capabilities Resultant LegacyWireProtocol)]
+sessions :: (FromJSON (Capabilities Resultant fields), WebDriver wd) => 
+            WebDriver wd => wd [(SessionId, Capabilities Resultant fields)]
 sessions = do
   objs <- doCommand methodGet "/sessions" Null
   mapM (parsePair "id" "capabilities" "sessions") objs
 
 -- |Get the actual server-side 'Capabilities' of the current session.
-getActualCaps :: WebDriver wd => wd (Capabilities Resultant LegacyWireProtocol)
+getActualCaps :: (FromJSON (Capabilities Resultant fields), WebDriver wd) => 
+                 wd (Capabilities Resultant fields)
 getActualCaps = doSessCommand methodGet "" Null
 
 -- |Close the current session and the browser associated with it.
