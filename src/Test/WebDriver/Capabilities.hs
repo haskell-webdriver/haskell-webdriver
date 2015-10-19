@@ -136,7 +136,7 @@ infix 4 :=
 
 type family CapabilityKey (ckind :: CapabilityKind) (name :: CapabilityName) where
   CapabilityKey Requested RawCapability = Text
-  CapabilityKey Requested name = Sing name
+  CapabilityKey Requested name = CapabilityName
   CapabilityKey Resultant name = T.Proxy name
 
 --newtype RawKey = RawKey Text deriving (IsString, ToJSON, FromJSON)
@@ -249,16 +249,14 @@ keyToCapName = readMaybe . normalize . T.unpack
       (c : cs) -> C.toUpper c : cs
       [] -> []
 
-
 class KeyToText key where
   keyToText ::  key -> Text
-
 
 instance KeyToText Text where
   keyToText  = id
 
-instance KeyToText (Sing (name :: CapabilityName)) where
-  keyToText  = fromString . normalize . show . fromSing
+instance KeyToText CapabilityName where
+  keyToText  = fromString . normalize . show
     where
       normalize s = case s of
        "CSSSelectorsEnabled" -> "cssSelectorsEnabled"

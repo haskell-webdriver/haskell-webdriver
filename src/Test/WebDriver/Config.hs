@@ -66,11 +66,11 @@ instance Default (WDConfig' allowedNames '[]) where
 {- |A default session config connects to localhost on port 4444, and hasn't been
 initialized server-side. This value is the same as 'def' but with a less
 polymorphic type. -}
-defaultConfig :: WDConfig' allowedNames '[]
+defaultConfig :: WDConfig' LegacyWireProtocol '[]
 defaultConfig = def
 
 
-type WebDriverConfigConstraint f f' = ((f' :: [CapabilityName]) ⊆ (f :: [CapabilityName]), KeysHaveText f', CapsAreParseable f')
+type WebDriverConfigConstraint allowedNames definedNames = (allowedNames ⊆ definedNames, KeysHaveText definedNames, CapsAreParseable definedNames, 'Browser ∈ definedNames)
 
 -- |Class of types that can configure a WebDriver session.
 class WebDriverConfigConstraint (AllowedNames c) (DefinedNames c) => WebDriverConfig c where

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, ExistentialQuantification,
+{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, ExistentialQuantification, TypeOperators,
              TemplateHaskell, RecordWildCards, FlexibleContexts, DataKinds #-}
 -- |This module exports basic WD actions that can be used to interact with a
 -- browser session.
@@ -92,6 +92,8 @@ import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
 import qualified Data.Text.Lazy.Encoding as TL
 
+import Data.Vinyl
+
 import Control.Monad
 import Control.Applicative
 --import Control.Monad.State.Strict
@@ -118,7 +120,7 @@ ignoreReturn = void
 -- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action. 
 -- 
 -- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
-createSession :: (ToJSON (Capabilities Requested fields),  WebDriver wd) => Capabilities Requested fields -> wd WDSession
+createSession :: (ToJSON (Capabilities Requested fields),  'Browser ∈ fields, WebDriver wd) => Capabilities Requested fields -> wd WDSession
 createSession caps = do
   ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "desiredCapabilities" $ caps
   getSession
