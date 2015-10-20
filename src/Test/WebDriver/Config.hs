@@ -50,7 +50,7 @@ data WDConfig' (allowedNames :: [CapabilityName] ) (definedNames :: [CapabilityN
     , wdHTTPRetryCount :: Int
   }
 
-instance Default (WDConfig' LegacyWireProtocol '[]) where
+instance Default (WDConfig' names '[]) where
     def = WDConfig' {
       wdHost              = "127.0.0.1"
     , wdPort              = 4444
