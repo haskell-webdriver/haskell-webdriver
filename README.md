@@ -68,11 +68,7 @@ The server should now be listening at localhost on port 4444.
 ##Hello, World!
 With the Selenium server running locally, you're ready to write browser automation scripts in Haskell.
 
-A [simple example can be found here](/examples/readme-example-beginner.lhs), written in literate Haskell so that you can compile it with GHC yourself. It is very beginner friendly and assumes no prior knowledge of Haskell.
-
-If you already have an intermediate understanding of Haskell, [this is the example for you](/examples/readme-example-intermediate.lhs)
-
-For more examples see the [examples](/examples/) directory.
+A [simple example can be found here](/examples/readme-example-beginner.md), written in literate Haskell so that you can compile it with GHC yourself. It is very beginner friendly and assumes no prior knowledge of Haskell. If you already have an intermediate understanding of Haskell, [this is the example for you](/examples/readme-example-intermediate.md) For other examples see the [examples](examples/) and [test/etc](test/etc/) directory.
 
 
 #Integration with Haskell Testing Frameworks
