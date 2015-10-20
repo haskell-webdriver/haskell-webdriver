@@ -39,6 +39,7 @@ Flag developer
 
 Library
   hs-source-dirs: src
+  default-language: Haskell2010
   ghc-options: -Wall
   if flag(developer)
     cpp-options: -DCABAL_BUILD_DEVELOPER
@@ -93,12 +94,14 @@ Library
                    Test.WebDriver.Exceptions.Internal
 
 Test-Suite readme-example-beginner
+  default-language: Haskell2010
   type: exitcode-stdio-1.0
   hs-source-dirs: examples
   main-is: readme-example-beginner.lhs
   build-depends: base, webdriver
 
 Test-Suite etc
+  default-language: Haskell2010
   type: exitcode-stdio-1.0
   main-is: test/etc/all.hs
   ghc-options: -O2, -threaded
@@ -108,6 +111,7 @@ Test-Suite etc
                  quickcheck
 
 Test-Suite local-webserver
+  default-language: Haskell2010
   type: exitcode-stdio-1.0
   main-is: test/local-webserver.hs
   ghc-options: -O2 -threaded
