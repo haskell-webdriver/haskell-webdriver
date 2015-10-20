@@ -3,15 +3,16 @@ module Test.WebDriver.Types
        ( -- * WebDriver sessions
          WD(..), WDSession(..), SessionId(..), SessionHistory
          -- * WebDriver configuration
-       , WDConfig'(..), defaultConfig, SessionHistoryConfig
+       , WDConfig'(..), defaultConfig, SessionHistoryConfig, WebDriverConfig(..), WebDriverConfigConstraint 
          -- * Capabilities
-       , Capabilities, CapabilityName(..), W3C, LegacyWireProtocol, (++), CapabilityField(..), Capability(..), CapabilityFamily, CapsAll
-       , PlatformType(..), ProxyType(..), UnexpectedAlertBehavior(..)
+       , Capabilities, CapabilityName(..), W3C, LegacyWireProtocol, CapabilityField(..), CapabilityKey, Capability(..), CapabilityFamily,
+       , CapsAll, FieldsAll, KeysHaveText, CapsAreParseable
          -- ** Browser-specific capabilities
        , BrowserType(..),
          -- ** Default settings for browsers
          firefox, chrome, ie, opera, iPhone, iPad, android
-       , LogLevel(..), IELogLevel(..), IEElementScrollBehavior(..)
+         -- ** Other browser capability types
+       , PlatformType(..), ProxyType(..), UnexpectedAlertBehavior(..), LogLevel(..), IELogLevel(..), IEElementScrollBehavior(..)
          -- * WebDriver objects and command-specific types
        , Element(..)
        , WindowHandle(..), currentWindow

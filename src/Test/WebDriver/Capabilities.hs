@@ -3,7 +3,73 @@
              GADTs, TypeSynonymInstances, TemplateHaskell, FunctionalDependencies, TypeOperators, UndecidableInstances,
              TupleSections, ScopedTypeVariables, GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-module Test.WebDriver.Capabilities where
+{- | For advanced session configuration, the webdriver protocol specifies so-called capabilities, which allow you to describe desired/required configuration parameters.
+
+  Encoding webdriver capabilities into staticly typed data constructors and records while also providing JSON serializing and parsing is a rather tedious effort. 
+  Previously hs-webdriver verisons used vanilla Haskell 98 records, but as the webdriver protocol changed and with the advent of W3C WebDriver and Selenium 4.0, 
+  it quickly became evident that vanilla records were not ideal for working with the demands of simultaneously providing backwards compatibility over a range of protocol versions
+  and doing so in a flexible yet type-safe manner.
+
+  We now use the very powerful vinyl records library to work with capabilities. This allows us to not only support differing versions of the WebDriver protocol easily,
+  but it allows us to make stronger static guarantees about the consistency of capabilities, thanks to vinyl's structural typing characteristics.
+
+  The trade-off to this switch is that to a Haskell beginner vinyl can seem daunting due to the vast number of type-level definitions and GHC type extensions, but
+  the end result is rather simple to understand:
+
+-} 
+module Test.WebDriver.Capabilities 
+  ( -- * Capabilities: a vinyl record type
+    Capabilities, nullCaps
+    -- ** Type-level tags (using GHC DataKinds extension) 
+    -- |Most capability-related types accept two phantom type parameters of kind 'CapabilityKind' and 'CapabilityName' (or a list of these 'CapabilityName' types)
+    --
+    -- 'CapabilityKind' is documented here because it is small and helpful in understanding the API.
+    --
+    --  'CapabilityName', however, is very verbose not something you interact with directly in most cases, so it is documented further down.
+  , CapabilityKind(..)
+    -- * CapabilityField: a key-value pair
+  , CapabilityField(..), (=:), (&), KeySpecifier(..)
+    -- * Capability keys
+  , CapabilityKey
+    -- ** Key specifier values
+    -- |Instead of working with 'CapabilityKey' directly, you typically want to use these singleton types
+    -- which have a 'KeySpecifier' instance associated with them.
+  , specificationLevel, browser, browserVersion, version,
+    -- * CapabilityFamily: A type family from fields names to values
+  , CapabilityFamily
+    -- * Capability values
+  , Capability(..)
+    -- ** Capability predicates
+  , isRequired, isDesired, isActual, isUnspecified
+    -- ** Capability constructor conversions
+  , actualToRequired, actualToDesired, requestedToResultant, forceRequired, forceDesired, splitRequestedCaps
+    -- ** Conversion to other types
+  , capToMaybe, requestedCapToEither
+    -- * Browser-specific capabilities
+  , BrowserType(..)
+    -- ** Browser defaults
+  , firefox, chrome, ie, opera, iPhone, iPad, android
+    -- ** Other browser capability types
+  , PlatformType(..), ProxyType(..), UnexpectedAlertBehavior(..), LogLevel(..), IELogLevel(..), IEElementScrollBehavior(..)
+    -- * CapabilityName: a type-level field name tag
+  , CapabilityName(..), 
+    -- ** CapabilityName lists
+  , CommonFields, W3C, LegacyWireProtocol,
+    -- * Utilities
+    -- ** Capabilities processing
+  , splitRequestedCaps
+    -- ** JSON parsing
+  , keyToText, getKeysAsText, getTextFromKeys, getCapValues
+    -- * vinyl re-exports and related functions
+    -- ** lens functions
+      rget, rput, rsubset, rcast, rreplace
+    -- ** record manipulation 
+  , Rec(..), rappend, (<+>), rmap, (<<$>>), (<<&&>>), recordToList
+    -- ** Type-level logic
+    (∈), (⊆), (≅), (<:), (:~:), (++), RecAll, reifyConstraint
+    -- ** Additional type-level helpers for Capabilities
+  , CapsAll, FieldsAll, KeysHaveText, CapsAreParseable
+  ) where
 
 import Test.WebDriver.Firefox.Profile
 import Test.WebDriver.Chrome.Extension
@@ -17,7 +83,7 @@ import Text.Read (readMaybe)
 import Data.Text as T (Text, toLower, toUpper, unpack, pack)
 import Data.Default.Class (Default(..))
 import Data.Word (Word16)
-import Data.Maybe (isNothing)
+import Data.Maybe (isNothing, catMaybes)
 import Data.String (IsString(..))
 import Data.Char as C (toLower, toUpper)
 
@@ -36,11 +102,20 @@ import Control.Exception.Lifted (throw)
 
 import Prelude -- hides some "unused import" warnings
 
+-- |A heterogeneously typed collection holding WebDriver Capabilities indexed by type-level keys.
+--
+-- This is a convenient type synonym for the underling vinyl record.
 type Capabilities ckind names = Rec (CapabilityField ckind) names
 
+-- |A data kind used to tag the 'Capabilities' record and all constituent key/value types, indicating a purpose in the webdriver protocol.
+--
+-- A 'Requested' tag means the record holds 'Required'/'Desired' capabilities of the client-side session.
+--
+-- A 'Resultant' tag means the record holds 'Actual' capabilities of a server-side session.
 data CapabilityKind = Requested | Resultant
   deriving (Eq, Ord, Bounded, Enum, Show, Read)
 
+-- |A data kind representing type-level tags for each possible record field 
 data CapabilityName =
     SpecificationLevel
   | Browser
@@ -66,15 +141,20 @@ data CapabilityName =
   | RawCapability
   deriving (Eq, Ord, Bounded, Enum, Show, Read)
 
--- |Fields used by the legacy wire protocol
-type LegacyWireProtocol =
+
+-- |List of fields that are common to all webdriver protocols
+type CommonFields =
   [ 'Browser
   , 'Platform
   , Proxy
   , AcceptSSLCerts
   , TakesScreenshot
-  --, RawCapability
-  , Version
+  , RawCapability
+  ]
+-- |List of fields used by the legacy wire protocol (deprcated by the 'W3C' spec)
+type LegacyWireProtocol =
+  CommonFields ++
+  [ Version
   , JavascriptEnabled
   , HandlesAlerts
   , DatabaseEnabled
@@ -88,23 +168,17 @@ type LegacyWireProtocol =
   , 'UnexpectedAlertBehavior
   ]
 
--- |Fields used by the W3C protocol specification
+-- |Fields used by the W3C webdriver protocol (available in Selenium versions >= 4.0)
 type W3C =
-  [ 'Browser
-  , 'Platform
-  , Proxy
-  , AcceptSSLCerts
-  , TakesScreenshot
-  --, RawCapability
-  , SpecificationLevel
+  CommonFields ++
+  [ SpecificationLevel
   , BrowserVersion
   , PlatformVersion
   , AcceptSSLCerts
-  , TakesScreenshot
   , TakesElementScreenshot
   ]
 
--- |Associates capability field names with their types
+-- |This type family provides a mapping between capability field names and the types of their associated values.
 type family CapabilityFamily (name :: CapabilityName) where
   CapabilityFamily Browser                   = BrowserType
   CapabilityFamily BrowserVersion            = String
@@ -130,15 +204,28 @@ type family CapabilityFamily (name :: CapabilityName) where
   CapabilityFamily Version                   = String
 
 
+-- |A 'Capabilities' record is a heterogeneous collection
+-- of these tagged key-value pairs.
 data CapabilityField (ckind :: CapabilityKind) (name :: CapabilityName) =
  CapabilityField (CapabilityKey ckind name) (Capability ckind name)
 
-type family CapabilityKey (ckind :: CapabilityKind) (name :: CapabilityName) where
-  CapabilityKey Requested name = CapabilityName
-  CapabilityKey Resultant name = T.Proxy name
+-- |Provides information about the key of a record field. This is an opaque type
+-- and not intended to be worked with directly in most cases.
+data CapabilityKey (ckind :: CapabilityKind) (name :: CapabilityName) where
+  RawKey :: Text -> CapabilityKey ckind RawCapability
+  RequestKey :: Sing name -> CapabilityKey Requested name
+  ResultKey :: CapabilityKey Resultant name 
 
---newtype RawKey = RawKey Text deriving (IsString, ToJSON, FromJSON)
-
+-- |The value of a capability, tagged by two data kinds. The set of permitted constructors depends
+-- on the 'CapabilityKind' tag, while the constructor argument's type depends
+-- on the 'CapabilityName' tag.
+--
+-- In short: the 'Requested' tag permits the 'Required' and 'Desired' constructors,
+-- while the 'Resultant' tag permits the 'Actual' constructor.
+-- In either case, the 'Unspecified' constructor is always allowed.
+--
+-- To see how the 'CapabilityName' tag resolves the input argument, refer to
+-- the definition of 'CapabilityFamily'.
 data Capability (ckind :: CapabilityKind) (name :: CapabilityName) where
   -- |The actual value of a capability server-side
   Actual :: CapabilityFamily name -> Capability Resultant name
@@ -149,12 +236,21 @@ data Capability (ckind :: CapabilityKind) (name :: CapabilityName) where
   -- |Unspecified capability. Assume default value.
   Unspecified :: Capability ckind name
 
+-- |Converts a capability into a 'Maybe' value.
 capToMaybe :: Capability ckind name -> Maybe (CapabilityFamily name)
 capToMaybe c = case c of
   Required v -> Just v
   Desired v -> Just v
   Actual v -> Just v
   Unspecified -> Nothing
+
+-- |Convert a 'Requested' capability into a 'Maybe' 'Either'. 'Left' indicates 'Required', 'Right' indicates 'Desired'
+requestedCapToEither :: Capability Requested name -> Either (CapabilityFamily name) (CapabilityFamily name)
+requestedCapToEither c = case c of
+  Required v -> Just (Left v)
+  Desired v -> Just (Right v)
+  Unspecified -> Nothing
+
 
 isRequired :: Capability Requested name -> Bool
 isRequired (Required _) = True
@@ -199,57 +295,14 @@ actualToDesired :: Capability Resultant name -> Capability Requested name
 actualToDesired Unspecified = Unspecified
 actualToDesired (Actual c) = Desired c
 
+-- |Forces an existing requested capability to be 'Required' if it was previously 'Desired'. Has no effect otherwise.
+forceRequired :: Capability Requested name -> Capability Requested name
+forceRequired (Desired v) = Required v
+forceRequired c = c
 
--- Capability instances
-
-instance Default (Capability ctype name) where
-  def = Unspecified
-
-instance ToJSON (CapabilityFamily name) => ToJSON (Capability ckind name) where
-  toJSON = toJSON . capToMaybe
-
-instance FromJSON (CapabilityFamily name) => FromJSON (Capability Resultant name) where
-  parseJSON Null = return Unspecified
-  parseJSON v = Actual <$> parseJSON v
-
--- Capabilities instances
-
-instance (KeysHaveText names, CapsAreParseable names) => ToJSON (Capabilities Requested names) where
-  toJSON caps = toJSON . object $ zip names values
-    where
-      names = getKeysAsText caps
-      values = recordToList 
-             . rmap (\(F.Compose (Dict v)) -> F.Const $ toJSON v)
-             . reifyConstraint (T.Proxy :: T.Proxy ToJSON)
-             $ getCapValues caps
-
-class ParseCapabilities fs where
-  parseFields :: Value -> Parser (Capabilities Resultant fs)
-
-instance ParseCapabilities '[] where
-  parseFields _ = return RNil
-
-instance (FromJSON (CapabilityFamily f), ParseCapabilities fs) => ParseCapabilities (f ': fs) where
-  parseFields (Object o) = (:&) <$> parseFromKeys (HM.keys o) <*> parseFields (Object o)
-    where
-      parseFromKeys = maybe (return (CapabilityField T.Proxy Unspecified )) mkField . tryAllKeys
-      mkField (key, name) = (CapabilityField T.Proxy) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
-      tryAllKeys = foldr mplus Nothing . map tryKey
-      tryKey k = (k ,) <$> keyToCapName k
-
-  parseFields other = typeMismatch "Capabilities" other
-
-instance ParseCapabilities names => FromJSON (Capabilities Resultant names) where
-  parseJSON = parseFields
-
-{-
-instance FromJSON [Capability Resultant AdditionalCapKeyValuePair] where
-  parseJSON (Object o) = mkPairs . filterKnownKeys $ HM.keys o
-    where
-      filterKnownKeys = filter (isNothing . keyToCapName)
-      mkPairs = mapM (\k -> Actual . (k ,) <$> o .: k)
-  parseJSON other = typeMismatch "AdditionalCaps" other
--}
+forceDesired :: Capability Requested name -> Capability Requested name
+forceDesired (Required v) = Desired v
+forceDesired c = c
 
 keyToCapName :: Text -> Maybe CapabilityName
 keyToCapName = readMaybe . normalize . T.unpack
@@ -262,13 +315,20 @@ keyToCapName = readMaybe . normalize . T.unpack
       [] -> []
 
 class KeyToText key where
+  -- |Converts a CapabilityKey or CapabilityField to a 'Text' value indicating its JSON key name.
+  --
+  -- Caveat: this operation is not always possible, in particular when dealing with 'Resultant' capabilities.
+  -- You will get a compile error (undefined instance) when attempting to 
+  -- call this function on keys where the operation is not permitted. The complexities of
+  -- type-level programming make defining this function for all keys difficult, but the eventual
+  -- goal is to support this in all cases.
+  --
+  -- It SHOULD work in all 'Requested' capabilities cases. If it does not this is an oversight and you should report a bug.
   keyToText ::  key -> Text
 
-instance KeyToText Text where
-  keyToText  = id
-
-instance KeyToText CapabilityName where
-  keyToText  = fromString . normalize . show
+instance KeyToText (CapabilityKey Requested name) where
+  keyToText (RawKey t) = t
+  keyToText (RequestKey k) = fromString . normalize . show . fromSing $ k
     where
       normalize s = case s of
         "Browser" -> "browserName"
@@ -277,29 +337,11 @@ instance KeyToText CapabilityName where
         (c : cs) -> C.toLower c : cs
         [] -> []
 
+instance KeyToText (CapabilityKey Resultant RawCapability)
+  keyToText (RawKey t) = t
+
 instance KeyToText (CapabilityKey ckind name) => KeyToText (CapabilityField ckind name) where
   keyToText (CapabilityField k _) = keyToText k
-
-{-
-class GetCapsKeys names where
-  getCapsKeys :: Capabilities Requested names -> [Text]
-
-instance GetCapsKeys '[] where
-  getCapsKeys RNil = []
-
-instance GetCapsKeys ns => GetCapsKeys (RawCapability ': ns) where
-  getCapsKeys ((k := _) :& fs) = k : getCapsKeys fs
-
-instance (Show (CapabilityKey Requested n), GetCapsKeys ns) => GetCapsKeys (n ': ns) where
-  getCapsKeys ((k := _) :& fs) = keyToText k : getCapsKeys fs
-    where 
-      keyToText = fromString . normalize . show
-      normalize s = case s of
-       "CSSSelectorsEnabled" -> "cssSelectorsEnabled"
-       "AcceptSSLCerts" -> "acceptSslCerts"
-       (c : cs) -> C.toLower c : cs
-       [] -> []
--}
 
 getKeysAsText :: KeysHaveText names => Capabilities Requested names -> [Text]
 getKeysAsText = recordToList
@@ -308,31 +350,12 @@ getKeysAsText = recordToList
 getCapValues :: Capabilities ctype names -> Rec (Capability ctype) names
 getCapValues = rmap (\(CapabilityField _ v) -> v)
 
-
 getTextFromKeys :: KeysHaveText names => Capabilities Requested names -> Rec (F.Const Text) names
 getTextFromKeys = rmap (\(F.Compose (Dict f)) -> F.Const $ keyToText f)
                   . reifyConstraint (T.Proxy :: T.Proxy KeyToText)
 
-
 emptyCaps :: Capabilities ctype '[]
 emptyCaps = RNil
-
-type CapsAll ckind names c = RecAll (Capability ckind) names c
-
-type FieldsAll ckind names c = RecAll (CapabilityField ckind) names c
-
-type KeysHaveText names = FieldsAll Requested names KeyToText
-
-type CapsAreParseable names = CapsAll Requested names ToJSON
-
-type family CapabilityNamesOf t :: [CapabilityName]
-
-class GetCapabilities t (ckind :: CapabilityKind) where
-  getCaps :: t -> Capabilities ckind (CapabilityNamesOf t)
-
-class SetCapabilities t (ckind :: CapabilityKind) where
-  setCaps :: t -> Capabilities ckind (CapabilityNamesOf t) -> Capabilities ckind (CapabilityNamesOf t)
-
 
 -- |This constructor simultaneously specifies which browser the session will
 -- use, while also providing browser-specific configuration. Default
@@ -484,6 +507,78 @@ data BrowserType =
 instance Default BrowserType where
   def = firefox
 
+
+
+-- Capability instances
+
+instance Default (Capability ctype name) where
+  def = Unspecified
+
+instance ToJSON (CapabilityFamily name) => ToJSON (Capability ckind name) where
+  toJSON = toJSON . capToMaybe
+
+instance FromJSON (CapabilityFamily name) => FromJSON (Capability Resultant name) where
+  parseJSON Null = return Unspecified
+  parseJSON v = Actual <$> parseJSON v
+
+-- Capabilities instances
+
+instance (KeysHaveText names, CapsAreParseable names) => ToJSON (Capabilities Requested names) where
+  toJSON caps = toJSON . object $ zip names values
+    where
+      removeNulls = filter (\(k, v) -> case v of Null -> False; _ -> True)
+      names = getKeysAsText caps
+      values = 
+               catMaybes -- remove unspecified values
+             . recordToList 
+             . rmap (\(F.Compose (Dict v)) -> 
+                F.Const $ case v of
+                  Unspecified -> Nothing
+                  _           -> Just $ toJSON v)
+             . reifyConstraint (T.Proxy :: T.Proxy ToJSON)
+             $ getCapValues caps
+      serialize Unspecified = Nothing
+      serialize v = Just (toJSON v)
+
+class ParseCapabilities fs where
+  parseFields :: Value -> Parser (Capabilities Resultant fs)
+
+instance ParseCapabilities '[] where
+  parseFields _ = return RNil
+
+instance (FromJSON (CapabilityFamily f), ParseCapabilities fs) => ParseCapabilities (f ': fs) where
+  parseFields (Object o) = (:&) <$> parseFromKeys (HM.keys o) <*> parseFields (Object o)
+    where
+      parseFromKeys = maybe (return (CapabilityField ResultKey Unspecified )) mkField . tryAllKeys
+      mkField (key, name) = (CapabilityField ResultKey ) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
+      tryAllKeys = foldr mplus Nothing . map tryKey
+      tryKey k = (k ,) <$> keyToCapName k
+
+  parseFields other = typeMismatch "Capabilities" other
+
+instance ParseCapabilities names => FromJSON (Capabilities Resultant names) where
+  parseJSON = parseFields
+
+
+type family CapabilityNamesOf t :: [CapabilityName]
+
+class GetCapabilities t (ckind :: CapabilityKind) where
+  getCaps :: t -> Capabilities ckind (CapabilityNamesOf t)
+
+class SetCapabilities t (ckind :: CapabilityKind) where
+  setCaps :: t -> Capabilities ckind (CapabilityNamesOf t) -> Capabilities ckind (CapabilityNamesOf t)
+
+-- |A short-hand for RecAll over the 'Capability' functor
+type CapsAll ckind names c = RecAll (Capability ckind) names c
+
+-- |A short=hand for 'RecAll' over the 'CapabilityField' functor
+type FieldsAll ckind names c = RecAll (CapabilityField ckind) names c
+
+-- |Shorthand to indicate that all names in a capability record can be converted to 'Text' strings
+type KeysHaveText names = FieldsAll Requested names KeyToText
+
+-- |Shorthand to indicate that all 'Capability' values in a record are parseable
+type CapsAreParseable names = CapsAll Requested names ToJSON
 
 instance ToJSON BrowserType where
   toJSON Firefox {} = String "firefox"
@@ -746,15 +841,55 @@ instance FromJSON IEElementScrollBehavior where
 genSingletons([''CapabilityName])
 --makeLenses ''CapabilityField
 
+-- |Overloadable class of types that can be converted to a 'CapabilityKey'
+--
+-- Provided below is a list of auto-generated singleton types that can be used
+-- as key specifiers for each 'CapabilityName'. In addition, 'String' and 'Text' values can be used to
+-- represent raw JSON keys, which can be useful if using non-standard
+-- webdriver implementations.
+class KeySpecifier s ckind name | s -> name where
+  fromKeySpecifier :: s -> CapabilityKey ckind name
 
-(=:) :: Sing name -> Capability Requested name -> CapabilityField Requested name
-k =: v = CapabilityField (fromSing k) v
+instance {-# OVERLAPPING #-} KeySpecifier String ckind RawCapability
+  fromKeySpecifier = RawKey . fromString
+
+instance {-# OVERLAPPING #-} KeySpecifier Text ckind RawCapability where
+  fromKeySpecifier = RawKey
+
+instance KeySpecifier (Sing name) Requested name where
+  fromKeySpecifier = RequestKey
+
+instance KeySpecifier (Sing name) Resultant name where
+  fromKeySpecifier _ = ResultKey
+
+instance KeySpecifier (T.Proxy name) Resultant name where
+  fromKeySpecifier _ = ResultKey
+
+instance KeySpecifier (CapabilityKey ckind name) ckind name where
+  fromKeySpecifier = id
+
+-- |Creates a 'CapabilityField' from a key value pair. You can think of this as the \"=\" or \":\" in a table/object of a dynamically typed language, however
+-- instead of using dynamic typing we use type inference to infer and statically resolve types at runtime.
+--
+-- Details: Using the 'KeySpecifier' class allows the type constructors the promoted data kinds 'CapabilityKind' and 'CapabilityName' to
+-- be determined automatically, in addition it allows us to overload over things like 'String' keys for setting raw JSON values.
+(=:) :: KeySpecifier s ckind name => s -> Capability ckind name -> CapabilityField ckind name
+k =: v = CapabilityField (fromKeySpecifier k) v
 infix 4 =:
 
+-- |Appends a 'CapabilityField' to a 'Capabilities' record.
+-- If you're familiar with vinyl, you may notice that this is equivalent to the ':&' operator, but with a restricted type.
+--
+-- Example:
+--
+-- > browser := chrome & platform := Windows & "raw JSON key" := (toJSON "raw value") & nullCaps
+--
+-- Notice the 'nullCaps' to terminate the chain at the end. This is analogous to ':' and '[]' in lists.
+(&) :: CapabilityField ckind name -> Capabilities ckind (names) -> Capabilities
 (&) = (:&)
 infixr 9 &
 
-specificationLevel = SpecificationLevel
+specificationLevel = SSpecificationLevel
 browser = SBrowser
 version = SVersion 
 browserVersion = SBrowserVersion 

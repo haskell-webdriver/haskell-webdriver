@@ -729,8 +729,7 @@ getKey s k = doStorageCommand methodGet s ("/key/" `T.append` urlEncode k) Null
 
 -- |Set a key in the given web storage area.
 setKey :: WebDriver wd => WebStorageType -> Text -> Text -> wd Text
-setKey s k v = doStorageCommand methodPost s "" . object $ ["key"   .= k,
-                                                      "value" .= v ]
+setKey s k v = doStorageCommand methodPost s "" . object $ ["key" .= k, "value" .= v ]
 -- |Delete a key in the given web storage area.
 deleteKey :: WebDriver wd => WebStorageType -> Text -> wd ()
 deleteKey s k = noReturn $ doStorageCommand methodPost s ("/key/" `T.append` urlEncode k) Null
