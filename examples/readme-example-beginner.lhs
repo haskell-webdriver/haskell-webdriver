@@ -21,7 +21,7 @@ Normally, Haskell string literals have the type `String`, which is a linked list
 top of your program file instructs GHC to allow string literals to be overloaded to other string-like types. Since
 hs-webdriver uses the very efficient `Text` type for Unicode strings, the OverloadedStrings extension makes it significantly
 easier to write your code. Using the [text package](https://hackage.haskell.org/package/text) for efficient Unicode string
-handling is considered standard practice in "Real World Haskell™".
+handling is considered standard practice in `Real World Haskell™`.
 
 
 \# Configuration
@@ -36,7 +36,7 @@ handling is considered standard practice in "Real World Haskell™".
 and has a very sensible configuration for usage when the WebDriver server is on our local machine. We can, however, choose to
 use other browsers instead, or point the client to a remote server.
 
- Note: The line with a "::" is a type signature for our newly defined variable, but it can be omitted because Haskell will
+ Note: The line with a `::` is a type signature for our newly defined variable, but it can be omitted because Haskell will
 automatically infer the types of values. It's only purpose here is to indicate to the reader that configurations are values
 of the type `WDConfig`
 
@@ -72,23 +72,23 @@ Interacting with the browser is done via writing a sequence of commands that are
 so-called turtle languages, which are used to teach programming by typing commands that draw shapes on screen, you should
 feel pretty comfortable with this sort of interface.
 
-> main = runSession firefoxConfig $ do    -- starts a WebDriver session with the given firefox config, then runs the supplied
-commands
->
->   openPage "http://google.com"    -- tells the browser to open the URL http://google.com
->
+> main = runSession firefoxConfig $ do                      -- starts a WebDriver session with the given firefox config, then
+>                                                           -- runs the supplied commands
+
+>   openPage "http://google.com"                            -- tells the browser to open the URL http://google.com
+
 >   searchInput <- findElem ( ByCSS "input[type='text']" )  -- asks the browser to find an element on the page with the given
 >                                                           -- CSS selector then stores the resulting element in the varialbe 
 >                                                           -- named`searchInput`
->
+
 >   submit searchInput                                      -- submit the input form (technically not required with Google
-but included for example purposes)
->
+>                                                           -- but included for example purposes)
+
 >   sendKeys "Hello, World!" searchInput                    -- type into the element, as though a user had issued the
-keystrokes `Hello, World!`
+>                                                           -- keystrokes `Hello, World!`
 >
 >   closeSession                                            -- finally, close the WebDriver session and its associated
-browser process 
+>                                                           -- browser process 
 
 
 The code should be clear even without the comments. But the important things to note about the syntax are:
@@ -99,13 +99,13 @@ The code should be clear even without the comments. But the important things to 
   In order to do anything meaningful with the results of a command, we must first bind the result to a name in this way.
 
 * Parentheses are required for function parameters that are more than one word long. Instead of ` f(x, g(y), z)` as in most
-languages you instead write ` f x (g y) z `
+  languages you instead write ` f x (g y) z `
 
 * The $ operator is equivalent to normal function application. Because it has very low precedence, we can use it to avoid
-parentheses when group function parameters.
-  Without the $ in the example above, we would have to wrap the entire do block in a set of parentheses. We could also choose
-to rewrite the findElem command as
-  ` findElem $ ByCSS "input[type='text']" `
+  parentheses when group function parameters. Without the $ in the example above, we would have to wrap the entire do block
+  in a set of parentheses. We could also choose to rewrite the findElem command as
+  
+>-- findElem $ ByCSS "input[type='text']"
 
 
 \# About main
@@ -113,12 +113,12 @@ to rewrite the findElem command as
 In a Haskell program, the special variable `main` refers to the entry point of execution. In order for our program to be
 valid, `main` must have the following type
 
-  main :: IO a
+>--  main :: IO a
 
 So, to run a test we need to define a valid `main`, but our do-block has the type `WD a`, which is the type of WebDriver
 command sequences. In order to convert our `WD` to an `IO` we have to use the `runSession` function, which has this type
 
-  runSession :: WDConfig -> WD a -> IO a
+>--  runSession :: WDConfig -> WD a -> IO a
 
 This says that runSession takes a webdriver config (as described previously) and a list of webdriver commands, and converts
 them into a sequence of IO actions that the GHC runtime can understand. In doing so, it also initialzes a new WebDriver
