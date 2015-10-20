@@ -1,13 +1,13 @@
 Name: webdriver
 Version: 0.8.0.3
-Cabal-Version: >= 1.8
+Cabal-Version: >= 1.10
 License: BSD3
 License-File: LICENSE
 Author: Adam Curtis
 Maintainer: kallisti.dev@gmail.com
 Homepage: https://github.com/kallisti-dev/hs-webdriver
 Bug-Reports: https://github.com/kallisti-dev/hs-webdriver/issues
-Category: Web, Browser, Testing
+Category: Web, Browser, Testing, WebDriver, Selenium
 Synopsis: a Haskell client for the Selenium WebDriver protocol
 Build-Type: Simple
 Extra-Source-Files: README.md, TODO.md, CHANGELOG.md, .ghci
@@ -91,6 +91,12 @@ Library
 
   other-modules:   Test.WebDriver.Internal
                    Test.WebDriver.Exceptions.Internal
+
+Test-Suite readme-example-beginner
+  type: exitcode-stdio-1.0
+  hs-source-dirs: examples
+  main-is: readme-example-beginner.lhs
+  build-depends: base, webdriver
 
 Test-Suite etc
   type: exitcode-stdio-1.0
