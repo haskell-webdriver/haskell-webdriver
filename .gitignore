@@ -3,3 +3,6 @@ dist
 chromedriver.log
 .cabal-sandbox
 cabal.sandbox.config
+*.hi
+*.exe
+*.o
