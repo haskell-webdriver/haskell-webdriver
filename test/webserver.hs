@@ -5,27 +5,27 @@ import Control.Concurrent
 
 import Network.Wai.Handler.Warp
 import Network.Wai.Application.Static
+import WaiAppStatic.Types
 
-import Test.Config as Config
+import Config
 import Test.WebDriver
 
-import qualified Test.BasicTests as BasicTests
+--import qualified Test.BasicTests as BasicTests
 
 serverConf = setPort Config.serverPort
-	       $ defaultSettings
+           $ defaultSettings
 
-serverStaticConf = defaultFileServerSettings
-	{ ssLookupFile = toPieces [Config.staticContentPath]
-	}
+serverStaticConf = defaultFileServerSettings staticContentPath
 
 browsers = [firefox, chrome]
 
-wdConfigs = map (`useBrowser` conf) browser
-	where conf = defaultConfig
-		{ wdPort = getPort serverConf 
-		} 
+wdConfigs = map (`useBrowser` conf) browsers
+    where 
+    conf = defaultConfig
+        { wdPort = getPort serverConf 
+        } 
 
 main = bracket
-	( runSettings serverConf (staticApp serverStaticConf) )
-	(\_ -> mapM_ BasicTests.runTestsWith wdConfigs )
-	killThread
+    ( forkIO $ runSettings serverConf (staticApp serverStaticConf) )
+    (\_ -> return () ) -- (\_ -> mapM_ BasicTests.runTestsWith wdConfigs )
+    killThread

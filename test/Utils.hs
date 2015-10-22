@@ -1,4 +1,4 @@
-module Test.Utils where
+module Utils where
 
 import Test.Config
 import Test.WebDriver

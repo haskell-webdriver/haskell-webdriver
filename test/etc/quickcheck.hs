@@ -3,7 +3,7 @@
 
 {-# OPTIONS -fwarn-unused-imports #-}
 
-module Test.Etc.QuickCheck where
+module QuickCheck where
 
 import Control.Applicative
 import Control.Monad
@@ -12,10 +12,10 @@ import Data.Function
 import Data.List as List
 import Prelude hiding ((++))
 import Test.QuickCheck as QC
-import Test.QuickCheck.Property as QC
+--import Test.QuickCheck.Property as QC
 import Test.WebDriver
 import Test.WebDriver.Session
-import Test.WebDriver.Config
+--import Test.WebDriver.Config
 
 import qualified Data.Text as ST
 import qualified Data.Array as AR
@@ -25,7 +25,7 @@ config = defaultConfig
 
 main :: IO ()
 main = do
-    runSession config $ do
+    runSession config . finallyClose $ do
         session <- getSession
         openPage "about:blank"
         liftIO . quickCheck $ prop_cutArray session
@@ -85,7 +85,7 @@ instance Arbitrary CutArray where
 
 -- | the quickcheck property
 prop_cutArray :: WDSession -> CutArray -> QC.Property
-prop_cutArray session tc = morallyDubiousIOProperty $ runWD session $ wd_cutArray tc
+prop_cutArray session tc = ioProperty $ runWD session $ wd_cutArray tc
 
 
 -- | the underlying property in the web driver monad.

@@ -104,20 +104,26 @@ Test-Suite readme-examples
 Test-Suite etc
   default-language: Haskell2010
   type: exitcode-stdio-1.0
-  main-is: test/etc/all.hs
-  ghc-options: -O2, -threaded
+  hs-source-dirs: test/etc
+  main-is: all.hs
+  ghc-options: -O2 -threaded
   build-depends: base,
                  webdriver,
                  text,
-                 quickcheck
+                 aeson,
+                 transformers,
+                 array,
+                 QuickCheck
 
 Test-Suite local-webserver
   default-language: Haskell2010
   type: exitcode-stdio-1.0
-  main-is: test/local-webserver.hs
+  hs-source-dirs: test
+  main-is: webserver.hs
   ghc-options: -O2 -threaded
   build-depends: base,
                  webdriver,
                  text,
                  hspec,
-                 wai-app-static
+                 wai-app-static,
+                 warp

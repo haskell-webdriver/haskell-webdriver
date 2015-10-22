@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Test.Etc.Async where
+module Async where
 
 import Test.WebDriver
 import qualified Data.Aeson as A
 
 main :: IO ()
-main = runSession defaultConfig $ do
+main = runSession defaultConfig . finallyClose $ do
     openPage "http://www.wikipedia.org/"
     r <- asyncJS [] "arguments[0]();"
     if r /= Just A.Null
