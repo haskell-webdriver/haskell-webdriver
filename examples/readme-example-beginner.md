@@ -17,8 +17,6 @@ Before you use the library, you'll need to add a bit of boilerplate to your Hask
 
 ~~~ {.haskell}
 {-# LANGUAGE OverloadedStrings #-}
-
-import Test.WebDriver
 ~~~
 
 Normally, Haskell string literals (such as `"Hello!"`) have the type `String`, which is a linked list of Unicode code points.
@@ -29,6 +27,10 @@ it significantly easier to write your code without having to convert all of your
 practice in "Real World Haskell™".
 
 And, of course, you need an `import` declaration so Haskell knows how to find the library!
+
+~~~ {.haskell}
+import Test.WebDriver
+~~~
 
 # Configuration
 
