@@ -48,6 +48,7 @@ Note: The first line, containing the `::`, is a type signature for our newly def
 Haskell will automatically infer the types of values. Its only purpose here is to indicate to the reader that `firefoxConfig` 
 has the type`WDConfig`
 
+## Changing the Browser
 
 Now let's make a new configuration that uses Chrome instead of Firefox.
 
@@ -56,6 +57,8 @@ chromeConfig = useBrowser chrome defaultConfig
 ~~~
 
 The `useBrowser` function above overrides the browser of `defaultConfig` to use `chrome` instead.
+
+## Connecting to a Remote Server
 
 Now for a more complex configuration. Let's say we want a session that connects to a remote server and runs the Opera
 browser.
