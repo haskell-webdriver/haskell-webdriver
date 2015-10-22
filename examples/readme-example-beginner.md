@@ -63,6 +63,12 @@ The `useBrowser` function above overrides the browser of `defaultConfig` to use 
 Now for a more complex configuration. Let's say we want a session that connects to a remote server and runs the Opera
 browser.
 
+*Note*: To use Google Chrome, you need to install Google's proprietary
+[ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/) in a directory where it can be recognized by Selenium
+Server (see: https://code.google.com/p/selenium/wiki/ChromeDriver). When using propriertary webdrivers such as chromedriver,
+Selenium Server simply acts as a proxy server, automatically spawning a proprietary server process as needed. Because of
+this extra installation step, we simply use the `firefoxConfig` for the remainder of the example.
+
 ~~~ {.haskell}
 remoteConfig = useBrowser opera defaultConfig { wdHost = "secret-offshore-testing-facility.org"
                                               , wdPort = 666 }
@@ -82,13 +88,6 @@ remoteConfig2 = chromeConfig { wdHost = "really-bad-network-connection.biz"
 
 Here we use the `chromeConfig` that we defined previously and modify it with new options. The `wdHTTPRetryCount` option sets
 the number of times we try to send a WebDriver command to an unresponsive remote end.
-
-*Note*: To use Google Chrome, you need to install Google's proprietary
-[ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/) in a directory where it can be recognized by Selenium
-Server (see: https://code.google.com/p/selenium/wiki/ChromeDriver). When using propriertary webdrivers such as chromedriver,
-Selenium Server simply acts as a proxy server, automatically spawning a proprietary server process as needed. Because of
-this extra installation step, we simply use the `firefoxConfig` for the remainder of the example.
-
 
 # Hello, World!
 
