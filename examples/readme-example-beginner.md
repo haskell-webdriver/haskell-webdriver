@@ -166,7 +166,7 @@ them into a sequence of IO actions that the GHC runtime can understand. In doing
 session with information from the supplied `WDConfig`.
 
 
- #WebDriver commands
+#WebDriver commands
 
 This example contains all of the basic elements of a simple WebDriver test, using a few simple and commonly used commands.
 For complete documentation on all the other commands you can use, check out
@@ -174,7 +174,7 @@ For complete documentation on all the other commands you can use, check out
 Hackage.
 
 
- # Monads and other advanced library concepts
+# Monads and other advanced library concepts
 
 hs-webdriver implements a very simple EDSL (embedded domain-specific language) for users to write web automation scripts.
 This EDSL is implemented using a state monad. The state monad maintains implicit information about the WebDriver session
@@ -190,7 +190,7 @@ instructions for a browser to perform. I've even heard some anecdotes from devel
 Haskell for web development, saying that their QA testers, with limited programming knowledge, found the Haskell bindings
 easier to understand than the NodeJS WebDriver bindings.
 
- # Literate Haskell
+# Literate Haskell
 
 Using [markdown-unlit](https://github.com/sol/markdown-unlit), you can compile this example as Literate Haskell with GHC.
 Just make sure to use the file extension `.lhs` before compiling.
