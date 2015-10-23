@@ -5,6 +5,6 @@ ghc:
   - 7.6
   - 7.4
 script:
-  - cabal configure --enable-tests && cabal build #configure and build with tests but don't run tests
+  - cabal install --enable-tests --only-dependencies && cabal install  #configure and build with tests but don't run tests
 notifications:
   email: false
