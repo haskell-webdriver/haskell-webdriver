@@ -34,7 +34,10 @@ module Test.WebDriver.Capabilities
     -- ** Key specifier values
     -- |Instead of working with 'CapabilityKey' directly, you typically want to use these singleton types
     -- which have a 'KeySpecifier' instance associated with them.
-  , specificationLevel, browser, browserVersion, version,
+  , specificationLevel, browser, browserVersion, platform, platformVersion, proxy, acceptSSLCerts, takesScreenshot, takesElementScreenshot
+    -- ***Legacy wire protocol capabilities
+  , version, javascriptEnabled, handlesAlerts, databaseEnabled, locationContextEnabled, applicationCacheEnabled, browserConnectionEnabled, cssSelectorsEnabled
+  , webStorageEnabled, rotatable, nativeEvents, unexpectedAlertBehavior
     -- * CapabilityFamily: A type family from fields names to values
   , CapabilityFamily
     -- * Capability values
@@ -42,7 +45,7 @@ module Test.WebDriver.Capabilities
     -- ** Capability predicates
   , isRequired, isDesired, isActual, isUnspecified
     -- ** Capability constructor conversions
-  , actualToRequired, actualToDesired, requestedToResultant, forceRequired, forceDesired, splitRequestedCaps
+  , actualToRequired, actualToDesired, requestedToResultant, forceRequired, forceDesired
     -- ** Conversion to other types
   , capToMaybe, requestedCapToEither
     -- * Browser-specific capabilities
@@ -52,9 +55,9 @@ module Test.WebDriver.Capabilities
     -- ** Other browser capability types
   , PlatformType(..), ProxyType(..), UnexpectedAlertBehavior(..), LogLevel(..), IELogLevel(..), IEElementScrollBehavior(..)
     -- * CapabilityName: a type-level field name tag
-  , CapabilityName(..), 
+  , CapabilityName(..)
     -- ** CapabilityName lists
-  , CommonFields, W3C, LegacyWireProtocol,
+  , CommonFields, W3C, LegacyWireProtocol
     -- * Utilities
     -- ** Capabilities processing
   , splitRequestedCaps
@@ -62,11 +65,11 @@ module Test.WebDriver.Capabilities
   , keyToText, getKeysAsText, getTextFromKeys, getCapValues
     -- * vinyl re-exports and related functions
     -- ** lens functions
-      rget, rput, rsubset, rcast, rreplace
+  , rget, rput, rsubset, rcast, rreplace
     -- ** record manipulation 
-  , Rec(..), rappend, (<+>), rmap, (<<$>>), (<<&&>>), recordToList
+  , Rec(..), rappend, (<+>), rmap, (<<$>>), (<<&>>), recordToList
     -- ** Type-level logic
-    (∈), (⊆), (≅), (<:), (:~:), (++), RecAll, reifyConstraint
+  , type (∈), type (⊆), type (≅), type (<:), type (:~:), (++), RecAll, reifyConstraint
     -- ** Additional type-level helpers for Capabilities
   , CapsAll, FieldsAll, KeysHaveText, CapsAreParseable
   ) where
@@ -76,28 +79,27 @@ import Test.WebDriver.Chrome.Extension
 import Test.WebDriver.JSON
 
 import Data.Aeson
-import Data.Aeson.Types (Parser, typeMismatch, Pair)
+import Data.Aeson.Types (Parser, typeMismatch)
 import qualified Data.HashMap.Strict as HM (keys)
 import Text.Read (readMaybe)
 
-import Data.Text as T (Text, toLower, toUpper, unpack, pack)
+import Data.Text as T (Text, toLower, toUpper, unpack)
 import Data.Default.Class (Default(..))
 import Data.Word (Word16)
-import Data.Maybe (isNothing, catMaybes)
+import Data.Maybe (catMaybes)
 import Data.String (IsString(..))
 import Data.Char as C (toLower, toUpper)
 
 import qualified Data.Typeable as T (Proxy(..))
-import Data.Vinyl
+import Data.Vinyl hiding ((=:))
 import Data.Vinyl.TypeLevel
 import qualified Data.Vinyl.Functor as F
 import Data.Singletons
 import Data.Singletons.TH (genSingletons)
-import GHC.Exts (Constraint)
 
 import Control.Monad
 import Control.Applicative
-import Control.Lens.TH
+--import Control.Lens.TH
 import Control.Exception.Lifted (throw)
 
 import Prelude -- hides some "unused import" warnings
@@ -245,7 +247,7 @@ capToMaybe c = case c of
   Unspecified -> Nothing
 
 -- |Convert a 'Requested' capability into a 'Maybe' 'Either'. 'Left' indicates 'Required', 'Right' indicates 'Desired'
-requestedCapToEither :: Capability Requested name -> Either (CapabilityFamily name) (CapabilityFamily name)
+requestedCapToEither :: Capability Requested name -> Maybe (Either (CapabilityFamily name) (CapabilityFamily name))
 requestedCapToEither c = case c of
   Required v -> Just (Left v)
   Desired v -> Just (Right v)
@@ -337,9 +339,6 @@ instance KeyToText (CapabilityKey Requested name) where
         (c : cs) -> C.toLower c : cs
         [] -> []
 
-instance KeyToText (CapabilityKey Resultant RawCapability)
-  keyToText (RawKey t) = t
-
 instance KeyToText (CapabilityKey ckind name) => KeyToText (CapabilityField ckind name) where
   keyToText (CapabilityField k _) = keyToText k
 
@@ -354,8 +353,8 @@ getTextFromKeys :: KeysHaveText names => Capabilities Requested names -> Rec (F.
 getTextFromKeys = rmap (\(F.Compose (Dict f)) -> F.Const $ keyToText f)
                   . reifyConstraint (T.Proxy :: T.Proxy KeyToText)
 
-emptyCaps :: Capabilities ctype '[]
-emptyCaps = RNil
+nullCaps :: Capabilities ctype '[]
+nullCaps = RNil
 
 -- |This constructor simultaneously specifies which browser the session will
 -- use, while also providing browser-specific configuration. Default
@@ -526,7 +525,6 @@ instance FromJSON (CapabilityFamily name) => FromJSON (Capability Resultant name
 instance (KeysHaveText names, CapsAreParseable names) => ToJSON (Capabilities Requested names) where
   toJSON caps = toJSON . object $ zip names values
     where
-      removeNulls = filter (\(k, v) -> case v of Null -> False; _ -> True)
       names = getKeysAsText caps
       values = 
                catMaybes -- remove unspecified values
@@ -537,8 +535,6 @@ instance (KeysHaveText names, CapsAreParseable names) => ToJSON (Capabilities Re
                   _           -> Just $ toJSON v)
              . reifyConstraint (T.Proxy :: T.Proxy ToJSON)
              $ getCapValues caps
-      serialize Unspecified = Nothing
-      serialize v = Just (toJSON v)
 
 class ParseCapabilities fs where
   parseFields :: Value -> Parser (Capabilities Resultant fs)
@@ -550,7 +546,7 @@ instance (FromJSON (CapabilityFamily f), ParseCapabilities fs) => ParseCapabilit
   parseFields (Object o) = (:&) <$> parseFromKeys (HM.keys o) <*> parseFields (Object o)
     where
       parseFromKeys = maybe (return (CapabilityField ResultKey Unspecified )) mkField . tryAllKeys
-      mkField (key, name) = (CapabilityField ResultKey ) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
+      mkField (key, _) = (CapabilityField ResultKey ) . Actual <$> (parseJSON =<< (o .:? key .!= Null))
       tryAllKeys = foldr mplus Nothing . map tryKey
       tryKey k = (k ,) <$> keyToCapName k
 
@@ -850,7 +846,7 @@ genSingletons([''CapabilityName])
 class KeySpecifier s ckind name | s -> name where
   fromKeySpecifier :: s -> CapabilityKey ckind name
 
-instance {-# OVERLAPPING #-} KeySpecifier String ckind RawCapability
+instance {-# OVERLAPPING #-} KeySpecifier String ckind RawCapability where
   fromKeySpecifier = RawKey . fromString
 
 instance {-# OVERLAPPING #-} KeySpecifier Text ckind RawCapability where
@@ -885,7 +881,7 @@ infix 4 =:
 -- > browser := chrome & platform := Windows & "raw JSON key" := (toJSON "raw value") & nullCaps
 --
 -- Notice the 'nullCaps' to terminate the chain at the end. This is analogous to ':' and '[]' in lists.
-(&) :: CapabilityField ckind name -> Capabilities ckind (names) -> Capabilities
+(&) :: CapabilityField ckind name -> Capabilities ckind names -> Capabilities ckind (name ': names)
 (&) = (:&)
 infixr 9 &
 

@@ -92,8 +92,6 @@ import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
 import qualified Data.Text.Lazy.Encoding as TL
 
-import Data.Vinyl
-
 import Control.Monad
 import Control.Applicative
 --import Control.Monad.State.Strict
@@ -128,7 +126,7 @@ createSession caps = do
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
 sessions :: (FromJSON (Capabilities Resultant fields), WebDriver wd) => 
-            WebDriver wd => wd [(SessionId, Capabilities Resultant fields)]
+            wd [(SessionId, Capabilities Resultant fields)]
 sessions = do
   objs <- doCommand methodGet "/sessions" Null
   mapM (parsePair "id" "capabilities" "sessions") objs

@@ -5,7 +5,7 @@ module Test.WebDriver.Types
          -- * WebDriver configuration
        , WDConfig'(..), defaultConfig, SessionHistoryConfig, WebDriverConfig(..), WebDriverConfigConstraint 
          -- * Capabilities
-       , Capabilities, CapabilityName(..), W3C, LegacyWireProtocol, CapabilityField(..), CapabilityKey, Capability(..), CapabilityFamily,
+       , Capabilities, CapabilityName(..), W3C, LegacyWireProtocol, CapabilityField(..), CapabilityKey, Capability(..), CapabilityFamily
        , CapsAll, FieldsAll, KeysHaveText, CapsAreParseable
          -- ** Browser-specific capabilities
        , BrowserType(..),

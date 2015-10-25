@@ -6,7 +6,7 @@ module Test.WebDriver.Config(
     -- * SessionHistoryConfig options
     , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
     -- * Overloadable configuration
-    , WebDriverConfig(..)
+    , WebDriverConfig(..), WebDriverConfigConstraint
     ) where
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Session
@@ -56,7 +56,7 @@ instance Default (WDConfig' names '[]) where
     , wdPort              = 4444
     , wdRequestHeaders    = []
     , wdAuthHeaders       = []
-    , wdCapabilities      = emptyCaps
+    , wdCapabilities      = nullCaps
     , wdHistoryConfig     = unlimitedHistory
     , wdBasePath          = "/wd/hub"
     , wdHTTPManager       = Nothing
