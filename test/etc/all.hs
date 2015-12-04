@@ -4,7 +4,7 @@ import qualified Async
 import qualified QuickCheck
 import qualified SearchBaidu
 
-main :: IO () 
+main :: IO ()
 main = do
     Async.main
     QuickCheck.main
