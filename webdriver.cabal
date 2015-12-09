@@ -92,38 +92,3 @@ Library
 
   other-modules:   Test.WebDriver.Internal
                    Test.WebDriver.Exceptions.Internal
-
-Test-Suite readme-examples
-  default-language: Haskell2010
-  type: exitcode-stdio-1.0
-  hs-source-dirs: examples
-  main-is: readme-example-beginner.lhs
-  build-depends: base, webdriver, markdown-unlit
-  ghc-options: -pgmL markdown-unlit
-
-Test-Suite etc
-  default-language: Haskell2010
-  type: exitcode-stdio-1.0
-  hs-source-dirs: test/etc
-  main-is: all.hs
-  ghc-options: -O2 -threaded
-  build-depends: base,
-                 webdriver,
-                 text,
-                 aeson,
-                 transformers,
-                 array,
-                 QuickCheck
-
-Test-Suite local-webserver
-  default-language: Haskell2010
-  type: exitcode-stdio-1.0
-  hs-source-dirs: test
-  main-is: webserver.hs
-  ghc-options: -O2 -threaded
-  build-depends: base,
-                 webdriver,
-                 text,
-                 hspec,
-                 wai-app-static,
-                 warp

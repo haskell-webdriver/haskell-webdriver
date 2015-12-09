@@ -290,7 +290,11 @@ focusWindow w = noReturn $ doSessCommand methodPost "/window" . single "name" $ 
 
 -- |Closes the given window
 closeWindow :: WebDriver wd => WindowHandle -> wd ()
-closeWindow = noReturn . doSessCommand methodDelete "/window" . single "name"
+closeWindow w = do
+  cw <- getCurrentWindow
+  focusWindow w
+  noReturn $ doSessCommand methodDelete "/window" Null
+  unless (w == cw) $ focusWindow cw
 
 -- |Maximizes the current  window if not already maximized
 maximize :: WebDriver wd => wd ()
