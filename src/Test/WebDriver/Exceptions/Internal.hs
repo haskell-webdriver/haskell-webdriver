@@ -22,7 +22,6 @@ import Control.Applicative
 import Data.Typeable (Typeable)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.Word
-import Data.List ()
 
 import Prelude -- hides some "unused import" warnings
 
