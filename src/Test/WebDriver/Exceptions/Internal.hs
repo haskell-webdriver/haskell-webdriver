@@ -20,8 +20,9 @@ import Control.Exception.Lifted (throwIO)
 import Control.Applicative
 
 import Data.Typeable (Typeable)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, catMaybes)
 import Data.Word
+import Data.List ()
 
 import Prelude -- hides some "unused import" warnings
 
@@ -162,7 +163,7 @@ instance FromJSON FailedCommandInfo where
                       <*> pure Nothing
                       <*> (fmap TLE.encodeUtf8 <$> opt "screen" Nothing)
                       <*> opt "class"      Nothing
-                      <*> opt "stackTrace" []
+                      <*> (catMaybes <$> opt "stackTrace" [])
     where req :: FromJSON a => Text -> Parser a
           req = (o .:)            --required key
           opt :: FromJSON a => Text -> a -> Parser a
