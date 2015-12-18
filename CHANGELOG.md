@@ -1,5 +1,8 @@
 #Change Log
 
+##0.8.0.4
+* Quick fix to parse "unsupported command" errors when using Marionette driver (Selenium + Marionette has nonstandard behavior when reporting that error type)
+
 ##0.8.0.3
 * Fixed build errors for GHC < 7.10. webdriver now builds with GHC stable releases 7.4.2, 7.6.3, and 7.8.4
 * Fixed support for bytestring 0.9.*
