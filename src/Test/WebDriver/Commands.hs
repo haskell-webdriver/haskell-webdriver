@@ -439,6 +439,7 @@ findElemsFrom e = doElemCommand methodPost e "/elements"
 -- undefined by the WebDriver protocol.
 elemInfo :: WebDriver wd => Element -> wd Value
 elemInfo e = doElemCommand methodGet e "" Null
+{-# DEPRECATED elemInfo "This command does not work with Marionette (Firefox) driver, and is likely to be completely removed in Selenium 4" #-}
 
 -- |Click on an element.
 click :: WebDriver wd => Element -> wd ()
