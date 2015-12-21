@@ -26,9 +26,10 @@ module Test.WebDriver.JSON
        , apResultToWD, aesonResultToWD
          -- * Parse exception
        , BadJSON(..)
-         -- * "no return value" type
-       , NoReturn(..)
+         -- * parsing commands with no return value
+       , NoReturn(..), noReturn, ignoreReturn
        ) where
+import Test.WebDriver.Class (WebDriver)
 
 import Data.Aeson as Aeson
 import Data.Aeson.Types
@@ -38,7 +39,7 @@ import Data.Attoparsec.ByteString.Lazy (Result(..))
 import qualified Data.Attoparsec.ByteString.Lazy as AP
 import qualified Data.HashMap.Strict as HM
 
-import Control.Monad (join)
+import Control.Monad (join, void)
 import Control.Applicative
 import Control.Monad.Trans.Control
 import Control.Exception.Lifted
@@ -63,6 +64,14 @@ instance FromJSON NoReturn where
   parseJSON (Object o) | HM.null o  = return NoReturn
   parseJSON (String "")             = return NoReturn
   parseJSON other                   = typeMismatch "no return value" other
+
+-- |Convenience function to handle webdriver commands with no return value.
+noReturn :: WebDriver wd => wd NoReturn -> wd ()
+noReturn = void
+
+-- |Convenience function to ignore result of a webdriver command.
+ignoreReturn :: WebDriver wd => wd Value -> wd ()
+ignoreReturn = void
 
 
 -- |Construct a singleton JSON 'object' from a key and value.

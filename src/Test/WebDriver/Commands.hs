@@ -107,14 +107,6 @@ import qualified Data.Char as C
 
 import Prelude -- hides some "unused import" warnings
 
--- |Convenience function to handle webdriver commands with no return value
-noReturn :: WebDriver wd => wd NoReturn -> wd ()
-noReturn = void
-
--- |Convenience function to ignore result of a webdriver command
-ignoreReturn :: WebDriver wd => wd Value -> wd ()
-ignoreReturn = void
-
 -- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action. 
 -- 
 -- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
