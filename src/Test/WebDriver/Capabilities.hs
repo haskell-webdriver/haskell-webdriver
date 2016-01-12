@@ -630,7 +630,7 @@ instance ToJSON ProxyType where
       ["proxyType" .= ("AUTODETECT" :: String)]
     PAC{autoConfigUrl = url} ->
       ["proxyType" .= ("PAC" :: String)
-      ,"autoConfigUrl" .= url
+      ,"proxyAutoconfigUrl" .= url
       ]
     Manual{ftpProxy = ftp, sslProxy = ssl, httpProxy = http} ->
       ["proxyType" .= ("MANUAL" :: String)
