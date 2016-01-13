@@ -1,8 +1,9 @@
 #Change Log
 
-###Upcoming Release
-* previously internal convenience functions noReturn and ignoreReturn are now exported in Test.WebDriver.JSON
-* elemInfo is now deprecated due to it being phased out in the Marionette (Firefox) driver. It will likely be removed once Selenium 4 is released.
+###0.8.1
+* Previously internal convenience functions `noReturn` and `ignoreReturn` are now exported in Test.WebDriver.JSON
+* `elemInfo` is now deprecated due to it being phased out in the Marionette (Firefox) driver. It will likely be removed once Selenium 4 is released.
+* Fixed an issue causing PAC settings to not work.  
 
 ##0.8.0.4
 * Quick fix to parse "unsupported command" errors when using Marionette driver (Selenium + Marionette has nonstandard behavior when reporting that error type)
