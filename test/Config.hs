@@ -4,10 +4,11 @@ module Config where
 import Data.String (fromString)
 import Data.Text as T (Text, concat)
 
-serverHost = "localhost"
-
-serverPort = 4444
-
-serverUrl = T.concat ["http://", serverHost, ":", fromString (show serverPort), "/"]
+--SauceLabs server info
+serverHost = "ondemand.saucelabs.com"
+serverPort = 80
+serverUsername = "kallisti-dev"
+serverAccessKey = "21af2b08-07b5-427c-a90b-dc3c7b86ec06"
+serverUrl = T.concat ["http://", serverUsername, ":", serverAccessKey, "@", serverHost, ":", fromString (show serverPort), "/"]
 
 staticContentPath = "test/web/"
