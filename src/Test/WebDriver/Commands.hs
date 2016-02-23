@@ -224,7 +224,7 @@ asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
     timeout err = throwIO err
     
 -- |Save a screenshot to a particular location
-saveScreenshot :: FilePath -> WD ()
+saveScreenshot :: WebDriver wd => FilePath -> wd ()
 saveScreenshot path = screenshot >>= liftBase . LBS.writeFile path
 
 -- |Grab a screenshot of the current page as a PNG image
