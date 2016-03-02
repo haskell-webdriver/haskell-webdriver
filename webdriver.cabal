@@ -51,7 +51,7 @@ Library
                  , bytestring >= 0.9 && < 0.11
                  , attoparsec >= 0.10 && < 0.14
                  , base64-bytestring >= 1.0 && < 1.1
-                 , transformers >= 0.2 && < 0.5
+                 , transformers >= 0.4 && < 0.5
                  , monad-control >= 0.3 && < 1.1
                  , transformers-base >= 0.1 && < 1.0
                  , lifted-base >= 0.1 && < 0.3

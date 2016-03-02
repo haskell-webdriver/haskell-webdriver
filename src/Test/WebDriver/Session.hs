@@ -33,6 +33,7 @@ import Control.Monad.Trans.Identity
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Error
+import Control.Monad.Trans.Except
 --import Control.Monad.Cont
 import Control.Monad.Trans.Writer.Strict as SW
 import Control.Monad.Trans.Writer.Lazy as LW
@@ -196,7 +197,11 @@ instance WDSessionState m => WDSessionState (ReaderT r m) where
 instance (Error e, WDSessionState m) => WDSessionState (ErrorT e m) where
   getSession = lift getSession
   putSession = lift . putSession
-  
+
+instance WDSessionState m => WDSessionState (ExceptT r m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
 instance (Monoid w, WDSessionState m) => WDSessionState (SRWS.RWST r w s m) where
   getSession = lift getSession
   putSession = lift . putSession
