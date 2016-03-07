@@ -104,12 +104,12 @@ main = runSession firefoxConfig $ do                      -- starts a WebDriver 
   searchInput <- findElem ( ByCSS "input[type='text']" )  -- asks the browser to find an element on the page with the given
                                                           -- CSS selector then stores the resulting element in the varialbe 
                                                           -- named`searchInput`
-
-  submit searchInput                                      -- submit the input form (technically not required with Google
-                                                          -- but included for example purposes)
-
+                                                          
   sendKeys "Hello, World!" searchInput                    -- type into the element, as though a user had issued the
                                                           -- keystrokes `Hello, World!`
+                                                          
+  submit searchInput                                      -- submit the input form (technically not required with Google
+                                                          -- but included for example purposes)
 
   closeSession                                            -- finally, close the WebDriver session and its associated
                                                           -- browser process 
