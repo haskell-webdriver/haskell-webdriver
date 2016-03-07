@@ -9,7 +9,7 @@ module Test.WebDriver.Commands
          -- ** Web navigation
        , openPage, forward, back, refresh
          -- ** Page info
-       , getCurrentURL, getSource, getTitle, screenshot, screenshotBase64
+       , getCurrentURL, getSource, getTitle, saveScreenshot, screenshot, screenshotBase64
          -- * Timeouts
        , setImplicitWait, setScriptTimeout, setPageLoadTimeout
          -- * Web elements
@@ -87,7 +87,7 @@ import Data.Aeson.TH
 import qualified Data.Text as T
 import Data.Text (Text, append, toUpper, toLower)
 import Data.ByteString.Base64.Lazy as B64
-import Data.ByteString.Lazy as LBS (ByteString)
+import Data.ByteString.Lazy as LBS (ByteString, writeFile)
 import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
 import qualified Data.Text.Lazy.Encoding as TL
@@ -222,6 +222,10 @@ asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
     timeout (FailedCommand Timeout _)       = return Nothing
     timeout (FailedCommand ScriptTimeout _) = return Nothing
     timeout err = throwIO err
+    
+-- |Save a screenshot to a particular location
+saveScreenshot :: WebDriver wd => FilePath -> wd ()
+saveScreenshot path = screenshot >>= liftBase . LBS.writeFile path
 
 -- |Grab a screenshot of the current page as a PNG image
 screenshot :: WebDriver wd => wd LBS.ByteString
