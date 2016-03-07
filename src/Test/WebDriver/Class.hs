@@ -23,6 +23,7 @@ import Control.Monad.Trans.Identity
 import Control.Monad.Trans.List
 import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Error
+import Control.Monad.Trans.Except
 --import Control.Monad.Cont
 import Control.Monad.Trans.Writer.Strict as SW
 import Control.Monad.Trans.Writer.Lazy as LW
@@ -72,6 +73,9 @@ instance WebDriver wd => WebDriver (ReaderT r wd) where
   doCommand rm t a = lift (doCommand rm t a)
 
 instance (Error e, WebDriver wd) => WebDriver (ErrorT e wd) where
+  doCommand rm t a = lift (doCommand rm t a)
+
+instance WebDriver wd => WebDriver (ExceptT e wd) where
   doCommand rm t a = lift (doCommand rm t a)
 
 
