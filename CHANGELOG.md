@@ -1,4 +1,7 @@
 #Change Log
+###0.8.2
+* Added a `saveScreenshot` command, for conenience, which writes the results of the `screenshot` command directly to a given file path.
+* Added new `WebDriver` instance for `ExceptT`.
 
 ###0.8.1
 * Previously internal convenience functions `noReturn` and `ignoreReturn` are now exported in Test.WebDriver.JSON
