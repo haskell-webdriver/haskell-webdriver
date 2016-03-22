@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP, DeriveDataTypeable, ScopedTypeVariables, FlexibleContexts, ConstraintKinds #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module Test.WebDriver.Commands.Wait
        ( -- * Wait on expected conditions
          waitUntil, waitUntil'
@@ -9,25 +10,28 @@ module Test.WebDriver.Commands.Wait
        , expectNotStale, expectAlertOpen
        , catchFailedCommand
          -- ** Convenience functions
+       , waitUntilStale
+       , waitUntilInvisible
        , onTimeout
        ) where
-import Test.WebDriver.Commands
-import Test.WebDriver.Class
-import Test.WebDriver.Exceptions
-import Test.WebDriver.Session
+import           Test.WebDriver.Commands
+import           Test.WebDriver.Class
+import           Test.WebDriver.Exceptions
+import           Test.WebDriver.Session
 
-import Control.Monad.Base
-import Control.Monad.Trans.Control
-import Control.Exception.Lifted
-import Control.Concurrent
+import           Control.Concurrent
+import           Control.Exception.Lifted
+import           Control.Monad
+import           Control.Monad.Base
+import           Control.Monad.Trans.Control
 
-import Data.Time.Clock
-import Data.Typeable
+import           Data.Time.Clock
+import           Data.Typeable
 import qualified Data.Foldable as F
-import Data.Text (Text)
+import           Data.Text (Text)
 
 #if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
-import Prelude hiding (catch)
+import           Prelude hiding (catch)
 #endif
 
 instance Exception ExpectFailed
@@ -135,6 +139,40 @@ wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
             else do
               liftBase . threadDelay $ waitAmnt
               waitLoop startTime
+
+-- |Useful combinator to be used as a form of wait.
+-- Check http://www.obeythetestinggoat.com/how-to-get-selenium-to-wait-for-page-load-after-a-click.html
+-- for additional details. The idea is that instead of waiting a given amount of time,
+-- we rely on the fact a `StaleElementReference` exception will be thrown when an element is not
+-- valid anymore. This is very useful to be sure we transitioned from one page to the other, for example.
+waitUntilStale :: (WebDriver m, MonadBaseControl IO m) => Element -> m ()
+waitUntilStale el = (do
+  _ <- isEnabled el -- Any command will force a staleness check
+  liftBase $ threadDelay (5 * 10^5)
+  waitUntilStale el
+  ) `catch` handler
+  where
+    handler (FailedCommand StaleElementReference _) = return ()
+    handler x = throwIO x
+
+-- |Explicitly wait until the given `Element` is not visible anymore.
+-- **Beware!** This function can block indefinitely, if the given `Element`
+-- will never be invisible.
+-- This function is particularly useful to wait on CSS transitions. The typical
+-- example would be waiting for a Twitter Bootstrap's modal to be submitted/clicked.
+-- The trick here is to wait on any `Element` within to modal body to disappear.
+waitUntilInvisible :: (WebDriver m, MonadBaseControl IO m) => Element -> m ()
+waitUntilInvisible el = (do
+  displayed <- isDisplayed el
+  when displayed $ do
+    liftBase $ threadDelay (5 * 10^5)
+    waitUntilInvisible el
+  ) `catch` handler
+  where
+    handler (FailedCommand ElementNotVisible _)     = return ()
+    handler (FailedCommand StaleElementReference _) = return ()
+    handler (FailedCommand NoSuchElement _)         = return ()
+    handler x = throwIO x
 
 -- |Convenience function to catch 'FailedCommand' 'Timeout' exceptions
 -- and perform some action.
