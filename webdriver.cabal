@@ -55,7 +55,7 @@ Library
                  , monad-control >= 0.3 && < 1.1
                  , transformers-base >= 0.1 && < 1.0
                  , lifted-base >= 0.1 && < 0.3
-                 , zip-archive >= 0.1.1.8 && < 0.3
+                 , zip-archive >= 0.1.1.8 && < 0.4
                  , directory == 1.*
                  , filepath == 1.*
                  , directory-tree >= 0.11 && < 0.13
