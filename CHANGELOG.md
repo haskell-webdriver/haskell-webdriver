@@ -1,9 +1,12 @@
 #Change Log
-###0.8.2
+##0.8.3
+* Removed most upper bounds on dependencies in our cabal file to avoid stackage version madness.
+
+##0.8.2
 * Added a `saveScreenshot` command, for conenience, which writes the results of the `screenshot` command directly to a given file path.
 * Added new `WebDriver` instance for `ExceptT`.
 
-###0.8.1
+##0.8.1
 * Previously internal convenience functions `noReturn` and `ignoreReturn` are now exported in Test.WebDriver.JSON
 * `elemInfo` is now deprecated due to it being phased out in the Marionette (Firefox) driver. It will likely be removed once Selenium 4 is released.
 * Fixed an issue causing PAC settings to not work.  
