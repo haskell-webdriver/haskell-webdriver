@@ -680,7 +680,7 @@ setLocation = noReturn . doSessCommand methodPost "/location"
                         "altitude")
 
 -- |Uploads a file from the local filesystem by its file path.
-uploadFile :: WebDriver wd => FilePath -> wd ()
+uploadFile :: WebDriver wd => FilePath -> wd FilePath
 uploadFile path = uploadZipEntry =<< liftBase (readEntry [] path)
 
 -- |Uploads a raw bytestring with associated file info.
@@ -689,17 +689,19 @@ uploadRawFile :: WebDriver wd =>
                  -> Integer        -- ^Modification time
                                    -- (in seconds since Unix epoch).
                  -> LBS.ByteString -- ^ The file contents as a lazy ByteString
-                 -> wd ()
+                 -> wd FilePath
 uploadRawFile path t str = uploadZipEntry (toEntry path t str)
 
 
 -- |Lowest level interface to the file uploading mechanism.
 -- This allows you to specify the exact details of
 -- the zip entry sent across network.
-uploadZipEntry :: WebDriver wd => Entry -> wd ()
-uploadZipEntry = noReturn . doSessCommand methodPost "/file" . single "file"
+uploadZipEntry :: forall wd . WebDriver wd => Entry -> wd FilePath
+uploadZipEntry = (getTempFilePath =<<) . doSessCommand methodPost "/file" . single "file"
                  . TL.decodeUtf8 . B64.encode . fromArchive . (`addEntryToArchive` emptyArchive)
-
+  where
+    getTempFilePath :: Value -> wd FilePath
+    getTempFilePath = aesonResultToWD . parse (withText "tempfile" (pure . T.unpack))
 
 -- |Get the current number of keys in a web storage area.
 storageSize :: WebDriver wd => WebStorageType -> wd Integer
