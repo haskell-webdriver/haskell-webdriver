@@ -40,7 +40,7 @@ Flag developer
 Library
   hs-source-dirs: src
   default-language: Haskell2010
-  ghc-options: -Wall
+  ghc-options: -Wall -Werror
   if flag(developer)
     cpp-options: -DCABAL_BUILD_DEVELOPER
   build-depends:   base == 4.*
