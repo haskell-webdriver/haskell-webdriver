@@ -101,8 +101,8 @@ getJSONResult r
           parseJSON' 
             (maybe body fromStrict $ lookup "X-Response-Body-Start" headers)
           >>= handleJSONErr
-          >>= maybe noReturn returnErr
-        | otherwise -> 
+          >>= maybe hasNoReturn returnErr
+        | otherwise ->
           returnHTTPErr ServerError
       Nothing ->
         returnHTTPErr (ServerError . ("HTTP response missing content type. Server reason was: "++))
@@ -113,13 +113,13 @@ getJSONResult r
       Just loc -> do
         let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ BS.unpack loc
         modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
-        noReturn
+        hasNoReturn
   -- No Content response
-  | code == 204 = noReturn
+  | code == 204 = hasNoReturn
   -- HTTP Success
   | code >= 200 && code < 300 = 
     if LBS.null body
-      then noReturn
+      then hasNoReturn
       else do
         rsp@WDResponse {rspVal = val} <- parseJSON' body  
         handleJSONErr rsp >>= maybe  
@@ -132,7 +132,7 @@ getJSONResult r
     returnErr :: (Exception e, Monad m) => e -> m (Either SomeException a)
     returnErr = return . Left . toException
     returnHTTPErr errType = returnErr . errType $ reason
-    noReturn = Right <$> fromJSON' Null
+    hasNoReturn = Right <$> fromJSON' Null
     --HTTP response variables
     code = statusCode status
     reason = BS.unpack $ statusMessage status
