@@ -45,7 +45,7 @@ Library
     cpp-options: -DCABAL_BUILD_DEVELOPER
   build-depends:   base == 4.*
                  , aeson >= 0.6.2.0
-                 , http-client >= 0.3
+                 , http-client >= 0.5
                  , http-types >= 0.8
                  , text >= 0.11.3
                  , bytestring >= 0.9
