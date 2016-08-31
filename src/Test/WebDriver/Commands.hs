@@ -452,7 +452,7 @@ getText e = doElemCommand methodGet e "/text" Null
 
 -- |Send a sequence of keystrokes to an element. All modifier keys are released
 -- at the end of the function. For more information about modifier keys, see
--- <http://code.google.com/p/selenium/wiki/JsonWireProtocol#/session/:sessionId/element/:id/value>
+-- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidelementidvalue>
 sendKeys :: WebDriver wd => Text -> Element -> wd ()
 sendKeys t e = noReturn . doElemCommand methodPost e "/value" . single "value" $ [t]
 
@@ -741,7 +741,7 @@ doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
 
 -- |Get information from the server as a JSON 'Object'. For more information
 -- about this object see
--- <http://code.google.com/p/selenium/wiki/JsonWireProtocol#/status>
+-- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#status>
 serverStatus :: (WebDriver wd) => wd Value   -- todo: make this a record type
 serverStatus = doCommand methodGet "/status" Null
 

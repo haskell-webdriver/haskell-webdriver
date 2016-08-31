@@ -65,7 +65,7 @@ newtype NoSessionId = NoSessionId String
 -- the session URL parameter to the wire command URL. For example, passing
 -- a URL of \"/refresh\" will expand to \"/session/:sessionId/refresh\", where
 -- :sessionId is a URL parameter as described in
--- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
+-- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol>
 doSessCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
                   Method -> Text -> a -> wd b
 doSessCommand method path args = do

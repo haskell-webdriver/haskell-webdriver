@@ -36,7 +36,7 @@ import Control.Monad.Trans.RWS.Lazy as LRWS
 -- |A class for monads that can handle wire protocol requests. This is the
 -- operation underlying all of the high-level commands exported in
 -- "Test.WebDriver.Commands". For more information on the wire protocol see
--- <http://code.google.com/p/selenium/wiki/JsonWireProtocol>
+-- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol>
 class (WDSessionStateControl wd) => WebDriver wd where
   doCommand :: (ToJSON a, FromJSON b) =>
                    Method      -- ^HTTP request method

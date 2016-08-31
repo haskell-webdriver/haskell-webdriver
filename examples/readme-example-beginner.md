@@ -65,7 +65,7 @@ browser.
 
 *Note*: To use Google Chrome, you need to install Google's proprietary
 [ChromeDriver](https://sites.google.com/a/chromium.org/chromedriver/) in a directory where it can be recognized by Selenium
-Server (see: https://code.google.com/p/selenium/wiki/ChromeDriver). When using propriertary webdrivers such as chromedriver,
+Server (see: https://github.com/SeleniumHQ/selenium/wiki/ChromeDriver). When using propriertary webdrivers such as chromedriver,
 Selenium Server simply acts as a proxy server, automatically spawning a proprietary server process as needed. Because of
 this extra installation step, we simply use the `firefoxConfig` for the remainder of the example.
 

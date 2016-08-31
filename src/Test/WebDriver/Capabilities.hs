@@ -353,7 +353,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
              | Chrome { -- |Version of the Chrome Webdriver server server to use
                         --
                         -- for more information on chromedriver see
-                        -- <http://code.google.com/p/selenium/wiki/ChromeDriver>
+                        -- <https://github.com/SeleniumHQ/selenium/wiki/ChromeDriver>
                         chromeDriverVersion :: Maybe String
                         -- |Server-side path to Chrome binary. If Nothing,
                         -- use a sensible system-based default.
