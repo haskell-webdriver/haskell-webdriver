@@ -83,6 +83,7 @@ Library
                    Test.WebDriver.Commands.Wait
                    Test.WebDriver.Commands.Internal
                    Test.WebDriver.Common.Profile
+                   Test.WebDriver.Common.Keys
                    Test.WebDriver.Firefox.Profile
                    Test.WebDriver.Chrome.Extension
                    Test.WebDriver.Capabilities
