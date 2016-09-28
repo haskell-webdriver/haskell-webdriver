@@ -4,6 +4,7 @@ ghc:
   - 7.8
   - 7.6
 script:
-  - cabal install --enable-tests --only-dependencies && cabal install  #configure and build with tests but don't run tests
+  - stack build --no-run-tests --haddock --  #configure and build with tests but don't run tests
+  #- cabal install --enable-tests --only-dependencies && cabal install
 notifications:
   email: false
