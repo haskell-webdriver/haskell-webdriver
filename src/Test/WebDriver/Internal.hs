@@ -13,7 +13,7 @@ import Test.WebDriver.JSON
 import Test.WebDriver.Session
 import Test.WebDriver.Exceptions.Internal
 
-import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..), HttpException(ResponseTimeout))
+import Network.HTTP.Client (httpLbs, Request(..), defaultRequest, RequestBody(..), Response(..), HttpException(..), HttpExceptionContent(ResponseTimeout))
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Data.Aeson
@@ -34,7 +34,6 @@ import Control.Exception (Exception, SomeException(..), toException, fromExcepti
 
 import Data.String (fromString)
 import Data.Word (Word8)
-import Data.Default.Class
 
 import Prelude -- hides some "unused import" warnings
 
@@ -51,16 +50,16 @@ mkRequest meth wdPath args = do
   let body = case toJSON args of
         Null  -> ""   --passing Null as the argument indicates no request body
         other -> encode other
-  return def { host = wdSessHost
-             , port = wdSessPort
-             , path = wdSessBasePath `BS.append`  TE.encodeUtf8 wdPath
-             , requestBody = RequestBodyLBS body
-             , requestHeaders = wdSessRequestHeaders
-                                ++ [ (hAccept, "application/json;charset=UTF-8")
-                                   , (hContentType, "application/json;charset=UTF-8")
-                                   , (hContentLength, fromString . show . LBS.length $ body) ]
-             , checkStatus = \_ _ _ -> Nothing -- all status codes handled by getJSONResult
-             , method = meth }
+  return defaultRequest
+    { host = wdSessHost
+    , port = wdSessPort
+    , path = wdSessBasePath `BS.append`  TE.encodeUtf8 wdPath
+    , requestBody = RequestBodyLBS body
+    , requestHeaders = wdSessRequestHeaders
+                       ++ [ (hAccept, "application/json;charset=UTF-8")
+                          , (hContentType, "application/json;charset=UTF-8")
+                          , (hContentLength, fromString . show . LBS.length $ body) ]
+    , method = meth }
 
 -- |Sends an HTTP request to the remote WebDriver server
 sendHTTPRequest :: (WDSessionStateIO s) => Request -> s (Either SomeException (Response ByteString))
@@ -81,7 +80,7 @@ retryOnTimeout maxRetry go = retry' 0
       eitherV <- try go
       case eitherV of
         (Left e)
-          | Just ResponseTimeout <- fromException e
+          | Just (HttpExceptionRequest _ ResponseTimeout) <- fromException e
           , maxRetry > nRetries 
           -> retry' (succ nRetries)
         other -> return (nRetries, other)
