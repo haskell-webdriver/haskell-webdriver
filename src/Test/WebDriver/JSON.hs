@@ -103,10 +103,8 @@ fromJSON' = aesonResultToWD . fromJSON
 (!:) :: (MonadBaseControl IO wd, FromJSON a) => Object -> Text -> wd a
 o !: k = aesonResultToWD $ parse (.: k) o
 
--- |Emulates the behavior of '.:?' in Aeson versions \< 0.10, allowing the field to be either missing or 'Null' if the result type is a 'Maybe'.
--- In newer Aeson versions (\>= 0.10), this is equivalent to:
---
--- > fmap join (o .:? k)
+-- |Due to a breaking change in the '.:?' operator of aeson 0.10 (see <https://github.com/bos/aeson/issues/287>) that was subsequently reverted, this operator
+-- was added to provide consistent behavior compatible with all aeson versions. If the field is either missing or `Null`, this operator should return a `Nothing` result.
 (.:??) :: FromJSON a => Object -> Text -> Parser (Maybe a)
 o .:?? k = fmap join (o .:? k)
 
