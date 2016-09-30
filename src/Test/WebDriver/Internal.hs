@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ConstraintKinds, PatternGuards #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ConstraintKinds, PatternGuards, CPP #-}
 -- |The HTTP/JSON plumbing used to implement the 'WD' monad.
 --
 -- These functions can be used to create your own 'WebDriver' instances, providing extra functionality for your application if desired. All exports
@@ -13,7 +13,9 @@ import Test.WebDriver.JSON
 import Test.WebDriver.Session
 import Test.WebDriver.Exceptions.Internal
 
-import Network.HTTP.Client (httpLbs, Request(..), defaultRequest, RequestBody(..), Response(..), HttpException(..), HttpExceptionContent(ResponseTimeout))
+import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..), HttpException(..))
+import qualified Network.HTTP.Client as HTTPClient
+
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Data.Aeson
@@ -35,12 +37,25 @@ import Control.Exception (Exception, SomeException(..), toException, fromExcepti
 import Data.String (fromString)
 import Data.Word (Word8)
 
+#if !MIN_VERSION_http_client(0,4,30)
+import Data.Default.Class
+#endif
+
 import Prelude -- hides some "unused import" warnings
 
 --This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
 fromStrict :: BS.ByteString -> LBS.ByteString
 fromStrict bs | BS.null bs = LBS.Empty
               | otherwise = LBS.Chunk bs LBS.Empty
+
+			  
+--Compatability function to support http-client < 0.4.30
+defaultRequest :: Request
+#if MIN_VERSION_http_client(0,4,30)
+defaultRequest = HTTPClient.defaultRequest
+#else
+defaultRequest = def
+#endif
 
 -- |Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
 mkRequest :: (WDSessionState s, ToJSON a) =>
@@ -80,7 +95,11 @@ retryOnTimeout maxRetry go = retry' 0
       eitherV <- try go
       case eitherV of
         (Left e)
-          | Just (HttpExceptionRequest _ ResponseTimeout) <- fromException e
+#if MIN_VERSION_http_client(0,5,0)
+          | Just (HTTPClient.HttpExceptionRequest _ HTTPClient.ResponseTimeout) <- fromException e
+#else
+		  | Just HTTPClient.ResponseTimeout <- fromException e
+#endif
           , maxRetry > nRetries 
           -> retry' (succ nRetries)
         other -> return (nRetries, other)
