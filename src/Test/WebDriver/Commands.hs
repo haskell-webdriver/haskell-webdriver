@@ -216,7 +216,7 @@ Consider the following example:
 Because the result of the 'executeJS' is discarded, GHC cannot resolve
 which instance of the 'fromJSON' class to use when parsing the
 Selenium server response. In such cases, we can use the 'ignoreReturn'
-helper function located in `Test.WebDriver.JSON`. 'ignoreReturn' has 
+helper function located in "Test.WebDriver.JSON". 'ignoreReturn' has 
 no runtime effect; it simply helps the type system by expicitly providing
 a `fromJSON` instance to use.
 
@@ -477,8 +477,8 @@ getText :: WebDriver wd => Element -> wd Text
 getText e = doElemCommand methodGet e "/text" Null
 
 -- |Send a sequence of keystrokes to an element. All modifier keys are released
--- at the end of the function. For more information about modifier keys, see
--- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidelementidvalue>
+-- at the end of the function. Named constants for special modifier keys can be found 
+-- in "Test.WebDriver.Common.Keys"
 sendKeys :: WebDriver wd => Text -> Element -> wd ()
 sendKeys t e = noReturn . doElemCommand methodPost e "/value" . single "value" $ [t]
 
