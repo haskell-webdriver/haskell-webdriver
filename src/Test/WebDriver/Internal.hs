@@ -112,18 +112,18 @@ getJSONResult r
       Just loc -> do
         let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ BS.unpack loc
         modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
-        noReturn
+        returnNull
   -- No Content response
   | code == 204 = noReturn
   -- HTTP Success
   | code >= 200 && code < 300 = 
     if LBS.null body
-      then noReturn
+      then returnNull
       else do
         rsp@WDResponse {rspVal = val} <- parseJSON' body  
         handleJSONErr rsp >>= maybe  
           (handleRespSessionId rsp >> Right <$> fromJSON' val)
-          returnErr 
+          returnErr
   -- other status codes: return error
   | otherwise = returnHTTPErr (HTTPStatusUnknown code)
   where
@@ -131,7 +131,7 @@ getJSONResult r
     returnErr :: (Exception e, Monad m) => e -> m (Either SomeException a)
     returnErr = return . Left . toException
     returnHTTPErr errType = returnErr . errType $ reason
-    noReturn = Right <$> fromJSON' Null
+    returnNull = Right <$> fromJSON' Null
     --HTTP response variables
     code = statusCode status
     reason = BS.unpack $ statusMessage status
