@@ -201,6 +201,32 @@ function body. The value returned by that function will be returned to
 the client. The function will be invoked with the provided argument
 list and the values may be accessed via the arguments object in the
 order specified.
+
+When using 'executeJS', GHC might complain about an ambiguous type in 
+situations where the result of the executeJS call is ignored/discard.
+Consider the following example:
+
+@
+	jsExample = do
+		e <- findElem (ById "foo")
+		executeJS [] "someAction()"
+		return e
+@
+
+Because the result of the 'executeJS' is discarded, GHC cannot resolve
+which instance of the 'fromJSON' class to use when parsing the
+Selenium server response. In such cases, we can use the 'ignoreReturn'
+helper function located in `Test.WebDriver.JSON`. 'ignoreReturn' has 
+no runtime effect; it simply helps the type system by expicitly providing
+a `fromJSON` instance to use.
+
+@
+	import Test.WebDriver.JSON (ignoreReturn)
+	jsExample = do
+		e <- findElem (ById "foo")
+		ignoreReturn $ executeJS [] "someAction()"
+		return e
+@
 -}
 executeJS :: (F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
 executeJS a s = fromJSON' =<< getResult
