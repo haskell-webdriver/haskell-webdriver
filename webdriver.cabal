@@ -11,7 +11,7 @@ Category: Web, Browser, Testing, WebDriver, Selenium
 Synopsis: a Haskell client for the Selenium WebDriver protocol
 Build-Type: Simple
 Extra-Source-Files: README.md, TODO.md, CHANGELOG.md, .ghci
-Tested-With: GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.2 
+Tested-With: GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3, GHC == 8.0.1
 Description:
         A Selenium WebDriver client for Haskell.
         You can use it to automate browser sessions
