@@ -100,7 +100,7 @@ getJSONResult r
           parseJSON' 
             (maybe body fromStrict $ lookup "X-Response-Body-Start" headers)
           >>= handleJSONErr
-          >>= maybe noReturn returnErr
+          >>= maybe returnNull returnErr
         | otherwise -> 
           returnHTTPErr ServerError
       Nothing ->
@@ -114,7 +114,7 @@ getJSONResult r
         modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
         returnNull
   -- No Content response
-  | code == 204 = noReturn
+  | code == 204 = returnNull
   -- HTTP Success
   | code >= 200 && code < 300 = 
     if LBS.null body
