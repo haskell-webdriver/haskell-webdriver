@@ -1,4 +1,9 @@
 #Change Log
+##0.8.4
+* Added a new `Test.WebDriver.Common.Keys` module with named constants for use with `sendKeys`
+* Updated old URLs in documentation
+* Introduced support for http-client 5.0
+
 ##0.8.3
 * Removed most upper bounds on dependencies in our cabal file to avoid stackage version madness.
 
