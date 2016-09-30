@@ -48,7 +48,7 @@ fromStrict :: BS.ByteString -> LBS.ByteString
 fromStrict bs | BS.null bs = LBS.Empty
               | otherwise = LBS.Chunk bs LBS.Empty
 
-			  
+              
 --Compatability function to support http-client < 0.4.30
 defaultRequest :: Request
 #if MIN_VERSION_http_client(0,4,30)
@@ -98,7 +98,7 @@ retryOnTimeout maxRetry go = retry' 0
 #if MIN_VERSION_http_client(0,5,0)
           | Just (HTTPClient.HttpExceptionRequest _ HTTPClient.ResponseTimeout) <- fromException e
 #else
-		  | Just HTTPClient.ResponseTimeout <- fromException e
+          | Just HTTPClient.ResponseTimeout <- fromException e
 #endif
           , maxRetry > nRetries 
           -> retry' (succ nRetries)
