@@ -90,6 +90,5 @@ Library
                    Test.WebDriver.Types
                    Test.WebDriver.JSON
                    Test.WebDriver.Utils
-
-  other-modules:   Test.WebDriver.Internal
+                   Test.WebDriver.Internal
                    Test.WebDriver.Exceptions.Internal
