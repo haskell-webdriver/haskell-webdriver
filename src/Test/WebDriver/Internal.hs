@@ -72,8 +72,7 @@ mkRequest meth wdPath args = do
     , requestBody = RequestBodyLBS body
     , requestHeaders = wdSessRequestHeaders
                        ++ [ (hAccept, "application/json;charset=UTF-8")
-                          , (hContentType, "application/json;charset=UTF-8")
-                          , (hContentLength, fromString . show . LBS.length $ body) ]
+                          , (hContentType, "application/json;charset=UTF-8") ]
     , method = meth }
 
 -- |Sends an HTTP request to the remote WebDriver server
