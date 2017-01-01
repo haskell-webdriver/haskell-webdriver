@@ -161,6 +161,8 @@ instance (Integral a) => ToPref (Ratio a) where
 instance (HasResolution r) => ToPref (Fixed r) where
   toPref = PrefDouble . realToFrac
 
+instance ToPref ProfilePref where
+  toPref = id
 
 -- |Retrieve a preference from a profile by key name.
 getPref :: Text -> Profile b -> Maybe ProfilePref
