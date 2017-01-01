@@ -56,31 +56,31 @@ runhaskell Setup.hs install
 For more build options, please refer to the Cabal documentation.
 
 
-#Getting Started
+# Getting Started
 
 WebDriver is a client-server protocol. Since hs-webdriver only implements a WebDriver client, you must have a WebDriver server to which you can connect in order to make use of this library.
 
-##Using the Selenium Server
+## Using the Selenium Server
 While you can use any WebDriver server out there, probably the simplest server to use with hs-webdriver is [Selenium Server](http://docs.seleniumhq.org/download/). You'll need an installation of the Java runtime to use this server. Once you've downloaded Selenium Server to your current working directory, you can start the server with this shell command:
 
     java -jar selenium-server-standalone-*.jar
 
 The server should now be listening at localhost on port 4444.
 
-##Hello, World!
+## Hello, World!
 With the Selenium server running locally, you're ready to write browser automation scripts in Haskell.
 
 A [simple example can be found here](/examples/readme-example-beginner.md), written in literate Haskell so that you can compile it with GHC yourself. It is very beginner friendly and assumes no prior knowledge of Haskell. If you already have an intermediate understanding of Haskell, [this is the example for you](/examples/readme-example-intermediate.md) For other examples see the [examples](examples/) and [test/etc](test/etc/) directory.
 
 
-#Integration with Haskell Testing Frameworks
+# Integration with Haskell Testing Frameworks
 
 This package does not provide utilities to integrate with popular Haskell testing frameworks. However, other packages exist for this purpose:
 
 * [hspec-webdriver](https://hackage.haskell.org/package/hspec-webdriver)
 * [quickcheck-webdriver](https://hackage.haskell.org/package/quickcheck-webdriver)
 
-#Documentation
+# Documentation
 
 Documentation for hs-webdriver is available on Hackage at <http://hackage.haskell.org/package/webdriver>. You can also generate local HTML documentation from this source revision with the following shell command:
 
