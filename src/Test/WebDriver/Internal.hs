@@ -13,7 +13,7 @@ import Test.WebDriver.JSON
 import Test.WebDriver.Session
 import Test.WebDriver.Exceptions.Internal
 
-import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..), HttpException(..))
+import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..)))
 import qualified Network.HTTP.Client as HTTPClient
 
 import Network.HTTP.Types.Header
