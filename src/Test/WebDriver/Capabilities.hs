@@ -238,6 +238,13 @@ instance ToJSON Capabilities where
                 ,"opera.arguments" .= operaOptions
                 ,"opera.logging.level" .= operaLogPref
                 ]
+
+        Phantomjs {..}
+          -> catMaybes [ opt "phantomjs.binary.path" phantomjsBinary
+                       ] ++ 
+                       [ "phantomjs.cli.args" .= phantomjsOptions
+                       ]
+
         _ -> []
 
         where
@@ -471,6 +478,11 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                        -- |Log level preference. Defaults to 'LogInfo'
                      , operaLogPref   :: LogLevel
                      }
+
+             | Phantomjs { phantomjsBinary  :: Maybe FilePath
+                         , phantomjsOptions :: [String]
+                         }
+
              | HTMLUnit
              | IPhone
              | IPad
@@ -484,12 +496,13 @@ instance Default Browser where
 
 
 instance ToJSON Browser where
-  toJSON Firefox {}  = String "firefox"
-  toJSON Chrome {}   = String "chrome"
-  toJSON Opera {}    = String "opera"
-  toJSON IE {}       = String "internet explorer"
-  toJSON (Browser b) = String b
-  toJSON b           = String . toLower . fromString . show $ b
+  toJSON Firefox {}   = String "firefox"
+  toJSON Chrome {}    = String "chrome"
+  toJSON Opera {}     = String "opera"
+  toJSON IE {}        = String "internet explorer"
+  toJSON Phantomjs {} = String "phantomjs"
+  toJSON (Browser b)  = String b
+  toJSON b            = String . toLower . fromString . show $ b
 
 instance FromJSON Browser where
   parseJSON (String jStr) = case toLower jStr of
@@ -497,6 +510,7 @@ instance FromJSON Browser where
     "chrome"            -> return chrome
     "internet explorer" -> return ie
     "opera"             -> return opera
+    "phantomjs"         -> return phantomjs
     -- "safari"            -> return safari
     "iphone"            -> return iPhone
     "ipad"              -> return iPad
@@ -554,6 +568,9 @@ opera = Opera { operaBinary = Nothing
               , operaLogFile = Nothing
               , operaLogPref = def
               }
+
+phantomjs :: Browser
+phantomjs = Phantomjs Nothing []
 
 --safari :: Browser
 --safari = Safari
