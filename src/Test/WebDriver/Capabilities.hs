@@ -8,7 +8,7 @@ import Test.WebDriver.JSON
 
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch, Pair)
-import qualified Data.HashMap.Strict as HM (delete, toList)
+import qualified Data.HashMap.Strict as HM (delete, toList, empty)
 
 import Data.Text (Text, toLower, toUpper)
 import Data.Default.Class (Default(..))
@@ -201,7 +201,7 @@ instance ToJSON Capabilities where
                   ] ++
                   [ "args"       .= chromeOptions
                   , "extensions" .= chromeExtensions
-                  ]
+                  ] ++ HM.toList chromeExperimentalOptions
                 )]
         IE {..}
           -> ["ignoreProtectedModeSettings" .= ieIgnoreProtectedModeSettings
@@ -306,9 +306,10 @@ instance FromJSON Capabilities where
                                     <*> opt "loggingPrefs" def
                                     <*> opt "firefox_binary" Nothing
               Chrome {} -> Chrome <$> opt "chrome.chromedriverVersion" Nothing
-                                  <*> opt "chrome.extensions" Nothing
+                                  <*> opt "chrome.binary" Nothing
                                   <*> opt "chrome.switches" []
                                   <*> opt "chrome.extensions" []
+                                  <*> pure HM.empty
               IE {} -> IE <$> opt "ignoreProtectedModeSettings" True
                           <*> opt "ignoreZoomSettings" False
                           <*> opt "initialBrowserUrl" Nothing
@@ -370,6 +371,8 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                       , chromeOptions :: [String]
                         -- |A list of extensions to use.
                       , chromeExtensions :: [ChromeExtension]
+                        -- | Experimental options not yet exposed through a standard API.
+                      , chromeExperimentalOptions :: Object
                       }
              | IE { -- |Whether to skip the protected mode check. If set, tests
                     -- may become flaky, unresponsive, or browsers may hang. If
@@ -528,7 +531,7 @@ firefox = Firefox Nothing def Nothing
 -- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
 -- specified, and no extensions are used.
 chrome :: Browser
-chrome = Chrome Nothing Nothing [] []
+chrome = Chrome Nothing Nothing [] [] HM.empty
 
 -- |Default IE settings. See the 'IE' constructor for more details on
 -- individual defaults
