@@ -1,4 +1,10 @@
 #Change Log
+##0.8.5
+* Added support for experimental Chrome options that are not part of the API
+* Added a Phantomjs constructor for the Browser type
+* Changed the type of StackFrame line numbers from Word to Int to avoid parse errors in newer Aeson versions (sometimes the server returns negative line numbers)
+* Fixed support for http-client > 0.5
+
 ##0.8.4
 * Added a new `Test.WebDriver.Common.Keys` module with named constants for use with `sendKeys`
 * Updated old URLs in documentation
