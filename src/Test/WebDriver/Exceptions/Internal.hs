@@ -143,7 +143,7 @@ failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m
 data StackFrame = StackFrame { sfFileName   :: String
                              , sfClassName  :: String
                              , sfMethodName :: String
-                             , sfLineNumber :: Word
+                             , sfLineNumber :: Int
                              }
                 deriving (Eq)
 
