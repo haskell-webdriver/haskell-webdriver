@@ -20,14 +20,15 @@ import Test.WebDriver.Class
 import Test.WebDriver.Session
 import Test.WebDriver.Utils (urlEncode)
 
+import Control.Applicative
+import Control.Exception.Lifted
 import Data.Aeson
 import Data.Aeson.Types
+import Data.CallStack
+import Data.Default.Class
 import Data.Text (Text)
 import qualified Data.Text as T
-import Control.Exception.Lifted
 import Data.Typeable
-import Data.Default.Class
-import Control.Applicative
 
 import Prelude -- hides some "unused import" warnings
 
@@ -66,7 +67,7 @@ newtype NoSessionId = NoSessionId String
 -- a URL of \"/refresh\" will expand to \"/session/:sessionId/refresh\", where
 -- :sessionId is a URL parameter as described in
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol>
-doSessCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+doSessCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
                   Method -> Text -> a -> wd b
 doSessCommand method path args = do
   WDSession { wdSessId = mSessId } <- getSession

@@ -73,37 +73,35 @@ module Test.WebDriver.Commands
        , getLogs, getLogTypes, LogType, LogEntry(..), LogLevel(..)
        ) where
 
-import Test.WebDriver.Commands.Internal
-import Test.WebDriver.Exceptions.Internal
-import Test.WebDriver.Class
-import Test.WebDriver.Session
-import Test.WebDriver.JSON
-import Test.WebDriver.Capabilities
-import Test.WebDriver.Utils (urlEncode)
-
-import Data.Aeson
-import Data.Aeson.Types
-import Data.Aeson.TH
-import qualified Data.Text as T
-import Data.Text (Text, append, toUpper, toLower)
-import Data.ByteString.Base64.Lazy as B64
-import Data.ByteString.Lazy as LBS (ByteString, writeFile)
-import Network.URI hiding (path)  -- suppresses warnings
 import Codec.Archive.Zip
-import qualified Data.Text.Lazy.Encoding as TL
-
-import Control.Monad
 import Control.Applicative
---import Control.Monad.State.Strict
-import Control.Monad.Base
 import Control.Exception (SomeException)
 import Control.Exception.Lifted (throwIO, handle)
 import qualified Control.Exception.Lifted as L
-import Data.Word
-import Data.String (fromString)
-import Data.Maybe
-import qualified Data.Foldable as F
+import Control.Monad
+import Control.Monad.Base
+import Data.Aeson
+import Data.Aeson.TH
+import Data.Aeson.Types
+import Data.ByteString.Base64.Lazy as B64
+import Data.ByteString.Lazy as LBS (ByteString, writeFile)
+import Data.CallStack
 import qualified Data.Char as C
+import qualified Data.Foldable as F
+import Data.Maybe
+import Data.String (fromString)
+import Data.Text (Text, append, toUpper, toLower)
+import qualified Data.Text as T
+import qualified Data.Text.Lazy.Encoding as TL
+import Data.Word
+import Network.URI hiding (path)  -- suppresses warnings
+import Test.WebDriver.Capabilities
+import Test.WebDriver.Class
+import Test.WebDriver.Commands.Internal
+import Test.WebDriver.Exceptions.Internal
+import Test.WebDriver.JSON
+import Test.WebDriver.Session
+import Test.WebDriver.Utils (urlEncode)
 
 import Prelude -- hides some "unused import" warnings
 
@@ -240,15 +238,15 @@ to signal that it has finished executing, passing to it a value that will be
 returned as the result of asyncJS. A result of Nothing indicates that the
 Javascript function timed out (see 'setScriptTimeout')
 -}
-asyncJS :: (F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd (Maybe a)
+asyncJS :: (HasCallStack, F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd (Maybe a)
 asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
   where
     getResult = doSessCommand methodPost "/execute_async" . pair ("args", "script")
                 $ (F.toList a,s)
-    timeout (FailedCommand Timeout _)       = return Nothing
-    timeout (FailedCommand ScriptTimeout _) = return Nothing
+    timeout (FailedCommand Timeout _ _)       = return Nothing
+    timeout (FailedCommand ScriptTimeout _ _) = return Nothing
     timeout err = throwIO err
-    
+
 -- |Save a screenshot to a particular location
 saveScreenshot :: WebDriver wd => FilePath -> wd ()
 saveScreenshot path = screenshot >>= liftBase . LBS.writeFile path
@@ -438,11 +436,11 @@ instance ToJSON Selector where
       selector sn t = object ["using" .= sn, "value" .= t]
 
 -- |Find an element on the page using the given element selector.
-findElem :: WebDriver wd => Selector -> wd Element
+findElem :: (HasCallStack, WebDriver wd) => Selector -> wd Element
 findElem = doSessCommand methodPost "/element"
 
 -- |Find all elements on the page matching the given selector.
-findElems :: WebDriver wd => Selector -> wd [Element]
+findElems :: (HasCallStack, WebDriver wd) => Selector -> wd [Element]
 findElems = doSessCommand methodPost "/elements"
 
 -- |Return the element that currently has focus.

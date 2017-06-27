@@ -66,7 +66,8 @@ Library
                  , exceptions >= 0.4
                  , scientific >= 0.2
                  , data-default-class
-                 
+                 , call-stack
+
   if flag(network-uri)
       build-depends: network-uri >= 2.6, network >= 2.6
   else
