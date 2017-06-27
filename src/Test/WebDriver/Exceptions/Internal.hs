@@ -1,10 +1,11 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveDataTypeable, ConstraintKinds, FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveDataTypeable, ConstraintKinds, FlexibleContexts, NamedFieldPuns #-}
 module Test.WebDriver.Exceptions.Internal
        ( InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
        , UnknownCommand(..), ServerError(..)
 
        , FailedCommand(..), failedCommand, mkFailedCommandInfo
        , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
+       , externalCallStack
        ) where
 import Test.WebDriver.Session
 import Test.WebDriver.JSON
@@ -12,16 +13,21 @@ import Test.WebDriver.JSON
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 import Data.ByteString.Lazy.Char8 (ByteString)
+import Data.CallStack
+import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TLE
 
+import Control.Applicative
 import Control.Exception (Exception)
 import Control.Exception.Lifted (throwIO)
-import Control.Applicative
+import Control.Monad.IO.Class
 
-import Data.Typeable (Typeable)
 import Data.Maybe (fromMaybe, catMaybes)
+import Data.Typeable (Typeable)
 import Data.Word
+
+import Debug.Trace
 
 import Prelude -- hides some "unused import" warnings
 
@@ -53,7 +59,7 @@ newtype ServerError = ServerError String
 instance Exception FailedCommand
 -- |This exception encapsulates a broad variety of exceptions that can
 -- occur when a command fails.
-data FailedCommand = FailedCommand FailedCommandType FailedCommandInfo
+data FailedCommand = FailedCommand FailedCommandType CallStack FailedCommandInfo
                    deriving (Show, Typeable)
 
 -- |The type of failed command exception that occured.
@@ -127,16 +133,25 @@ instance Show FailedCommandInfo where
 mkFailedCommandInfo :: (WDSessionState s) => String -> s FailedCommandInfo
 mkFailedCommandInfo m = do
   sess <- getSession
-  return $ FailedCommandInfo { errMsg = m 
+  return $ FailedCommandInfo { errMsg = m
                              , errSess = Just sess
                              , errScreen = Nothing
                              , errClass = Nothing
                              , errStack = [] }
 
+-- |Use GHC's CallStack capabilities to return a callstack to help debug a FailedCommand.
+-- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
+-- should be where the user called into Test.WebDriver
+externalCallStack :: (HasCallStack) => CallStack
+externalCallStack = dropWhile isWebDriverFrame callStack
+  where isWebDriverFrame :: ([Char], SrcLoc) -> Bool
+        isWebDriverFrame (_, SrcLoc {srcLocModule}) = "Test.WebDriver" `L.isPrefixOf` srcLocModule
+
 -- |Convenience function to throw a 'FailedCommand' locally with no server-side
 -- info present.
-failedCommand :: (WDSessionStateIO s) => FailedCommandType -> String -> s a
-failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m
+failedCommand :: (HasCallStack, WDSessionStateIO s) => FailedCommandType -> String -> s a
+failedCommand t m = do
+  throwIO . FailedCommand t externalCallStack =<< mkFailedCommandInfo m
 
 -- |An individual stack frame from the stack trace provided by the server
 -- during a FailedCommand.
