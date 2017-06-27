@@ -105,33 +105,33 @@ import Test.WebDriver.Utils (urlEncode)
 
 import Prelude -- hides some "unused import" warnings
 
--- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action. 
--- 
+-- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action.
+--
 -- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
-createSession :: WebDriver wd => Capabilities -> wd WDSession
+createSession :: (HasCallStack, WebDriver wd) => Capabilities -> wd WDSession
 createSession caps = do
   ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "desiredCapabilities" $ caps
   getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
-sessions :: WebDriver wd => wd [(SessionId, Capabilities)]
+sessions :: (HasCallStack, WebDriver wd) => wd [(SessionId, Capabilities)]
 sessions = do
   objs <- doCommand methodGet "/sessions" Null
   mapM (parsePair "id" "capabilities" "sessions") objs
 
 -- |Get the actual server-side 'Capabilities' of the current session.
-getActualCaps :: WebDriver wd => wd Capabilities
+getActualCaps :: (HasCallStack, WebDriver wd) => wd Capabilities
 getActualCaps = doSessCommand methodGet "" Null
 
 -- |Close the current session and the browser associated with it.
-closeSession :: WebDriver wd => wd ()
+closeSession :: (HasCallStack, WebDriver wd) => wd ()
 closeSession = do s@WDSession {..} <- getSession
                   noReturn $ doSessCommand methodDelete "" Null
                   putSession s { wdSessId = Nothing }
 
 
 -- |Sets the amount of time (ms) we implicitly wait when searching for elements.
-setImplicitWait :: WebDriver wd => Integer -> wd ()
+setImplicitWait :: (HasCallStack, WebDriver wd) => Integer -> wd ()
 setImplicitWait ms =
   noReturn $ doSessCommand methodPost "/timeouts/implicit_wait" (object msField)
     `L.catch` \(_ :: SomeException) ->
@@ -141,7 +141,7 @@ setImplicitWait ms =
 
 -- |Sets the amount of time (ms) we wait for an asynchronous script to return a
 -- result.
-setScriptTimeout :: WebDriver wd => Integer -> wd ()
+setScriptTimeout :: (HasCallStack, WebDriver wd) => Integer -> wd ()
 setScriptTimeout ms =
   noReturn $ doSessCommand methodPost "/timeouts/async_script" (object msField)
     `L.catch` \( _ :: SomeException) ->
@@ -150,31 +150,31 @@ setScriptTimeout ms =
         allFields = ["type" .= ("script" :: String)] ++ msField
 
 -- |Sets the amount of time (ms) to wait for a page to finish loading before throwing a 'Timeout' exception.
-setPageLoadTimeout :: WebDriver wd => Integer -> wd ()
+setPageLoadTimeout :: (HasCallStack, WebDriver wd) => Integer -> wd ()
 setPageLoadTimeout ms = noReturn $ doSessCommand methodPost "/timeouts" params
   where params = object ["type" .= ("page load" :: String)
                         ,"ms"   .= ms ]
 
 -- |Gets the URL of the current page.
-getCurrentURL :: WebDriver wd => wd String
+getCurrentURL :: (HasCallStack, WebDriver wd) => wd String
 getCurrentURL = doSessCommand methodGet "/url" Null
 
 -- |Opens a new page by the given URL.
-openPage :: WebDriver wd => String -> wd ()
+openPage :: (HasCallStack, WebDriver wd) => String -> wd ()
 openPage url
   | isURI url = noReturn . doSessCommand methodPost "/url" . single "url" $ url
   | otherwise = throwIO . InvalidURL $ url
 
 -- |Navigate forward in the browser history.
-forward :: WebDriver wd => wd ()
+forward :: (HasCallStack, WebDriver wd) => wd ()
 forward = noReturn $ doSessCommand methodPost "/forward" Null
 
 -- |Navigate backward in the browser history.
-back :: WebDriver wd => wd ()
+back :: (HasCallStack, WebDriver wd) => wd ()
 back = noReturn $ doSessCommand methodPost "/back" Null
 
 -- |Refresh the current page
-refresh :: WebDriver wd => wd ()
+refresh :: (HasCallStack, WebDriver wd) => wd ()
 refresh = noReturn $ doSessCommand methodPost "/refresh" Null
 
 -- |An existential wrapper for any 'ToJSON' instance. This allows us to pass
@@ -200,7 +200,7 @@ the client. The function will be invoked with the provided argument
 list and the values may be accessed via the arguments object in the
 order specified.
 
-When using 'executeJS', GHC might complain about an ambiguous type in 
+When using 'executeJS', GHC might complain about an ambiguous type in
 situations where the result of the executeJS call is ignored/discard.
 Consider the following example:
 
@@ -214,7 +214,7 @@ Consider the following example:
 Because the result of the 'executeJS' is discarded, GHC cannot resolve
 which instance of the 'fromJSON' class to use when parsing the
 Selenium server response. In such cases, we can use the 'ignoreReturn'
-helper function located in "Test.WebDriver.JSON". 'ignoreReturn' has 
+helper function located in "Test.WebDriver.JSON". 'ignoreReturn' has
 no runtime effect; it simply helps the type system by expicitly providing
 a `fromJSON` instance to use.
 
@@ -248,30 +248,30 @@ asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
     timeout err = throwIO err
 
 -- |Save a screenshot to a particular location
-saveScreenshot :: WebDriver wd => FilePath -> wd ()
+saveScreenshot :: (HasCallStack, WebDriver wd) => FilePath -> wd ()
 saveScreenshot path = screenshot >>= liftBase . LBS.writeFile path
 
 -- |Grab a screenshot of the current page as a PNG image
-screenshot :: WebDriver wd => wd LBS.ByteString
+screenshot :: (HasCallStack, WebDriver wd) => wd LBS.ByteString
 screenshot = B64.decodeLenient <$> screenshotBase64
 
 -- |Grab a screenshot as a base-64 encoded PNG image. This is the protocol-defined format.
-screenshotBase64 :: WebDriver wd => wd LBS.ByteString
+screenshotBase64 :: (HasCallStack, WebDriver wd) => wd LBS.ByteString
 screenshotBase64 = TL.encodeUtf8 <$> doSessCommand methodGet "/screenshot" Null
 
-availableIMEEngines :: WebDriver wd => wd [Text]
+availableIMEEngines :: (HasCallStack, WebDriver wd) => wd [Text]
 availableIMEEngines = doSessCommand methodGet "/ime/available_engines" Null
 
-activeIMEEngine :: WebDriver wd => wd Text
+activeIMEEngine :: (HasCallStack, WebDriver wd) => wd Text
 activeIMEEngine = doSessCommand methodGet "/ime/active_engine" Null
 
-checkIMEActive :: WebDriver wd => wd Bool
+checkIMEActive :: (HasCallStack, WebDriver wd) => wd Bool
 checkIMEActive = doSessCommand methodGet "/ime/activated" Null
 
-activateIME :: WebDriver wd => Text -> wd ()
+activateIME :: (HasCallStack, WebDriver wd) => Text -> wd ()
 activateIME = noReturn . doSessCommand methodPost "/ime/activate" . single "engine"
 
-deactivateIME :: WebDriver wd => wd ()
+deactivateIME :: (HasCallStack, WebDriver wd) => wd ()
 deactivateIME = noReturn $ doSessCommand methodPost "/ime/deactivate" Null
 
 
@@ -294,22 +294,22 @@ instance ToJSON FrameSelector where
     DefaultFrame -> Null
 
 -- |Switch focus to the frame specified by the FrameSelector.
-focusFrame :: WebDriver wd => FrameSelector -> wd ()
+focusFrame :: (HasCallStack, WebDriver wd) => FrameSelector -> wd ()
 focusFrame s = noReturn $ doSessCommand methodPost "/frame" . single "id" $ s
 
 -- |Returns a handle to the currently focused window
-getCurrentWindow :: WebDriver wd => wd WindowHandle
+getCurrentWindow :: (HasCallStack, WebDriver wd) => wd WindowHandle
 getCurrentWindow = doSessCommand methodGet "/window_handle" Null
 
 -- |Returns a list of all windows available to the session
-windows :: WebDriver wd => wd [WindowHandle]
+windows :: (HasCallStack, WebDriver wd) => wd [WindowHandle]
 windows = doSessCommand methodGet "/window_handles" Null
 
-focusWindow :: WebDriver wd => WindowHandle -> wd ()
+focusWindow :: (HasCallStack, WebDriver wd) => WindowHandle -> wd ()
 focusWindow w = noReturn $ doSessCommand methodPost "/window" . single "name" $ w
 
 -- |Closes the given window
-closeWindow :: WebDriver wd => WindowHandle -> wd ()
+closeWindow :: (HasCallStack, WebDriver wd) => WindowHandle -> wd ()
 closeWindow w = do
   cw <- getCurrentWindow
   focusWindow w
@@ -317,26 +317,26 @@ closeWindow w = do
   unless (w == cw) $ focusWindow cw
 
 -- |Maximizes the current  window if not already maximized
-maximize :: WebDriver wd => wd ()
+maximize :: (HasCallStack, WebDriver wd) => wd ()
 maximize = noReturn $ doWinCommand methodGet currentWindow "/maximize" Null
 
 -- |Get the dimensions of the current window.
-getWindowSize :: WebDriver wd => wd (Word, Word)
+getWindowSize :: (HasCallStack, WebDriver wd) => wd (Word, Word)
 getWindowSize = doWinCommand methodGet currentWindow "/size" Null
                 >>= parsePair "width" "height" "getWindowSize"
 
 -- |Set the dimensions of the current window.
-setWindowSize :: WebDriver wd => (Word, Word) -> wd ()
+setWindowSize :: (HasCallStack, WebDriver wd) => (Word, Word) -> wd ()
 setWindowSize = noReturn . doWinCommand methodPost currentWindow "/size"
                 . pair ("width", "height")
 
 -- |Get the coordinates of the current window.
-getWindowPos :: WebDriver wd => wd (Int, Int)
+getWindowPos :: (HasCallStack, WebDriver wd) => wd (Int, Int)
 getWindowPos = doWinCommand methodGet currentWindow "/position" Null
                >>= parsePair "x" "y" "getWindowPos"
 
 -- |Set the coordinates of the current window.
-setWindowPos :: WebDriver wd => (Int, Int) -> wd ()
+setWindowPos :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
 setWindowPos = noReturn . doWinCommand methodPost currentWindow "/position" . pair ("x","y")
 
 -- |Cookies are delicious delicacies. When sending cookies to the server, a value
@@ -380,33 +380,33 @@ instance FromJSON Cookie where
   parseJSON v = typeMismatch "Cookie" v
 
 -- |Retrieve all cookies visible to the current page.
-cookies :: WebDriver wd => wd [Cookie]
+cookies :: (HasCallStack, WebDriver wd) => wd [Cookie]
 cookies = doSessCommand methodGet "/cookie" Null
 
 -- |Set a cookie. If the cookie path is not specified, it will default to \"/\".
 -- Likewise, if the domain is omitted, it will default to the current page's
 -- domain
-setCookie :: WebDriver wd => Cookie -> wd ()
+setCookie :: (HasCallStack, WebDriver wd) => Cookie -> wd ()
 setCookie = noReturn . doSessCommand methodPost "/cookie" . single "cookie"
 
 -- |Delete a cookie. This will do nothing is the cookie isn't visible to the
 -- current page.
-deleteCookie :: WebDriver wd => Cookie -> wd ()
+deleteCookie :: (HasCallStack, WebDriver wd) => Cookie -> wd ()
 deleteCookie c = noReturn $ doSessCommand methodDelete ("/cookie/" `append` urlEncode (cookName c)) Null
 
-deleteCookieByName :: WebDriver wd => Text -> wd ()
+deleteCookieByName :: (HasCallStack, WebDriver wd) => Text -> wd ()
 deleteCookieByName n = noReturn $ doSessCommand methodDelete ("/cookie/" `append` n) Null
 
 -- |Delete all visible cookies on the current page.
-deleteVisibleCookies :: WebDriver wd => wd ()
+deleteVisibleCookies :: (HasCallStack, WebDriver wd) => wd ()
 deleteVisibleCookies = noReturn $ doSessCommand methodDelete "/cookie" Null
 
 -- |Get the current page source
-getSource :: WebDriver wd => wd Text
+getSource :: (HasCallStack, WebDriver wd) => wd Text
 getSource = doSessCommand methodGet "/source" Null
 
 -- |Get the title of the current page.
-getTitle :: WebDriver wd => wd Text
+getTitle :: (HasCallStack, WebDriver wd) => wd Text
 getTitle = doSessCommand methodGet "/title" Null
 
 -- |Specifies element(s) within a DOM tree using various selection methods.
@@ -444,92 +444,92 @@ findElems :: (HasCallStack, WebDriver wd) => Selector -> wd [Element]
 findElems = doSessCommand methodPost "/elements"
 
 -- |Return the element that currently has focus.
-activeElem :: WebDriver wd => wd Element
+activeElem :: (HasCallStack, WebDriver wd) => wd Element
 activeElem = doSessCommand methodPost "/element/active" Null
 
 -- |Search for an element using the given element as root.
-findElemFrom :: WebDriver wd => Element -> Selector -> wd Element
+findElemFrom :: (HasCallStack, WebDriver wd) => Element -> Selector -> wd Element
 findElemFrom e = doElemCommand methodPost e "/element"
 
 -- |Find all elements matching a selector, using the given element as root.
-findElemsFrom :: WebDriver wd => Element -> Selector -> wd [Element]
+findElemsFrom :: (HasCallStack, WebDriver wd) => Element -> Selector -> wd [Element]
 findElemsFrom e = doElemCommand methodPost e "/elements"
 
 -- |Describe the element. Returns a JSON object whose meaning is currently
 -- undefined by the WebDriver protocol.
-elemInfo :: WebDriver wd => Element -> wd Value
+elemInfo :: (HasCallStack, WebDriver wd) => Element -> wd Value
 elemInfo e = doElemCommand methodGet e "" Null
 {-# DEPRECATED elemInfo "This command does not work with Marionette (Firefox) driver, and is likely to be completely removed in Selenium 4" #-}
 
 -- |Click on an element.
-click :: WebDriver wd => Element -> wd ()
+click :: (HasCallStack, WebDriver wd) => Element -> wd ()
 click e = noReturn $ doElemCommand methodPost e "/click" Null
 
 -- |Submit a form element. This may be applied to descendents of a form element
 -- as well.
-submit :: WebDriver wd => Element -> wd ()
+submit :: (HasCallStack, WebDriver wd) => Element -> wd ()
 submit e = noReturn $ doElemCommand methodPost e "/submit" Null
 
 -- |Get all visible text within this element.
-getText :: WebDriver wd => Element -> wd Text
+getText :: (HasCallStack, WebDriver wd) => Element -> wd Text
 getText e = doElemCommand methodGet e "/text" Null
 
 -- |Send a sequence of keystrokes to an element. All modifier keys are released
--- at the end of the function. Named constants for special modifier keys can be found 
+-- at the end of the function. Named constants for special modifier keys can be found
 -- in "Test.WebDriver.Common.Keys"
-sendKeys :: WebDriver wd => Text -> Element -> wd ()
+sendKeys :: (HasCallStack, WebDriver wd) => Text -> Element -> wd ()
 sendKeys t e = noReturn . doElemCommand methodPost e "/value" . single "value" $ [t]
 
 -- |Similar to sendKeys, but doesn't implicitly release modifier keys
 -- afterwards. This allows you to combine modifiers with mouse clicks.
-sendRawKeys :: WebDriver wd => Text -> wd ()
+sendRawKeys :: (HasCallStack, WebDriver wd) => Text -> wd ()
 sendRawKeys t = noReturn . doSessCommand methodPost "/keys" . single "value" $ [t]
 
 -- |Return the tag name of the given element.
-tagName :: WebDriver wd => Element -> wd Text
+tagName :: (HasCallStack, WebDriver wd) => Element -> wd Text
 tagName e = doElemCommand methodGet e "/name" Null
 
 -- |Clear a textarea or text input element's value.
-clearInput :: WebDriver wd => Element -> wd ()
+clearInput :: (HasCallStack, WebDriver wd) => Element -> wd ()
 clearInput e = noReturn $ doElemCommand methodPost e "/clear" Null
 
 -- |Determine if the element is selected.
-isSelected :: WebDriver wd => Element -> wd Bool
+isSelected :: (HasCallStack, WebDriver wd) => Element -> wd Bool
 isSelected e = doElemCommand methodGet e "/selected" Null
 
 -- |Determine if the element is enabled.
-isEnabled :: WebDriver wd => Element -> wd Bool
+isEnabled :: (HasCallStack, WebDriver wd) => Element -> wd Bool
 isEnabled e = doElemCommand methodGet e "/enabled" Null
 
 -- |Determine if the element is displayed.
-isDisplayed :: WebDriver wd => Element -> wd Bool
+isDisplayed :: (HasCallStack, WebDriver wd) => Element -> wd Bool
 isDisplayed e = doElemCommand methodGet e "/displayed" Null
 
 -- |Retrieve the value of an element's attribute
-attr :: WebDriver wd => Element -> Text -> wd (Maybe Text)
+attr :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Text)
 attr e t = doElemCommand methodGet e ("/attribute/" `append` urlEncode t) Null
 
 -- |Retrieve the value of an element's computed CSS property
-cssProp :: WebDriver wd => Element -> Text -> wd (Maybe Text)
+cssProp :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Text)
 cssProp e t = doElemCommand methodGet e ("/css/" `append` urlEncode t) Null
 
 -- |Retrieve an element's current position.
-elemPos :: WebDriver wd => Element -> wd (Float, Float)
+elemPos :: (HasCallStack, WebDriver wd) => Element -> wd (Float, Float)
 elemPos e = doElemCommand methodGet e "/location" Null >>= parsePair "x" "y" "elemPos"
 
 -- |Retrieve an element's current size.
-elemSize :: WebDriver wd => Element -> wd (Float, Float)
+elemSize :: (HasCallStack, WebDriver wd) => Element -> wd (Float, Float)
 elemSize e = doElemCommand methodGet e "/size" Null
              >>= parsePair "width" "height" "elemSize"
 
 infix 4 <==>
 -- |Determines if two element identifiers refer to the same element.
-(<==>) :: WebDriver wd => Element -> Element -> wd Bool
+(<==>) :: (HasCallStack, WebDriver wd) => Element -> Element -> wd Bool
 e1 <==> (Element e2) = doElemCommand methodGet e1 ("/equals/" `append` urlEncode e2) Null
 
 -- |Determines if two element identifiers refer to different elements.
 infix 4 </=>
-(</=>) :: WebDriver wd => Element -> Element -> wd Bool
+(</=>) :: (HasCallStack, WebDriver wd) => Element -> Element -> wd Bool
 e1 </=> e2 = not <$> (e1 <==> e2)
 
 -- |A screen orientation
@@ -547,40 +547,40 @@ instance FromJSON Orientation where
   parseJSON v = typeMismatch "Orientation" v
 
 -- |Get the current screen orientation for rotatable display devices.
-getOrientation :: WebDriver wd => wd Orientation
+getOrientation :: (HasCallStack, WebDriver wd) => wd Orientation
 getOrientation = doSessCommand methodGet "/orientation" Null
 
 -- |Set the current screen orientation for rotatable display devices.
-setOrientation :: WebDriver wd => Orientation -> wd ()
+setOrientation :: (HasCallStack, WebDriver wd) => Orientation -> wd ()
 setOrientation = noReturn . doSessCommand methodPost "/orientation" . single "orientation"
 
 -- |Get the text of an alert dialog.
-getAlertText :: WebDriver wd => wd Text
+getAlertText :: (HasCallStack, WebDriver wd) => wd Text
 getAlertText = doSessCommand methodGet "/alert_text" Null
 
 -- |Sends keystrokes to Javascript prompt() dialog.
-replyToAlert :: WebDriver wd => Text -> wd ()
+replyToAlert :: (HasCallStack, WebDriver wd) => Text -> wd ()
 replyToAlert = noReturn . doSessCommand methodPost "/alert_text" . single "text"
 
 -- |Accepts the currently displayed alert dialog.
-acceptAlert :: WebDriver wd => wd ()
+acceptAlert :: (HasCallStack, WebDriver wd) => wd ()
 acceptAlert = noReturn $ doSessCommand methodPost "/accept_alert" Null
 
 -- |Dismisses the currently displayed alert dialog.
-dismissAlert :: WebDriver wd => wd ()
+dismissAlert :: (HasCallStack, WebDriver wd) => wd ()
 dismissAlert = noReturn $ doSessCommand methodPost "/dismiss_alert" Null
 
 -- |Moves the mouse to the given position relative to the active element.
-moveTo :: WebDriver wd => (Int, Int) -> wd ()
+moveTo :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
 moveTo = noReturn . doSessCommand methodPost "/moveto" . pair ("xoffset","yoffset")
 
 -- |Moves the mouse to the center of a given element.
-moveToCenter :: WebDriver wd => Element -> wd ()
+moveToCenter :: (HasCallStack, WebDriver wd) => Element -> wd ()
 moveToCenter (Element e) =
   noReturn . doSessCommand methodPost "/moveto" . single "element" $ e
 
 -- |Moves the mouse to the given position relative to the given element.
-moveToFrom :: WebDriver wd => (Int, Int) -> Element -> wd ()
+moveToFrom :: (HasCallStack, WebDriver wd) => (Int, Int) -> Element -> wd ()
 moveToFrom (x,y) (Element e) =
   noReturn . doSessCommand methodPost "/moveto"
   . triple ("element","xoffset","yoffset") $ (e,x,y)
@@ -602,52 +602,52 @@ instance FromJSON MouseButton where
       err -> fail $ "Invalid JSON for MouseButton: " ++ show err
 
 -- |Click at the current mouse position with the given mouse button.
-clickWith :: WebDriver wd => MouseButton -> wd ()
+clickWith :: (HasCallStack, WebDriver wd) => MouseButton -> wd ()
 clickWith = noReturn . doSessCommand methodPost "/click" . single "button"
 
 -- |Perform the given action with the left mouse button held down. The mouse
 -- is automatically released afterwards.
-withMouseDown :: WebDriver wd => wd a -> wd a
+withMouseDown :: (HasCallStack, WebDriver wd) => wd a -> wd a
 withMouseDown wd = mouseDown >> wd <* mouseUp
 
 -- |Press and hold the left mouse button down. Note that undefined behavior
 -- occurs if the next mouse command is not mouseUp.
-mouseDown :: WebDriver wd => wd ()
+mouseDown :: (HasCallStack, WebDriver wd) => wd ()
 mouseDown = noReturn $ doSessCommand methodPost "/buttondown" Null
 
 -- |Release the left mouse button.
-mouseUp :: WebDriver wd => wd ()
+mouseUp :: (HasCallStack, WebDriver wd) => wd ()
 mouseUp = noReturn $ doSessCommand methodPost "/buttonup" Null
 
 -- |Double click at the current mouse location.
-doubleClick :: WebDriver wd => wd ()
+doubleClick :: (HasCallStack, WebDriver wd) => wd ()
 doubleClick = noReturn $ doSessCommand methodPost "/doubleclick" Null
 
 -- |Single tap on the touch screen at the given element's location.
-touchClick :: WebDriver wd => Element -> wd ()
+touchClick :: (HasCallStack, WebDriver wd) => Element -> wd ()
 touchClick (Element e) =
   noReturn . doSessCommand methodPost "/touch/click" . single "element" $ e
 
 -- |Emulates pressing a finger down on the screen at the given location.
-touchDown :: WebDriver wd => (Int, Int) -> wd ()
+touchDown :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
 touchDown = noReturn . doSessCommand methodPost "/touch/down" . pair ("x","y")
 
 -- |Emulates removing a finger from the screen at the given location.
-touchUp :: WebDriver wd => (Int, Int) -> wd ()
+touchUp :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
 touchUp = noReturn . doSessCommand methodPost "/touch/up" . pair ("x","y")
 
 -- |Emulates moving a finger on the screen to the given location.
-touchMove :: WebDriver wd => (Int, Int) -> wd ()
+touchMove :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
 touchMove = noReturn . doSessCommand methodPost "/touch/move" . pair ("x","y")
 
 -- |Emulate finger-based touch scroll. Use this function if you don't care where
 -- the scroll begins
-touchScroll :: WebDriver wd => (Int, Int) -> wd ()
+touchScroll :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
 touchScroll = noReturn . doSessCommand methodPost "/touch/scroll" . pair ("xoffset","yoffset")
 
 -- |Emulate finger-based touch scroll, starting from the given location relative
 -- to the given element.
-touchScrollFrom :: WebDriver wd => (Int, Int) -> Element -> wd ()
+touchScrollFrom :: (HasCallStack, WebDriver wd) => (Int, Int) -> Element -> wd ()
 touchScrollFrom (x, y) (Element e) =
   noReturn
   . doSessCommand methodPost "/touch/scroll"
@@ -655,14 +655,14 @@ touchScrollFrom (x, y) (Element e) =
   $ (x, y, e)
 
 -- |Emulate a double click on a touch device.
-touchDoubleClick :: WebDriver wd => Element -> wd ()
+touchDoubleClick :: (HasCallStack, WebDriver wd) => Element -> wd ()
 touchDoubleClick (Element e) =
   noReturn
   . doSessCommand methodPost "/touch/doubleclick"
   . single "element" $ e
 
 -- |Emulate a long click on a touch device.
-touchLongClick :: WebDriver wd => Element -> wd ()
+touchLongClick :: (HasCallStack, WebDriver wd) => Element -> wd ()
 touchLongClick (Element e) =
   noReturn
   . doSessCommand methodPost "/touch/longclick"
@@ -670,14 +670,14 @@ touchLongClick (Element e) =
 -- |Emulate a flick on the touch screen. The coordinates indicate x and y
 -- velocity, respectively. Use this function if you don't care where the
 -- flick starts.
-touchFlick :: WebDriver wd => (Int, Int) -> wd ()
+touchFlick :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
 touchFlick =
   noReturn
   . doSessCommand methodPost "/touch/flick"
   . pair ("xSpeed", "ySpeed")
 
 -- |Emulate a flick on the touch screen.
-touchFlickFrom :: WebDriver wd =>
+touchFlickFrom :: (HasCallStack, WebDriver wd) =>
                   Int           -- ^ flick velocity
                   -> (Int, Int) -- ^ a location relative to the given element
                   -> Element    -- ^ the given element
@@ -692,23 +692,23 @@ touchFlickFrom s (x,y) (Element e) =
   ]
 
 -- |Get the current geographical location of the device.
-getLocation :: WebDriver wd => wd (Int, Int, Int)
+getLocation :: (HasCallStack, WebDriver wd) => wd (Int, Int, Int)
 getLocation = doSessCommand methodGet "/location" Null
               >>= parseTriple "latitude" "longitude" "altitude" "getLocation"
 
 -- |Set the current geographical location of the device.
-setLocation :: WebDriver wd => (Int, Int, Int) -> wd ()
+setLocation :: (HasCallStack, WebDriver wd) => (Int, Int, Int) -> wd ()
 setLocation = noReturn . doSessCommand methodPost "/location"
               . triple ("latitude",
                         "longitude",
                         "altitude")
 
 -- |Uploads a file from the local filesystem by its file path.
-uploadFile :: WebDriver wd => FilePath -> wd ()
+uploadFile :: (HasCallStack, WebDriver wd) => FilePath -> wd ()
 uploadFile path = uploadZipEntry =<< liftBase (readEntry [] path)
 
 -- |Uploads a raw bytestring with associated file info.
-uploadRawFile :: WebDriver wd =>
+uploadRawFile :: (HasCallStack, WebDriver wd) =>
                  FilePath          -- ^File path to use with this bytestring.
                  -> Integer        -- ^Modification time
                                    -- (in seconds since Unix epoch).
@@ -720,21 +720,21 @@ uploadRawFile path t str = uploadZipEntry (toEntry path t str)
 -- |Lowest level interface to the file uploading mechanism.
 -- This allows you to specify the exact details of
 -- the zip entry sent across network.
-uploadZipEntry :: WebDriver wd => Entry -> wd ()
+uploadZipEntry :: (HasCallStack, WebDriver wd) => Entry -> wd ()
 uploadZipEntry = noReturn . doSessCommand methodPost "/file" . single "file"
                  . TL.decodeUtf8 . B64.encode . fromArchive . (`addEntryToArchive` emptyArchive)
 
 
 -- |Get the current number of keys in a web storage area.
-storageSize :: WebDriver wd => WebStorageType -> wd Integer
+storageSize :: (HasCallStack, WebDriver wd) => WebStorageType -> wd Integer
 storageSize s = doStorageCommand methodGet s "/size" Null
 
 -- |Get a list of all keys from a web storage area.
-getAllKeys :: WebDriver wd => WebStorageType -> wd [Text]
+getAllKeys :: (HasCallStack, WebDriver wd) => WebStorageType -> wd [Text]
 getAllKeys s = doStorageCommand methodGet s "" Null
 
 -- |Delete all keys within a given web storage area.
-deleteAllKeys :: WebDriver wd => WebStorageType -> wd ()
+deleteAllKeys :: (HasCallStack, WebDriver wd) => WebStorageType -> wd ()
 deleteAllKeys s = noReturn $ doStorageCommand methodDelete s "" Null
 
 -- |An HTML 5 storage type
@@ -744,15 +744,15 @@ data WebStorageType = LocalStorage | SessionStorage
 -- |Get the value associated with a key in the given web storage area.
 -- Unset keys result in empty strings, since the Web Storage spec
 -- makes no distinction between the empty string and an undefined value.
-getKey :: WebDriver wd => WebStorageType -> Text ->  wd Text
+getKey :: (HasCallStack, WebDriver wd) => WebStorageType -> Text ->  wd Text
 getKey s k = doStorageCommand methodGet s ("/key/" `T.append` urlEncode k) Null
 
 -- |Set a key in the given web storage area.
-setKey :: WebDriver wd => WebStorageType -> Text -> Text -> wd Text
+setKey :: (HasCallStack, WebDriver wd) => WebStorageType -> Text -> Text -> wd Text
 setKey s k v = doStorageCommand methodPost s "" . object $ ["key"   .= k,
                                                       "value" .= v ]
 -- |Delete a key in the given web storage area.
-deleteKey :: WebDriver wd => WebStorageType -> Text -> wd ()
+deleteKey :: (HasCallStack, WebDriver wd) => WebStorageType -> Text -> wd ()
 deleteKey s k = noReturn $ doStorageCommand methodPost s ("/key/" `T.append` urlEncode k) Null
 
 -- |A wrapper around 'doSessCommand' to create web storage requests.
@@ -793,11 +793,11 @@ type LogType = String
 --
 -- Which log types are available is server defined, but the wire protocol lists these as common log types:
 -- client, driver, browser, server
-getLogs :: WebDriver wd => LogType -> wd [LogEntry]
+getLogs :: (HasCallStack, WebDriver wd) => LogType -> wd [LogEntry]
 getLogs t = doSessCommand methodPost "/log" . object $ ["type" .= t]
 
 -- |Get a list of available log types.
-getLogTypes :: WebDriver wd => wd [LogType]
+getLogTypes :: (HasCallStack, WebDriver wd) => wd [LogType]
 getLogTypes = doSessCommand methodGet "/log/types" Null
 
 data ApplicationCacheStatus = Uncached | Idle | Checking | Downloading | UpdateReady | Obsolete deriving (Eq, Enum, Bounded, Ord, Show, Read)
