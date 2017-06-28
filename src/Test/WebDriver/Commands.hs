@@ -243,8 +243,8 @@ asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
   where
     getResult = doSessCommand methodPost "/execute_async" . pair ("args", "script")
                 $ (F.toList a,s)
-    timeout (FailedCommand Timeout _ _)       = return Nothing
-    timeout (FailedCommand ScriptTimeout _ _) = return Nothing
+    timeout (FailedCommand Timeout _)       = return Nothing
+    timeout (FailedCommand ScriptTimeout _) = return Nothing
     timeout err = throwIO err
 
 -- |Save a screenshot to a particular location
