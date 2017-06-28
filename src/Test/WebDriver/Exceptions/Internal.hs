@@ -5,7 +5,7 @@ module Test.WebDriver.Exceptions.Internal
 
        , FailedCommand(..), failedCommand, mkFailedCommandInfo
        , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
-       , externalCallStack
+       , externalCallStack, callStackItemToStackFrame
        ) where
 import Test.WebDriver.Session
 import Test.WebDriver.JSON
@@ -59,7 +59,7 @@ newtype ServerError = ServerError String
 instance Exception FailedCommand
 -- |This exception encapsulates a broad variety of exceptions that can
 -- occur when a command fails.
-data FailedCommand = FailedCommand FailedCommandType CallStack FailedCommandInfo
+data FailedCommand = FailedCommand FailedCommandType FailedCommandInfo
                    deriving (Show, Typeable)
 
 -- |The type of failed command exception that occured.
@@ -130,14 +130,14 @@ instance Show FailedCommandInfo where
 
 
 -- |Constructs a FailedCommandInfo from only an error message.
-mkFailedCommandInfo :: (WDSessionState s) => String -> s FailedCommandInfo
-mkFailedCommandInfo m = do
+mkFailedCommandInfo :: (WDSessionState s) => String -> CallStack -> s FailedCommandInfo
+mkFailedCommandInfo m cs = do
   sess <- getSession
   return $ FailedCommandInfo { errMsg = m
                              , errSess = Just sess
                              , errScreen = Nothing
                              , errClass = Nothing
-                             , errStack = [] }
+                             , errStack = fmap callStackItemToStackFrame cs }
 
 -- |Use GHC's CallStack capabilities to return a callstack to help debug a FailedCommand.
 -- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
@@ -151,7 +151,7 @@ externalCallStack = dropWhile isWebDriverFrame callStack
 -- info present.
 failedCommand :: (HasCallStack, WDSessionStateIO s) => FailedCommandType -> String -> s a
 failedCommand t m = do
-  throwIO . FailedCommand t externalCallStack =<< mkFailedCommandInfo m
+  throwIO . FailedCommand t =<< mkFailedCommandInfo m externalCallStack
 
 -- |An individual stack frame from the stack trace provided by the server
 -- during a FailedCommand.
@@ -194,3 +194,11 @@ instance FromJSON StackFrame where
           reqStr :: Text -> Parser String
           reqStr k = req k >>= maybe (return "") return
   parseJSON v = typeMismatch "StackFrame" v
+
+
+callStackItemToStackFrame :: (String, SrcLoc) -> StackFrame
+callStackItemToStackFrame (functionName, SrcLoc {..}) = StackFrame { sfFileName = srcLocFile
+                                                                   , sfClassName = srcLocModule
+                                                                   , sfMethodName = functionName
+                                                                   , sfLineNumber = srcLocStartLine
+                                                                   }

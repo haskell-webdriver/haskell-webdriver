@@ -73,7 +73,7 @@ expectAlertOpen = catchFailedCommand NoAlertOpen getAlertText
 catchFailedCommand :: (MonadBaseControl IO m, HasCallStack) => FailedCommandType -> m a -> m a
 catchFailedCommand t1 m = m `catch` handler
     where
-        handler e@(FailedCommand t2 _ _)
+        handler e@(FailedCommand t2 _)
             | t1 == t2 = unexpected . show $ e
         handler e = throwIO e
 
@@ -116,7 +116,7 @@ waitEither failure success = wait' handler
                                   ]
     either (failure retry) (success retry) e
    where
-    handleFailedCommand e@(FailedCommand NoSuchElement _ _) = return . Left . show $ e
+    handleFailedCommand e@(FailedCommand NoSuchElement _) = return . Left . show $ e
     handleFailedCommand err = throwIO err
 
     handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
@@ -147,5 +147,5 @@ wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
 onTimeout :: (MonadBaseControl IO m, HasCallStack) => m a -> m a -> m a
 onTimeout m r = m `catch` handler
   where
-    handler (FailedCommand Timeout _ _) = r
+    handler (FailedCommand Timeout _) = r
     handler other = throwIO other

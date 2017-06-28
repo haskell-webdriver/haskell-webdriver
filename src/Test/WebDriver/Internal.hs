@@ -162,7 +162,7 @@ getJSONResult r
     body = responseBody r
     headers = responseHeaders r
 
-handleRespSessionId :: (WDSessionStateIO s) => WDResponse -> s ()
+handleRespSessionId :: (HasCallStack, WDSessionStateIO s) => WDResponse -> s ()
 handleRespSessionId WDResponse{rspSessId = sessId'} = do
     sess@WDSession { wdSessId = sessId} <- getSession
     case (sessId, (==) <$> sessId <*> sessId') of
@@ -179,9 +179,12 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- getSession
   errInfo <- fromJSON' val
   let screen = B64.decodeLenient <$> errScreen errInfo
+      seleniumStack = errStack errInfo
       errInfo' = errInfo { errSess = Just sess
-                         , errScreen = screen }
-      e errType = toException $ FailedCommand errType externalCallStack errInfo'
+                         -- Append the Haskell stack frames to the ones returned from Selenium
+                         , errScreen = screen
+                         , errStack = seleniumStack ++ (fmap callStackItemToStackFrame externalCallStack) }
+      e errType = toException $ FailedCommand errType errInfo'
   return . Just $ case status of
     7   -> e NoSuchElement
     8   -> e NoSuchFrame
