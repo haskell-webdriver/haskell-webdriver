@@ -516,11 +516,11 @@ cssProp :: WebDriver wd => Element -> Text -> wd (Maybe Text)
 cssProp e t = doElemCommand methodGet e ("/css/" `append` urlEncode t) Null
 
 -- |Retrieve an element's current position.
-elemPos :: WebDriver wd => Element -> wd (Int, Int)
+elemPos :: WebDriver wd => Element -> wd (Float, Float)
 elemPos e = doElemCommand methodGet e "/location" Null >>= parsePair "x" "y" "elemPos"
 
 -- |Retrieve an element's current size.
-elemSize :: WebDriver wd => Element -> wd (Word, Word)
+elemSize :: WebDriver wd => Element -> wd (Float, Float)
 elemSize e = doElemCommand methodGet e "/size" Null
              >>= parsePair "width" "height" "elemSize"
 
