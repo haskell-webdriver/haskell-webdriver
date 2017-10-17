@@ -484,8 +484,8 @@ sendKeys t e = noReturn . doElemCommand methodPost e "/value" . single "value" $
 
 -- |Similar to sendKeys, but doesn't implicitly release modifier keys
 -- afterwards. This allows you to combine modifiers with mouse clicks.
-sendRawKeys :: WebDriver wd => Text -> Element -> wd ()
-sendRawKeys t e = noReturn . doElemCommand methodPost e "/keys" . single "value" $ [t]
+sendRawKeys :: WebDriver wd => Text -> wd ()
+sendRawKeys t = noReturn . doSessCommand methodPost "/keys" . single "value" $ [t]
 
 -- |Return the tag name of the given element.
 tagName :: WebDriver wd => Element -> wd Text
