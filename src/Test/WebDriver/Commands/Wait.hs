@@ -4,7 +4,7 @@ module Test.WebDriver.Commands.Wait
          waitUntil, waitUntil'
        , waitWhile, waitWhile'
          -- * Expected conditions
-       , ExpectFailed, expect, unexpected
+       , ExpectFailed (..), expect, unexpected
        , expectAny, expectAll
        , expectNotStale, expectAlertOpen
        , catchFailedCommand
