@@ -112,13 +112,15 @@ waitEither failure success = wait' handler
   handler retry wd = do
     e <- fmap Right wd  `catches` [Handler handleFailedCommand
                                   ,Handler handleExpectFailed
+                                  ,Handler handleSomeException
                                   ]
     either (failure retry) (success retry) e
    where
-    handleFailedCommand e@(FailedCommand NoSuchElement _) = return . Left . show $ e
-    handleFailedCommand err = throwIO err
+    handleFailedCommand e@(FailedCommand _ _) = return . Left . show $ e
 
     handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
+
+    handleSomeException (e :: SomeException) = return . Left . show $ e
 
 wait' :: (WDSessionStateIO m) =>
          ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
