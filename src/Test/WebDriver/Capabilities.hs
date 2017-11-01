@@ -337,7 +337,7 @@ instance FromJSON Capabilities where
                                 <*> opt "opera.arguments" Nothing
                                 <*> opt "opera.logging.file" Nothing
                                 <*> opt "opera.logging.level" def
-              Edge {} -> Edge <$> opt "InPrivate" Nothing
+              Edge {} -> Edge <$> b "InPrivate" Nothing
               _ -> return browser
 
   parseJSON v = typeMismatch "Capabilities" v
