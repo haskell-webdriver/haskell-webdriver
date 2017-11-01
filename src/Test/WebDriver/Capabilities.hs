@@ -491,7 +491,7 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
              | IPhone
              | IPad
              | Android
-             | Edge { inPrivate :: Maybe String
+             | Edge { inPrivate :: Maybe Bool
                     }
              -- |some other browser, specified by a string name
              | Browser Text
