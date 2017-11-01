@@ -256,7 +256,7 @@ instance FromJSON Capabilities where
     browser <- req "browserName"
     Capabilities <$> getBrowserCaps browser
                  <*> opt "version" Nothing
-                 <*> req "platform"
+                 <*> (req "platform" <|> req "platformName")
                  <*> opt "proxy" NoProxy
                  <*> b "javascriptEnabled"
                  <*> b "takesScreenshot"
@@ -337,6 +337,7 @@ instance FromJSON Capabilities where
                                 <*> opt "opera.arguments" Nothing
                                 <*> opt "opera.logging.file" Nothing
                                 <*> opt "opera.logging.level" def
+              Edge {} -> Edge <$> opt "InPrivate" Nothing
               _ -> return browser
 
   parseJSON v = typeMismatch "Capabilities" v
@@ -490,6 +491,8 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
              | IPhone
              | IPad
              | Android
+             | Edge { inPrivate :: Maybe String
+                    }
              -- |some other browser, specified by a string name
              | Browser Text
              deriving (Eq, Show)
@@ -499,6 +502,7 @@ instance Default Browser where
 
 
 instance ToJSON Browser where
+  toJSON Edge {}      = String "MicrosoftEdge"
   toJSON Firefox {}   = String "firefox"
   toJSON Chrome {}    = String "chrome"
   toJSON Opera {}     = String "opera"
@@ -519,6 +523,7 @@ instance FromJSON Browser where
     "ipad"              -> return iPad
     "android"           -> return android
     "htmlunit"          -> return htmlUnit
+    "microsoftedge"     -> return edge
     other               -> return (Browser other)
   parseJSON v = typeMismatch "Browser" v
 
@@ -589,6 +594,10 @@ iPad = IPad
 
 android :: Browser
 android = Android
+
+edge :: Browser
+edge = Edge { inPrivate = Nothing
+            }
 
 -- |Represents platform options supported by WebDriver. The value Any represents
 -- no preference.
