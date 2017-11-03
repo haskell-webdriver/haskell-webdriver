@@ -256,7 +256,12 @@ instance FromJSON Capabilities where
     browser <- req "browserName"
     Capabilities <$> getBrowserCaps browser
                  <*> opt "version" Nothing
-                 <*> (req "platform" <|> req "platformName")
+                 <*> do
+                    p  <- o .:? "platform"
+                    pN <- o .:? "platformName"
+                    case p <|> pN of
+                      Just p' -> return p'
+                      Nothing -> throw . BadJSON $ "platform or platformName required"
                  <*> opt "proxy" NoProxy
                  <*> b "javascriptEnabled"
                  <*> b "takesScreenshot"
