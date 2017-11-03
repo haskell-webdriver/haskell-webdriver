@@ -116,6 +116,7 @@ instance Show FailedCommandInfo where
            . showChar '\n'
            . showString className . showString ": " . showString (errMsg i)
            . showChar '\n'
+           . showString "CallStack (from HasCallStack):\n"
            . foldl (\f s-> f . showString "  " . shows s) id (errStack i)
            $ ""
     where
