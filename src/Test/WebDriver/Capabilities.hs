@@ -609,6 +609,7 @@ instance ToJSON Platform where
 
 instance FromJSON Platform where
   parseJSON (String jStr) = case toLower jStr of
+    "windows nt" -> return Windows
     "windows" -> return Windows
     "xp"      -> return XP
     "vista"   -> return Vista
