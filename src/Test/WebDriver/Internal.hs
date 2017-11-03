@@ -183,7 +183,7 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
       errInfo' = errInfo { errSess = Just sess
                          -- Append the Haskell stack frames to the ones returned from Selenium
                          , errScreen = screen
-                         , errStack = seleniumStack ++ (fmap callStackItemToStackFrame externalCallStack) }
+                         , errStack = seleniumStack ++ (fmap callStackItemToStackFrame callStack) }
       e errType = toException $ FailedCommand errType errInfo'
   return . Just $ case status of
     7   -> e NoSuchElement

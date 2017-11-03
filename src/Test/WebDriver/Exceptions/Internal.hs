@@ -5,7 +5,7 @@ module Test.WebDriver.Exceptions.Internal
 
        , FailedCommand(..), failedCommand, mkFailedCommandInfo
        , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
-       , externalCallStack, callStackItemToStackFrame
+       , callStackItemToStackFrame
        ) where
 import Test.WebDriver.Session
 import Test.WebDriver.JSON
@@ -140,19 +140,11 @@ mkFailedCommandInfo m cs = do
                              , errClass = Nothing
                              , errStack = fmap callStackItemToStackFrame cs }
 
--- |Use GHC's CallStack capabilities to return a callstack to help debug a FailedCommand.
--- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
--- should be where the user called into Test.WebDriver
-externalCallStack :: (HasCallStack) => CallStack
-externalCallStack = dropWhile isWebDriverFrame callStack
-  where isWebDriverFrame :: ([Char], SrcLoc) -> Bool
-        isWebDriverFrame (_, SrcLoc {srcLocModule}) = "Test.WebDriver" `L.isPrefixOf` srcLocModule
-
 -- |Convenience function to throw a 'FailedCommand' locally with no server-side
 -- info present.
 failedCommand :: (HasCallStack, WDSessionStateIO s) => FailedCommandType -> String -> s a
 failedCommand t m = do
-  throwIO . FailedCommand t =<< mkFailedCommandInfo m externalCallStack
+  throwIO . FailedCommand t =<< mkFailedCommandInfo m callStack
 
 -- |An individual stack frame from the stack trace provided by the server
 -- during a FailedCommand.
