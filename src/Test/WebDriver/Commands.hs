@@ -226,7 +226,7 @@ a `fromJSON` instance to use.
 		return e
 @
 -}
-executeJS :: (F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
+executeJS :: (HasCallStack, F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
 executeJS a s = fromJSON' =<< getResult
   where
     getResult = doSessCommand methodPost "/execute" . pair ("args", "script") $ (F.toList a,s)
