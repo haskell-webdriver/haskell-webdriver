@@ -472,7 +472,7 @@ submit e = noReturn $ doElemCommand methodPost e "/submit" Null
 
 -- |Get all visible text within this element.
 getText :: (HasCallStack, WebDriver wd) => Element -> wd Text
-getText e = doElemCommand methodGet e "/text" Null
+getText e = T.strip <$> doElemCommand methodGet e "/text" Null
 
 -- |Send a sequence of keystrokes to an element. All modifier keys are released
 -- at the end of the function. Named constants for special modifier keys can be found
