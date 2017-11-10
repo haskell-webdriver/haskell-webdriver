@@ -113,6 +113,11 @@ data Capabilities =
                  -- |Whether the session is capable of generating native OS
                  -- events when simulating user input.
                , nativeEvents             :: Maybe Bool
+                 -- |Available after Firefox 52, and required only for Firefox
+                 -- geckodriver. Indicates whether untrusted and self-signed TLS
+                 -- certificates are implicitly trusted on navigation for the
+                 -- duration of the session.
+               , acceptInsecureCerts      :: Maybe Bool
                  -- |How the session should handle unexpected alerts.
                , unexpectedAlertBehavior :: Maybe UnexpectedAlertBehavior
                  -- |A list of ('Text', 'Value') pairs specifying additional non-standard capabilities.
@@ -134,6 +139,7 @@ instance Default Capabilities where
                      , webStorageEnabled = Nothing
                      , rotatable = Nothing
                      , acceptSSLCerts = Nothing
+                     , acceptInsecureCerts = Nothing
                      , nativeEvents = Nothing
                      , proxy = UseSystemSettings
                      , unexpectedAlertBehavior = Nothing
@@ -161,6 +167,7 @@ allCaps = defaultCaps { javascriptEnabled = Just True
                       , webStorageEnabled = Just True
                       , rotatable = Just True
                       , acceptSSLCerts = Just True
+                      , acceptInsecureCerts = Just True
                       , nativeEvents = Just True
                       }
 
@@ -182,6 +189,7 @@ instance ToJSON Capabilities where
              , "webStorageEnabled" .= webStorageEnabled
              , "rotatable" .= rotatable
              , "acceptSslCerts" .= acceptSSLCerts
+             , "acceptInsecureCerts" .= acceptInsecureCerts
              , "nativeEvents" .= nativeEvents
              , "unexpectedAlertBehavior" .= unexpectedAlertBehavior
              ]
@@ -269,6 +277,7 @@ instance FromJSON Capabilities where
                  <*> b "webStorageEnabled"
                  <*> b "rotatable"
                  <*> b "acceptSslCerts"
+                 <*> b "acceptInsecureCerts"
                  <*> b "nativeEvents"
                  <*> opt "unexpectedAlertBehaviour" Nothing
                  <*> pure (additionalCapabilities browser)
@@ -285,12 +294,13 @@ instance FromJSON Capabilities where
           additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
 
           knownCapabilities browser =
-            ["browserName", "version", "platform", "proxy"
-            ,"javascriptEnabled", "takesScreenshot", "handlesAlerts"
-            ,"databaseEnabled", "locationContextEnabled"
-            ,"applicationCacheEnabled", "browserConnectionEnabled"
+            [ "browserName", "version", "platform", "proxy"
+            , "javascriptEnabled", "takesScreenshot", "handlesAlerts"
+            , "databaseEnabled", "locationContextEnabled"
+            , "applicationCacheEnabled", "browserConnectionEnabled"
             , "cssSelectorEnabled","webStorageEnabled", "rotatable"
-            , "acceptSslCerts", "nativeEvents", "unexpectedBrowserBehaviour"]
+            , "acceptSslCerts", "nativeEvents"
+            , "unexpectedBrowserBehaviour", "acceptInsecureCerts"]
             ++ case browser of
               Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary"]
               Chrome {} -> ["chrome.chromedriverVersion", "chrome.extensions", "chrome.switches", "chrome.extensions"]
