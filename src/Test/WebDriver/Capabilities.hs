@@ -113,11 +113,6 @@ data Capabilities =
                  -- |Whether the session is capable of generating native OS
                  -- events when simulating user input.
                , nativeEvents             :: Maybe Bool
-                 -- |Available after Firefox 52, and required only for Firefox
-                 -- geckodriver. Indicates whether untrusted and self-signed TLS
-                 -- certificates are implicitly trusted on navigation for the
-                 -- duration of the session.
-               , acceptInsecureCerts      :: Maybe Bool
                  -- |How the session should handle unexpected alerts.
                , unexpectedAlertBehavior :: Maybe UnexpectedAlertBehavior
                  -- |A list of ('Text', 'Value') pairs specifying additional non-standard capabilities.
@@ -139,7 +134,6 @@ instance Default Capabilities where
                      , webStorageEnabled = Nothing
                      , rotatable = Nothing
                      , acceptSSLCerts = Nothing
-                     , acceptInsecureCerts = Nothing
                      , nativeEvents = Nothing
                      , proxy = UseSystemSettings
                      , unexpectedAlertBehavior = Nothing
@@ -167,7 +161,6 @@ allCaps = defaultCaps { javascriptEnabled = Just True
                       , webStorageEnabled = Just True
                       , rotatable = Just True
                       , acceptSSLCerts = Just True
-                      , acceptInsecureCerts = Just True
                       , nativeEvents = Just True
                       }
 
@@ -189,7 +182,6 @@ instance ToJSON Capabilities where
              , "webStorageEnabled" .= webStorageEnabled
              , "rotatable" .= rotatable
              , "acceptSslCerts" .= acceptSSLCerts
-             , "acceptInsecureCerts" .= acceptInsecureCerts
              , "nativeEvents" .= nativeEvents
              , "unexpectedAlertBehavior" .= unexpectedAlertBehavior
              ]
@@ -201,6 +193,7 @@ instance ToJSON Capabilities where
           -> ["firefox_profile" .= ffProfile
              ,"loggingPrefs" .= object ["driver" .= ffLogPref]
              ,"firefox_binary" .= ffBinary
+             ,"acceptInsecureCerts" .= fromMaybe False ffAcceptInsecureCerts
              ]
         Chrome {..}
           -> catMaybes [ opt "chrome.chromedriverVersion" chromeDriverVersion ]
@@ -277,7 +270,6 @@ instance FromJSON Capabilities where
                  <*> b "webStorageEnabled"
                  <*> b "rotatable"
                  <*> b "acceptSslCerts"
-                 <*> b "acceptInsecureCerts"
                  <*> b "nativeEvents"
                  <*> opt "unexpectedAlertBehaviour" Nothing
                  <*> pure (additionalCapabilities browser)
@@ -299,10 +291,9 @@ instance FromJSON Capabilities where
             , "databaseEnabled", "locationContextEnabled"
             , "applicationCacheEnabled", "browserConnectionEnabled"
             , "cssSelectorEnabled","webStorageEnabled", "rotatable"
-            , "acceptSslCerts", "nativeEvents"
-            , "unexpectedBrowserBehaviour", "acceptInsecureCerts"]
+            , "acceptSslCerts", "nativeEvents", "unexpectedBrowserBehaviour"]
             ++ case browser of
-              Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary"]
+              Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary", "acceptInsecureCerts"]
               Chrome {} -> ["chrome.chromedriverVersion", "chrome.extensions", "chrome.switches", "chrome.extensions"]
               IE {} -> ["ignoreProtectedModeSettings", "ignoreZoomSettings", "initialBrowserUrl", "elementScrollBehavior"
                        ,"enablePersistentHover", "enableElementCacheCleanup", "requireWindowFocus", "browserAttachTimeout"
@@ -315,6 +306,7 @@ instance FromJSON Capabilities where
               Firefox {} -> Firefox <$> opt "firefox_profile" Nothing
                                     <*> opt "loggingPrefs" def
                                     <*> opt "firefox_binary" Nothing
+                                    <*> opt "acceptInsecureCerts" Nothing
               Chrome {} -> Chrome <$> opt "chrome.chromedriverVersion" Nothing
                                   <*> opt "chrome.binary" Nothing
                                   <*> opt "chrome.switches" []
@@ -367,6 +359,11 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                          -- |Server-side path to Firefox binary. If Nothing,
                          -- use a sensible system-based default.
                        , ffBinary :: Maybe FilePath
+                         -- |Available after Firefox 52, and required only for Firefox
+                         -- geckodriver. Indicates whether untrusted and self-signed TLS
+                         -- certificates are implicitly trusted on navigation for the
+                         -- duration of the session.
+                       , ffAcceptInsecureCerts :: Maybe Bool
                        }
              | Chrome { -- |Version of the Chrome Webdriver server server to use
                         --
@@ -536,7 +533,7 @@ instance FromJSON Browser where
 -- |Default Firefox settings. All Maybe fields are set to Nothing. ffLogPref
 -- is set to 'LogInfo'.
 firefox :: Browser
-firefox = Firefox Nothing def Nothing
+firefox = Firefox Nothing def Nothing Nothing
 
 -- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
 -- specified, and no extensions are used.
