@@ -482,8 +482,8 @@ sendKeys t e = noReturn . doElemCommand methodPost e "/value" . single "value" $
 
 -- |Similar to sendKeys, but doesn't implicitly release modifier keys
 -- afterwards. This allows you to combine modifiers with mouse clicks.
-sendRawKeys :: (HasCallStack, WebDriver wd) => Text -> Element -> wd ()
-sendRawKeys t e = noReturn . doElemCommand methodPost e "/keys" . single "value" $ [t]
+sendRawKeys :: (HasCallStack, WebDriver wd) => Text -> wd ()
+sendRawKeys t = noReturn . doSessCommand methodPost "/keys" . single "value" $ [t]
 
 -- |Return the tag name of the given element.
 tagName :: (HasCallStack, WebDriver wd) => Element -> wd Text
@@ -514,11 +514,11 @@ cssProp :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Text)
 cssProp e t = doElemCommand methodGet e ("/css/" `append` urlEncode t) Null
 
 -- |Retrieve an element's current position.
-elemPos :: (HasCallStack, WebDriver wd) => Element -> wd (Int, Int)
+elemPos :: (HasCallStack, WebDriver wd) => Element -> wd (Float, Float)
 elemPos e = doElemCommand methodGet e "/location" Null >>= parsePair "x" "y" "elemPos"
 
 -- |Retrieve an element's current size.
-elemSize :: (HasCallStack, WebDriver wd) => Element -> wd (Word, Word)
+elemSize :: (HasCallStack, WebDriver wd) => Element -> wd (Float, Float)
 elemSize e = doElemCommand methodGet e "/size" Null
              >>= parsePair "width" "height" "elemSize"
 
