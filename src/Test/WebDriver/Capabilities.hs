@@ -193,6 +193,7 @@ instance ToJSON Capabilities where
           -> ["firefox_profile" .= ffProfile
              ,"loggingPrefs" .= object ["driver" .= ffLogPref]
              ,"firefox_binary" .= ffBinary
+             ,"acceptInsecureCerts" .= fromMaybe False ffAcceptInsecureCerts
              ]
         Chrome {..}
           -> catMaybes [ opt "chrome.chromedriverVersion" chromeDriverVersion ]
@@ -285,14 +286,14 @@ instance FromJSON Capabilities where
           additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
 
           knownCapabilities browser =
-            ["browserName", "version", "platform", "proxy"
-            ,"javascriptEnabled", "takesScreenshot", "handlesAlerts"
-            ,"databaseEnabled", "locationContextEnabled"
-            ,"applicationCacheEnabled", "browserConnectionEnabled"
+            [ "browserName", "version", "platform", "proxy"
+            , "javascriptEnabled", "takesScreenshot", "handlesAlerts"
+            , "databaseEnabled", "locationContextEnabled"
+            , "applicationCacheEnabled", "browserConnectionEnabled"
             , "cssSelectorEnabled","webStorageEnabled", "rotatable"
             , "acceptSslCerts", "nativeEvents", "unexpectedBrowserBehaviour"]
             ++ case browser of
-              Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary"]
+              Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary", "acceptInsecureCerts"]
               Chrome {} -> ["chrome.chromedriverVersion", "chrome.extensions", "chrome.switches", "chrome.extensions"]
               IE {} -> ["ignoreProtectedModeSettings", "ignoreZoomSettings", "initialBrowserUrl", "elementScrollBehavior"
                        ,"enablePersistentHover", "enableElementCacheCleanup", "requireWindowFocus", "browserAttachTimeout"
@@ -305,6 +306,7 @@ instance FromJSON Capabilities where
               Firefox {} -> Firefox <$> opt "firefox_profile" Nothing
                                     <*> opt "loggingPrefs" def
                                     <*> opt "firefox_binary" Nothing
+                                    <*> opt "acceptInsecureCerts" Nothing
               Chrome {} -> Chrome <$> opt "chrome.chromedriverVersion" Nothing
                                   <*> opt "chrome.binary" Nothing
                                   <*> opt "chrome.switches" []
@@ -357,6 +359,11 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                          -- |Server-side path to Firefox binary. If Nothing,
                          -- use a sensible system-based default.
                        , ffBinary :: Maybe FilePath
+                         -- |Available after Firefox 52, and required only for Firefox
+                         -- geckodriver. Indicates whether untrusted and self-signed TLS
+                         -- certificates are implicitly trusted on navigation for the
+                         -- duration of the session.
+                       , ffAcceptInsecureCerts :: Maybe Bool
                        }
              | Chrome { -- |Version of the Chrome Webdriver server server to use
                         --
@@ -526,7 +533,7 @@ instance FromJSON Browser where
 -- |Default Firefox settings. All Maybe fields are set to Nothing. ffLogPref
 -- is set to 'LogInfo'.
 firefox :: Browser
-firefox = Firefox Nothing def Nothing
+firefox = Firefox Nothing def Nothing Nothing
 
 -- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
 -- specified, and no extensions are used.
