@@ -696,6 +696,7 @@ instance FromJSON UnexpectedAlertBehavior where
       "accept"  -> AcceptAlert
       "dismiss" -> DismissAlert
       "ignore"  -> IgnoreAlert
+      ""  -> IgnoreAlert
       err       -> throw . BadJSON
                    $ "Invalid string value for UnexpectedAlertBehavior: " ++ show err
   parseJSON v = typeMismatch "UnexpectedAlertBehavior" v
