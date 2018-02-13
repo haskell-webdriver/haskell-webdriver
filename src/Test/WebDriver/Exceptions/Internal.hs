@@ -5,7 +5,7 @@ module Test.WebDriver.Exceptions.Internal
 
        , FailedCommand(..), failedCommand, mkFailedCommandInfo
        , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
-       , callStackItemToStackFrame
+       , externalCallStack, callStackItemToStackFrame
        ) where
 import Test.WebDriver.Session
 import Test.WebDriver.JSON
@@ -14,6 +14,7 @@ import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.CallStack
+import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TLE
 
@@ -23,6 +24,8 @@ import Control.Exception.Lifted (throwIO)
 
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.Typeable (Typeable)
+
+import Debug.Trace
 
 import Prelude -- hides some "unused import" warnings
 
@@ -134,6 +137,14 @@ mkFailedCommandInfo m cs = do
                              , errScreen = Nothing
                              , errClass = Nothing
                              , errStack = fmap callStackItemToStackFrame cs }
+
+-- |Use GHC's CallStack capabilities to return a callstack to help debug a FailedCommand.
+-- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
+-- should be where the user called into Test.WebDriver
+externalCallStack :: (HasCallStack) => CallStack
+externalCallStack = dropWhile isWebDriverFrame callStack
+  where isWebDriverFrame :: ([Char], SrcLoc) -> Bool
+        isWebDriverFrame (_, SrcLoc {srcLocModule}) = "Test.WebDriver" `L.isPrefixOf` srcLocModule
 
 -- |Convenience function to throw a 'FailedCommand' locally with no server-side
 -- info present.
