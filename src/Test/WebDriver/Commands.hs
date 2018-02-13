@@ -4,7 +4,7 @@
 -- browser session.
 module Test.WebDriver.Commands
        ( -- * Sessions
-         createSession, closeSession, sessions, getActualCaps
+         createSession, closeSession, sessions, getActualCaps, getSessionCaps
          -- * Browser interaction
          -- ** Web navigation
        , openPage, forward, back, refresh
