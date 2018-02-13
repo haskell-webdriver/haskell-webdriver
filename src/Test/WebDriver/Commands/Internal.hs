@@ -18,6 +18,7 @@ module Test.WebDriver.Commands.Internal
 
 import Test.WebDriver.Class
 import Test.WebDriver.Session
+import Test.WebDriver.JSON
 import Test.WebDriver.Utils (urlEncode)
 
 import Control.Applicative
@@ -37,7 +38,13 @@ newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)
 
 instance FromJSON Element where
-  parseJSON (Object o) = Element <$> o .: "ELEMENT"
+  parseJSON (Object o) =
+    Element <$> do
+      e  <- o .:? "ELEMENT"
+      eG <- o .:? "element-6066-11e4-a52e-4f735466cecf"
+      case e <|> eG of
+        Just e' -> return e'
+        Nothing -> throw . BadJSON $ "ELEMENT or element-6066-11e4-a52e-4f735466cecf required"
   parseJSON v = typeMismatch "Element" v
 
 instance ToJSON Element where

@@ -110,7 +110,9 @@ import Prelude -- hides some "unused import" warnings
 -- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
 createSession :: (HasCallStack, WebDriver wd) => Capabilities -> wd WDSession
 createSession caps = do
-  ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "desiredCapabilities" $ caps
+  body <- withAuthHeaders $ doCommand methodPost "/session" . single "desiredCapabilities" $ caps
+  s <- getSession
+  putSession s { wdSessCreationResponse = Just body }
   getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
@@ -123,6 +125,14 @@ sessions = do
 getActualCaps :: (HasCallStack, WebDriver wd) => wd Capabilities
 getActualCaps = doSessCommand methodGet "" Null
 
+-- |Get the 'Capabilities' that were sent when the session was creted.
+getSessionCaps :: (HasCallStack, WebDriver wd) => wd (Maybe Capabilities)
+getSessionCaps = do
+  caps <- wdSessCreationResponse <$> getSession
+  return $ case fromJSON . toJSON <$> caps of
+    Just (Success c) -> Just c
+    _ -> Nothing
+  
 -- |Close the current session and the browser associated with it.
 closeSession :: (HasCallStack, WebDriver wd) => wd ()
 closeSession = do s@WDSession {..} <- getSession
