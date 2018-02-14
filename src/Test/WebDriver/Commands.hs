@@ -129,9 +129,7 @@ getActualCaps = doSessCommand methodGet "" Null
 getSessionCaps :: (HasCallStack, WebDriver wd) => wd (Maybe Capabilities)
 getSessionCaps = do
   caps <- wdSessCreationResponse <$> getSession
-  return $ case fromJSON . toJSON <$> caps of
-    Just (Success c) -> Just c
-    _ -> Nothing
+  return $ parseMaybe parseJSON =<< caps
   
 -- |Close the current session and the browser associated with it.
 closeSession :: (HasCallStack, WebDriver wd) => wd ()
