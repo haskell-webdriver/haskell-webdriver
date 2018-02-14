@@ -457,11 +457,19 @@ activeElem = doSessCommand methodPost "/element/active" Null
 
 -- |Search for an element using the given element as root.
 findElemFrom :: (HasCallStack, WebDriver wd) => Element -> Selector -> wd Element
-findElemFrom e = doElemCommand methodPost e "/element"
+findElemFrom e s 
+  | isRelative s = doElemCommand methodPost e "/element" s
+  | otherwise = fail "Selector in findElemFrom must be relative"
 
 -- |Find all elements matching a selector, using the given element as root.
 findElemsFrom :: (HasCallStack, WebDriver wd) => Element -> Selector -> wd [Element]
-findElemsFrom e = doElemCommand methodPost e "/elements"
+findElemsFrom e s 
+  | isRelative s = doElemCommand methodPost e "/elements" s
+  | otherwise = fail "Selector in findElemsFrom must be relative"
+
+isRelative :: Selector -> Bool
+isRelative (ByXPath t) = "." `T.isPrefixOf` t
+isRelative _ = True
 
 -- |Describe the element. Returns a JSON object whose meaning is currently
 -- undefined by the WebDriver protocol.
