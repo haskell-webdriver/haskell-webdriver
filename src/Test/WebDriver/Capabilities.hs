@@ -257,7 +257,12 @@ instance FromJSON Capabilities where
     browser <- req "browserName"
     Capabilities <$> getBrowserCaps browser
                  <*> opt "version" Nothing
-                 <*> req "platform"
+                 <*> do
+                    p  <- o .:? "platform"
+                    pN <- o .:? "platformName"
+                    case p <|> pN of
+                      Just p' -> return p'
+                      Nothing -> throw . BadJSON $ "platform or platformName required"
                  <*> opt "proxy" NoProxy
                  <*> b "javascriptEnabled"
                  <*> b "takesScreenshot"
@@ -339,6 +344,7 @@ instance FromJSON Capabilities where
                                 <*> opt "opera.arguments" Nothing
                                 <*> opt "opera.logging.file" Nothing
                                 <*> opt "opera.logging.level" def
+              Edge {} -> Edge <$> b "InPrivate"
               _ -> return browser
 
   parseJSON v = typeMismatch "Capabilities" v
@@ -497,6 +503,8 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
              | IPhone
              | IPad
              | Android
+             | Edge { inPrivate :: Maybe Bool
+                    }
              -- |some other browser, specified by a string name
              | Browser Text
              deriving (Eq, Show)
@@ -506,6 +514,7 @@ instance Default Browser where
 
 
 instance ToJSON Browser where
+  toJSON Edge {}      = String "MicrosoftEdge"
   toJSON Firefox {}   = String "firefox"
   toJSON Chrome {}    = String "chrome"
   toJSON Opera {}     = String "opera"
@@ -526,6 +535,7 @@ instance FromJSON Browser where
     "ipad"              -> return iPad
     "android"           -> return android
     "htmlunit"          -> return htmlUnit
+    "microsoftedge"     -> return edge
     other               -> return (Browser other)
   parseJSON v = typeMismatch "Browser" v
 
@@ -597,6 +607,10 @@ iPad = IPad
 android :: Browser
 android = Android
 
+edge :: Browser
+edge = Edge { inPrivate = Nothing
+            }
+
 -- |Represents platform options supported by WebDriver. The value Any represents
 -- no preference.
 data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
@@ -607,6 +621,8 @@ instance ToJSON Platform where
 
 instance FromJSON Platform where
   parseJSON (String jStr) = case toLower jStr of
+    "windows nt" -> return Windows
+    "windows_nt" -> return Windows
     "windows" -> return Windows
     "xp"      -> return XP
     "vista"   -> return Vista
@@ -680,6 +696,7 @@ instance FromJSON UnexpectedAlertBehavior where
       "accept"  -> AcceptAlert
       "dismiss" -> DismissAlert
       "ignore"  -> IgnoreAlert
+      ""  -> IgnoreAlert
       err       -> throw . BadJSON
                    $ "Invalid string value for UnexpectedAlertBehavior: " ++ show err
   parseJSON v = typeMismatch "UnexpectedAlertBehavior" v

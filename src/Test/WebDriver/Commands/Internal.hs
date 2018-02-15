@@ -18,6 +18,7 @@ module Test.WebDriver.Commands.Internal
 
 import Test.WebDriver.Class
 import Test.WebDriver.Session
+import Test.WebDriver.JSON
 import Test.WebDriver.Utils (urlEncode)
 
 import Control.Applicative
@@ -37,7 +38,13 @@ newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)
 
 instance FromJSON Element where
-  parseJSON (Object o) = Element <$> o .: "ELEMENT"
+  parseJSON (Object o) =
+    Element <$> do
+      e  <- o .:? "ELEMENT"
+      eG <- o .:? "element-6066-11e4-a52e-4f735466cecf"
+      case e <|> eG of
+        Just e' -> return e'
+        Nothing -> throw . BadJSON $ "ELEMENT or element-6066-11e4-a52e-4f735466cecf required"
   parseJSON v = typeMismatch "Element" v
 
 instance ToJSON Element where
@@ -83,7 +90,7 @@ doSessCommand method path args = do
 -- For example, passing a URL of "/active" will expand to
 -- \"/session/:sessionId/element/:id/active\", where :sessionId and :id are URL
 -- parameters as described in the wire protocol.
-doElemCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+doElemCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
                   Method -> Element -> Text -> a -> wd b
 doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
@@ -92,7 +99,7 @@ doElemCommand m (Element e) path a =
 -- For example, passing a URL of \"/size\" will expand to
 -- \"/session/:sessionId/window/:windowHandle/\", where :sessionId and
 -- :windowHandle are URL parameters as described in the wire protocol
-doWinCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+doWinCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
                  Method -> WindowHandle -> Text -> a -> wd b
 doWinCommand m (WindowHandle w) path a =
   doSessCommand m (T.concat ["/window/", urlEncode w, path]) a

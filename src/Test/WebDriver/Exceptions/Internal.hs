@@ -21,11 +21,9 @@ import qualified Data.Text.Lazy.Encoding as TLE
 import Control.Applicative
 import Control.Exception (Exception)
 import Control.Exception.Lifted (throwIO)
-import Control.Monad.IO.Class
 
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.Typeable (Typeable)
-import Data.Word
 
 import Debug.Trace
 
@@ -116,6 +114,7 @@ instance Show FailedCommandInfo where
            . showChar '\n'
            . showString className . showString ": " . showString (errMsg i)
            . showChar '\n'
+           . showString "CallStack (from HasCallStack):\n"
            . foldl (\f s-> f . showString "  " . shows s) id (errStack i)
            $ ""
     where
@@ -151,7 +150,7 @@ externalCallStack = dropWhile isWebDriverFrame callStack
 -- info present.
 failedCommand :: (HasCallStack, WDSessionStateIO s) => FailedCommandType -> String -> s a
 failedCommand t m = do
-  throwIO . FailedCommand t =<< mkFailedCommandInfo m externalCallStack
+  throwIO . FailedCommand t =<< mkFailedCommandInfo m callStack
 
 -- |An individual stack frame from the stack trace provided by the server
 -- during a FailedCommand.

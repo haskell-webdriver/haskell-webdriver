@@ -24,7 +24,7 @@ import Network.HTTP.Types.Status (Status(..))
 import qualified Data.ByteString.Base64.Lazy as B64
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null)
+import Data.ByteString.Lazy.Char8 as LBS (unpack, null)
 import qualified Data.ByteString.Lazy.Internal as LBS (ByteString(..))
 import Data.CallStack
 import Data.Text as T (Text, splitOn, null)
@@ -183,7 +183,7 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
       errInfo' = errInfo { errSess = Just sess
                          -- Append the Haskell stack frames to the ones returned from Selenium
                          , errScreen = screen
-                         , errStack = seleniumStack ++ (fmap callStackItemToStackFrame externalCallStack) }
+                         , errStack = seleniumStack ++ (fmap callStackItemToStackFrame callStack) }
       e errType = toException $ FailedCommand errType errInfo'
   return . Just $ case status of
     7   -> e NoSuchElement

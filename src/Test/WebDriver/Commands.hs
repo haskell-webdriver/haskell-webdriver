@@ -4,7 +4,7 @@
 -- browser session.
 module Test.WebDriver.Commands
        ( -- * Sessions
-         createSession, closeSession, sessions, getActualCaps
+         createSession, closeSession, sessions, getActualCaps, getSessionCaps
          -- * Browser interaction
          -- ** Web navigation
        , openPage, forward, back, refresh
@@ -110,7 +110,9 @@ import Prelude -- hides some "unused import" warnings
 -- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
 createSession :: (HasCallStack, WebDriver wd) => Capabilities -> wd WDSession
 createSession caps = do
-  ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "desiredCapabilities" $ caps
+  body <- withAuthHeaders $ doCommand methodPost "/session" . single "desiredCapabilities" $ caps
+  s <- getSession
+  putSession s { wdSessCreationResponse = Just body }
   getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
@@ -123,6 +125,12 @@ sessions = do
 getActualCaps :: (HasCallStack, WebDriver wd) => wd Capabilities
 getActualCaps = doSessCommand methodGet "" Null
 
+-- |Get the 'Capabilities' that were sent when the session was creted.
+getSessionCaps :: (HasCallStack, WebDriver wd) => wd (Maybe Capabilities)
+getSessionCaps = do
+  caps <- wdSessCreationResponse <$> getSession
+  return $ parseMaybe parseJSON =<< caps
+  
 -- |Close the current session and the browser associated with it.
 closeSession :: (HasCallStack, WebDriver wd) => wd ()
 closeSession = do s@WDSession {..} <- getSession
@@ -226,7 +234,7 @@ a `fromJSON` instance to use.
 		return e
 @
 -}
-executeJS :: (F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
+executeJS :: (HasCallStack, F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
 executeJS a s = fromJSON' =<< getResult
   where
     getResult = doSessCommand methodPost "/execute" . pair ("args", "script") $ (F.toList a,s)
@@ -351,7 +359,7 @@ data Cookie = Cookie { cookName   :: Text
                                                    -- if Nothing, the current pages
                                                    -- domain is used
                      , cookSecure :: Maybe Bool    -- ^Is this cookie secure?
-                     , cookExpiry :: Maybe Integer -- ^Expiry date expressed as
+                     , cookExpiry :: Maybe Double  -- ^Expiry date expressed as
                                                    -- seconds since the Unix epoch
                                                    -- Nothing indicates that the
                                                    -- cookie never expires
@@ -430,7 +438,7 @@ instance ToJSON Selector where
     ByLinkText t        -> selector "link text" t
     ByPartialLinkText t -> selector "partial link text" t
     ByCSS t             -> selector "css selector" t
-    ByXPath t           -> selector "xpath" t
+    ByXPath t           -> selector "xpath" (T.replace "[1" "[0+1" t)
     where
       selector :: Text -> Text -> Value
       selector sn t = object ["using" .= sn, "value" .= t]
@@ -449,11 +457,19 @@ activeElem = doSessCommand methodPost "/element/active" Null
 
 -- |Search for an element using the given element as root.
 findElemFrom :: (HasCallStack, WebDriver wd) => Element -> Selector -> wd Element
-findElemFrom e = doElemCommand methodPost e "/element"
+findElemFrom e s 
+  | isRelative s = doElemCommand methodPost e "/element" s
+  | otherwise = fail "Selector in findElemFrom must be relative"
 
 -- |Find all elements matching a selector, using the given element as root.
 findElemsFrom :: (HasCallStack, WebDriver wd) => Element -> Selector -> wd [Element]
-findElemsFrom e = doElemCommand methodPost e "/elements"
+findElemsFrom e s 
+  | isRelative s = doElemCommand methodPost e "/elements" s
+  | otherwise = fail "Selector in findElemsFrom must be relative"
+
+isRelative :: Selector -> Bool
+isRelative (ByXPath t) = not $ "/" `T.isPrefixOf` t
+isRelative _ = True
 
 -- |Describe the element. Returns a JSON object whose meaning is currently
 -- undefined by the WebDriver protocol.
@@ -472,7 +488,7 @@ submit e = noReturn $ doElemCommand methodPost e "/submit" Null
 
 -- |Get all visible text within this element.
 getText :: (HasCallStack, WebDriver wd) => Element -> wd Text
-getText e = doElemCommand methodGet e "/text" Null
+getText e = T.strip <$> doElemCommand methodGet e "/text" Null
 
 -- |Send a sequence of keystrokes to an element. All modifier keys are released
 -- at the end of the function. Named constants for special modifier keys can be found
