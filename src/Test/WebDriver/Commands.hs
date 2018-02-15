@@ -468,7 +468,7 @@ findElemsFrom e s
   | otherwise = fail "Selector in findElemsFrom must be relative"
 
 isRelative :: Selector -> Bool
-isRelative (ByXPath t) = "." `T.isPrefixOf` t
+isRelative (ByXPath t) = not $ "/" `T.isPrefixOf` t
 isRelative _ = True
 
 -- |Describe the element. Returns a JSON object whose meaning is currently
