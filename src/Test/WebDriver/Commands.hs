@@ -351,7 +351,7 @@ data Cookie = Cookie { cookName   :: Text
                                                    -- if Nothing, the current pages
                                                    -- domain is used
                      , cookSecure :: Maybe Bool    -- ^Is this cookie secure?
-                     , cookExpiry :: Maybe Integer -- ^Expiry date expressed as
+                     , cookExpiry :: Maybe Double  -- ^Expiry date expressed as
                                                    -- seconds since the Unix epoch
                                                    -- Nothing indicates that the
                                                    -- cookie never expires
