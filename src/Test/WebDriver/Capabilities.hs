@@ -686,7 +686,7 @@ instance FromJSON UnexpectedAlertBehavior where
 
 -- |Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
 data LogLevel = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
-              | LogFine | LogFiner | LogFinest | LogAll
+              | LogFine | LogFiner | LogFinest | LogDebug | LogAll
              deriving (Eq, Show, Read, Ord, Bounded, Enum)
 
 instance Default LogLevel where
@@ -714,6 +714,7 @@ instance FromJSON LogLevel where
     "FINE" -> LogFine
     "FINER" -> LogFiner
     "FINEST" -> LogFinest
+    "DEBUG" -> LogDebug
     "ALL" -> LogAll
     _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
   parseJSON other = typeMismatch "LogLevel" other
