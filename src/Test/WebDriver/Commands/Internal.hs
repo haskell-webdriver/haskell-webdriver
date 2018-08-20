@@ -29,6 +29,7 @@ import Data.Aeson
 import Data.Aeson.Types
 import Data.CallStack
 import Data.Default.Class
+import Data.HashMap.Strict
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Typeable
@@ -40,7 +41,9 @@ newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)
 
 instance FromJSON Element where
-  parseJSON (Object o) = Element <$> (o .: "ELEMENT" <|> o .: "element-6066-11e4-a52e-4f735466cecf")
+  parseJSON (Object o) = case elems o of
+    (String id : _) -> pure $ Element id
+    _ -> fail "No elements returned"
   parseJSON v = typeMismatch "Element" v
 
 instance ToJSON Element where
