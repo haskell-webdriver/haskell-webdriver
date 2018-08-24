@@ -102,10 +102,7 @@ doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
 
 -- |A wrapper around 'doSessCommand' to create window handle URLS.
--- For example, passing a URL of \"/size\" will expand to
--- \"/session/:sessionId/window/:windowHandle/\", where :sessionId and
--- :windowHandle are URL parameters as described in the wire protocol
 doWinCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
-                 Method -> WindowHandle -> Text -> a -> wd b
-doWinCommand m (WindowHandle w) path a =
-  doSessCommand m (T.concat ["/window/", urlEncode w, path]) a
+                 Method -> Text -> a -> wd b
+doWinCommand m path a =
+  doSessCommand m (T.concat ["/window/", path]) a

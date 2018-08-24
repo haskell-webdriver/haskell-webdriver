@@ -23,16 +23,16 @@ baidu = do
 
 searchBaidu :: WD ()
 searchBaidu = do
-  searchBox <- findElem (ById "kw")
+  searchBox <- findElem (ByCSS "#kw")
   sendKeys "Cheese!" searchBox
   submit searchBox
   waitUntil 15 $ do
     title <- getTitle
     expect ("Cheese!" `T.isInfixOf` title)
 
-  container <- findElem (ById "container")
+  container <- findElem (ByCSS "#container")
   eList1 <- findElems (ByCSS "c-container")
-  eList2 <- findElems (ByClass "c-container")
+  eList2 <- findElems (ByCSS ".c-container")
   expect =<< (fmap and $ zipWithM (<==>) eList1 eList2)
 
   forM_ eList1 $ \e -> findElemsFrom e (ByTag "a")
