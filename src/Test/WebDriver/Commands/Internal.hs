@@ -96,6 +96,6 @@ doElemCommand m (Element e) path a =
 -- \"/session/:sessionId/window/:windowHandle/\", where :sessionId and
 -- :windowHandle are URL parameters as described in the wire protocol
 doWinCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
-                 Method -> WindowHandle -> Text -> a -> wd b
-doWinCommand m (WindowHandle w) path a =
-  doSessCommand m (T.concat ["/window/", urlEncode w, path]) a
+                 Method -> Text -> a -> wd b
+doWinCommand m path a =
+  doSessCommand m (T.concat ["/window/", path]) a

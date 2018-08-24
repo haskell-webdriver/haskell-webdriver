@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ConstraintKinds, PatternGuards, CPP #-}
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ConstraintKinds, PatternGuards, CPP, LambdaCase #-}
 -- |The HTTP/JSON plumbing used to implement the 'WD' monad.
 --
 -- These functions can be used to create your own 'WebDriver' instances, providing extra functionality for your application if desired. All exports
@@ -42,6 +42,7 @@ import Data.Word (Word8)
 import Data.Default.Class
 #endif
 
+import Debug.Trace
 import Prelude -- hides some "unused import" warnings
 
 --This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
@@ -223,7 +224,19 @@ data WDResponse = WDResponse {
                   deriving (Eq, Show)
 
 instance FromJSON WDResponse where
-  parseJSON (Object o) = WDResponse <$> o .:?? "sessionId" .!= Nothing
-                                    <*> o .: "status"
-                                    <*> o .:?? "value" .!= Null
+  -- We try both options as the wire format changes depending on
+  -- whether selenium is running as a hub or standalone
+  parseJSON (Object o) = parseJSONSelenium o
+                         <|> (o .: "value" >>= parseJSONWebDriver)
   parseJSON v = typeMismatch "WDResponse" v
+
+parseJSONSelenium o = WDResponse <$> o .: "sessionId"
+                            <*> o .:?? "status" .!= 0
+                            <*> o .:?? "value" .!= Null
+
+parseJSONWebDriver (Object o) = do
+  sessionId <- o .:?? "sessionId" .!= Nothing
+  status <- o .:?? "status" .!= 0
+  pure $ WDResponse sessionId status (Object o)
+
+parseJSONWebDriver v = pure $ WDResponse Nothing 0 v

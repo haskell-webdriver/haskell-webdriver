@@ -73,7 +73,6 @@ noReturn = void
 ignoreReturn :: WebDriver wd => wd Value -> wd ()
 ignoreReturn = void
 
-
 -- |Construct a singleton JSON 'object' from a key and value.
 single :: ToJSON a => Text -> a -> Value
 single a x = object [a .= x]
