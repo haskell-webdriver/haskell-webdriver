@@ -21,13 +21,9 @@ import qualified Data.Text.Lazy.Encoding as TLE
 import Control.Applicative
 import Control.Exception (Exception)
 import Control.Exception.Lifted (throwIO)
-import Control.Monad.IO.Class
 
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.Typeable (Typeable)
-import Data.Word
-
-import Debug.Trace
 
 import Prelude -- hides some "unused import" warnings
 

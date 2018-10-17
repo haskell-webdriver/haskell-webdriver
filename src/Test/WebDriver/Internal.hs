@@ -24,7 +24,7 @@ import Network.HTTP.Types.Status (Status(..))
 import qualified Data.ByteString.Base64.Lazy as B64
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.ByteString.Lazy.Char8 as LBS (length, unpack, null)
+import Data.ByteString.Lazy.Char8 as LBS (unpack, null)
 import qualified Data.ByteString.Lazy.Internal as LBS (ByteString(..))
 import Data.CallStack
 import Data.Text as T (Text, splitOn, null)
@@ -42,7 +42,6 @@ import Data.Word (Word8)
 import Data.Default.Class
 #endif
 
-import Debug.Trace
 import Prelude -- hides some "unused import" warnings
 
 import Control.Monad.IO.Class
