@@ -45,7 +45,6 @@ import Data.Word (Word8)
 import Data.Default.Class
 #endif
 
-import Debug.Trace
 import Prelude -- hides some "unused import" warnings
 
 import Control.Monad.IO.Class
