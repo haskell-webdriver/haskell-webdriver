@@ -67,6 +67,10 @@ While you can use any WebDriver server out there, probably the simplest server t
 
 The server should now be listening at localhost on port 4444.
 
+Currently, `hs-webdriver` only supports selenium version 2.
+The [beginner example](/examples/readme-example-beginner.md) was
+tested with `selenium-server-standalone-2.53.1`.
+
 ## Hello, World!
 With the Selenium server running locally, you're ready to write browser automation scripts in Haskell.
 
@@ -89,4 +93,3 @@ runhaskell Setup.hs haddock
 ```
 
 Haddock will generate documentation and save it in `dist/doc/html/webdriver`
-
