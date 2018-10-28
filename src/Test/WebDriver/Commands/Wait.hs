@@ -100,29 +100,28 @@ waitWhile = waitWhile' 500000
 waitWhile' :: (WDSessionStateControl m, HasCallStack)  => Int -> Double -> m a -> m ()
 waitWhile' =
   waitEither  (\_ _ -> return ())
-              (\retry _ -> retry "waitWhile: action did not fail")
-
+              (\retry _ -> retry $ SomeException $ ExpectFailed "waitWhile: action did not fail")
 
 -- |Internal function used to implement explicit wait commands using success and failure continuations
-waitEither :: (WDSessionStateControl m, HasCallStack) =>
-               ((String -> m b) -> String -> m b)
-            -> ((String -> m b) -> a -> m b)
-            -> Int -> Double -> m a -> m b
+waitEither :: (WDSessionStateControl m) =>
+              ((SomeException -> m b) -> SomeException -> m b)
+           -> ((SomeException -> m b) -> a -> m b)
+           -> Int -> Double -> m a -> m b
 waitEither failure success = wait' handler
  where
   handler retry wd = do
     e <- fmap Right wd  `catches` [Handler handleFailedCommand
-                                  ,Handler handleExpectFailed
+                                  , Handler handleOtherException
                                   ]
     either (failure retry) (success retry) e
    where
-    handleFailedCommand e@(FailedCommand NoSuchElement _) = return . Left . show $ e
+    handleFailedCommand e@(FailedCommand NoSuchElement _) = return $ Left $ SomeException e
     handleFailedCommand err = throwIO err
 
-    handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
+    handleOtherException (e :: SomeException) = return $ Left e
 
-wait' :: (WDSessionStateIO m, HasCallStack) =>
-         ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
+wait' :: (WDSessionStateIO m) =>
+         ((SomeException -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
 wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
   where
     timeout = realToFrac t
@@ -131,8 +130,7 @@ wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
         retry why = do
           now <- liftBase getCurrentTime
           if diffUTCTime now startTime >= timeout
-            then
-              failedCommand Timeout $ "wait': explicit wait timed out (" ++ why ++ ")."
+            then throwIO why
             else do
               liftBase . threadDelay $ waitAmnt
               waitLoop startTime
