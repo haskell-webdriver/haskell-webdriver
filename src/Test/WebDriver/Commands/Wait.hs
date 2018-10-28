@@ -103,7 +103,7 @@ waitWhile' =
               (\retry _ -> retry $ SomeException $ ExpectFailed "waitWhile: action did not fail")
 
 -- |Internal function used to implement explicit wait commands using success and failure continuations
-waitEither :: (WDSessionStateControl m) =>
+waitEither :: (WDSessionStateControl m, HasCallStack) =>
               ((SomeException -> m b) -> SomeException -> m b)
            -> ((SomeException -> m b) -> a -> m b)
            -> Int -> Double -> m a -> m b
@@ -120,7 +120,7 @@ waitEither failure success = wait' handler
 
     handleOtherException (e :: SomeException) = return $ Left e
 
-wait' :: (WDSessionStateIO m) =>
+wait' :: (WDSessionStateIO m, HasCallStack) =>
          ((SomeException -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
 wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
   where
