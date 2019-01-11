@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, GeneralizedNewtypeDeriving  #-}
+{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, GeneralizedNewtypeDeriving, ScopedTypeVariables #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- |Internal functions used to implement the functions exported by
 -- "Test.WebDriver.Commands". These may be useful for implementing non-standard
@@ -17,6 +17,7 @@ module Test.WebDriver.Commands.Internal
        ) where
 
 import Test.WebDriver.Class
+import Test.WebDriver.JSON
 import Test.WebDriver.Session
 import Test.WebDriver.Utils (urlEncode)
 
@@ -76,14 +77,21 @@ doSessCommand method path args = do
         where
           msg = "doSessCommand: No session ID found for relative URL "
                 ++ show path
-      Just (SessionId sId) -> doCommand method
-                              (T.concat ["/session/", urlEncode sId, path]) args
+      Just (SessionId sId) ->
+        -- Catch BadJSON exceptions here, since most commands go through this function.
+        -- Then, re-throw them with "error", which automatically appends a callstack
+        -- to the message in modern GHCs.
+        -- This callstack makes it easy to see which command caused the BadJSON exception,
+        -- without exposing too many internals.
+        catch
+          (doCommand method (T.concat ["/session/", urlEncode sId, path]) args)
+          (\(e :: BadJSON) -> error $ show e)
 
 -- |A wrapper around 'doSessCommand' to create element URLs.
 -- For example, passing a URL of "/active" will expand to
 -- \"/session/:sessionId/element/:id/active\", where :sessionId and :id are URL
 -- parameters as described in the wire protocol.
-doElemCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+doElemCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
                   Method -> Element -> Text -> a -> wd b
 doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
@@ -92,7 +100,7 @@ doElemCommand m (Element e) path a =
 -- For example, passing a URL of \"/size\" will expand to
 -- \"/session/:sessionId/window/:windowHandle/\", where :sessionId and
 -- :windowHandle are URL parameters as described in the wire protocol
-doWinCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+doWinCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
                  Method -> WindowHandle -> Text -> a -> wd b
 doWinCommand m (WindowHandle w) path a =
   doSessCommand m (T.concat ["/window/", urlEncode w, path]) a
