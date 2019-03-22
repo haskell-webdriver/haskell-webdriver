@@ -318,7 +318,7 @@ closeWindow w = do
 
 -- |Maximizes the current  window if not already maximized
 maximize :: (HasCallStack, WebDriver wd) => wd ()
-maximize = noReturn $ doWinCommand methodGet currentWindow "/maximize" Null
+maximize = ignoreReturn $ doWinCommand methodPost currentWindow "/maximize" Null
 
 -- |Get the dimensions of the current window.
 getWindowSize :: (HasCallStack, WebDriver wd) => wd (Word, Word)
