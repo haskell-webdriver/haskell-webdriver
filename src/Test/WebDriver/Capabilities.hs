@@ -234,7 +234,7 @@ instance ToJSON Capabilities where
                 ,"opera.autostart" .= operaAutoStart
                 , "opera.idle" .= operaIdle
                 -- ,"opera.profile" .= operaProfile
-                ,"opera.port" .= fromMaybe (-1) operaPort
+                ,"opera.port" .= fromMaybe maxBound {- (-1) -} operaPort
                  --note: consider replacing operaOptions with a list of options
                 ,"opera.arguments" .= operaOptions
                 ,"opera.logging.level" .= operaLogPref
@@ -702,6 +702,7 @@ instance ToJSON LogLevel where
     LogFine -> "FINE"
     LogFiner -> "FINER"
     LogFinest -> "FINEST"
+    LogDebug -> "DEBUG"
     LogAll -> "ALL"
 
 instance FromJSON LogLevel where
