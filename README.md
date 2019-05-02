@@ -11,10 +11,6 @@ For more information about Selenium itself, see http://seleniumhq.org/
 * [Getting Started](#getting-started)
     * [Using the Selenium Server](#using-the-selenium-server)
     * [Hello, World!](#hello-world)
-        * [Demonic invocations: a bit of boilerplate](#demonic-invocations-a-bit-of-boilerplate)
-        * [Configuring a WebDriver session](#configuring-a-webdriver-session)
-        * [Initializing tests](#initializing-tests)
-        * [Actually writing tests!](#actually-writing-tests)
 * [Integration with Haskell Testing Frameworks](#integration-with-haskell-testing-frameworks)
 * [Documentation](#documentation)
 
