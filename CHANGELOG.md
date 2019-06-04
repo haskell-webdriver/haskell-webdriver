@@ -1,4 +1,24 @@
 # Change Log
+## 0.9
+
+### Breaking API changes
+* Changed the type of the `cookExpiry` field of `Cookie` from `Maybe Integer` to `Maybe Double`. This fixes parsing issues with some selenium server implementations
+* Changed `elemPos` and `elemSize` to return `Float` pairs instead of `Int` pairs. This fixes parsing issues in some selemium server implementations.
+* Removed `Element` argument in the `sendRawKeys` command. This argument is no longer used in the modern Selenium API.
+
+### New API features
+* Added a `LogDebug` constructor to the `LogLevel` type.
+* Added `ffAccpetInsecureCerts` capability for `Firefox` geckodriver
+* The constructor for `ExpectFailed` is now exported so that it can caught properly by exception handlers
+* Added GHC callstack support. `BadJSON` exceptions are now caught and rethrown with `error` calls to improve stack traces.
+
+### W3C standard compatibility fixes
+* Fixed ToJSON Element instance so that it accepts both old OSS and new W3C element format (fixes compatibility issue with Selenium 3+ versions)
+* Changed the `maximize` API call to use POST instead of GET
+
+### Other Selenium compatibility fixes
+* Fixed an error with some versions of chromedriver when using `closeWindow`
+
 ## 0.8.5
 * Added support for experimental Chrome options that are not part of the API
 * Added a Phantomjs constructor for the Browser type
@@ -39,8 +59,6 @@
 
 ### Command changes
 * All commands that previously accepted a list parameter now accepts any instance of `Foldable` instead.
-
-
 
 ### Overloadable configuration
 It is now possible to define custom configuration types that can be used to initialize webdriver sessions.
