@@ -2,13 +2,13 @@
 ## 0.9
 
 ### Breaking API changes
-* Changed the type of the `cookExpiry` field of `Cookie` from `Maybe Integer` to `Maybe Double`. This fixes parsing issues with some selenium server implementations
-* Changed `elemPos` and `elemSize` to return `Float` pairs instead of `Int` pairs. This fixes parsing issues in some selemium server implementations.
-* Removed `Element` argument in the `sendRawKeys` command. This argument is no longer used in the modern Selenium API.
+* Changed the type of the `cookExpiry` field of `Cookie` from `Maybe Integer` to `Maybe Double`. This fixes parsing issues with some Selenium server implementations
+* Changed `elemPos` and `elemSize` to return `Float` pairs instead of `Int` pairs. This fixes parsing issues with some Selemium server implementations.
+* Removed the `Element` argument from the `sendRawKeys` function. This argument is not used in modern Selenium versions.
 
 ### New API features
 * Added a `LogDebug` constructor to the `LogLevel` type.
-* Added `ffAccpetInsecureCerts` capability for `Firefox` geckodriver
+* Added `ffAccpetInsecureCerts` capability for `Firefox` geckodriverxsxsxs
 * The constructor for `ExpectFailed` is now exported so that it can caught properly by exception handlers
 * Added GHC callstack support. `BadJSON` exceptions are now caught and rethrown with `error` calls to improve stack traces.
 
