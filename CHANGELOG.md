@@ -8,7 +8,7 @@
 
 ### New API features
 * Added a `LogDebug` constructor to the `LogLevel` type.
-* Added `ffAccpetInsecureCerts` capability for `Firefox` geckodriverxsxsxs
+* Added `ffAccpetInsecureCerts` capability for `Firefox` geckodriver
 * The constructor for `ExpectFailed` is now exported so that it can caught properly by exception handlers
 * Added GHC callstack support. `BadJSON` exceptions are now caught and rethrown with `error` calls to improve stack traces.
 
