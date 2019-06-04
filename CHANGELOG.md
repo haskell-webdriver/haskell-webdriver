@@ -8,12 +8,12 @@
 
 ### New API features
 * Added a `LogDebug` constructor to the `LogLevel` type.
-* Added `ffAccpetInsecureCerts` capability for `Firefox` geckodriver
-* The constructor for `ExpectFailed` is now exported so that it can caught properly by exception handlers
+* Added `ffAccpetInsecureCerts` capability for `Firefox` geckodriver.
+* The constructor for `ExpectFailed` is now exported so that it can be caught properly by exception handlers
 * Added GHC callstack support. `BadJSON` exceptions are now caught and rethrown with `error` calls to improve stack traces.
 
 ### W3C standard compatibility fixes
-* Fixed ToJSON Element instance so that it accepts both old OSS and new W3C element format (fixes compatibility issue with Selenium 3+ versions)
+* Fixed `ToJSON Element` instance so that it accepts both old OSS and new W3C element format (fixes compatibility issue with Selenium 3+ versions)
 * Changed the `maximize` API call to use POST instead of GET
 
 ### Other Selenium compatibility fixes
