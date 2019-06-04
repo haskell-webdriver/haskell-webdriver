@@ -214,9 +214,9 @@ prepareLoadedProfile path f = liftM f (loadProfile path) >>= prepareProfile
 prefsParser :: Parser [(Text, ProfilePref)]
 prefsParser = many1 $ do
   void . padSpaces $ string "user_pref("
-  k <- prefKey <?> "preference key"
+  k <- prefKey AP.<?> "preference key"
   void . padSpaces $ char ','
-  v <- prefVal <?> "preference value"
+  v <- prefVal AP.<?> "preference value"
   void . padSpaces $ string ");"
   return (k,v)
   where
