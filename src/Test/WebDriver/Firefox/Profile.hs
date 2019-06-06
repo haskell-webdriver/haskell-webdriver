@@ -27,7 +27,8 @@ module Test.WebDriver.Firefox.Profile
        , ProfileParseError(..)
        ) where
 import Test.WebDriver.Common.Profile
-import Data.Aeson
+import Data.Aeson (fromJSON)
+import qualified Data.Aeson as Aeson
 import Data.Aeson.Parser (jstring, value')
 import Data.Attoparsec.ByteString.Char8 as AP
 import qualified Data.HashMap.Strict as HM
@@ -187,8 +188,8 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
     installUserPrefs d = LBS.writeFile (d </> "user" <.> "js") str
       where
         str = LBS.concat
-            . map (\(k, v) -> LBS.concat [ "user_pref(", encode k,
-                                           ", ", encode v, ");\n"])
+            . map (\(k, v) -> LBS.concat [ "user_pref(", Aeson.encode k,
+                                           ", ", Aeson.encode v, ");\n"])
             . HM.toList $ prefs
 
 -- |Apply a function on a default profile, and
@@ -224,8 +225,8 @@ prefsParser = many1 $ do
     prefVal = do
       v <- value'
       case fromJSON v of
-        Error str -> fail str
-        Success p -> return p
+        Aeson.Error str -> fail str
+        Aeson.Success p -> return p
 
     padSpaces p = spaces >> p <* spaces
     spaces = many (endOfLine <|> void space <|> void comment)
