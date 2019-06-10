@@ -1,4 +1,8 @@
 # Change Log
+
+##0.9.0.1
+* Fixed build errors when building against aeson-1.4.3.0
+
 ## 0.9
 
 ### Breaking API changes
