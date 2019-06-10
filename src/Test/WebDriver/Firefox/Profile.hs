@@ -27,7 +27,7 @@ module Test.WebDriver.Firefox.Profile
        , ProfileParseError(..)
        ) where
 import Test.WebDriver.Common.Profile
-import Data.Aeson
+import Data.Aeson (Result(..), encode, fromJSON)
 import Data.Aeson.Parser (jstring, value')
 import Data.Attoparsec.ByteString.Char8 as AP
 import qualified Data.HashMap.Strict as HM
