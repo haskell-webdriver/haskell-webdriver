@@ -327,7 +327,7 @@ getWindowSize = doWinCommand methodGet currentWindow "/size" Null
 
 -- |Set the dimensions of the current window.
 setWindowSize :: (HasCallStack, WebDriver wd) => (Word, Word) -> wd ()
-setWindowSize = noReturn . doWinCommand methodPost currentWindow "/size"
+setWindowSize = ignoreReturn . doWinCommand methodPost currentWindow "/size"
                 . pair ("width", "height")
 
 -- |Get the coordinates of the current window.
@@ -337,7 +337,7 @@ getWindowPos = doWinCommand methodGet currentWindow "/position" Null
 
 -- |Set the coordinates of the current window.
 setWindowPos :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
-setWindowPos = noReturn . doWinCommand methodPost currentWindow "/position" . pair ("x","y")
+setWindowPos = ignoreReturn . doWinCommand methodPost currentWindow "/position" . pair ("x","y")
 
 -- |Cookies are delicious delicacies. When sending cookies to the server, a value
 -- of Nothing indicates that the server should use a default value. When receiving
