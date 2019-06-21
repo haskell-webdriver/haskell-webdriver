@@ -819,4 +819,4 @@ getApplicationCacheStatus = doSessCommand methodGet "/application_cache/status" 
 
 -- Moving this closer to the definition of Cookie seems to cause strange compile
 -- errors, so I'm leaving it here for now.
-$( deriveToJSON (defaultOptions{fieldLabelModifier = map C.toLower . drop 4}) ''Cookie )
+$( deriveToJSON (defaultOptions{omitNothingFields = True, fieldLabelModifier = map C.toLower . drop 4}) ''Cookie )
