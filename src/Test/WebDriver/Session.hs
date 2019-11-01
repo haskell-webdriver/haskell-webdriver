@@ -26,6 +26,7 @@ import Data.Monoid
 
 import Control.Applicative
 import Control.Monad.Base
+import Control.Monad.Fail
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Maybe
@@ -108,7 +109,7 @@ onlyMostRecentHistory h _ = [h]
 -- |A class for monads that carry a WebDriver session with them. The
 -- MonadBaseControl superclass is used for exception handling through
 -- the lifted-base package.
-class (Monad m, Applicative m) => WDSessionState m where
+class (MonadFail m, Applicative m) => WDSessionState m where
   
   -- |Retrieves the current session state of the monad
   getSession :: m WDSession

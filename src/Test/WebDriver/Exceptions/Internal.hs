@@ -25,8 +25,6 @@ import Control.Exception.Lifted (throwIO)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.Typeable (Typeable)
 
-import Debug.Trace
-
 import Prelude -- hides some "unused import" warnings
 
 instance Exception InvalidURL
