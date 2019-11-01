@@ -1,0 +1,9 @@
+resolver: lts-12.13
+packages:
+- '.'
+
+# Override default flag values for local packages and extra-deps
+flags:
+  webdriver:
+    network-uri: true
+    developer: false

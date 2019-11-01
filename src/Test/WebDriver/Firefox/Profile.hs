@@ -26,30 +26,28 @@ module Test.WebDriver.Firefox.Profile
          -- ** Preferences parsing error
        , ProfileParseError(..)
        ) where
+
+import Data.Attoparsec.ByteString.Char8
 import Test.WebDriver.Common.Profile
-import Data.Aeson
-import Data.Aeson.Parser (jstring, value')
-import Data.Attoparsec.ByteString.Char8 as AP
-import qualified Data.HashMap.Strict as HM
-import Data.Text (Text)
-import Data.ByteString as BS (readFile)
+
+import Control.Applicative          ((<|>), many)
+import Control.Arrow                ((&&&))
+import Control.Exception.Lifted     (IOException, catch, handle, throwIO)
+import Control.Monad                (void, when, liftM)
+import Control.Monad.Base           (liftBase)
+import Control.Monad.Trans.Control  (MonadBaseControl)
+import Data.Aeson                   (Result (Success, Error), encode, fromJSON)
+import Data.Aeson.Parser            (jstring, value')
+import Data.Text                    (Text)
+import System.Directory             (copyFile, getTemporaryDirectory, createDirectoryIfMissing,
+                                     doesDirectoryExist, getDirectoryContents, doesFileExist)
+import System.FilePath              ((</>), (<.>), takeDirectory)
+import System.IO.Temp               (createTempDirectory)
+
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Lazy.Char8 as LBS
-
-import System.FilePath hiding (addExtension, hasExtension)
-import System.Directory
-import System.IO.Temp (createTempDirectory)
+import qualified Data.HashMap.Strict as HM
 import qualified System.Directory.Tree as DS
-
-import Control.Monad
-import Control.Monad.Base
-import Control.Monad.Trans.Control
-import Control.Exception.Lifted hiding (try)
-import Control.Applicative
-import Control.Arrow
-
-#if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
-import Prelude hiding (catch)
-#endif
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
 data Firefox
