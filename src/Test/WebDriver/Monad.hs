@@ -10,7 +10,7 @@ import Test.WebDriver.Config
 import Test.WebDriver.Commands
 import Test.WebDriver.Internal
 
-#if MIN_VERSION_base(4,11,0)
+#if MIN_VERSION_base(4,9,0)
 import qualified Control.Monad.Fail as Fail
 #endif
 
@@ -37,7 +37,7 @@ newtype WD a = WD (StateT WDSession IO a)
 instance MonadBase IO WD where
   liftBase = WD . liftBase
 
-#if MIN_VERSION_base(4,11,0)
+#if MIN_VERSION_base(4,9,0)
 instance Fail.MonadFail WD where
   fail s = WD $ Fail.fail s
 #endif
