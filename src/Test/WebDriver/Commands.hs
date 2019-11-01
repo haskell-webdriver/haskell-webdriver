@@ -111,7 +111,7 @@ import Prelude -- hides some "unused import" warnings
 createSession :: (HasCallStack, WebDriver wd) => Capabilities -> wd WDSession
 createSession caps = do
   let connect = withAuthHeaders $ doCommand methodPost "/session" . single "desiredCapabilities" $ caps
-  body <- connect `L.catch` \(ex :: FailedCommand) -> connect
+  body <- connect `L.catch` \(_ex :: FailedCommand) -> connect
   s <- getSession
   putSession s { wdSessCreationResponse = Just body }
   getSession
