@@ -5,19 +5,19 @@ module Test.WebDriver.Monad
        ) where
 
 import Test.WebDriver.Class
-import Test.WebDriver.Session
-import Test.WebDriver.Config
 import Test.WebDriver.Commands
+import Test.WebDriver.Config
 import Test.WebDriver.Internal
+import Test.WebDriver.Session
 
 import Control.Monad.Base (MonadBase, liftBase)
-import Control.Monad.IO.Class
 import Control.Monad.Fix
+import Control.Monad.IO.Class
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
 import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
 --import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Lifted
-import Control.Monad.Catch (MonadThrow, MonadCatch)
+import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Applicative
 
 import Prelude -- hides some "unused import" warnings
@@ -26,7 +26,7 @@ import Prelude -- hides some "unused import" warnings
 {- |A state monad for WebDriver commands.
 -}
 newtype WD a = WD (StateT WDSession IO a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix, MonadMask)
 
 instance MonadBase IO WD where
   liftBase = WD . liftBase
@@ -92,7 +92,7 @@ closeOnException wd = wd `onException` closeSession
 
 -- |Gets the command history for the current session.
 getSessionHistory :: WDSessionState wd => wd [SessionHistory]
-getSessionHistory = fmap wdSessHist getSession 
+getSessionHistory = fmap wdSessHist getSession
 
 -- |Prints a history of API requests to stdout after computing the given action.
 dumpSessionHistory :: WDSessionStateControl wd => wd a -> wd a
