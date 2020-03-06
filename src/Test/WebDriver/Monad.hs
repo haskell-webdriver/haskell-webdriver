@@ -17,7 +17,7 @@ import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
 import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
 --import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Lifted
-import Control.Monad.Catch (MonadThrow, MonadCatch)
+import Control.Monad.Catch (MonadThrow, MonadCatch, MonadMask)
 import Control.Applicative
 
 import Prelude -- hides some "unused import" warnings
@@ -26,7 +26,7 @@ import Prelude -- hides some "unused import" warnings
 {- |A state monad for WebDriver commands.
 -}
 newtype WD a = WD (StateT WDSession IO a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask, MonadFix)
 
 instance MonadBase IO WD where
   liftBase = WD . liftBase
