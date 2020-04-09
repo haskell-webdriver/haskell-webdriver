@@ -9,7 +9,9 @@ module Test.WebDriver.Commands
          -- ** Web navigation
        , openPage, forward, back, refresh
          -- ** Page info
-       , getCurrentURL, getSource, getTitle, saveScreenshot, screenshot, screenshotBase64
+       , getCurrentURL, getSource, getTitle
+         -- ** Screen capture
+       , saveScreenshot, screenshot, screenshotBase64, screenshotElement, screenshotElementBase64
          -- * Timeouts
        , setImplicitWait, setScriptTimeout, setPageLoadTimeout
          -- * Web elements
@@ -258,6 +260,22 @@ screenshot = B64.decodeLenient <$> screenshotBase64
 -- |Grab a screenshot as a base-64 encoded PNG image. This is the protocol-defined format.
 screenshotBase64 :: (HasCallStack, WebDriver wd) => wd LBS.ByteString
 screenshotBase64 = TL.encodeUtf8 <$> doSessCommand methodGet "/screenshot" Null
+
+-- | Similar to 'screenshot'
+screenshotElement :: (HasCallStack, WebDriver wd)
+    => Maybe Bool   -- ^ Scroll into element (defaults to true)
+    -> Element
+    -> wd LBS.ByteString
+screenshotElement m'scroll el = B64.decodeLenient <$> screenshotElement m'scroll el
+
+-- | Similar to 'screenshotBase64'
+screenshotElementBase64 :: (HasCallStack, WebDriver wd)
+    => Maybe Bool   -- ^ Scroll into element (defaults to true)
+    -> Element
+    -> wd LBS.ByteString
+screenshotElementBase64 m'scroll el = TL.encodeUtf8 <$> doElemCommand methodGet el "/screenshot" pars
+  where
+    pars = maybe Null (single "scroll") m'scroll
 
 availableIMEEngines :: (HasCallStack, WebDriver wd) => wd [Text]
 availableIMEEngines = doSessCommand methodGet "/ime/available_engines" Null
