@@ -27,7 +27,7 @@ Description:
 Source-Repository head
   type: git
   location: git://github.com/kallisti-dev/hs-webdriver.git
-  
+
 Flag network-uri
   description: Get Network.URI from the network-uri package
   default: True
@@ -74,22 +74,23 @@ Library
       build-depends: network-uri < 2.6, network >= 2.4 && < 2.6
 
   exposed-modules: Test.WebDriver
+                   Test.WebDriver.Capabilities
+                   Test.WebDriver.Chrome.Extension
                    Test.WebDriver.Class
+                   Test.WebDriver.Commands
+                   Test.WebDriver.Commands.Internal
+                   Test.WebDriver.Commands.Wait
+                   Test.WebDriver.Common.Keys
+                   Test.WebDriver.Common.Profile
+                   Test.WebDriver.Config
+                   Test.WebDriver.Cookies
+                   Test.WebDriver.Exceptions
+                   Test.WebDriver.Exceptions.Internal
+                   Test.WebDriver.Firefox.Profile
+                   Test.WebDriver.Internal
+                   Test.WebDriver.JSON
                    Test.WebDriver.Monad
                    Test.WebDriver.Session
                    Test.WebDriver.Session.History
-                   Test.WebDriver.Config
-                   Test.WebDriver.Exceptions
-                   Test.WebDriver.Commands
-                   Test.WebDriver.Commands.Wait
-                   Test.WebDriver.Commands.Internal
-                   Test.WebDriver.Common.Profile
-                   Test.WebDriver.Common.Keys
-                   Test.WebDriver.Firefox.Profile
-                   Test.WebDriver.Chrome.Extension
-                   Test.WebDriver.Capabilities
                    Test.WebDriver.Types
-                   Test.WebDriver.JSON
                    Test.WebDriver.Utils
-                   Test.WebDriver.Internal
-                   Test.WebDriver.Exceptions.Internal
