@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings, ScopedTypeVariables, ExistentialQuantification,
-             TemplateHaskell, RecordWildCards, FlexibleContexts #-}
+             DeriveGeneric, RecordWildCards, FlexibleContexts #-}
 -- |This module exports basic WD actions that can be used to interact with a
 -- browser session.
 module Test.WebDriver.Commands
@@ -94,6 +94,7 @@ import Data.Text (Text, append, toUpper, toLower)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Encoding as TL
 import Data.Word
+import GHC.Generics (Generic)
 import Network.URI hiding (path)  -- suppresses warnings
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Class
@@ -355,7 +356,12 @@ data Cookie = Cookie { cookName   :: Text
                                                    -- seconds since the Unix epoch
                                                    -- Nothing indicates that the
                                                    -- cookie never expires
-                     } deriving (Eq, Show)
+                     } deriving (Eq, Show, Generic)
+aesonOptionsCookie :: Options
+aesonOptionsCookie = defaultOptions{fieldLabelModifier = map C.toLower . drop 4}
+instance ToJSON Cookie where
+  toJSON = genericToJSON aesonOptionsCookie
+  toEncoding = genericToEncoding aesonOptionsCookie
 
 -- |Creates a Cookie with only a name and value specified. All other
 -- fields are set to Nothing, which tells the server to use default values.
@@ -816,7 +822,3 @@ instance FromJSON ApplicationCacheStatus where
 
 getApplicationCacheStatus :: (WebDriver wd) => wd ApplicationCacheStatus
 getApplicationCacheStatus = doSessCommand methodGet "/application_cache/status" Null
-
--- Moving this closer to the definition of Cookie seems to cause strange compile
--- errors, so I'm leaving it here for now.
-$( deriveToJSON (defaultOptions{fieldLabelModifier = map C.toLower . drop 4}) ''Cookie )
