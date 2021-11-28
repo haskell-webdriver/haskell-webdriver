@@ -1,10 +1,10 @@
-cabal-dev
+.stack-work
 dist
 dist-newstyle
-.stack-work
-chromedriver.log
-.cabal-sandbox
-cabal.sandbox.config
+.ghc.*
+google.json
 *.hi
-*.exe
 *.o
+result*
+.direnv
+hie.yaml
