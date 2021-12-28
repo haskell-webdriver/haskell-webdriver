@@ -81,7 +81,6 @@ import qualified Control.Exception.Lifted as L
 import Control.Monad
 import Control.Monad.Base
 import Data.Aeson
-import Data.Aeson.TH
 import Data.Aeson.Types
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString, writeFile)
