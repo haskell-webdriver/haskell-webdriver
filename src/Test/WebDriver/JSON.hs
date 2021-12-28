@@ -36,7 +36,7 @@ import Data.Aeson.Types
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Attoparsec.ByteString.Lazy (Result(..))
 import qualified Data.Attoparsec.ByteString.Lazy as AP
-import qualified Data.Aeson.KeyMap as HM
+import qualified Data.Aeson.KeyMap as KM
 
 import Control.Monad (join, void)
 import Control.Applicative
@@ -60,7 +60,7 @@ data NoReturn = NoReturn
 
 instance FromJSON NoReturn where
   parseJSON Null                    = return NoReturn
-  parseJSON (Object o) | HM.null o  = return NoReturn
+  parseJSON (Object o) | KM.null o  = return NoReturn
   parseJSON (String "")             = return NoReturn
   parseJSON other                   = typeMismatch "no return value" other
 
