@@ -8,7 +8,7 @@ import Test.WebDriver.JSON
 
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch, Pair)
-import qualified Data.Aeson.KeyMap as HM (delete, empty, toList)
+import qualified Data.Aeson.KeyMap as KM (delete, empty, toList)
 
 import Data.Text (Text, toLower, toUpper)
 import Data.Default.Class (Default(..))
@@ -202,7 +202,7 @@ instance ToJSON Capabilities where
                   ] ++
                   [ "args"       .= chromeOptions
                   , "extensions" .= chromeExtensions
-                  ] ++ HM.toList chromeExperimentalOptions
+                  ] ++ KM.toList chromeExperimentalOptions
                 )]
         IE {..}
           -> ["ignoreProtectedModeSettings" .= ieIgnoreProtectedModeSettings
@@ -283,7 +283,7 @@ instance FromJSON Capabilities where
           b k = opt k Nothing     -- Maybe Bool field
 
           -- produce additionalCaps by removing known capabilities from the JSON object
-          additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
+          additionalCapabilities = KM.toList . foldr KM.delete o . knownCapabilities
 
           knownCapabilities browser =
             [ "browserName", "version", "platform", "proxy"
@@ -311,7 +311,7 @@ instance FromJSON Capabilities where
                                   <*> opt "chrome.binary" Nothing
                                   <*> opt "chrome.switches" []
                                   <*> opt "chrome.extensions" []
-                                  <*> pure HM.empty
+                                  <*> pure KM.empty
               IE {} -> IE <$> opt "ignoreProtectedModeSettings" True
                           <*> opt "ignoreZoomSettings" False
                           <*> opt "initialBrowserUrl" Nothing
@@ -538,7 +538,7 @@ firefox = Firefox Nothing def Nothing Nothing
 -- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
 -- specified, and no extensions are used.
 chrome :: Browser
-chrome = Chrome Nothing Nothing [] [] HM.empty
+chrome = Chrome Nothing Nothing [] [] KM.empty
 
 -- |Default IE settings. See the 'IE' constructor for more details on
 -- individual defaults
