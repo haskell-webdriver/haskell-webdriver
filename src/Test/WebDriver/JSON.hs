@@ -33,11 +33,10 @@ import Test.WebDriver.Class (WebDriver)
 
 import Data.Aeson as Aeson
 import Data.Aeson.Types
-import Data.Text (Text)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Attoparsec.ByteString.Lazy (Result(..))
 import qualified Data.Attoparsec.ByteString.Lazy as AP
-import qualified Data.HashMap.Strict as HM
+import qualified Data.Aeson.KeyMap as HM
 
 import Control.Monad (join, void)
 import Control.Applicative
@@ -75,18 +74,18 @@ ignoreReturn = void
 
 
 -- |Construct a singleton JSON 'object' from a key and value.
-single :: ToJSON a => Text -> a -> Value
+single :: ToJSON a => Key -> a -> Value
 single a x = object [a .= x]
 
 -- |Construct a 2-element JSON 'object' from a pair of keys and a pair of
 -- values.
-pair :: (ToJSON a, ToJSON b) => (Text,Text) -> (a,b) -> Value
+pair :: (ToJSON a, ToJSON b) => (Key,Key) -> (a,b) -> Value
 pair (a,b) (x,y) = object [a .= x, b .= y]
 
 -- |Construct a 3-element JSON 'object' from a triple of keys and a triple of
 -- values.
 triple :: (ToJSON a, ToJSON b, ToJSON c) =>
-          (Text,Text,Text) -> (a,b,c) -> Value
+          (Key,Key,Key) -> (a,b,c) -> Value
 triple (a,b,c) (x,y,z) = object [a .= x, b.= y, c .= z]
 
 
@@ -100,12 +99,12 @@ fromJSON' :: MonadBaseControl IO wd => FromJSON a => Value -> wd a
 fromJSON' = aesonResultToWD . fromJSON
 
 -- |This operator is a wrapper over Aeson's '.:' operator.
-(!:) :: (MonadBaseControl IO wd, FromJSON a) => Object -> Text -> wd a
+(!:) :: (MonadBaseControl IO wd, FromJSON a) => Object -> Key -> wd a
 o !: k = aesonResultToWD $ parse (.: k) o
 
 -- |Due to a breaking change in the '.:?' operator of aeson 0.10 (see <https://github.com/bos/aeson/issues/287>) that was subsequently reverted, this operator
 -- was added to provide consistent behavior compatible with all aeson versions. If the field is either missing or `Null`, this operator should return a `Nothing` result.
-(.:??) :: FromJSON a => Object -> Text -> Parser (Maybe a)
+(.:??) :: FromJSON a => Object -> Key -> Parser (Maybe a)
 o .:?? k = fmap join (o .:? k)
 
 
