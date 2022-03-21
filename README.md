@@ -11,10 +11,6 @@ For more information about Selenium itself, see http://seleniumhq.org/
 * [Getting Started](#getting-started)
     * [Using the Selenium Server](#using-the-selenium-server)
     * [Hello, World!](#hello-world)
-        * [Demonic invocations: a bit of boilerplate](#demonic-invocations-a-bit-of-boilerplate)
-        * [Configuring a WebDriver session](#configuring-a-webdriver-session)
-        * [Initializing tests](#initializing-tests)
-        * [Actually writing tests!](#actually-writing-tests)
 * [Integration with Haskell Testing Frameworks](#integration-with-haskell-testing-frameworks)
 * [Documentation](#documentation)
 
@@ -67,10 +63,14 @@ While you can use any WebDriver server out there, probably the simplest server t
 
 The server should now be listening at localhost on port 4444.
 
+Currently, `hs-webdriver` only supports selenium version 2.
+The [beginner example](/examples/readme-example-beginner.md) was
+tested with `selenium-server-standalone-2.53.1`.
+
 ## Hello, World!
 With the Selenium server running locally, you're ready to write browser automation scripts in Haskell.
 
-A [simple example can be found here](/examples/readme-example-beginner.md), written in literate Haskell so that you can compile it with GHC yourself. It is very beginner friendly and assumes no prior knowledge of Haskell. If you already have an intermediate understanding of Haskell, [this is the example for you](/examples/readme-example-intermediate.md) For other examples see the [examples](examples/) and [test/etc](test/etc/) directory.
+A [simple example can be found here](/examples/readme-example-beginner.md), written in literate Haskell so that you can compile it with GHC yourself. It is very beginner friendly and assumes no prior knowledge of Haskell. For other examples see the [examples](examples/) and [test/etc](test/etc/) directory.
 
 
 # Integration with Haskell Testing Frameworks
@@ -89,4 +89,3 @@ runhaskell Setup.hs haddock
 ```
 
 Haddock will generate documentation and save it in `dist/doc/html/webdriver`
-
