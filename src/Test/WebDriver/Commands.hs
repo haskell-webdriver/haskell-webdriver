@@ -322,12 +322,12 @@ closeWindow :: (HasCallStack, WebDriver wd) => WindowHandle -> wd ()
 closeWindow w = do
   cw <- getCurrentWindow
   focusWindow w
-  noReturn $ doSessCommand methodDelete "/window" Null
+  ignoreReturn $ doSessCommand methodDelete "/window" Null
   unless (w == cw) $ focusWindow cw
 
 -- |Maximizes the current  window if not already maximized
 maximize :: (HasCallStack, WebDriver wd) => wd ()
-maximize = noReturn $ doWinCommand methodGet currentWindow "/maximize" Null
+maximize = ignoreReturn $ doWinCommand methodPost currentWindow "/maximize" Null
 
 -- |Get the dimensions of the current window.
 getWindowSize :: (HasCallStack, WebDriver wd) => wd (Word, Word)

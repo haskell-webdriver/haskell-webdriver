@@ -234,7 +234,7 @@ instance ToJSON Capabilities where
                 ,"opera.autostart" .= operaAutoStart
                 , "opera.idle" .= operaIdle
                 -- ,"opera.profile" .= operaProfile
-                ,"opera.port" .= fromMaybe (-1) operaPort
+                ,"opera.port" .= fromMaybe maxBound {- (-1) -} operaPort
                  --note: consider replacing operaOptions with a list of options
                 ,"opera.arguments" .= operaOptions
                 ,"opera.logging.level" .= operaLogPref
@@ -703,7 +703,7 @@ instance FromJSON UnexpectedAlertBehavior where
 
 -- |Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
 data LogLevel = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
-              | LogFine | LogFiner | LogFinest | LogAll
+              | LogFine | LogFiner | LogFinest | LogDebug | LogAll
              deriving (Eq, Show, Read, Ord, Bounded, Enum)
 
 instance Default LogLevel where
@@ -719,6 +719,7 @@ instance ToJSON LogLevel where
     LogFine -> "FINE"
     LogFiner -> "FINER"
     LogFinest -> "FINEST"
+    LogDebug -> "DEBUG"
     LogAll -> "ALL"
 
 instance FromJSON LogLevel where
@@ -731,6 +732,7 @@ instance FromJSON LogLevel where
     "FINE" -> LogFine
     "FINER" -> LogFiner
     "FINEST" -> LogFinest
+    "DEBUG" -> LogDebug
     "ALL" -> LogAll
     _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
   parseJSON other = typeMismatch "LogLevel" other

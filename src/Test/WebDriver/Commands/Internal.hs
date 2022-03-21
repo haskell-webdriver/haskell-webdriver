@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, GeneralizedNewtypeDeriving  #-}
+{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, GeneralizedNewtypeDeriving, ScopedTypeVariables #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- |Internal functions used to implement the functions exported by
 -- "Test.WebDriver.Commands". These may be useful for implementing non-standard
@@ -17,6 +17,7 @@ module Test.WebDriver.Commands.Internal
        ) where
 
 import Test.WebDriver.Class
+import Test.WebDriver.JSON
 import Test.WebDriver.Session
 import Test.WebDriver.JSON
 import Test.WebDriver.Utils (urlEncode)
@@ -83,8 +84,15 @@ doSessCommand method path args = do
         where
           msg = "doSessCommand: No session ID found for relative URL "
                 ++ show path
-      Just (SessionId sId) -> doCommand method
-                              (T.concat ["/session/", urlEncode sId, path]) args
+      Just (SessionId sId) ->
+        -- Catch BadJSON exceptions here, since most commands go through this function.
+        -- Then, re-throw them with "error", which automatically appends a callstack
+        -- to the message in modern GHCs.
+        -- This callstack makes it easy to see which command caused the BadJSON exception,
+        -- without exposing too many internals.
+        catch
+          (doCommand method (T.concat ["/session/", urlEncode sId, path]) args)
+          (\(e :: BadJSON) -> error $ show e)
 
 -- |A wrapper around 'doSessCommand' to create element URLs.
 -- For example, passing a URL of "/active" will expand to
