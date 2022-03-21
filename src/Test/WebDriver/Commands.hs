@@ -388,6 +388,8 @@ instance FromJSON Cookie where
       opt k d = o .:?? k .!= d
   parseJSON v = typeMismatch "Cookie" v
 
+$( deriveToJSON (defaultOptions{fieldLabelModifier = map C.toLower . drop 4}) ''Cookie )
+
 -- |Retrieve all cookies visible to the current page.
 cookies :: (HasCallStack, WebDriver wd) => wd [Cookie]
 cookies = doSessCommand methodGet "/cookie" Null
@@ -833,7 +835,3 @@ instance FromJSON ApplicationCacheStatus where
 
 getApplicationCacheStatus :: (WebDriver wd) => wd ApplicationCacheStatus
 getApplicationCacheStatus = doSessCommand methodGet "/application_cache/status" Null
-
--- Moving this closer to the definition of Cookie seems to cause strange compile
--- errors, so I'm leaving it here for now.
-$( deriveToJSON (defaultOptions{fieldLabelModifier = map C.toLower . drop 4}) ''Cookie )
