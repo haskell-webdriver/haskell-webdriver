@@ -382,9 +382,9 @@ instance FromJSON Cookie where
                                 <*> opt "secure" Nothing
                                 <*> opt "expiry" Nothing
     where
-      req :: FromJSON a => Text -> Parser a
+      req :: FromJSON a => Key -> Parser a
       req = (o .:)
-      opt :: FromJSON a => Text -> a -> Parser a
+      opt :: FromJSON a => Key -> a -> Parser a
       opt k d = o .:?? k .!= d
   parseJSON v = typeMismatch "Cookie" v
 

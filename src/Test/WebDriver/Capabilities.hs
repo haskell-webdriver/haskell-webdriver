@@ -8,7 +8,7 @@ import Test.WebDriver.JSON
 
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch, Pair)
-import qualified Data.HashMap.Strict as HM (delete, toList, empty)
+import qualified Data.Aeson.KeyMap as KM (delete, empty, toList)
 
 import Data.Text (Text, toLower, toUpper)
 import Data.Default.Class (Default(..))
@@ -47,7 +47,7 @@ useBrowser b = modifyCaps $ \c -> c { browser = b }
 useVersion :: HasCapabilities t => String -> t -> t
 useVersion v = modifyCaps $ \c -> c { version = Just v }
 
--- |A helper function for setting the 'platform' capability of a 'HasCapabilities' instance 
+-- |A helper function for setting the 'platform' capability of a 'HasCapabilities' instance
 usePlatform :: HasCapabilities t => Platform -> t -> t
 usePlatform p = modifyCaps $ \c -> c { platform = p }
 
@@ -202,7 +202,7 @@ instance ToJSON Capabilities where
                   ] ++
                   [ "args"       .= chromeOptions
                   , "extensions" .= chromeExtensions
-                  ] ++ HM.toList chromeExperimentalOptions
+                  ] ++ KM.toList chromeExperimentalOptions
                 )]
         IE {..}
           -> ["ignoreProtectedModeSettings" .= ieIgnoreProtectedModeSettings
@@ -242,7 +242,7 @@ instance ToJSON Capabilities where
 
         Phantomjs {..}
           -> catMaybes [ opt "phantomjs.binary.path" phantomjsBinary
-                       ] ++ 
+                       ] ++
                        [ "phantomjs.cli.args" .= phantomjsOptions
                        ]
 
@@ -280,15 +280,15 @@ instance FromJSON Capabilities where
                  <*> pure (additionalCapabilities browser)
 
     where --some helpful JSON accessor shorthands
-          req :: FromJSON a => Text -> Parser a
+          req :: FromJSON a => Key -> Parser a
           req = (o .:)            -- required field
-          opt :: FromJSON a => Text -> a -> Parser a
+          opt :: FromJSON a => Key -> a -> Parser a
           opt k d = o .:?? k .!= d -- optional field
-          b :: Text -> Parser (Maybe Bool)
+          b :: Key -> Parser (Maybe Bool)
           b k = opt k Nothing     -- Maybe Bool field
 
           -- produce additionalCaps by removing known capabilities from the JSON object
-          additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
+          additionalCapabilities = KM.toList . foldr KM.delete o . knownCapabilities
 
           knownCapabilities browser =
             [ "browserName", "version", "platform", "proxy"
@@ -316,7 +316,7 @@ instance FromJSON Capabilities where
                                   <*> opt "chrome.binary" Nothing
                                   <*> opt "chrome.switches" []
                                   <*> opt "chrome.extensions" []
-                                  <*> pure HM.empty
+                                  <*> pure KM.empty
               IE {} -> IE <$> opt "ignoreProtectedModeSettings" True
                           <*> opt "ignoreZoomSettings" False
                           <*> opt "initialBrowserUrl" Nothing
@@ -548,7 +548,7 @@ firefox = Firefox Nothing def Nothing Nothing
 -- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
 -- specified, and no extensions are used.
 chrome :: Browser
-chrome = Chrome Nothing Nothing [] [] HM.empty
+chrome = Chrome Nothing Nothing [] [] KM.empty
 
 -- |Default IE settings. See the 'IE' constructor for more details on
 -- individual defaults
@@ -659,7 +659,7 @@ instance FromJSON ProxyType where
                          <*> f "httpProxy"
       _ -> fail $ "Invalid ProxyType " ++ show pTyp
     where
-      f :: FromJSON a => Text -> Parser a
+      f :: FromJSON a => Key -> Parser a
       f = (obj .:)
   parseJSON v = typeMismatch "ProxyType" v
 
