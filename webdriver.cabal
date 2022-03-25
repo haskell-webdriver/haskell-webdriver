@@ -11,7 +11,7 @@ Category: Web, Browser, Testing, WebDriver, Selenium
 Synopsis: a Haskell client for the Selenium WebDriver protocol
 Build-Type: Simple
 Extra-Source-Files: README.md, TODO.md, CHANGELOG.md, .ghci
-Tested-With: GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3, GHC == 8.0.1
+Tested-With: GHC ==8.6.5, GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.1, GHC == 9.2.1
 Description:
         A Selenium WebDriver client for Haskell.
         You can use it to automate browser sessions
@@ -43,7 +43,7 @@ Library
   ghc-options: -Wall
   if flag(developer)
     cpp-options: -DCABAL_BUILD_DEVELOPER
-  build-depends:   base == 4.*
+  build-depends:   base >= 4.14.1.0 && < 5
                  , aeson >= 0.6.2.0
                  , http-client >= 0.3
                  , http-types >= 0.8

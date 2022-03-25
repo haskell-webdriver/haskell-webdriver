@@ -1,29 +1,28 @@
 module Main where
 
-import Control.Exception
-import Control.Concurrent
+import           Control.Concurrent
+import           Control.Exception
 
-import Network.Wai.Handler.Warp
-import Network.Wai.Application.Static
-import WaiAppStatic.Types
+import           Network.Wai.Application.Static
+import           Network.Wai.Handler.Warp
+import           WaiAppStatic.Types
 
-import Config
-import Test.WebDriver
+import           Config
+import           Test.WebDriver
 
 --import qualified Test.BasicTests as BasicTests
 
-serverConf = setPort Config.serverPort
-           $ defaultSettings
+serverConf = setPort Config.serverPort defaultSettings
 
 serverStaticConf = defaultFileServerSettings staticContentPath
 
 browsers = [firefox, chrome]
 
 wdConfigs = map (`useBrowser` conf) browsers
-    where 
+    where
     conf = defaultConfig
-        { wdPort = getPort serverConf 
-        } 
+        { wdPort = getPort serverConf
+        }
 
 main = bracket
     ( forkIO $ runSettings serverConf (staticApp serverStaticConf) )

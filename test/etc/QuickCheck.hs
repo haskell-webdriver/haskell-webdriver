@@ -1,24 +1,24 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings   #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS -fwarn-unused-imports #-}
 
 module QuickCheck where
 
-import Control.Applicative
-import Control.Monad
-import Control.Monad.IO.Class
-import Data.Function
-import Data.List as List
-import Prelude hiding ((++))
-import Test.QuickCheck as QC
+import           Control.Applicative
+import           Control.Monad
+import           Control.Monad.IO.Class
+import           Data.Function
+import           Data.List              as List
+import           Prelude                hiding ((++))
+import           Test.QuickCheck        as QC
 --import Test.QuickCheck.Property as QC
-import Test.WebDriver
-import Test.WebDriver.Session
+import           Test.WebDriver
+import           Test.WebDriver.Session
 --import Test.WebDriver.Config
 
-import qualified Data.Text as ST
-import qualified Data.Array as AR
+import qualified Data.Array             as AR
+import qualified Data.Text              as ST
 
 config :: WDConfig
 config = defaultConfig
@@ -35,22 +35,15 @@ main = do
 -- module for convenience; usually it would more likely be located in
 -- the test target).
 cutArrayJS :: [ST.Text]
-cutArrayJS = "// Array Remove - By John Resig (MIT Licensed)" :
-             "function cutArray(a, from, to) {" :
-             "    var rest = a.slice((to || from) + 1 || a.length);" :
-             "    a.length = from < 0 ? a.length + from : from;" :
-             "    a.push.apply(a, rest);" :
-             "    return a;" :
-             "};" :
-             []
+cutArrayJS = ["// Array Remove - By John Resig (MIT Licensed)", "function cutArray(a, from, to) {", "    var rest = a.slice((to || from) + 1 || a.length);", "    a.length = from < 0 ? a.length + from : from;", "    a.push.apply(a, rest);", "    return a;", "};"]
 
 
 -- | reference implementation in haskell
 cutArray :: CutArray -> [Int]
-cutArray (CutArray i a _)         | abs(a) > (length i - 1)  = error "cutArray: a out of bounds!"
-cutArray (CutArray i _ (Just b))  | abs(b) > (length i - 1)  = error "cutArray: b out of bounds!"
+cutArray (CutArray i a _)         | abs a > (length i - 1)  = error "cutArray: a out of bounds!"
+cutArray (CutArray i _ (Just b))  | abs b > (length i - 1)  = error "cutArray: b out of bounds!"
 cutArray (CutArray i a (Just b))  | a * b < 0                = error ("cutArray: a and b must have same sign! " ++ show (a, b))
-cutArray (CutArray i a (Just b))  | abs(b) < abs(a)          = error ("cutArray: negative range! " ++ show (a, b))
+cutArray (CutArray i a (Just b))  | abs b < abs a          = error ("cutArray: negative range! " ++ show (a, b))
 cutArray (CutArray i a b) = f i a b
   where
     f i a Nothing = f i a (Just a)
@@ -104,6 +97,4 @@ wd_cutArray tc@(CutArray arrayIn a b) = do
         "" :
         -- "console.log([arrayIn, a, b].toString());" :
         cutArrayJS ++
-        "" :
-        "return cutArray(arrayIn, a, b);" :
-        []
+        ["", "return cutArray(arrayIn, a, b);"]

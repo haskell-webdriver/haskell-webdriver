@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- |This module contains named constants corresponding to the special characters recognized by 'sendKeys'.
--- For more details on these special characters, consult the Selenium documentation at 
+-- For more details on these special characters, consult the Selenium documentation at
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidelementidvalue>
 module Test.WebDriver.Common.Keys where
 
-import Data.Text (Text)
+import           Data.Text (Text)
 
 add :: Text
 add = "\xe025"

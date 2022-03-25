@@ -1,5 +1,10 @@
-{-# LANGUAGE CPP, TypeSynonymInstances, DeriveDataTypeable, FlexibleInstances,
-             GeneralizedNewtypeDeriving, OverloadedStrings, FlexibleContexts #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE FlexibleInstances          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE TypeSynonymInstances       #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- |A type for profile preferences. These preference values are used by both
 -- Firefox and Opera profiles.
@@ -23,38 +28,38 @@ module Test.WebDriver.Common.Profile
        , ProfileParseError(..)
        ) where
 
-import System.Directory
-import System.FilePath hiding (addExtension, hasExtension)
-import Codec.Archive.Zip
-import Data.Aeson
-import Data.Aeson.Types
+import           Codec.Archive.Zip
+import           Data.Aeson
+import           Data.Aeson.Types
+import           System.Directory
+import           System.FilePath             hiding (addExtension, hasExtension)
 
 #if MIN_VERSION_aeson(0,7,0)
-import Data.Scientific
+import           Data.Scientific
 #else
-import Data.Attoparsec.Number (Number(..))
+import           Data.Attoparsec.Number      (Number (..))
 #endif
 
-import qualified Data.HashMap.Strict as HM
-import Data.Text (Text, pack)
-import Data.ByteString.Lazy (ByteString)
+import           Data.ByteString.Lazy        (ByteString)
+import qualified Data.HashMap.Strict         as HM
+import           Data.Text                   (Text, pack)
 --import qualified Data.ByteString as SBS
-import qualified Data.ByteString.Lazy as LBS
 import qualified Data.ByteString.Base64.Lazy as B64
-import qualified Data.Text.Lazy.Encoding as TL
+import qualified Data.ByteString.Lazy        as LBS
+import qualified Data.Text.Lazy.Encoding     as TL
 
 
-import Data.Fixed
-import Data.Ratio
-import Data.Int
-import Data.Word
-import Data.Typeable
+import           Data.Fixed
+import           Data.Int
+import           Data.Ratio
+import           Data.Typeable
+import           Data.Word
 
-import Control.Exception
-import Control.Applicative
-import Control.Monad.Base
+import           Control.Applicative
+import           Control.Exception
+import           Control.Monad.Base
 
-import Prelude -- hides some "unused import" warnings
+import           Prelude
 
 -- |This structure allows you to construct and manipulate profiles in pure code,
 -- deferring execution of IO operations until the profile is \"prepared\". This
@@ -69,11 +74,11 @@ data Profile b = Profile
                    -- Using the destination path as the key ensures that
                    -- there is one unique source path going to each
                    -- destination path.
-                   profileFiles   :: HM.HashMap FilePath FilePath
+                   profileFiles :: HM.HashMap FilePath FilePath
                    -- |A map of profile preferences. These are the settings
                    -- found in the profile's prefs.js, and entries found in
                    -- about:config
-                 , profilePrefs  :: HM.HashMap Text ProfilePref
+                 , profilePrefs :: HM.HashMap Text ProfilePref
                  }
                deriving (Eq, Show)
 

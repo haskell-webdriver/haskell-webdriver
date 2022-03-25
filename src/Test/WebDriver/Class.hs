@@ -1,5 +1,6 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, CPP,
-             GeneralizedNewtypeDeriving, RecordWildCards, ConstraintKinds #-}
+{-# LANGUAGE CPP              #-}
+{-# LANGUAGE ConstraintKinds  #-}
+{-# LANGUAGE FlexibleContexts #-}
 #ifndef CABAL_BUILD_DEVELOPER
 {-# OPTIONS_GHC  -fno-warn-warnings-deprecations #-}
 #endif
@@ -7,30 +8,31 @@ module Test.WebDriver.Class
        ( -- * WebDriver class
          WebDriver(..), Method, methodDelete, methodGet, methodPost,
        ) where
-import Test.WebDriver.Session
+import           Test.WebDriver.Session
 
-import Data.Aeson
-import Data.Text (Text)
+import           Data.Aeson
+import           Data.Text                         (Text)
 #if !MIN_VERSION_base(4,8,0)
-import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't work with "import Data.Monoid"
+import           Data.Monoid                       (Monoid)
 #endif
 
-import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
+import           Network.HTTP.Types.Method         (Method, methodDelete,
+                                                    methodGet, methodPost)
 
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Error
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.RWS.Lazy as LRWS
-import Control.Monad.Trans.RWS.Strict as SRWS
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Lazy as LS
-import Control.Monad.Trans.State.Strict as SS
-import Control.Monad.Trans.Writer.Lazy as LW
-import Control.Monad.Trans.Writer.Strict as SW
-import Data.CallStack
+import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.Error
+import           Control.Monad.Trans.Except
+import           Control.Monad.Trans.Identity
+import           Control.Monad.Trans.List
+import           Control.Monad.Trans.Maybe
+import           Control.Monad.Trans.RWS.Lazy      as LRWS
+import           Control.Monad.Trans.RWS.Strict    as SRWS
+import           Control.Monad.Trans.Reader
+import           Control.Monad.Trans.State.Lazy    as LS
+import           Control.Monad.Trans.State.Strict  as SS
+import           Control.Monad.Trans.Writer.Lazy   as LW
+import           Control.Monad.Trans.Writer.Strict as SW
+import           Data.CallStack
 
 -- |A class for monads that can handle wire protocol requests. This is the
 -- operation underlying all of the high-level commands exported in

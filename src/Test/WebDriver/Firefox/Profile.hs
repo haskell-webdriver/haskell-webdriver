@@ -1,6 +1,9 @@
-{-# LANGUAGE CPP, OverloadedStrings, FlexibleContexts,
-             GeneralizedNewtypeDeriving, EmptyDataDecls,
-             ScopedTypeVariables #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE EmptyDataDecls             #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-} -- suppress warnings from attoparsec
 -- |A module for working with Firefox profiles. Firefox profiles are manipulated
 -- in pure code and then \"prepared\" for network transmission.
@@ -26,29 +29,31 @@ module Test.WebDriver.Firefox.Profile
          -- ** Preferences parsing error
        , ProfileParseError(..)
        ) where
-import Test.WebDriver.Common.Profile
-import Data.Aeson (Result(..), encode, fromJSON)
-import Data.Aeson.Parser (jstring, value')
-import Data.Attoparsec.ByteString.Char8 as AP
-import qualified Data.HashMap.Strict as HM
-import Data.Text (Text)
-import Data.ByteString as BS (readFile)
-import qualified Data.ByteString.Lazy.Char8 as LBS
+import           Data.Aeson                       (Result (..), encode,
+                                                   fromJSON)
+import           Data.Aeson.Parser                (jstring, value')
+import           Data.Attoparsec.ByteString.Char8 as AP
+import           Data.ByteString                  as BS (readFile)
+import qualified Data.ByteString.Lazy.Char8       as LBS
+import qualified Data.HashMap.Strict              as HM
+import           Data.Text                        (Text)
+import           Test.WebDriver.Common.Profile
 
-import System.FilePath hiding (addExtension, hasExtension)
-import System.Directory
-import System.IO.Temp (createTempDirectory)
-import qualified System.Directory.Tree as DS
+import           System.Directory
+import qualified System.Directory.Tree            as DS
+import           System.FilePath                  hiding (addExtension,
+                                                   hasExtension)
+import           System.IO.Temp                   (createTempDirectory)
 
-import Control.Monad
-import Control.Monad.Base
-import Control.Monad.Trans.Control
-import Control.Exception.Lifted hiding (try)
-import Control.Applicative
-import Control.Arrow
+import           Control.Applicative
+import           Control.Arrow
+import           Control.Exception.Lifted         hiding (try)
+import           Control.Monad
+import           Control.Monad.Base
+import           Control.Monad.Trans.Control
 
 #if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
-import Prelude hiding (catch)
+import           Prelude                          hiding (catch)
 #endif
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'

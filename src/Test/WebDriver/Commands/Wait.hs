@@ -1,4 +1,8 @@
-{-# LANGUAGE CPP, DeriveDataTypeable, ScopedTypeVariables, FlexibleContexts, ConstraintKinds #-}
+{-# LANGUAGE CPP                 #-}
+{-# LANGUAGE ConstraintKinds     #-}
+{-# LANGUAGE DeriveDataTypeable  #-}
+{-# LANGUAGE FlexibleContexts    #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 module Test.WebDriver.Commands.Wait
        ( -- * Wait on expected conditions
          waitUntil, waitUntil'
@@ -11,24 +15,24 @@ module Test.WebDriver.Commands.Wait
          -- ** Convenience functions
        , onTimeout
        ) where
-import Test.WebDriver.Commands
-import Test.WebDriver.Class
-import Test.WebDriver.Exceptions
-import Test.WebDriver.Session
+import           Test.WebDriver.Class
+import           Test.WebDriver.Commands
+import           Test.WebDriver.Exceptions
+import           Test.WebDriver.Session
 
-import Control.Concurrent
-import Control.Exception.Lifted
-import Control.Monad.Base
-import Control.Monad.Trans.Control
+import           Control.Concurrent
+import           Control.Exception.Lifted
+import           Control.Monad.Base
+import           Control.Monad.Trans.Control
 
-import Data.CallStack
-import qualified Data.Foldable as F
-import Data.Text (Text)
-import Data.Time.Clock
-import Data.Typeable
+import           Data.CallStack
+import qualified Data.Foldable               as F
+import           Data.Text                   (Text)
+import           Data.Time.Clock
+import           Data.Typeable
 
 #if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
-import Prelude hiding (catch)
+import           Prelude                     hiding (catch)
 #endif
 
 instance Exception ExpectFailed
@@ -148,4 +152,4 @@ onTimeout :: (MonadBaseControl IO m, HasCallStack) => m a -> m a -> m a
 onTimeout m r = m `catch` handler
   where
     handler (FailedCommand Timeout _) = r
-    handler other = throwIO other
+    handler other                     = throwIO other

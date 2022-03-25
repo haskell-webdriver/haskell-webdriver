@@ -1,4 +1,9 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveDataTypeable, ConstraintKinds, FlexibleContexts, NamedFieldPuns #-}
+{-# LANGUAGE ConstraintKinds    #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE NamedFieldPuns     #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE RecordWildCards    #-}
 module Test.WebDriver.Exceptions.Internal
        ( InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
        , UnknownCommand(..), ServerError(..)
@@ -7,25 +12,25 @@ module Test.WebDriver.Exceptions.Internal
        , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
        , externalCallStack, callStackItemToStackFrame
        ) where
-import Test.WebDriver.Session
-import Test.WebDriver.JSON
+import           Test.WebDriver.JSON
+import           Test.WebDriver.Session
 
-import Data.Aeson
-import Data.Aeson.Types (Parser, typeMismatch)
-import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.CallStack
-import qualified Data.List as L
-import Data.Text (Text)
-import qualified Data.Text.Lazy.Encoding as TLE
+import           Data.Aeson
+import           Data.Aeson.Types           (Parser, typeMismatch)
+import           Data.ByteString.Lazy.Char8 (ByteString)
+import           Data.CallStack
+import qualified Data.List                  as L
+import           Data.Text                  (Text)
+import qualified Data.Text.Lazy.Encoding    as TLE
 
-import Control.Applicative
-import Control.Exception (Exception)
-import Control.Exception.Lifted (throwIO)
+import           Control.Applicative
+import           Control.Exception          (Exception)
+import           Control.Exception.Lifted   (throwIO)
 
-import Data.Maybe (fromMaybe, catMaybes)
-import Data.Typeable (Typeable)
+import           Data.Maybe                 (catMaybes, fromMaybe)
+import           Data.Typeable              (Typeable)
 
-import Prelude -- hides some "unused import" warnings
+import           Prelude
 
 instance Exception InvalidURL
 -- |An invalid URL was given
@@ -92,7 +97,7 @@ data FailedCommandInfo =
                       errMsg    :: String
                       -- |The session associated with
                       -- the exception.
-                    , errSess :: Maybe WDSession
+                    , errSess   :: Maybe WDSession
                       -- |A screen shot of the focused window
                       -- when the exception occured,
                       -- if provided.
@@ -138,7 +143,7 @@ mkFailedCommandInfo m cs = do
 -- |Use GHC's CallStack capabilities to return a callstack to help debug a FailedCommand.
 -- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
 -- should be where the user called into Test.WebDriver
-externalCallStack :: (HasCallStack) => CallStack
+externalCallStack :: HasCallStack => CallStack
 externalCallStack = dropWhile isWebDriverFrame callStack
   where isWebDriverFrame :: ([Char], SrcLoc) -> Bool
         isWebDriverFrame (_, SrcLoc {srcLocModule}) = "Test.WebDriver" `L.isPrefixOf` srcLocModule

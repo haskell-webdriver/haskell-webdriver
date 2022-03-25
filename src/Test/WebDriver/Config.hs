@@ -1,4 +1,6 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Test.WebDriver.Config(
     -- * WebDriver configuration
       WDConfig(..), defaultConfig
@@ -9,37 +11,38 @@ module Test.WebDriver.Config(
     -- * Overloadable configuration
     , WebDriverConfig(..)
     ) where
-import Test.WebDriver.Capabilities
-import Test.WebDriver.Session
+import           Test.WebDriver.Capabilities
+import           Test.WebDriver.Session
 
-import Data.Default.Class (Default(..))
-import Data.String (fromString)
+import           Data.Default.Class          (Default (..))
+import           Data.String                 (fromString)
 
-import Control.Monad.Base
+import           Control.Monad.Base
 
-import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
-import Network.HTTP.Types (RequestHeaders)
+import           Network.HTTP.Client         (Manager, defaultManagerSettings,
+                                              newManager)
+import           Network.HTTP.Types          (RequestHeaders)
 
 -- |WebDriver session configuration
 data WDConfig = WDConfig {
      -- |Host name of the WebDriver server for this
      -- session (default 127.0.0.1)
-      wdHost :: String
+      wdHost           :: String
      -- |Port number of the server (default 4444)
-    , wdPort :: Int
+    , wdPort           :: Int
      -- |Capabilities to use for this session
-    , wdCapabilities :: Capabilities
+    , wdCapabilities   :: Capabilities
      -- |Base path for all API requests (default "\/wd\/hub")
-    , wdBasePath :: String
+    , wdBasePath       :: String
     -- |Custom request headers to add to every HTTP request.
     , wdRequestHeaders :: RequestHeaders
     -- |Custom request headers to add *only* to session creation requests. This is usually done
     --  when a WebDriver server requires HTTP auth.
-    , wdAuthHeaders :: RequestHeaders
+    , wdAuthHeaders    :: RequestHeaders
      -- |Specifies behavior of HTTP request/response history. By default we use 'unlimitedHistory'.
-    , wdHistoryConfig :: SessionHistoryConfig
+    , wdHistoryConfig  :: SessionHistoryConfig
      -- |Use the given http-client 'Manager' instead of automatically creating one.
-    , wdHTTPManager :: Maybe Manager
+    , wdHTTPManager    :: Maybe Manager
      -- |Number of times to retry a HTTP request if it times out (default 0)
     , wdHTTPRetryCount :: Int
 }
@@ -82,11 +85,11 @@ instance WebDriverConfig WDConfig where
 
     mkSession WDConfig{..} = do
       manager <- maybe createManager return wdHTTPManager
-      return WDSession { wdSessHost = fromString $ wdHost
+      return WDSession { wdSessHost = fromString wdHost
                        , wdSessPort = wdPort
                        , wdSessRequestHeaders = wdRequestHeaders
                        , wdSessAuthHeaders = wdAuthHeaders
-                       , wdSessBasePath = fromString $ wdBasePath
+                       , wdSessBasePath = fromString wdBasePath
                        , wdSessId = Nothing
                        , wdSessHist = []
                        , wdSessHistUpdate = wdHistoryConfig

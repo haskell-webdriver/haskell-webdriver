@@ -1,25 +1,26 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds
-  #-}
+{-# LANGUAGE ConstraintKinds   #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Test.WebDriver.Capabilities where
 
-import Test.WebDriver.Firefox.Profile
-import Test.WebDriver.Chrome.Extension
-import Test.WebDriver.JSON
+import           Test.WebDriver.Chrome.Extension
+import           Test.WebDriver.Firefox.Profile
+import           Test.WebDriver.JSON
 
-import Data.Aeson
-import Data.Aeson.Types (Parser, typeMismatch, Pair)
-import qualified Data.HashMap.Strict as HM (delete, toList, empty)
+import           Data.Aeson
+import           Data.Aeson.Types                (Pair, Parser, typeMismatch)
+import qualified Data.HashMap.Strict             as HM (delete, empty, toList)
 
-import Data.Text (Text, toLower, toUpper)
-import Data.Default.Class (Default(..))
-import Data.Word (Word16)
-import Data.Maybe (fromMaybe, catMaybes)
-import Data.String (fromString)
+import           Data.Default.Class              (Default (..))
+import           Data.Maybe                      (catMaybes, fromMaybe)
+import           Data.String                     (fromString)
+import           Data.Text                       (Text, toLower, toUpper)
+import           Data.Word                       (Word16)
 
-import Control.Applicative
-import Control.Exception.Lifted (throw)
+import           Control.Applicative
+import           Control.Exception.Lifted        (throw)
 
-import Prelude -- hides some "unused import" warnings
+import           Prelude
 
 -- |A typeclass for readable 'Capabilities'
 class GetCapabilities t where
@@ -47,7 +48,7 @@ useBrowser b = modifyCaps $ \c -> c { browser = b }
 useVersion :: HasCapabilities t => String -> t -> t
 useVersion v = modifyCaps $ \c -> c { version = Just v }
 
--- |A helper function for setting the 'platform' capability of a 'HasCapabilities' instance 
+-- |A helper function for setting the 'platform' capability of a 'HasCapabilities' instance
 usePlatform :: HasCapabilities t => Platform -> t -> t
 usePlatform p = modifyCaps $ \c -> c { platform = p }
 
@@ -114,7 +115,7 @@ data Capabilities =
                  -- events when simulating user input.
                , nativeEvents             :: Maybe Bool
                  -- |How the session should handle unexpected alerts.
-               , unexpectedAlertBehavior :: Maybe UnexpectedAlertBehavior
+               , unexpectedAlertBehavior  :: Maybe UnexpectedAlertBehavior
                  -- |A list of ('Text', 'Value') pairs specifying additional non-standard capabilities.
                , additionalCaps           :: [Pair]
                } deriving (Eq, Show)
@@ -242,7 +243,7 @@ instance ToJSON Capabilities where
 
         Phantomjs {..}
           -> catMaybes [ opt "phantomjs.binary.path" phantomjsBinary
-                       ] ++ 
+                       ] ++
                        [ "phantomjs.cli.args" .= phantomjsOptions
                        ]
 
@@ -369,15 +370,15 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                         --
                         -- for more information on chromedriver see
                         -- <https://github.com/SeleniumHQ/selenium/wiki/ChromeDriver>
-                        chromeDriverVersion :: Maybe String
+                        chromeDriverVersion       :: Maybe String
                         -- |Server-side path to Chrome binary. If Nothing,
                         -- use a sensible system-based default.
-                      , chromeBinary :: Maybe FilePath
+                      , chromeBinary              :: Maybe FilePath
                         -- |A list of command-line options to pass to the
                         -- Chrome binary.
-                      , chromeOptions :: [String]
+                      , chromeOptions             :: [String]
                         -- |A list of extensions to use.
-                      , chromeExtensions :: [ChromeExtension]
+                      , chromeExtensions          :: [ChromeExtension]
                         -- | Experimental options not yet exposed through a standard API.
                       , chromeExperimentalOptions :: Object
                       }
@@ -389,60 +390,60 @@ data Browser = Firefox { -- |The firefox profile to use. If Nothing,
                     ieIgnoreProtectedModeSettings :: Bool
                     -- |Indicates whether to skip the check that the browser's zoom
                     -- level is set to 100%. Value is set to false by default.
-                  , ieIgnoreZoomSetting :: Bool
+                  , ieIgnoreZoomSetting           :: Bool
                     -- |Allows the user to specify the initial URL loaded when IE
                     -- starts. Intended to be used with ignoreProtectedModeSettings
                     -- to allow the user to initialize IE in the proper Protected Mode
                     -- zone. Using this capability may cause browser instability or
                     -- flaky and unresponsive code. Only \"best effort\" support is
                     -- provided when using this capability.
-                  , ieInitialBrowserUrl :: Maybe Text
+                  , ieInitialBrowserUrl           :: Maybe Text
                     -- |Allows the user to specify whether elements are scrolled into
                     -- the viewport for interaction to align with the top or bottom
                     -- of the viewport. The default value is to align with the top of
                     -- the viewport.
-                  , ieElementScrollBehavior :: IEElementScrollBehavior
+                  , ieElementScrollBehavior       :: IEElementScrollBehavior
                     -- |Determines whether persistent hovering is enabled (true by
                     -- default). Persistent hovering is achieved by continuously firing
                     -- mouse over events at the last location the mouse cursor has been
                     -- moved to.
-                  , ieEnablePersistentHover :: Bool
+                  , ieEnablePersistentHover       :: Bool
                     -- |Determines whether the driver should attempt to remove obsolete
                     -- elements from the element cache on page navigation (true by
                     -- default). This is to help manage the IE driver's memory footprint
                     -- , removing references to invalid elements.
-                  , ieEnableElementCacheCleanup :: Bool
+                  , ieEnableElementCacheCleanup   :: Bool
                     -- |Determines whether to require that the IE window have focus
                     -- before performing any user interaction operations (mouse or
                     -- keyboard events). This capability is false by default, but
                     -- delivers much more accurate native events interactions.
-                  , ieRequireWindowFocus :: Bool
+                  , ieRequireWindowFocus          :: Bool
                     -- |The timeout, in milliseconds, that the driver will attempt to
                     -- locate and attach to a newly opened instance of Internet Explorer
                     -- . The default is zero, which indicates waiting indefinitely.
-                  , ieBrowserAttachTimeout :: Integer
+                  , ieBrowserAttachTimeout        :: Integer
                     -- |The path to file where server should write log messages to.
                     -- By default it writes to stdout.
-                  , ieLogFile :: Maybe FilePath
+                  , ieLogFile                     :: Maybe FilePath
                     -- |The log level used by the server. Defaults to 'IELogFatal'
-                  , ieLogLevel :: IELogLevel
+                  , ieLogLevel                    :: IELogLevel
                     -- |The address of the host adapter on which the server will listen
                     -- for commands.
-                  , ieHost :: Maybe Text
+                  , ieHost                        :: Maybe Text
                     -- |The path to the directory used to extract supporting files used
                     -- by the server. Defaults to the TEMP directory if not specified.
-                  , ieExtractPath :: Maybe Text
+                  , ieExtractPath                 :: Maybe Text
                     -- |Suppresses diagnostic output when the server is started.
-                  , ieSilent :: Bool
+                  , ieSilent                      :: Bool
                     -- |Forces launching Internet Explorer using the CreateProcess API.
                     -- If this option is not specified, IE is launched using the
                     -- IELaunchURL, if it is available. For IE 8 and above, this option
                     -- requires the TabProcGrowth registry value to be set to 0.
-                  , ieForceCreateProcess :: Bool
+                  , ieForceCreateProcess          :: Bool
                     -- |Specifies command-line switches with which to launch Internet
                     -- Explorer. This is only valid when used with the
                     -- forceCreateProcess.
-                  , ieSwitches :: Maybe Text
+                  , ieSwitches                    :: Maybe Text
                   }
              | Opera { -- |Server-side path to the Opera binary
                        operaBinary    :: Maybe FilePath
@@ -614,7 +615,7 @@ instance FromJSON Platform where
     "linux"   -> return Linux
     "unix"    -> return Unix
     "any"     -> return Any
-    err -> fail $ "Invalid Platform string " ++ show err
+    err       -> fail $ "Invalid Platform string " ++ show err
   parseJSON v = typeMismatch "Platform" v
 
 -- |Available settings for the proxy 'Capabilities' field
@@ -694,30 +695,30 @@ instance Default LogLevel where
 
 instance ToJSON LogLevel where
   toJSON p= String $ case p of
-    LogOff -> "OFF"
-    LogSevere -> "SEVERE"
+    LogOff     -> "OFF"
+    LogSevere  -> "SEVERE"
     LogWarning -> "WARNING"
-    LogInfo -> "INFO"
-    LogConfig -> "CONFIG"
-    LogFine -> "FINE"
-    LogFiner -> "FINER"
-    LogFinest -> "FINEST"
-    LogDebug -> "DEBUG"
-    LogAll -> "ALL"
+    LogInfo    -> "INFO"
+    LogConfig  -> "CONFIG"
+    LogFine    -> "FINE"
+    LogFiner   -> "FINER"
+    LogFinest  -> "FINEST"
+    LogDebug   -> "DEBUG"
+    LogAll     -> "ALL"
 
 instance FromJSON LogLevel where
   parseJSON (String s) = return $ case s of
-    "OFF" -> LogOff
-    "SEVERE" -> LogSevere
+    "OFF"     -> LogOff
+    "SEVERE"  -> LogSevere
     "WARNING" -> LogWarning
-    "INFO" -> LogInfo
-    "CONFIG" -> LogConfig
-    "FINE" -> LogFine
-    "FINER" -> LogFiner
-    "FINEST" -> LogFinest
-    "DEBUG" -> LogDebug
-    "ALL" -> LogAll
-    _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
+    "INFO"    -> LogInfo
+    "CONFIG"  -> LogConfig
+    "FINE"    -> LogFine
+    "FINER"   -> LogFiner
+    "FINEST"  -> LogFinest
+    "DEBUG"   -> LogDebug
+    "ALL"     -> LogAll
+    _         -> throw . BadJSON $ "Invalid logging preference: " ++ show s
   parseJSON other = typeMismatch "LogLevel" other
 
 
@@ -734,8 +735,8 @@ instance ToJSON IELogLevel where
   toJSON p= String $ case p of
     IELogTrace -> "TRACE"
     IELogDebug -> "DEBUG"
-    IELogInfo -> "INFO"
-    IELogWarn -> "WARN"
+    IELogInfo  -> "INFO"
+    IELogWarn  -> "WARN"
     IELogError -> "ERROR"
     IELogFatal -> "FATAL"
 
@@ -747,7 +748,7 @@ instance FromJSON IELogLevel where
     "WARN"  -> IELogWarn
     "ERROR" -> IELogError
     "FATAL" -> IELogFatal
-    _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
+    _       -> throw . BadJSON $ "Invalid logging preference: " ++ show s
   parseJSON other = typeMismatch "IELogLevel" other
 
 -- |Specifies how elements scroll into the viewport. (see 'ieElementScrollBehavior')

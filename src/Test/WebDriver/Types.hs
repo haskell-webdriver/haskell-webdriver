@@ -33,9 +33,9 @@ module Test.WebDriver.Types
        , mkFailedCommandInfo, failedCommand
        ) where
 
-import Test.WebDriver.Monad
-import Test.WebDriver.Session
-import Test.WebDriver.Config
-import Test.WebDriver.Commands
-import Test.WebDriver.Exceptions
-import Test.WebDriver.Capabilities
+import           Test.WebDriver.Capabilities
+import           Test.WebDriver.Commands
+import           Test.WebDriver.Config
+import           Test.WebDriver.Exceptions
+import           Test.WebDriver.Monad
+import           Test.WebDriver.Session

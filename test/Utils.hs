@@ -1,7 +1,7 @@
 module Utils where
 
-import Test.Config
-import Test.WebDriver
-import Data.Text as T
+import           Data.Text      as T
+import           Test.Config
+import           Test.WebDriver
 
 openTestPage path = openPage $ serverUrl `T.append` path

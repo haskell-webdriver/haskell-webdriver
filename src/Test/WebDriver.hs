@@ -4,15 +4,15 @@ providing most of the functionality you're likely to want.
 -}
 module Test.WebDriver
   ( -- * WebDriver monad
-    WD(..) 
+    WD(..)
     -- * Running WebDriver commands
   , runSession, withSession, runWD
     -- * WebDriver configuration
   , WDConfig(..), defaultConfig
     -- ** Configuration helper functions
-    -- | Instead of working with the 'Capabilities' record directly, you can use 
+    -- | Instead of working with the 'Capabilities' record directly, you can use
     --   these config modifier functions to specify common options.
-  , useBrowser, useProxy, useVersion, usePlatform 
+  , useBrowser, useProxy, useVersion, usePlatform
     -- ** Session history configuration
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
     -- ** HTTP request header utilities
@@ -33,9 +33,9 @@ module Test.WebDriver
   , SessionHistory(..), getSessionHistory, dumpSessionHistory
   ) where
 
-import Test.WebDriver.Types
-import Test.WebDriver.Commands
-import Test.WebDriver.Monad
-import Test.WebDriver.Exceptions
-import Test.WebDriver.Config
-import Test.WebDriver.Session
+import           Test.WebDriver.Commands
+import           Test.WebDriver.Config
+import           Test.WebDriver.Exceptions
+import           Test.WebDriver.Monad
+import           Test.WebDriver.Session
+import           Test.WebDriver.Types

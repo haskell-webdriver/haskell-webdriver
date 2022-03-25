@@ -1,7 +1,7 @@
 module Test.WebDriver.Utils where
 
-import Data.Text (Text)
-import Data.Text.Encoding as TE
+import           Data.Text              (Text)
+import           Data.Text.Encoding     as TE
 import qualified Network.HTTP.Types.URI as HTTP
 
 urlEncode :: Text -> Text

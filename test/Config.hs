@@ -1,8 +1,9 @@
-{-# LANGUAGE OverloadedStrings, NoMonomorphismRestriction #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
+{-# LANGUAGE OverloadedStrings         #-}
 module Config where
 --import Data
-import Data.String (fromString)
-import Data.Text as T (Text, concat)
+import           Data.String (fromString)
+import           Data.Text   as T (Text, concat)
 
 --SauceLabs server info
 serverHost = "ondemand.saucelabs.com"

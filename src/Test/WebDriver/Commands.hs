@@ -1,5 +1,9 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, ExistentialQuantification,
-             TemplateHaskell, RecordWildCards, FlexibleContexts #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE OverloadedStrings         #-}
+{-# LANGUAGE RecordWildCards           #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TemplateHaskell           #-}
 -- |This module exports basic WD actions that can be used to interact with a
 -- browser session.
 module Test.WebDriver.Commands
@@ -73,37 +77,39 @@ module Test.WebDriver.Commands
        , getLogs, getLogTypes, LogType, LogEntry(..), LogLevel(..)
        ) where
 
-import Codec.Archive.Zip
-import Control.Applicative
-import Control.Exception (SomeException)
-import Control.Exception.Lifted (throwIO, handle)
-import qualified Control.Exception.Lifted as L
-import Control.Monad
-import Control.Monad.Base
-import Data.Aeson
-import Data.Aeson.TH
-import Data.Aeson.Types
-import Data.ByteString.Base64.Lazy as B64
-import Data.ByteString.Lazy as LBS (ByteString, writeFile)
-import Data.CallStack
-import qualified Data.Char as C
-import qualified Data.Foldable as F
-import Data.Maybe
-import Data.String (fromString)
-import Data.Text (Text, append, toUpper, toLower)
-import qualified Data.Text as T
-import qualified Data.Text.Lazy.Encoding as TL
-import Data.Word
-import Network.URI hiding (path)  -- suppresses warnings
-import Test.WebDriver.Capabilities
-import Test.WebDriver.Class
-import Test.WebDriver.Commands.Internal
-import Test.WebDriver.Exceptions.Internal
-import Test.WebDriver.JSON
-import Test.WebDriver.Session
-import Test.WebDriver.Utils (urlEncode)
+import           Codec.Archive.Zip
+import           Control.Applicative
+import           Control.Exception                  (SomeException)
+import           Control.Exception.Lifted           (handle, throwIO)
+import qualified Control.Exception.Lifted           as L
+import           Control.Monad
+import           Control.Monad.Base
+import           Data.Aeson
+import           Data.Aeson.TH
+import           Data.Aeson.Types
+import           Data.ByteString.Base64.Lazy        as B64
+import           Data.ByteString.Lazy               as LBS (ByteString,
+                                                            writeFile)
+import           Data.CallStack
+import qualified Data.Char                          as C
+import qualified Data.Foldable                      as F
+import           Data.Maybe
+import           Data.String                        (fromString)
+import           Data.Text                          (Text, append, toLower,
+                                                     toUpper)
+import qualified Data.Text                          as T
+import qualified Data.Text.Lazy.Encoding            as TL
+import           Data.Word
+import           Network.URI                        hiding (path)
+import           Test.WebDriver.Capabilities
+import           Test.WebDriver.Class
+import           Test.WebDriver.Commands.Internal
+import           Test.WebDriver.Exceptions.Internal
+import           Test.WebDriver.JSON
+import           Test.WebDriver.Session
+import           Test.WebDriver.Utils               (urlEncode)
 
-import Prelude -- hides some "unused import" warnings
+import           Prelude
 
 -- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action.
 --
@@ -137,7 +143,7 @@ setImplicitWait ms =
     `L.catch` \(_ :: SomeException) ->
       doSessCommand methodPost "/timeouts" (object allFields)
   where msField   = ["ms" .= ms]
-        allFields = ["type" .= ("implicit" :: String)] ++ msField
+        allFields = ("type" .= ("implicit" :: String)) : msField
 
 -- |Sets the amount of time (ms) we wait for an asynchronous script to return a
 -- result.
@@ -147,7 +153,7 @@ setScriptTimeout ms =
     `L.catch` \( _ :: SomeException) ->
       doSessCommand methodPost "/timeouts" (object allFields)
   where msField   = ["ms" .= ms]
-        allFields = ["type" .= ("script" :: String)] ++ msField
+        allFields = ("type" .= ("script" :: String)) : msField
 
 -- |Sets the amount of time (ms) to wait for a page to finish loading before throwing a 'Timeout' exception.
 setPageLoadTimeout :: (HasCallStack, WebDriver wd) => Integer -> wd ()
@@ -245,7 +251,7 @@ asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
                 $ (F.toList a,s)
     timeout (FailedCommand Timeout _)       = return Nothing
     timeout (FailedCommand ScriptTimeout _) = return Nothing
-    timeout err = throwIO err
+    timeout err                             = throwIO err
 
 -- |Save a screenshot to a particular location
 saveScreenshot :: (HasCallStack, WebDriver wd) => FilePath -> wd ()
@@ -288,10 +294,10 @@ data FrameSelector = WithIndex Integer
 
 instance ToJSON FrameSelector where
   toJSON s = case s of
-    WithIndex i -> toJSON i
-    WithName n -> toJSON n
+    WithIndex i   -> toJSON i
+    WithName n    -> toJSON n
     WithElement e -> toJSON e
-    DefaultFrame -> Null
+    DefaultFrame  -> Null
 
 -- |Switch focus to the frame specified by the FrameSelector.
 focusFrame :: (HasCallStack, WebDriver wd) => FrameSelector -> wd ()
@@ -596,9 +602,9 @@ instance FromJSON MouseButton where
   parseJSON v = do
     n <- parseJSON v
     case n :: Integer of
-      0 -> return LeftButton
-      1 -> return MiddleButton
-      2 -> return RightButton
+      0   -> return LeftButton
+      1   -> return MiddleButton
+      2   -> return RightButton
       err -> fail $ "Invalid JSON for MouseButton: " ++ show err
 
 -- |Click at the current mouse position with the given mouse button.
@@ -758,9 +764,9 @@ deleteKey s k = noReturn $ doStorageCommand methodPost s ("/key/" `T.append` url
 -- |A wrapper around 'doSessCommand' to create web storage requests.
 doStorageCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
                      Method -> WebStorageType -> Text -> a -> wd b
-doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
+doStorageCommand m s path = doSessCommand m (T.concat ["/", s', path])
   where s' = case s of
-          LocalStorage -> "local_storage"
+          LocalStorage   -> "local_storage"
           SessionStorage -> "session_storage"
 
 -- |Get information from the server as a JSON 'Object'. For more information

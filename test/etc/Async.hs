@@ -1,13 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Async where
 
-import Test.WebDriver
-import qualified Data.Aeson as A
+import qualified Data.Aeson     as A
+import           Test.WebDriver
 
 main :: IO ()
 main = runSession defaultConfig . finallyClose $ do
     openPage "http://www.wikipedia.org/"
     r <- asyncJS [] "arguments[0]();"
-    if r /= Just A.Null
-      then error $ "Async returned " ++ show r
-      else return ()
+    Control.Monad.when (r /= Just A.Null) $ error $ "Async returned " ++ show r

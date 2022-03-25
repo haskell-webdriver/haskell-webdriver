@@ -1,14 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module SearchBaidu where
 
-import Control.Monad
-import Control.Applicative
-import Data.List
-import qualified Data.Text as T
-import Test.WebDriver
-import Test.WebDriver.Commands.Wait
+import           Control.Applicative
+import           Control.Monad
+import           Data.List
+import qualified Data.Text                    as T
+import           Test.WebDriver
+import           Test.WebDriver.Commands.Wait
 
-import Prelude
+import           Prelude
 
 chromeConf = useBrowser chrome defaultConfig
 ffConf = defaultConfig
@@ -16,7 +16,7 @@ ffConf = defaultConfig
 -- Have no fun with baidu but only cause it is loading fast than google in China.
 --
 baidu :: WD ()
-baidu = do 
+baidu = do
   openPage "http://www.baidu.com/"
   waitUntil 15 $
     expect . (== "http://www.baidu.com/") =<< getCurrentURL
@@ -33,7 +33,7 @@ searchBaidu = do
   container <- findElem (ById "container")
   eList1 <- findElems (ByCSS "c-container")
   eList2 <- findElems (ByClass "c-container")
-  expect =<< (fmap and $ zipWithM (<==>) eList1 eList2)
+  expect . and =<< zipWithM (<==>) eList1 eList2
 
   forM_ eList1 $ \e -> findElemsFrom e (ByTag "a")
 

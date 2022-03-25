@@ -92,7 +92,7 @@ sendHTTPRequest req = do
   putSession s { wdSessHist = wdSessHistUpdate h wdSessHist }
   return tryRes
 
-retryOnTimeout :: Int -> IO a -> IO (Int, (Either SomeException a))
+retryOnTimeout :: Int -> IO a -> IO (Int, Either SomeException a)
 retryOnTimeout maxRetry go = retry' 0
   where
     retry' nRetries = do
@@ -183,7 +183,7 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
       errInfo' = errInfo { errSess = Just sess
                          -- Append the Haskell stack frames to the ones returned from Selenium
                          , errScreen = screen
-                         , errStack = seleniumStack ++ (fmap callStackItemToStackFrame externalCallStack) }
+                         , errStack = seleniumStack ++ fmap callStackItemToStackFrame externalCallStack }
       e errType = toException $ FailedCommand errType errInfo'
   return . Just $ case status of
     7   -> e NoSuchElement

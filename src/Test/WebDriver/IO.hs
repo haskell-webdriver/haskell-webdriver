@@ -1,7 +1,7 @@
 module Test.WebDriver.IO where
-import Test.WebDriver
-import Control.Concurrent (threadDelay)
-import Control.Monad.IO.Class (liftIO)
+import           Control.Concurrent     (threadDelay)
+import           Control.Monad.IO.Class (liftIO)
+import           Test.WebDriver
 
 sleepIO :: Double -> IO ()
 sleepIO seconds = Control.Concurrent.threadDelay (round (seconds * 1e6))

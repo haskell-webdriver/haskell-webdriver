@@ -1,26 +1,31 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
-             MultiParamTypeClasses, CPP, UndecidableInstances, ConstraintKinds #-}
+{-# LANGUAGE CPP                        #-}
+{-# LANGUAGE ConstraintKinds            #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE UndecidableInstances       #-}
 module Test.WebDriver.Monad
        ( WD(..), runWD, runSession, finallyClose, closeOnException, getSessionHistory, dumpSessionHistory
        ) where
 
-import Test.WebDriver.Class
-import Test.WebDriver.Session
-import Test.WebDriver.Config
-import Test.WebDriver.Commands
-import Test.WebDriver.Internal
+import           Test.WebDriver.Class
+import           Test.WebDriver.Commands
+import           Test.WebDriver.Config
+import           Test.WebDriver.Internal
+import           Test.WebDriver.Session
 
-import Control.Monad.Base (MonadBase, liftBase)
-import Control.Monad.IO.Class
-import Control.Monad.Fix
-import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
-import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
+import           Control.Monad.Base               (MonadBase, liftBase)
+import           Control.Monad.Fix
+import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Control      (MonadBaseControl (..), StM)
+import           Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
 --import Control.Monad.IO.Class (MonadIO)
-import Control.Exception.Lifted
-import Control.Monad.Catch (MonadThrow, MonadCatch)
-import Control.Applicative
+import           Control.Applicative
+import           Control.Exception.Lifted
+import           Control.Monad.Catch              (MonadCatch, MonadThrow)
 
-import Prelude -- hides some "unused import" warnings
+import           Prelude
 
 
 {- |A state monad for WebDriver commands.
@@ -45,7 +50,7 @@ instance MonadBaseControl IO WD where
 
   liftBaseWith f = WD $
     liftBaseWith $ \runInBase ->
-    f (\(WD sT) -> liftM StWD . runInBase $ sT)
+    f (\(WD sT) -> fmap StWD . runInBase $ sT)
 
   restoreM = WD . restoreM . unStWD
 #endif
@@ -81,7 +86,7 @@ runSession conf wd = do
 
 -- |A finalizer ensuring that the session is always closed at the end of
 -- the given 'WD' action, regardless of any exceptions.
-finallyClose:: WebDriver wd => wd a -> wd a
+finallyClose :: WebDriver wd => wd a -> wd a
 finallyClose wd = closeOnException wd <* closeSession
 
 -- |Exception handler that closes the session when an
@@ -92,7 +97,7 @@ closeOnException wd = wd `onException` closeSession
 
 -- |Gets the command history for the current session.
 getSessionHistory :: WDSessionState wd => wd [SessionHistory]
-getSessionHistory = fmap wdSessHist getSession 
+getSessionHistory = fmap wdSessHist getSession
 
 -- |Prints a history of API requests to stdout after computing the given action.
 dumpSessionHistory :: WDSessionStateControl wd => wd a -> wd a

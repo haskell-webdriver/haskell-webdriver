@@ -1,4 +1,7 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, GeneralizedNewtypeDeriving, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE ScopedTypeVariables        #-}
 {-# OPTIONS_HADDOCK not-home #-}
 -- |Internal functions used to implement the functions exported by
 -- "Test.WebDriver.Commands". These may be useful for implementing non-standard
@@ -16,22 +19,22 @@ module Test.WebDriver.Commands.Internal
        , NoSessionId(..)
        ) where
 
-import Test.WebDriver.Class
-import Test.WebDriver.JSON
-import Test.WebDriver.Session
-import Test.WebDriver.Utils (urlEncode)
+import           Test.WebDriver.Class
+import           Test.WebDriver.JSON
+import           Test.WebDriver.Session
+import           Test.WebDriver.Utils     (urlEncode)
 
-import Control.Applicative
-import Control.Exception.Lifted
-import Data.Aeson
-import Data.Aeson.Types
-import Data.CallStack
-import Data.Default.Class
-import Data.Text (Text)
-import qualified Data.Text as T
-import Data.Typeable
+import           Control.Applicative
+import           Control.Exception.Lifted
+import           Data.Aeson
+import           Data.Aeson.Types
+import           Data.CallStack
+import           Data.Default.Class
+import           Data.Text                (Text)
+import qualified Data.Text                as T
+import           Data.Typeable
 
-import Prelude -- hides some "unused import" warnings
+import           Prelude
 
 {- |An opaque identifier for a web page element. -}
 newtype Element = Element Text
@@ -93,8 +96,8 @@ doSessCommand method path args = do
 -- parameters as described in the wire protocol.
 doElemCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
                   Method -> Element -> Text -> a -> wd b
-doElemCommand m (Element e) path a =
-  doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
+doElemCommand m (Element e) path =
+  doSessCommand m (T.concat ["/element/", urlEncode e, path])
 
 -- |A wrapper around 'doSessCommand' to create window handle URLS.
 -- For example, passing a URL of \"/size\" will expand to
@@ -102,5 +105,5 @@ doElemCommand m (Element e) path a =
 -- :windowHandle are URL parameters as described in the wire protocol
 doWinCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
                  Method -> WindowHandle -> Text -> a -> wd b
-doWinCommand m (WindowHandle w) path a =
-  doSessCommand m (T.concat ["/window/", urlEncode w, path]) a
+doWinCommand m (WindowHandle w) path =
+  doSessCommand m (T.concat ["/window/", urlEncode w, path])

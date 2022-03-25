@@ -6,6 +6,6 @@ module Test.WebDriver.Exceptions
        , FailedCommandInfo(..), StackFrame(..)
        , mkFailedCommandInfo, failedCommand
        ) where
-import Test.WebDriver.JSON
-import Test.WebDriver.Commands.Internal
-import Test.WebDriver.Exceptions.Internal
+import           Test.WebDriver.Commands.Internal
+import           Test.WebDriver.Exceptions.Internal
+import           Test.WebDriver.JSON

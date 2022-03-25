@@ -1,4 +1,6 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts   #-}
+{-# LANGUAGE OverloadedStrings  #-}
 -- |A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous
 -- 'BadJSON' exceptions.
@@ -29,24 +31,24 @@ module Test.WebDriver.JSON
          -- * parsing commands with no return value
        , NoReturn(..), noReturn, ignoreReturn
        ) where
-import Test.WebDriver.Class (WebDriver)
+import           Test.WebDriver.Class            (WebDriver)
 
-import Data.Aeson as Aeson
-import Data.Aeson.Types
-import Data.Text (Text)
-import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Attoparsec.ByteString.Lazy (Result(..))
+import           Data.Aeson                      as Aeson
+import           Data.Aeson.Types
+import           Data.Attoparsec.ByteString.Lazy (Result (..))
 import qualified Data.Attoparsec.ByteString.Lazy as AP
-import qualified Data.HashMap.Strict as HM
+import           Data.ByteString.Lazy.Char8      (ByteString)
+import qualified Data.HashMap.Strict             as HM
+import           Data.Text                       (Text)
 
-import Control.Monad (join, void)
-import Control.Applicative
-import Control.Monad.Trans.Control
-import Control.Exception.Lifted
-import Data.String
-import Data.Typeable
+import           Control.Applicative
+import           Control.Exception.Lifted
+import           Control.Monad                   (join, void)
+import           Control.Monad.Trans.Control
+import           Data.String
+import           Data.Typeable
 
-import Prelude -- hides some "unused import" warnings
+import           Prelude
 
 instance Exception BadJSON
 -- |An error occured when parsing a JSON value.
@@ -141,7 +143,7 @@ parseTriple a b c funcName v =
 -- |Convert an attoparsec parser result to 'WD'.
 apResultToWD :: (MonadBaseControl IO wd, FromJSON a) => AP.Result Value -> wd a
 apResultToWD p = case p of
-  Done _ res -> fromJSON' res
+  Done _ res   -> fromJSON' res
   Fail _ _ err -> throwIO $ BadJSON err
 
 -- |Convert an Aeson parser result to 'WD'.
