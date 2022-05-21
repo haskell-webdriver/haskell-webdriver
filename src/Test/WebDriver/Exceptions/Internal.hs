@@ -175,7 +175,7 @@ instance FromJSON FailedCommandInfo where
                       <*> opt "class"      Nothing
                       <*> (catMaybes <$> opt "stackTrace" [])
     where req :: FromJSON a => Text -> Parser a
-          req = (o .:)            --required key
+          req = (o .:) . fromText  --required key
           opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:?? k .!= d --optional key
   parseJSON v = typeMismatch "FailedCommandInfo" v
@@ -186,7 +186,7 @@ instance FromJSON StackFrame where
                                     <*> reqStr "methodName"
                                     <*> req    "lineNumber"
     where req :: FromJSON a => Text -> Parser a
-          req = (o .:) -- all keys are required
+          req = (o .:) . fromText -- all keys are required
           reqStr :: Text -> Parser String
           reqStr k = req k >>= maybe (return "") return
   parseJSON v = typeMismatch "StackFrame" v

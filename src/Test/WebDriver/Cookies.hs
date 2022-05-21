@@ -46,7 +46,7 @@ instance FromJSON Cookie where
                                 <*> opt "expiry" Nothing
     where
       req :: FromJSON a => Text -> Parser a
-      req = (o .:)
+      req = (o .:) . fromText
       opt :: FromJSON a => Text -> a -> Parser a
       opt k d = o .:?? k .!= d
   parseJSON v = typeMismatch "Cookie" v
