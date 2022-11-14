@@ -1,22 +1,24 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, CPP,
-             GeneralizedNewtypeDeriving, RecordWildCards, ConstraintKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts, CPP #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ConstraintKinds #-}
+
 #ifndef CABAL_BUILD_DEVELOPER
 {-# OPTIONS_GHC  -fno-warn-warnings-deprecations #-}
 #endif
-module Test.WebDriver.Class
-       ( -- * WebDriver class
-         WebDriver(..), Method, methodDelete, methodGet, methodPost,
-       ) where
+
+module Test.WebDriver.Class (
+  -- * WebDriver class
+  WebDriver(..), Method, methodDelete, methodGet, methodPost,
+  ) where
 import Test.WebDriver.Session
 
 import Data.Aeson
 import Data.Text (Text)
-#if !MIN_VERSION_base(4,8,0)
-import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't work with "import Data.Monoid"
-#endif
-
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
-
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Error
 import Control.Monad.Trans.Except
@@ -31,6 +33,11 @@ import Control.Monad.Trans.State.Strict as SS
 import Control.Monad.Trans.Writer.Lazy as LW
 import Control.Monad.Trans.Writer.Strict as SW
 import Data.CallStack
+
+#if !MIN_VERSION_base(4,8,0)
+import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't work with "import Data.Monoid"
+#endif
+
 
 -- |A class for monads that can handle wire protocol requests. This is the
 -- operation underlying all of the high-level commands exported in
@@ -51,7 +58,6 @@ instance WebDriver wd => WebDriver (SS.StateT s wd) where
 
 instance WebDriver wd => WebDriver (LS.StateT s wd) where
   doCommand rm t a = lift (doCommand rm t a)
-
 
 instance WebDriver wd => WebDriver (MaybeT wd) where
   doCommand rm t a = lift (doCommand rm t a)
@@ -76,7 +82,6 @@ instance (Error e, WebDriver wd) => WebDriver (ErrorT e wd) where
 
 instance WebDriver wd => WebDriver (ExceptT e wd) where
   doCommand rm t a = lift (doCommand rm t a)
-
 
 instance (Monoid w, WebDriver wd) => WebDriver (SRWS.RWST r w s wd) where
   doCommand rm t a = lift (doCommand rm t a)
