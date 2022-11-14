@@ -16,7 +16,7 @@ description:    A Selenium WebDriver client for Haskell.
                 .
                 To find out what's been changed in this version and others,
                 see the change log at
-                <https://github.com/kallisti-dev/hs-webdriver/blob/master/CHANGELOG.md>
+                <https://github.com/codedownio/hs-webdriver/blob/master/CHANGELOG.md>
 category:       Web, Browser, Testing, WebDriver, Selenium
 homepage:       https://github.com/codedownio/hs-webdriver#readme
 bug-reports:    https://github.com/codedownio/hs-webdriver/issues

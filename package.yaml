@@ -17,7 +17,7 @@ description: |
 
   To find out what's been changed in this version and others,
   see the change log at
-  <https://github.com/kallisti-dev/hs-webdriver/blob/master/CHANGELOG.md>
+  <https://github.com/codedownio/hs-webdriver/blob/master/CHANGELOG.md>
 
 tested-with:
 - GHC == 8.6.5
