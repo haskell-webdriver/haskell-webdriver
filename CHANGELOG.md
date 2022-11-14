@@ -6,6 +6,9 @@
 * Fix parameter name in the `focusWindow` function
 * Fix Cookie ToJSON instance
 * Convert a couple noReturn calls to ignoreReturn to avoid a crash
+* Switch to hpack
+* Switch to GitHub Actions CI
+* Remove cabal flags and shorten extra-source-files
 
 ## 0.9.0.1
 * Fixed build errors when building against aeson-1.4.3.0
