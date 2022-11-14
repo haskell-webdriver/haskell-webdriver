@@ -28,9 +28,7 @@ tested-with:
 
 extra-source-files:
 - README.md
-- TODO.md
 - CHANGELOG.md
-- .ghci
 
 flags:
   network-uri:
