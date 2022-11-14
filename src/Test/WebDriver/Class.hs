@@ -2,10 +2,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 
-#ifndef CABAL_BUILD_DEVELOPER
-{-# OPTIONS_GHC  -fno-warn-warnings-deprecations #-}
-#endif
-
 module Test.WebDriver.Class (
   -- * WebDriver class
   WebDriver(..), Method, methodDelete, methodGet, methodPost,

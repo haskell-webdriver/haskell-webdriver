@@ -4,10 +4,6 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE CPP #-}
 
-#ifndef CABAL_BUILD_DEVELOPER
-{-# OPTIONS_GHC  -fno-warn-warnings-deprecations #-}
-#endif
-
 module Test.WebDriver.Session
   ( -- * WDSessionState class
     WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession

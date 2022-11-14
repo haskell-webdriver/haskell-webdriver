@@ -30,18 +30,9 @@ extra-source-files:
 - README.md
 - CHANGELOG.md
 
-flags:
-  developer:
-    description: Package development mode
-    default: false
-    manual: true
-
 library:
   source-dirs: src
   ghc-options: -Wall
-  when:
-  - condition: flag(developer)
-    cpp-options: -DCABAL_BUILD_DEVELOPER
   dependencies:
   - aeson >= 0.6.2.0
   - attoparsec >= 0.10
