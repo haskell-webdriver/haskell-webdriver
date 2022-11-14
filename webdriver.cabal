@@ -1,17 +1,17 @@
 Name: webdriver
-Version: 0.9.0.1
+Version: 0.10.0.0
 Cabal-Version: >= 1.10
 License: BSD3
 License-File: LICENSE
 Author: Adam Curtis
-Maintainer: kallisti.dev@gmail.com
-Homepage: https://github.com/kallisti-dev/hs-webdriver
-Bug-Reports: https://github.com/kallisti-dev/hs-webdriver/issues
+Maintainer: tom@codedown.io
+Homepage: https://github.com/codedownio/hs-webdriver
+Bug-Reports: https://github.com/codedownio/hs-webdriver/issues
 Category: Web, Browser, Testing, WebDriver, Selenium
 Synopsis: a Haskell client for the Selenium WebDriver protocol
 Build-Type: Simple
 Extra-Source-Files: README.md, TODO.md, CHANGELOG.md, .ghci
-Tested-With: GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3, GHC == 8.0.1
+Tested-With: GHC == 8.6.5, GHC == 8.8.4, GHC == 8.10.7, GHC == 9.0.2, GHC == 9.2.5
 Description:
         A Selenium WebDriver client for Haskell.
         You can use it to automate browser sessions

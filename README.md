@@ -1,5 +1,8 @@
 [![Build Status](https://travis-ci.org/kallisti-dev/hs-webdriver.svg?branch=master)](https://travis-ci.org/kallisti-dev/hs-webdriver)
 
+# Welcome to `webdriver`
+[![Hackage](https://img.shields.io/hackage/v/webdriver.svg)](https://hackage.haskell.org/package/webdriver) ![webdriver](https://github.com/codedownio/hs-webdriver/workflows/ci/badge.svg)
+
 hs-webdriver is a Selenium WebDriver client for the Haskell programming language. You can use it to automate browser sessions for testing, system administration, etc.
 
 For more information about Selenium itself, see http://seleniumhq.org/
