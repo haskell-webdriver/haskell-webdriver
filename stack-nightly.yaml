@@ -3,8 +3,3 @@ resolver: nightly-2022-11-14
 
 packages:
 - '.'
-
-flags:
-  webdriver:
-    network-uri: true
-    developer: false

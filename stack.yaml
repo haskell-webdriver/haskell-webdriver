@@ -5,8 +5,3 @@ packages:
 - '.'
 
 extra-deps: []
-
-flags:
-  webdriver:
-    network-uri: true
-    developer: false
