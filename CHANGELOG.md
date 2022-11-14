@@ -1,6 +1,13 @@
 # Change Log
 
-##0.9.0.1
+## 0.10.0.0
+* Add Aeson 2 compatibility to support GHC 9.0 and 9.2
+* Derive MonadMask instance for the WD monad
+* Fix parameter name in the `focusWindow` function
+* Fix Cookie ToJSON instance
+* Convert a couple noReturn calls to ignoreReturn to avoid a crash
+
+## 0.9.0.1
 * Fixed build errors when building against aeson-1.4.3.0
 
 ## 0.9
@@ -44,7 +51,7 @@
 ## 0.8.1
 * Previously internal convenience functions `noReturn` and `ignoreReturn` are now exported in Test.WebDriver.JSON
 * `elemInfo` is now deprecated due to it being phased out in the Marionette (Firefox) driver. It will likely be removed once Selenium 4 is released.
-* Fixed an issue causing PAC settings to not work.  
+* Fixed an issue causing PAC settings to not work.
 
 ## 0.8.0.4
 * Quick fix to parse "unsupported command" errors when using Marionette driver (Selenium + Marionette has nonstandard behavior when reporting that error type)
@@ -57,7 +64,7 @@
 * Fixed issue introduced in 0.8 that caused build failure when using aeson < 0.10
 
 ## 0.8.0.1
-* findElems and and findElemsFrom were accidentally changed to return a single Element in the last release. This has been fixed. 
+* findElems and and findElemsFrom were accidentally changed to return a single Element in the last release. This has been fixed.
 
 ## 0.8
 
@@ -109,18 +116,18 @@ Basic web test code only has to contend with a few additional symbol exports, ov
   * Reworked and improved session history API
     * Added a `SessionHistory` record type to replace the old `(Request, Response ByteString)` type. The new type has the same data as the previous tuple, but additionally records the number of attempted HTTP retries, and instead of `Response ByteString` uses `Either SomeException (Response ByteString)` so that HTTP request errors can be logged.
     * Removed `wdKeepSessHist` field from `WDConfig` and replaced it with `wdHistoryConfig`, which uses a new `SessionHistoryConfig` type.
-      
+
       ```hs
         -- |A function used to append new requests/responses to session history.
         type SessionHistoryConfig = SessionHistory -> [SessionHistory] -> [SessionHistory]
       ```
     * The new field can be configured using several new constants: `noHistory`, `onlyMostRecentHistory`, and `unlimitedHistory`. Note: `unlimitedHistory` is now the default configuration for history. For the old behavior, use `onlyMostRecentHistory`.
     * New top-level functions for accessing session history
-      
+
       ```hs
         -- |Gets the command history for the current session.
         getSessionHistory :: WDSessionState wd => wd [SessionHistory]
-        
+
         -- |Prints a history of API requests to stdout after computing the given action
         --  or after an exception is thrown
         dumpSessionHistory :: WDSessionStateControl wd => wd a -> wd a
@@ -132,30 +139,30 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 ### Typeclass API
 * `WDSessionState` is now a superclass of `Monad` and `Applicative` instead of `MonadBaseControl IO`. This makes the class significantly more flexible in how it can be used, as it no longer requires `IO` as a base monad.
   * For convenience the following constraint aliases were added (requires `ConstraintKinds` extension to use). Several existing API functions have been updated to use these new constraints where appropriate.
-    
+
     ```hs
       type WDSessionStateIO s = (WDSessionState s, MonadBase IO s)
       type WDSessionStateControl s = (WDSessionState s, MonadBaseControl IO s)
     ```
-    
+
   * The `WDSessionStateControl` constraint is equivalent to the previous `WDSessionState` constraint.
   * The `WebDriver` class is unaffected (it is now a superclass of `WDSessionStateControl`), so code using the basic `Test.WebDriver` API will not be affected.
 
 * New typeclasses added to `Test.WebDriver.Capabilities`: `GetCapabilities` and `SetCapabilities`; for convenience a constraint alias `HasCapabilities` has been added to work with both of these classes (requires `ConstraintKinds` extension to use)
-      
+
       ```hs
         -- |A typeclass for readable 'Capabilities'
         class GetCapabilities t where
           getCaps :: t -> Capabilities
-        
+
         -- |A typeclass for writable 'Capabilities'
         class SetCapabilities t where
           setCaps :: Capabilities -> t -> t
-        
+
         -- |Read/write 'Capabilities'
         type HasCapabilities t = (GetCapabilities t, SetCapabilities t)
       ```
-      
+
 ### Minor API changes (not exposed to `Test.WebDriver` module)
 * `Test.WebDriver.Session` changes
   * new function `mostRecentHistory` added
@@ -181,7 +188,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 ## 0.6.2
 * Supports GHC 7.10
 * Supports reworked Chrome capabilities used by newer versions of WebDriver
-* Servers that return empty JSON strings for commands with no return value will no longer cause parse errors 
+* Servers that return empty JSON strings for commands with no return value will no longer cause parse errors
 
 ## 0.6.1
 * Added the ability to pass HTTP request headers at session creation
@@ -192,7 +199,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 * Support for monad-control 1.0
 
 ## 0.6.0.3
-* Relaxed upper bounds on text and http-client versions 
+* Relaxed upper bounds on text and http-client versions
 
 ## 0.6.0.2
 * Added support for aeson > 0.8 and network > 2.6
@@ -263,7 +270,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 * The LogPref type has been renamed to LogLevel to reflect its use within the new log interface
 
 ### new features
-* a new log interface as specified by the webdriver standard. This includes the functions getLogs and getLogTypes, and the types LogType and LogEntry. 
+* a new log interface as specified by the webdriver standard. This includes the functions getLogs and getLogTypes, and the types LogType and LogEntry.
 * waitWhile and waitUntil now show more detailed information about why an explicit wait timed out.
 
 ## hs-webdriver 0.5.0.1
@@ -289,7 +296,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 * NoSessionId and doSessCommand were moved from Test.WebDriver.Classes to Test.WebDriver.Commands.Internal
 
 ### bug fixes
-* fixed a typo in the export list of Firefox.Profile; deleteFile is now correctly exported instead of removeFile from System.Directory 
+* fixed a typo in the export list of Firefox.Profile; deleteFile is now correctly exported instead of removeFile from System.Directory
 * fixed an error in the JSON representation of MouseButton
 
 ### new features
@@ -307,7 +314,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 ### known issues
 * Because of the way loadProfile currently adds directories to the profileFiles HashMap, it's possible for extensions added via addExtension to be overriden by the extensions originally listed in the on-disk extensions directory.
 
-### new features 
+### new features
 * It's now possible to add entire directories to a profile in pure code using addFile and addExtension.
 * new functions in Common.Profile: unionProfiles, onProfileFiles, onProfilePrefs
 * new function in Commands.Wait: onTimeout
@@ -330,7 +337,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 ### new features
 * new Common.Profile functions: hasExtension, hasFile
 
-## hs-webdriver 0.3.1 
+## hs-webdriver 0.3.1
 
 ### API changes
 * The representation of Profiles has changed, allowing it to store arbitrary files as well as extensions. The functional API for working with preferences and extensions ismostly unchanged, except for the behavior of calling addExtension consecutively with the same filepath argument.
@@ -344,7 +351,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 * An issue involving lazy bytestring IO in the zip-archive package means that unusually large profiles might exceed the OSes open file limit.
 
 ### new features
-* several new functions for working with Firefox/Opera profiles have been added. This includes functions for loading large profiles from disk, functions for working with zipped profiles, and functions for adding arbitrary files to a profile in pure code. 
+* several new functions for working with Firefox/Opera profiles have been added. This includes functions for loading large profiles from disk, functions for working with zipped profiles, and functions for adding arbitrary files to a profile in pure code.
 * new helper functions were added to Test.WebDriver.Commands.Wait, exported from the cond package.
 
 ## hs-webdriver 0.3.0.1
@@ -354,7 +361,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 * major bux fixes in the Firefox profile code. Note that loadProfile is unlikely
 to work as expected, but prepareTempProfile should.
 
-## hs-webdriver 0.3 
+## hs-webdriver 0.3
 
 ### API changes
 * 2 typeclasses were introduced. All WebDriver commands are now overloaded on WebDriver class, so that monad transformers with a WD base can be used conveniently.
@@ -384,7 +391,7 @@ to work as expected, but prepareTempProfile should.
 ## hs-webdriver 0.1
 
 ### API changes
-* getWindowSize, setWindowSize, getWindowPos, and setWindowPos have all been deprived of their WindowHandle argument. This is due to the fact that using unfocused windows with those commands causes undefined behavior. 
+* getWindowSize, setWindowSize, getWindowPos, and setWindowPos have all been deprived of their WindowHandle argument. This is due to the fact that using unfocused windows with those commands causes undefined behavior.
 
 ### new features
 * the mkCookie function for convenient cookie construction
