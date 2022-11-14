@@ -33,9 +33,7 @@ tested-with:
   , GHC == 9.2.5
 extra-source-files:
     README.md
-    TODO.md
     CHANGELOG.md
-    .ghci
 
 source-repository head
   type: git
