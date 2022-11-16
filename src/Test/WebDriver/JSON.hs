@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP #-}
 -- |A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous
 -- 'BadJSON' exceptions.
@@ -28,15 +28,17 @@ module Test.WebDriver.JSON
        , BadJSON(..)
          -- * parsing commands with no return value
        , NoReturn(..), noReturn, ignoreReturn
+
+       , fromText
        ) where
 import Test.WebDriver.Class (WebDriver)
 
 import Data.Aeson as Aeson
 import Data.Aeson.Types
+import Data.Text (Text)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.Attoparsec.ByteString.Lazy (Result(..))
 import qualified Data.Attoparsec.ByteString.Lazy as AP
-import qualified Data.Aeson.KeyMap as KM
 
 import Control.Monad (join, void)
 import Control.Applicative
@@ -46,6 +48,18 @@ import Data.String
 import Data.Typeable
 
 import Prelude -- hides some "unused import" warnings
+
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.Key             as A
+import qualified Data.Aeson.KeyMap          as HM
+fromText :: Text -> A.Key
+fromText = A.fromText
+#else
+import qualified Data.HashMap.Strict        as HM
+fromText :: Text -> Text
+fromText = id
+#endif
+
 
 instance Exception BadJSON
 -- |An error occured when parsing a JSON value.
@@ -60,7 +74,7 @@ data NoReturn = NoReturn
 
 instance FromJSON NoReturn where
   parseJSON Null                    = return NoReturn
-  parseJSON (Object o) | KM.null o  = return NoReturn
+  parseJSON (Object o) | HM.null o  = return NoReturn
   parseJSON (String "")             = return NoReturn
   parseJSON other                   = typeMismatch "no return value" other
 
@@ -74,19 +88,19 @@ ignoreReturn = void
 
 
 -- |Construct a singleton JSON 'object' from a key and value.
-single :: ToJSON a => Key -> a -> Value
-single a x = object [a .= x]
+single :: ToJSON a => Text -> a -> Value
+single a x = object [(fromText a) .= x]
 
 -- |Construct a 2-element JSON 'object' from a pair of keys and a pair of
 -- values.
-pair :: (ToJSON a, ToJSON b) => (Key,Key) -> (a,b) -> Value
-pair (a,b) (x,y) = object [a .= x, b .= y]
+pair :: (ToJSON a, ToJSON b) => (Text,Text) -> (a,b) -> Value
+pair (a,b) (x,y) = object [fromText a .= x, fromText b .= y]
 
 -- |Construct a 3-element JSON 'object' from a triple of keys and a triple of
 -- values.
 triple :: (ToJSON a, ToJSON b, ToJSON c) =>
-          (Key,Key,Key) -> (a,b,c) -> Value
-triple (a,b,c) (x,y,z) = object [a .= x, b.= y, c .= z]
+          (Text,Text,Text) -> (a,b,c) -> Value
+triple (a,b,c) (x,y,z) = object [fromText a .= x, fromText b.= y, fromText c .= z]
 
 
 -- |Parse a lazy 'ByteString' as a top-level JSON 'Value', then convert it to an
@@ -99,13 +113,13 @@ fromJSON' :: MonadBaseControl IO wd => FromJSON a => Value -> wd a
 fromJSON' = aesonResultToWD . fromJSON
 
 -- |This operator is a wrapper over Aeson's '.:' operator.
-(!:) :: (MonadBaseControl IO wd, FromJSON a) => Object -> Key -> wd a
-o !: k = aesonResultToWD $ parse (.: k) o
+(!:) :: (MonadBaseControl IO wd, FromJSON a) => Object -> Text -> wd a
+o !: k = aesonResultToWD $ parse (.: fromText k) o
 
 -- |Due to a breaking change in the '.:?' operator of aeson 0.10 (see <https://github.com/bos/aeson/issues/287>) that was subsequently reverted, this operator
 -- was added to provide consistent behavior compatible with all aeson versions. If the field is either missing or `Null`, this operator should return a `Nothing` result.
-(.:??) :: FromJSON a => Object -> Key -> Parser (Maybe a)
-o .:?? k = fmap join (o .:? k)
+(.:??) :: FromJSON a => Object -> Text -> Parser (Maybe a)
+o .:?? k = fmap join (o .:? fromText k)
 
 
 -- |Parse a JSON 'Object' as a pair. The first two string arguments specify the
