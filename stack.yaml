@@ -1,0 +1,7 @@
+
+resolver: lts-19.33
+
+packages:
+- '.'
+
+extra-deps: []

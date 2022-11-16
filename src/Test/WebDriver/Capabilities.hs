@@ -1,14 +1,12 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds
-  #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds, CPP #-}
 module Test.WebDriver.Capabilities where
 
-import Test.WebDriver.Firefox.Profile
 import Test.WebDriver.Chrome.Extension
+import Test.WebDriver.Firefox.Profile
 import Test.WebDriver.JSON
 
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch, Pair)
-import qualified Data.Aeson.KeyMap as KM (delete, empty, toList)
 
 import Data.Text (Text, toLower, toUpper)
 import Data.Default.Class (Default(..))
@@ -20,6 +18,13 @@ import Control.Applicative
 import Control.Exception.Lifted (throw)
 
 import Prelude -- hides some "unused import" warnings
+
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap          as HM (delete, toList, empty)
+#else
+import qualified Data.HashMap.Strict        as HM (delete, toList, empty)
+#endif
+
 
 -- |A typeclass for readable 'Capabilities'
 class GetCapabilities t where
@@ -202,7 +207,7 @@ instance ToJSON Capabilities where
                   ] ++
                   [ "args"       .= chromeOptions
                   , "extensions" .= chromeExtensions
-                  ] ++ KM.toList chromeExperimentalOptions
+                  ] ++ HM.toList chromeExperimentalOptions
                 )]
         IE {..}
           -> ["ignoreProtectedModeSettings" .= ieIgnoreProtectedModeSettings
@@ -280,15 +285,15 @@ instance FromJSON Capabilities where
                  <*> pure (additionalCapabilities browser)
 
     where --some helpful JSON accessor shorthands
-          req :: FromJSON a => Key -> Parser a
-          req = (o .:)            -- required field
-          opt :: FromJSON a => Key -> a -> Parser a
+          req :: FromJSON a => Text -> Parser a
+          req = (o .:) . fromText  -- required field
+          opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:?? k .!= d -- optional field
-          b :: Key -> Parser (Maybe Bool)
+          b :: Text -> Parser (Maybe Bool)
           b k = opt k Nothing     -- Maybe Bool field
 
           -- produce additionalCaps by removing known capabilities from the JSON object
-          additionalCapabilities = KM.toList . foldr KM.delete o . knownCapabilities
+          additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
 
           knownCapabilities browser =
             [ "browserName", "version", "platform", "proxy"
@@ -316,7 +321,7 @@ instance FromJSON Capabilities where
                                   <*> opt "chrome.binary" Nothing
                                   <*> opt "chrome.switches" []
                                   <*> opt "chrome.extensions" []
-                                  <*> pure KM.empty
+                                  <*> pure HM.empty
               IE {} -> IE <$> opt "ignoreProtectedModeSettings" True
                           <*> opt "ignoreZoomSettings" False
                           <*> opt "initialBrowserUrl" Nothing
@@ -548,7 +553,7 @@ firefox = Firefox Nothing def Nothing Nothing
 -- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
 -- specified, and no extensions are used.
 chrome :: Browser
-chrome = Chrome Nothing Nothing [] [] KM.empty
+chrome = Chrome Nothing Nothing [] [] HM.empty
 
 -- |Default IE settings. See the 'IE' constructor for more details on
 -- individual defaults
@@ -659,8 +664,8 @@ instance FromJSON ProxyType where
                          <*> f "httpProxy"
       _ -> fail $ "Invalid ProxyType " ++ show pTyp
     where
-      f :: FromJSON a => Key -> Parser a
-      f = (obj .:)
+      f :: FromJSON a => Text -> Parser a
+      f = (obj .:) . fromText
   parseJSON v = typeMismatch "ProxyType" v
 
 instance ToJSON ProxyType where
@@ -785,4 +790,3 @@ instance FromJSON IEElementScrollBehavior where
       0 -> return AlignTop
       1 -> return AlignBottom
       _ -> fail $ "Invalid integer for IEElementScrollBehavior: " ++ show n
-

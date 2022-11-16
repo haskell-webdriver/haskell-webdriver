@@ -15,6 +15,7 @@ import Data.Aeson.Types (Parser, typeMismatch)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.CallStack
 import qualified Data.List as L
+import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TLE
 
 import Control.Applicative
@@ -174,9 +175,9 @@ instance FromJSON FailedCommandInfo where
                       <*> (fmap TLE.encodeUtf8 <$> opt "screen" Nothing)
                       <*> opt "class"      Nothing
                       <*> (catMaybes <$> opt "stackTrace" [])
-    where req :: FromJSON a => Key -> Parser a
-          req = (o .:)            --required key
-          opt :: FromJSON a => Key -> a -> Parser a
+    where req :: FromJSON a => Text -> Parser a
+          req = (o .:) . fromText  --required key
+          opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:?? k .!= d --optional key
   parseJSON v = typeMismatch "FailedCommandInfo" v
 
@@ -185,9 +186,9 @@ instance FromJSON StackFrame where
                                     <*> reqStr "className"
                                     <*> reqStr "methodName"
                                     <*> req    "lineNumber"
-    where req :: FromJSON a => Key -> Parser a
-          req = (o .:) -- all keys are required
-          reqStr :: Key -> Parser String
+    where req :: FromJSON a => Text -> Parser a
+          req = (o .:) . fromText -- all keys are required
+          reqStr :: Text -> Parser String
           reqStr k = req k >>= maybe (return "") return
   parseJSON v = typeMismatch "StackFrame" v
 
