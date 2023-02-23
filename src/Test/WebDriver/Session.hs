@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
 
 module Test.WebDriver.Session (
   -- * WDSessionState class
@@ -26,9 +27,11 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
 import Control.Monad.Trans.Reader
+#if !MIN_VERSION_transformers(0,6,0)
+import Control.Monad.Trans.List
 import Control.Monad.Trans.Error
+#endif
 import Control.Monad.Trans.Except
 --import Control.Monad.Cont
 import Control.Monad.Trans.Writer.Strict as SW
@@ -174,10 +177,6 @@ instance WDSessionState m => WDSessionState (IdentityT m) where
   getSession = lift getSession
   putSession = lift . putSession
 
-instance WDSessionState m => WDSessionState (ListT m) where
-  getSession = lift getSession
-  putSession = lift . putSession
-
 instance (Monoid w, WDSessionState m) => WDSessionState (LW.WriterT w m) where
   getSession = lift getSession
   putSession = lift . putSession
@@ -190,9 +189,15 @@ instance WDSessionState m => WDSessionState (ReaderT r m) where
   getSession = lift getSession
   putSession = lift . putSession
 
+#if !MIN_VERSION_transformers(0,6,0)
+instance WDSessionState m => WDSessionState (ListT m) where
+  getSession = lift getSession
+  putSession = lift . putSession
+
 instance (Error e, WDSessionState m) => WDSessionState (ErrorT e m) where
   getSession = lift getSession
   putSession = lift . putSession
+#endif
 
 instance WDSessionState m => WDSessionState (ExceptT r m) where
   getSession = lift getSession
