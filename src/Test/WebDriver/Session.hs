@@ -1,15 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE CPP #-}
 
-module Test.WebDriver.Session
-  ( -- * WDSessionState class
-    WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession
-    -- ** WebDriver sessions
+module Test.WebDriver.Session (
+  -- * WDSessionState class
+  WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession
+  -- ** WebDriver sessions
   , WDSession(..), mostRecentHistory, mostRecentHTTPRequest, SessionId(..), SessionHistory(..)
-    -- * SessionHistoryConfig options
+  -- * SessionHistoryConfig options
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
-    -- * Using custom HTTP request headers
+  -- * Using custom HTTP request headers
   , withRequestHeaders, withAuthHeaders
   ) where
 
