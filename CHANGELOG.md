@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.10.0.1
+* Update links to reflect this package's new home at https://github.com/haskell-webdriver/haskell-webdriver/
+
 ## 0.10.0.0
 * Add Aeson 2 compatibility to support GHC 9.0 and 9.2
 * Derive MonadMask instance for the WD monad
