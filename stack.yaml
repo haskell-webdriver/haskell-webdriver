@@ -1,5 +1,5 @@
 
-resolver: lts-19.33
+resolver: lts-20.17
 
 packages:
 - '.'
