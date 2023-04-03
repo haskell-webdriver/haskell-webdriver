@@ -17,7 +17,7 @@ description: |
 
   To find out what's been changed in this version and others,
   see the change log at
-  <https://github.com/haskell-webdriver/haskell-webdriver/blob/master/CHANGELOG.md>
+  <https://github.com/haskell-webdriver/haskell-webdriver/blob/main/CHANGELOG.md>
 
 tested-with:
 - GHC == 8.6.5
