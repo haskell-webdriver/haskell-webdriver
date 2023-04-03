@@ -1,4 +1,8 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds, CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
+
 module Test.WebDriver.Capabilities where
 
 import Test.WebDriver.Chrome.Extension

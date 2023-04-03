@@ -1,4 +1,8 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE CPP #-}
+
 -- |A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous
 -- 'BadJSON' exceptions.

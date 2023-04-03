@@ -1,8 +1,20 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
-             MultiParamTypeClasses, CPP, UndecidableInstances, ConstraintKinds #-}
-module Test.WebDriver.Monad
-       ( WD(..), runWD, runSession, finallyClose, closeOnException, getSessionHistory, dumpSessionHistory
-       ) where
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ConstraintKinds #-}
+
+module Test.WebDriver.Monad (
+  WD(..)
+  , runWD
+  , runSession
+  , finallyClose
+  , closeOnException
+  , getSessionHistory
+  , dumpSessionHistory
+  ) where
 
 import Test.WebDriver.Class
 import Test.WebDriver.Commands

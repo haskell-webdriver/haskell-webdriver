@@ -1,5 +1,12 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ConstraintKinds, PatternGuards, CPP #-}
--- |The HTTP/JSON plumbing used to implement the 'WD' monad.
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE CPP #-}
+
+-- | The HTTP/JSON plumbing used to implement the 'WD' monad.
 --
 -- These functions can be used to create your own 'WebDriver' instances, providing extra functionality for your application if desired. All exports
 -- of this module are subject to change at any point.

@@ -1,7 +1,13 @@
-{-# LANGUAGE CPP, TypeSynonymInstances, DeriveDataTypeable, FlexibleInstances,
-             GeneralizedNewtypeDeriving, OverloadedStrings, FlexibleContexts #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# OPTIONS_HADDOCK not-home #-}
--- |A type for profile preferences. These preference values are used by both
+
+-- | A type for profile preferences. These preference values are used by both
 -- Firefox and Opera profiles.
 module Test.WebDriver.Common.Profile
        ( -- *Profiles and profile preferences
@@ -23,11 +29,11 @@ module Test.WebDriver.Common.Profile
        , ProfileParseError(..)
        ) where
 
-import System.Directory
-import System.FilePath hiding (addExtension, hasExtension)
 import Codec.Archive.Zip
 import Data.Aeson
 import Data.Aeson.Types
+import System.Directory
+import System.FilePath hiding (addExtension, hasExtension)
 
 #if MIN_VERSION_aeson(0,7,0)
 import Data.Scientific

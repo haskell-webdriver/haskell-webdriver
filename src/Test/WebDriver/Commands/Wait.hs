@@ -1,4 +1,9 @@
-{-# LANGUAGE CPP, DeriveDataTypeable, ScopedTypeVariables, FlexibleContexts, ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ConstraintKinds #-}
+
 module Test.WebDriver.Commands.Wait
        ( -- * Wait on expected conditions
          waitUntil, waitUntil'

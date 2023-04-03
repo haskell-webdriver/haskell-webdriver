@@ -1,9 +1,14 @@
-{-# LANGUAGE CPP, OverloadedStrings, FlexibleContexts,
-             GeneralizedNewtypeDeriving, EmptyDataDecls,
-             ScopedTypeVariables #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-} -- suppress warnings from attoparsec
--- |A module for working with Firefox profiles. Firefox profiles are manipulated
+
+-- | A module for working with Firefox profiles. Firefox profiles are manipulated
 -- in pure code and then \"prepared\" for network transmission.
+
 module Test.WebDriver.Firefox.Profile
        ( -- * Profiles
          Firefox, Profile(..), PreparedProfile
