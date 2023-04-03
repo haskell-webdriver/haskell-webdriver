@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.35.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -16,10 +16,10 @@ description:    A Selenium WebDriver client for Haskell.
                 .
                 To find out what's been changed in this version and others,
                 see the change log at
-                <https://github.com/codedownio/hs-webdriver/blob/master/CHANGELOG.md>
+                <https://github.com/haskell-webdriver/haskell-webdriver/blob/master/CHANGELOG.md>
 category:       Web, Browser, Testing, WebDriver, Selenium
-homepage:       https://github.com/codedownio/hs-webdriver#readme
-bug-reports:    https://github.com/codedownio/hs-webdriver/issues
+homepage:       https://github.com/haskell-webdriver/haskell-webdriver#readme
+bug-reports:    https://github.com/haskell-webdriver/haskell-webdriver/issues
 author:         Adam Curtis <kallisti.dev@gmail.com>
 maintainer:     Tom McLaughlin <tom@codedown.io>
 license:        BSD3
@@ -37,7 +37,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/codedownio/hs-webdriver
+  location: https://github.com/haskell-webdriver/haskell-webdriver
 
 library
   exposed-modules:

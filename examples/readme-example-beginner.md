@@ -1,7 +1,7 @@
 
 # Installation and Environment Setup
 
-This example assumes you already have hs-webdriver installed and already have a Selenium server running on your local
+This example assumes you already have haskell-webdriver installed and already have a Selenium server running on your local
 machine. If you haven't done these steps, refer to the [README](/README.md) for detailed installation/setup instructions.
 
 What this example does not assume is any prior Haskell knowledge on your part. It is intended for anyone with basic
@@ -21,7 +21,7 @@ Before you use the library, you'll need to add a bit of boilerplate to your Hask
 
 Normally, Haskell string literals (such as `"Hello!"`) have the type `String`, which is a linked list of Unicode code points.
 Adding this to the top of your program file instructs GHC to allow string literals to be overloaded to other string-like
-types. Since hs-webdriver uses the very efficient `Text` type for Unicode strings, the OverloadedStrings extension makes
+types. Since haskell-webdriver uses the very efficient `Text` type for Unicode strings, the OverloadedStrings extension makes
 it significantly easier to write your code without having to convert all of your `String` values to `Text` ones. Using the 
 [text package](https://hackage.haskell.org/package/text) for efficient Unicode string handling is considered standard
 practice in "Real World Haskell™".
@@ -176,7 +176,7 @@ Hackage.
 
 # Monads and other advanced library concepts
 
-hs-webdriver implements a very simple EDSL (embedded domain-specific language) for users to write web automation scripts.
+haskell-webdriver implements a very simple EDSL (embedded domain-specific language) for users to write web automation scripts.
 This EDSL is implemented using a state monad. The state monad maintains implicit information about the WebDriver session
 between commands, so that individual commands only require you to specify the parameters relevant to the action they perform.
 Ironically enough, in some ways this makes the Haskell bindings for WebDriver more imperative than the bindings used by
