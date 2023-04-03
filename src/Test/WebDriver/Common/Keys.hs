@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 
 -- | This module contains named constants corresponding to the special characters recognized by 'sendKeys'.
 -- For more details on these special characters, consult the Selenium documentation at

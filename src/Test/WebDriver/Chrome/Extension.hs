@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 -- | Functions and types for working with Google Chrome extensions.
 module Test.WebDriver.Chrome.Extension

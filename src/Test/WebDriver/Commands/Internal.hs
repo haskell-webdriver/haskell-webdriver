@@ -1,7 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 
 {-# OPTIONS_HADDOCK not-home #-}
 -- | Internal functions used to implement the functions exported by

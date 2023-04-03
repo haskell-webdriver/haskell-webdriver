@@ -66,6 +66,13 @@ library
       Test.WebDriver.IO
   hs-source-dirs:
       src
+  default-extensions:
+      ScopedTypeVariables
+      OverloadedStrings
+      FlexibleContexts
+      FlexibleInstances
+      RecordWildCards
+      NamedFieldPuns
   ghc-options: -Wall
   build-depends:
       aeson >=0.6.2.0
