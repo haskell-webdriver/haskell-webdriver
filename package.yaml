@@ -93,3 +93,20 @@ library:
   - Test.WebDriver.Utils
   other-modules:
   - Test.WebDriver.IO
+
+
+
+tests:
+  webdriver-tests:
+    main:                Spec.hs
+    source-dirs:
+    - test
+    ghc-options:
+    - -Wall
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - sandwich
+    - sandwich-webdriver
+    - webdriver
