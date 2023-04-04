@@ -1,25 +1,21 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, FlexibleContexts, ScopedTypeVariables,
-             GeneralizedNewtypeDeriving, RecordWildCards, ConstraintKinds, CPP #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE ConstraintKinds #-}
 
-#ifndef CABAL_BUILD_DEVELOPER
-{-# OPTIONS_GHC  -fno-warn-warnings-deprecations #-}
-#endif
-
-module Test.WebDriver.Session
-  ( -- * WDSessionState class
-    WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession
-    -- ** WebDriver sessions
+module Test.WebDriver.Session (
+  -- * WDSessionState class
+  WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession
+  -- ** WebDriver sessions
   , WDSession(..), mostRecentHistory, mostRecentHTTPRequest, SessionId(..), SessionHistory(..)
-    -- * SessionHistoryConfig options
+  -- * SessionHistoryConfig options
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
-    -- * Using custom HTTP request headers
+  -- * Using custom HTTP request headers
   , withRequestHeaders, withAuthHeaders
   ) where
 
 import Test.WebDriver.Session.History
 
 import Data.Aeson
-import Data.ByteString as BS(ByteString) 
+import Data.ByteString as BS(ByteString)
 import Data.Text (Text)
 import Data.Maybe (listToMaybe)
 import Data.Monoid
@@ -81,7 +77,7 @@ data WDSession = WDSession {
                            , wdSessHTTPManager :: Manager
                              -- |Number of times to retry a HTTP request if it times out
                            , wdSessHTTPRetryCount :: Int
-                             -- |Custom request headers to add to every HTTP request. 
+                             -- |Custom request headers to add to every HTTP request.
                            , wdSessRequestHeaders :: RequestHeaders
                              -- |Custom request headers to add *only* to session creation requests. This is usually done
                              --  when a WebDriver server requires HTTP auth.
@@ -108,10 +104,10 @@ onlyMostRecentHistory h _ = [h]
 -- MonadBaseControl superclass is used for exception handling through
 -- the lifted-base package.
 class (Monad m, Applicative m) => WDSessionState m where
-  
+
   -- |Retrieves the current session state of the monad
   getSession :: m WDSession
-  
+
   -- |Sets a new session state for the monad
   putSession :: WDSession -> m ()
 
@@ -120,7 +116,7 @@ type WDSessionStateIO s = (WDSessionState s, MonadBase IO s)
 
 -- |Constraint synonym for another common pairing of 'WDSessionState' and 'MonadBaseControl' 'IO'. This
 -- is commonly used in library types to indicate use of lifted exception handling.
-type WDSessionStateControl s = (WDSessionState s, MonadBaseControl IO s) 
+type WDSessionStateControl s = (WDSessionState s, MonadBaseControl IO s)
 
 modifySession :: WDSessionState s => (WDSession -> WDSession) -> s ()
 modifySession f = getSession >>= putSession . f
@@ -139,7 +135,7 @@ withSession s m = do
 -- |The most recent SessionHistory entry recorded by this session, if any.
 mostRecentHistory :: WDSession -> Maybe SessionHistory
 mostRecentHistory = listToMaybe . wdSessHist
-    
+
 -- |The most recent HTTP request issued by this session, if any.
 mostRecentHTTPRequest :: WDSession -> Maybe Request
 mostRecentHTTPRequest = fmap histRequest . mostRecentHistory
@@ -161,15 +157,15 @@ withAuthHeaders :: WDSessionStateControl m => m a -> m a
 withAuthHeaders wd = do
   authHeaders <- fmap wdSessAuthHeaders getSession
   withRequestHeaders authHeaders wd
-                            
+
 instance WDSessionState m => WDSessionState (LS.StateT s m) where
   getSession = lift getSession
   putSession = lift . putSession
-  
+
 instance WDSessionState m => WDSessionState (SS.StateT s m) where
   getSession = lift getSession
   putSession = lift . putSession
-    
+
 instance WDSessionState m => WDSessionState (MaybeT m) where
   getSession = lift getSession
   putSession = lift . putSession
@@ -181,7 +177,7 @@ instance WDSessionState m => WDSessionState (IdentityT m) where
 instance WDSessionState m => WDSessionState (ListT m) where
   getSession = lift getSession
   putSession = lift . putSession
-  
+
 instance (Monoid w, WDSessionState m) => WDSessionState (LW.WriterT w m) where
   getSession = lift getSession
   putSession = lift . putSession
@@ -189,11 +185,11 @@ instance (Monoid w, WDSessionState m) => WDSessionState (LW.WriterT w m) where
 instance (Monoid w, WDSessionState m) => WDSessionState (SW.WriterT w m) where
   getSession = lift getSession
   putSession = lift . putSession
-  
+
 instance WDSessionState m => WDSessionState (ReaderT r m) where
   getSession = lift getSession
   putSession = lift . putSession
-  
+
 instance (Error e, WDSessionState m) => WDSessionState (ErrorT e m) where
   getSession = lift getSession
   putSession = lift . putSession
@@ -205,7 +201,7 @@ instance WDSessionState m => WDSessionState (ExceptT r m) where
 instance (Monoid w, WDSessionState m) => WDSessionState (SRWS.RWST r w s m) where
   getSession = lift getSession
   putSession = lift . putSession
-  
+
 instance (Monoid w, WDSessionState wd) => WDSessionState (LRWS.RWST r w s wd) where
   getSession = lift getSession
   putSession = lift . putSession

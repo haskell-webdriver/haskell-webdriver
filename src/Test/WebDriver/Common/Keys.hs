@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedStrings #-}
--- |This module contains named constants corresponding to the special characters recognized by 'sendKeys'.
--- For more details on these special characters, consult the Selenium documentation at 
+
+-- | This module contains named constants corresponding to the special characters recognized by 'sendKeys'.
+-- For more details on these special characters, consult the Selenium documentation at
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#sessionsessionidelementidvalue>
 module Test.WebDriver.Common.Keys where
 
@@ -197,4 +197,3 @@ tab = "\xe004"
 
 up :: Text
 up = "\xe013"
-

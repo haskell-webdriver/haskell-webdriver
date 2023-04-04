@@ -1,14 +1,14 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ConstraintKinds
-  #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE CPP #-}
+
 module Test.WebDriver.Capabilities where
 
-import Test.WebDriver.Firefox.Profile
 import Test.WebDriver.Chrome.Extension
+import Test.WebDriver.Firefox.Profile
 import Test.WebDriver.JSON
 
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch, Pair)
-import qualified Data.HashMap.Strict as HM (delete, toList, empty)
 
 import Data.Text (Text, toLower, toUpper)
 import Data.Default.Class (Default(..))
@@ -20,6 +20,13 @@ import Control.Applicative
 import Control.Exception.Lifted (throw)
 
 import Prelude -- hides some "unused import" warnings
+
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.KeyMap          as HM (delete, toList, empty)
+#else
+import qualified Data.HashMap.Strict        as HM (delete, toList, empty)
+#endif
+
 
 -- |A typeclass for readable 'Capabilities'
 class GetCapabilities t where
@@ -47,7 +54,7 @@ useBrowser b = modifyCaps $ \c -> c { browser = b }
 useVersion :: HasCapabilities t => String -> t -> t
 useVersion v = modifyCaps $ \c -> c { version = Just v }
 
--- |A helper function for setting the 'platform' capability of a 'HasCapabilities' instance 
+-- |A helper function for setting the 'platform' capability of a 'HasCapabilities' instance
 usePlatform :: HasCapabilities t => Platform -> t -> t
 usePlatform p = modifyCaps $ \c -> c { platform = p }
 
@@ -242,7 +249,7 @@ instance ToJSON Capabilities where
 
         Phantomjs {..}
           -> catMaybes [ opt "phantomjs.binary.path" phantomjsBinary
-                       ] ++ 
+                       ] ++
                        [ "phantomjs.cli.args" .= phantomjsOptions
                        ]
 
@@ -276,7 +283,7 @@ instance FromJSON Capabilities where
 
     where --some helpful JSON accessor shorthands
           req :: FromJSON a => Text -> Parser a
-          req = (o .:)            -- required field
+          req = (o .:) . fromText  -- required field
           opt :: FromJSON a => Text -> a -> Parser a
           opt k d = o .:?? k .!= d -- optional field
           b :: Text -> Parser (Maybe Bool)
@@ -644,7 +651,7 @@ instance FromJSON ProxyType where
       _ -> fail $ "Invalid ProxyType " ++ show pTyp
     where
       f :: FromJSON a => Text -> Parser a
-      f = (obj .:)
+      f = (obj .:) . fromText
   parseJSON v = typeMismatch "ProxyType" v
 
 instance ToJSON ProxyType where
@@ -768,4 +775,3 @@ instance FromJSON IEElementScrollBehavior where
       0 -> return AlignTop
       1 -> return AlignBottom
       _ -> fail $ "Invalid integer for IEElementScrollBehavior: " ++ show n
-

@@ -1,6 +1,8 @@
-{-# LANGUAGE OverloadedStrings, DeriveDataTypeable, GeneralizedNewtypeDeriving, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 {-# OPTIONS_HADDOCK not-home #-}
--- |Internal functions used to implement the functions exported by
+-- | Internal functions used to implement the functions exported by
 -- "Test.WebDriver.Commands". These may be useful for implementing non-standard
 -- webdriver commands.
 module Test.WebDriver.Commands.Internal

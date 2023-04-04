@@ -1,6 +1,7 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, ExistentialQuantification,
-             DeriveGeneric, RecordWildCards, FlexibleContexts #-}
--- |This module exports basic WD actions that can be used to interact with a
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE TemplateHaskell #-}
+
+-- | This module exports basic WD actions that can be used to interact with a
 -- browser session.
 module Test.WebDriver.Commands
        ( -- * Sessions
@@ -85,7 +86,6 @@ import Data.Aeson.Types
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString, writeFile)
 import Data.CallStack
-import qualified Data.Char as C
 import qualified Data.Foldable as F
 import Data.Maybe
 import Data.String (fromString)
@@ -98,6 +98,7 @@ import Network.URI hiding (path)  -- suppresses warnings
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.Internal
+import Test.WebDriver.Cookies
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
 import Test.WebDriver.Session
@@ -125,7 +126,7 @@ getActualCaps = doSessCommand methodGet "" Null
 
 -- |Close the current session and the browser associated with it.
 closeSession :: (HasCallStack, WebDriver wd) => wd ()
-closeSession = do s@WDSession {..} <- getSession
+closeSession = do s@WDSession {} <- getSession
                   noReturn $ doSessCommand methodDelete "" Null
                   putSession s { wdSessId = Nothing }
 
@@ -306,7 +307,7 @@ windows :: (HasCallStack, WebDriver wd) => wd [WindowHandle]
 windows = doSessCommand methodGet "/window_handles" Null
 
 focusWindow :: (HasCallStack, WebDriver wd) => WindowHandle -> wd ()
-focusWindow w = noReturn $ doSessCommand methodPost "/window" . single "name" $ w
+focusWindow w = noReturn $ doSessCommand methodPost "/window" . single "handle" $ w
 
 -- |Closes the given window
 closeWindow :: (HasCallStack, WebDriver wd) => WindowHandle -> wd ()
@@ -327,7 +328,7 @@ getWindowSize = doWinCommand methodGet currentWindow "/size" Null
 
 -- |Set the dimensions of the current window.
 setWindowSize :: (HasCallStack, WebDriver wd) => (Word, Word) -> wd ()
-setWindowSize = noReturn . doWinCommand methodPost currentWindow "/size"
+setWindowSize = ignoreReturn . doWinCommand methodPost currentWindow "/size"
                 . pair ("width", "height")
 
 -- |Get the coordinates of the current window.
@@ -337,52 +338,7 @@ getWindowPos = doWinCommand methodGet currentWindow "/position" Null
 
 -- |Set the coordinates of the current window.
 setWindowPos :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
-setWindowPos = noReturn . doWinCommand methodPost currentWindow "/position" . pair ("x","y")
-
--- |Cookies are delicious delicacies. When sending cookies to the server, a value
--- of Nothing indicates that the server should use a default value. When receiving
--- cookies from the server, a value of Nothing indicates that the server is unable
--- to specify the value.
-data Cookie = Cookie { cookName   :: Text
-                     , cookValue  :: Text          -- ^
-                     , cookPath   :: Maybe Text    -- ^path of this cookie.
-                                                   -- if Nothing, defaults to /
-                     , cookDomain :: Maybe Text    -- ^domain of this cookie.
-                                                   -- if Nothing, the current pages
-                                                   -- domain is used
-                     , cookSecure :: Maybe Bool    -- ^Is this cookie secure?
-                     , cookExpiry :: Maybe Double  -- ^Expiry date expressed as
-                                                   -- seconds since the Unix epoch
-                                                   -- Nothing indicates that the
-                                                   -- cookie never expires
-                     } deriving (Eq, Show, Generic)
-aesonOptionsCookie :: Options
-aesonOptionsCookie = defaultOptions{fieldLabelModifier = map C.toLower . drop 4}
-instance ToJSON Cookie where
-  toJSON = genericToJSON aesonOptionsCookie
-  toEncoding = genericToEncoding aesonOptionsCookie
-
--- |Creates a Cookie with only a name and value specified. All other
--- fields are set to Nothing, which tells the server to use default values.
-mkCookie :: Text -> Text -> Cookie
-mkCookie name value = Cookie { cookName = name, cookValue = value,
-                               cookPath = Nothing, cookDomain = Nothing,
-                               cookSecure = Nothing, cookExpiry = Nothing
-                             }
-
-instance FromJSON Cookie where
-  parseJSON (Object o) = Cookie <$> req "name"
-                                <*> req "value"
-                                <*> opt "path" Nothing
-                                <*> opt "domain" Nothing
-                                <*> opt "secure" Nothing
-                                <*> opt "expiry" Nothing
-    where
-      req :: FromJSON a => Text -> Parser a
-      req = (o .:)
-      opt :: FromJSON a => Text -> a -> Parser a
-      opt k d = o .:?? k .!= d
-  parseJSON v = typeMismatch "Cookie" v
+setWindowPos = ignoreReturn . doWinCommand methodPost currentWindow "/position" . pair ("x","y")
 
 -- |Retrieve all cookies visible to the current page.
 cookies :: (HasCallStack, WebDriver wd) => wd [Cookie]

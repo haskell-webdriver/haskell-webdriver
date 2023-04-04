@@ -1,95 +1,105 @@
-Name: webdriver
-Version: 0.9.0.1
-Cabal-Version: >= 1.10
-License: BSD3
-License-File: LICENSE
-Author: Adam Curtis
-Maintainer: kallisti.dev@gmail.com
-Homepage: https://github.com/kallisti-dev/hs-webdriver
-Bug-Reports: https://github.com/kallisti-dev/hs-webdriver/issues
-Category: Web, Browser, Testing, WebDriver, Selenium
-Synopsis: a Haskell client for the Selenium WebDriver protocol
-Build-Type: Simple
-Extra-Source-Files: README.md, TODO.md, CHANGELOG.md, .ghci
-Tested-With: GHC == 7.4.2, GHC == 7.6.3, GHC == 7.8.4, GHC == 7.10.3, GHC == 8.0.1
-Description:
-        A Selenium WebDriver client for Haskell.
-        You can use it to automate browser sessions
-        for testing, system administration, etc.
-        .
-        For more information about Selenium itself, see
-        <http://seleniumhq.org/>
-        .
-        To find out what's been changed in this version and others,
-        see the change log at
-        <https://github.com/kallisti-dev/hs-webdriver/blob/master/CHANGELOG.md>
+cabal-version: 1.12
 
-Source-Repository head
+-- This file has been generated from package.yaml by hpack version 0.35.1.
+--
+-- see: https://github.com/sol/hpack
+
+name:           webdriver
+version:        0.10.0.1
+synopsis:       a Haskell client for the Selenium WebDriver protocol
+description:    A Selenium WebDriver client for Haskell.
+                You can use it to automate browser sessions
+                for testing, system administration, etc.
+                .
+                For more information about Selenium itself, see
+                <http://seleniumhq.org/>
+                .
+                To find out what's been changed in this version and others,
+                see the change log at
+                <https://github.com/haskell-webdriver/haskell-webdriver/blob/main/CHANGELOG.md>
+category:       Web, Browser, Testing, WebDriver, Selenium
+homepage:       https://github.com/haskell-webdriver/haskell-webdriver#readme
+bug-reports:    https://github.com/haskell-webdriver/haskell-webdriver/issues
+author:         Adam Curtis <kallisti.dev@gmail.com>
+maintainer:     Tom McLaughlin <tom@codedown.io>
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+tested-with:
+    GHC == 8.6.5
+  , GHC == 8.8.4
+  , GHC == 8.10.7
+  , GHC == 9.0.2
+  , GHC == 9.2.7
+  , GHC == 9.4.4
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
   type: git
-  location: git://github.com/kallisti-dev/hs-webdriver.git
-  
-Flag network-uri
-  description: Get Network.URI from the network-uri package
-  default: True
+  location: https://github.com/haskell-webdriver/haskell-webdriver
 
-Flag developer
-  description: Package development mode
-  default: False
-  manual: True
-
-Library
-  hs-source-dirs: src
-  default-language: Haskell2010
+library
+  exposed-modules:
+      Test.WebDriver
+      Test.WebDriver.Capabilities
+      Test.WebDriver.Chrome.Extension
+      Test.WebDriver.Class
+      Test.WebDriver.Commands
+      Test.WebDriver.Commands.Internal
+      Test.WebDriver.Commands.Wait
+      Test.WebDriver.Common.Keys
+      Test.WebDriver.Common.Profile
+      Test.WebDriver.Config
+      Test.WebDriver.Cookies
+      Test.WebDriver.Exceptions
+      Test.WebDriver.Exceptions.Internal
+      Test.WebDriver.Firefox.Profile
+      Test.WebDriver.Internal
+      Test.WebDriver.JSON
+      Test.WebDriver.Monad
+      Test.WebDriver.Session
+      Test.WebDriver.Session.History
+      Test.WebDriver.Types
+      Test.WebDriver.Utils
+  other-modules:
+      Test.WebDriver.IO
+  hs-source-dirs:
+      src
+  default-extensions:
+      ScopedTypeVariables
+      OverloadedStrings
+      FlexibleContexts
+      FlexibleInstances
+      RecordWildCards
+      NamedFieldPuns
   ghc-options: -Wall
-  if flag(developer)
-    cpp-options: -DCABAL_BUILD_DEVELOPER
-  build-depends:   base == 4.*
-                 , aeson >= 0.6.2.0
-                 , http-client >= 0.3
-                 , http-types >= 0.8
-                 , text >= 0.11.3
-                 , bytestring >= 0.9
-                 , attoparsec >= 0.10
-                 , base64-bytestring >= 1.0
-                 , transformers >= 0.4
-                 , monad-control >= 0.3
-                 , transformers-base >= 0.1
-                 , lifted-base >= 0.1
-                 , zip-archive >= 0.1.1.8
-                 , directory > 1.0
-                 , filepath > 1.0
-                 , directory-tree >= 0.11
-                 , temporary >= 1.0
-                 , time > 1.0
-                 , unordered-containers >= 0.1.3
-                 , vector >= 0.3
-                 , exceptions >= 0.4
-                 , scientific >= 0.2
-                 , data-default-class
-                 , call-stack
-
-  if flag(network-uri)
-      build-depends: network-uri >= 2.6, network >= 2.6
-  else
-      build-depends: network-uri < 2.6, network >= 2.4 && < 2.6
-
-  exposed-modules: Test.WebDriver
-                   Test.WebDriver.Class
-                   Test.WebDriver.Monad
-                   Test.WebDriver.Session
-                   Test.WebDriver.Session.History
-                   Test.WebDriver.Config
-                   Test.WebDriver.Exceptions
-                   Test.WebDriver.Commands
-                   Test.WebDriver.Commands.Wait
-                   Test.WebDriver.Commands.Internal
-                   Test.WebDriver.Common.Profile
-                   Test.WebDriver.Common.Keys
-                   Test.WebDriver.Firefox.Profile
-                   Test.WebDriver.Chrome.Extension
-                   Test.WebDriver.Capabilities
-                   Test.WebDriver.Types
-                   Test.WebDriver.JSON
-                   Test.WebDriver.Utils
-                   Test.WebDriver.Internal
-                   Test.WebDriver.Exceptions.Internal
+  build-depends:
+      aeson >=0.6.2.0
+    , attoparsec >=0.10
+    , base ==4.*
+    , base64-bytestring >=1.0
+    , bytestring >=0.9
+    , call-stack
+    , data-default-class
+    , directory >1.0
+    , directory-tree >=0.11
+    , exceptions >=0.4
+    , filepath >1.0
+    , http-client >=0.3
+    , http-types >=0.8
+    , lifted-base >=0.1
+    , monad-control >=0.3
+    , network >=2.6
+    , network-uri >=2.6
+    , scientific >=0.2
+    , temporary >=1.0
+    , text >=0.11.3
+    , time >1.0
+    , transformers >=0.4
+    , transformers-base >=0.1
+    , unordered-containers >=0.1.3
+    , vector >=0.3
+    , zip-archive >=0.1.1.8
+  default-language: Haskell2010
