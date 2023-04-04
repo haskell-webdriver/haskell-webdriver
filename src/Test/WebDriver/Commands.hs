@@ -1,5 +1,4 @@
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE TemplateHaskell #-}
 
 -- | This module exports basic WD actions that can be used to interact with a
 -- browser session.
