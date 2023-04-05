@@ -12,10 +12,6 @@ import Data.Text (Text)
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
 import Control.Monad.Trans.Class
 import Control.Monad.Trans.Except
-#if !MIN_VERSION_transformers(0,6,0)
-import Control.Monad.Trans.Error
-import Control.Monad.Trans.List
-#endif
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.RWS.Lazy as LRWS
@@ -26,6 +22,11 @@ import Control.Monad.Trans.State.Strict as SS
 import Control.Monad.Trans.Writer.Lazy as LW
 import Control.Monad.Trans.Writer.Strict as SW
 import Data.CallStack
+
+#if !MIN_VERSION_transformers(0,6,0)
+import Control.Monad.Trans.Error
+import Control.Monad.Trans.List
+#endif
 
 #if !MIN_VERSION_base(4,8,0)
 import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't work with "import Data.Monoid"

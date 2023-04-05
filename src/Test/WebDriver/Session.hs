@@ -20,7 +20,6 @@ import Data.ByteString as BS(ByteString)
 import Data.Text (Text)
 import Data.Maybe (listToMaybe)
 import Data.Monoid
-
 import Control.Applicative
 import Control.Monad.Base
 import Control.Monad.Trans.Class
@@ -28,26 +27,23 @@ import Control.Monad.Trans.Control
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Identity
 import Control.Monad.Trans.Reader
-#if !MIN_VERSION_transformers(0,6,0)
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Error
-#endif
 import Control.Monad.Trans.Except
---import Control.Monad.Cont
 import Control.Monad.Trans.Writer.Strict as SW
 import Control.Monad.Trans.Writer.Lazy as LW
 import Control.Monad.Trans.State.Strict as SS
 import Control.Monad.Trans.State.Lazy as LS
 import Control.Monad.Trans.RWS.Strict as SRWS
 import Control.Monad.Trans.RWS.Lazy as LRWS
-
 import Control.Exception.Lifted (SomeException, try, throwIO)
-
---import Network.HTTP.Types.Header (RequestHeaders)
 import Network.HTTP.Client (Manager, Request)
 import Network.HTTP.Types (RequestHeaders)
-
 import Prelude -- hides some "redundant import" warnings
+
+#if !MIN_VERSION_transformers(0,6,0)
+import Control.Monad.Trans.List
+import Control.Monad.Trans.Error
+#endif
+
 
 {- |An opaque identifier for a WebDriver session. These handles are produced by
 the server on session creation, and act to identify a session in progress. -}

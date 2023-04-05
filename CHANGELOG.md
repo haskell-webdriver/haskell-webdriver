@@ -1,5 +1,9 @@
 # Change Log
 
+## Unreleased
+* Support GHC 9.6
+* Fix a link to the wrong GitHub branch in package description
+
 ## 0.10.0.1
 * Update links to reflect this package's new home at https://github.com/haskell-webdriver/haskell-webdriver/
 
