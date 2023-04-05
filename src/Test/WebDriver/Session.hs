@@ -53,35 +53,35 @@ newtype SessionId = SessionId Text
 {- |The local state of a WebDriver session. This structure is passed
 implicitly through all 'WD' computations -}
 data WDSession = WDSession {
-                             -- server hostname
-                             wdSessHost :: BS.ByteString
-                             -- server port
-                           , wdSessPort :: Int
-                             -- Base path for API requests
-                           , wdSessBasePath :: BS.ByteString
-                             -- |An opaque reference identifying the session to
-                             -- use with 'WD' commands.
-                             -- A value of Nothing indicates that a session
-                             -- hasn't been created yet.
-                             -- Sessions can be created within 'WD' via
-                             -- 'Test.WebDriver.createSession', or created
-                             -- automatically with 'Test.WebDriver.runSession'
-                           , wdSessId   :: Maybe SessionId
-                             -- |The complete history of HTTP requests and
-                             -- responses, most recent first.
-                           , wdSessHist :: [SessionHistory]
-                             -- |Update function used to append new entries to session history
-                           , wdSessHistUpdate :: SessionHistoryConfig
-                             -- |HTTP 'Manager' used for connection pooling by the http-client library.
-                           , wdSessHTTPManager :: Manager
-                             -- |Number of times to retry a HTTP request if it times out
-                           , wdSessHTTPRetryCount :: Int
-                             -- |Custom request headers to add to every HTTP request.
-                           , wdSessRequestHeaders :: RequestHeaders
-                             -- |Custom request headers to add *only* to session creation requests. This is usually done
-                             --  when a WebDriver server requires HTTP auth.
-                           , wdSessAuthHeaders :: RequestHeaders
-                           }
+    -- server hostname
+    wdSessHost :: BS.ByteString
+    -- server port
+  , wdSessPort :: Int
+    -- Base path for API requests
+  , wdSessBasePath :: BS.ByteString
+    -- |An opaque reference identifying the session to
+    -- use with 'WD' commands.
+    -- A value of Nothing indicates that a session
+    -- hasn't been created yet.
+    -- Sessions can be created within 'WD' via
+    -- 'Test.WebDriver.createSession', or created
+    -- automatically with 'Test.WebDriver.runSession'
+  , wdSessId   :: Maybe SessionId
+    -- |The complete history of HTTP requests and
+    -- responses, most recent first.
+  , wdSessHist :: [SessionHistory]
+    -- |Update function used to append new entries to session history
+  , wdSessHistUpdate :: SessionHistoryConfig
+    -- |HTTP 'Manager' used for connection pooling by the http-client library.
+  , wdSessHTTPManager :: Manager
+    -- |Number of times to retry a HTTP request if it times out
+  , wdSessHTTPRetryCount :: Int
+    -- |Custom request headers to add to every HTTP request.
+  , wdSessRequestHeaders :: RequestHeaders
+    -- |Custom request headers to add *only* to session creation requests. This is usually done
+    --  when a WebDriver server requires HTTP auth.
+  , wdSessAuthHeaders :: RequestHeaders
+  }
 
 
 -- |A function used by 'wdHistoryConfig' to append new entries to session history.
