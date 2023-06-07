@@ -39,11 +39,6 @@ import Network.HTTP.Client (Manager, Request)
 import Network.HTTP.Types (RequestHeaders)
 import Prelude -- hides some "redundant import" warnings
 
-#if !MIN_VERSION_transformers(0,6,0)
-import Control.Monad.Trans.List
-import Control.Monad.Trans.Error
-#endif
-
 
 {- |An opaque identifier for a WebDriver session. These handles are produced by
 the server on session creation, and act to identify a session in progress. -}
@@ -184,16 +179,6 @@ instance (Monoid w, WDSessionState m) => WDSessionState (SW.WriterT w m) where
 instance WDSessionState m => WDSessionState (ReaderT r m) where
   getSession = lift getSession
   putSession = lift . putSession
-
-#if !MIN_VERSION_transformers(0,6,0)
-instance WDSessionState m => WDSessionState (ListT m) where
-  getSession = lift getSession
-  putSession = lift . putSession
-
-instance (Error e, WDSessionState m) => WDSessionState (ErrorT e m) where
-  getSession = lift getSession
-  putSession = lift . putSession
-#endif
 
 instance WDSessionState m => WDSessionState (ExceptT r m) where
   getSession = lift getSession

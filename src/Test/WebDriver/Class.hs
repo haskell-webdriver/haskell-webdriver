@@ -23,11 +23,6 @@ import Control.Monad.Trans.Writer.Lazy as LW
 import Control.Monad.Trans.Writer.Strict as SW
 import Data.CallStack
 
-#if !MIN_VERSION_transformers(0,6,0)
-import Control.Monad.Trans.Error
-import Control.Monad.Trans.List
-#endif
-
 #if !MIN_VERSION_base(4,8,0)
 import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't work with "import Data.Monoid"
 #endif
@@ -58,14 +53,6 @@ instance WebDriver wd => WebDriver (MaybeT wd) where
 
 instance WebDriver wd => WebDriver (IdentityT wd) where
   doCommand rm t a = lift (doCommand rm t a)
-
-#if !MIN_VERSION_transformers(0,6,0)
-instance WebDriver wd => WebDriver (ListT wd) where
-  doCommand rm t a = lift (doCommand rm t a)
-
-instance (Error e, WebDriver wd) => WebDriver (ErrorT e wd) where
-  doCommand rm t a = lift (doCommand rm t a)
-#endif
 
 instance (Monoid w, WebDriver wd) => WebDriver (LW.WriterT w wd) where
   doCommand rm t a = lift (doCommand rm t a)
