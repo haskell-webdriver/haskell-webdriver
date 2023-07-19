@@ -1,7 +1,11 @@
 
-resolver: lts-20.17
+resolver: nightly-2023-07-19
 
 packages:
 - '.'
 
-extra-deps: []
+extra-deps:
+- aeson-2.2.0.0
+- attoparsec-aeson-2.2.0.0
+- integer-conversion-0.1
+- text-iso8601-0.1

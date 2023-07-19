@@ -78,6 +78,7 @@ library
   build-depends:
       aeson >=0.6.2.0
     , attoparsec >=0.10
+    , attoparsec-aeson >=2
     , base ==4.*
     , base64-bytestring >=1.0
     , bytestring >=0.9
