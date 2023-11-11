@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.12.0.0
+* Support aeson-2.2.0
+
 ## 0.11.0.0
 * Support GHC 9.6
 * Fix a link to the wrong GitHub branch in package description
