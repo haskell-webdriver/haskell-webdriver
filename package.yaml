@@ -72,6 +72,7 @@ library:
   - zip-archive >= 0.1.1.8
   exposed-modules:
   - Test.WebDriver
+  - Test.WebDriver.Actions.Internal
   - Test.WebDriver.Capabilities
   - Test.WebDriver.Chrome.Extension
   - Test.WebDriver.Class
@@ -87,6 +88,7 @@ library:
   - Test.WebDriver.Firefox.Profile
   - Test.WebDriver.Internal
   - Test.WebDriver.JSON
+  - Test.WebDriver.JSON.Internal
   - Test.WebDriver.Monad
   - Test.WebDriver.Session
   - Test.WebDriver.Session.History
