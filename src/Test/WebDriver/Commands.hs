@@ -110,9 +110,8 @@ import Prelude -- hides some "unused import" warnings
 createSession :: (HasCallStack, WebDriver wd) => Capabilities -> wd WDSession
 createSession caps = do
   let connect = withAuthHeaders $ doCommand methodPost "/session" . single "desiredCapabilities" $ caps
-  body <- connect `L.catch` \(_ex :: FailedCommand) -> connect
-  s <- getSession
-  putSession s { wdSessCreationResponse = Just body }
+  resp <- connect `L.catch` \(_ex :: FailedCommand) -> connect
+  modifySession $ \s -> s { wdSessCreateResponse = Just resp }
   getSession
 
 -- |Retrieve a list of active sessions and their 'Capabilities'.
@@ -126,9 +125,9 @@ getActualCaps :: (HasCallStack, WebDriver wd) => wd Capabilities
 getActualCaps = doSessCommand methodGet "" Null
 
 -- |Get the 'Capabilities' that were sent when the session was creted.
-getSessionCaps :: (HasCallStack, WebDriver wd) => wd (Maybe Capabilities)
+getSessionCaps :: (HasCallStack, WDSessionState s) => s (Maybe Capabilities)
 getSessionCaps = do
-  caps <- wdSessCreationResponse <$> getSession
+  caps <- wdSessCreateResponse <$> getSession
   return $ parseMaybe parseJSON =<< caps
   
 -- |Close the current session and the browser associated with it.

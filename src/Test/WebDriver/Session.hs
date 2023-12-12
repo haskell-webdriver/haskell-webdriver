@@ -77,7 +77,8 @@ data WDSession = WDSession {
     -- |Custom request headers to add *only* to session creation requests. This is usually done
     --  when a WebDriver server requires HTTP auth.
   , wdSessAuthHeaders :: RequestHeaders
-                           , wdSessCreationResponse :: Maybe Value
+    -- |Value received in response to the session create HTTP request
+  , wdSessCreateResponse :: Maybe Value
   }
 
 
