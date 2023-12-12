@@ -735,7 +735,7 @@ deleteKey :: (HasCallStack, WebDriver wd) => WebStorageType -> Text -> wd ()
 deleteKey s k = noReturn $ doStorageCommand methodPost s ("/key/" `T.append` urlEncode k) Null
 
 -- |A wrapper around 'doSessCommand' to create web storage requests.
-doStorageCommand :: (WebDriver wd, ToJSON a, FromJSON b) =>
+doStorageCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
                      Method -> WebStorageType -> Text -> a -> wd b
 doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
   where s' = case s of
@@ -745,7 +745,7 @@ doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
 -- |Get information from the server as a JSON 'Object'. For more information
 -- about this object see
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#status>
-serverStatus :: (WebDriver wd) => wd Value   -- todo: make this a record type
+serverStatus :: (HasCallStack, WebDriver wd) => wd Value   -- todo: make this a record type
 serverStatus = doCommand methodGet "/status" Null
 
 -- |A record that represents a single log entry.
@@ -793,5 +793,5 @@ instance FromJSON ApplicationCacheStatus where
             5 -> return Obsolete
             err -> fail $ "Invalid JSON for ApplicationCacheStatus: " ++ show err
 
-getApplicationCacheStatus :: (WebDriver wd) => wd ApplicationCacheStatus
+getApplicationCacheStatus :: (HasCallStack, WebDriver wd) => wd ApplicationCacheStatus
 getApplicationCacheStatus = doSessCommand methodGet "/application_cache/status" Null
