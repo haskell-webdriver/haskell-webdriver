@@ -122,7 +122,7 @@ waitEither failure success = wait' handler
     handleFailedCommand e@(FailedCommand NoSuchElement _) = return . Left . show $ e
     handleFailedCommand err = throwIO err
 
-    handleExpectFailed (ExpectFailed e) = return . Left $ e
+    handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
 
 wait' :: (WDSessionStateIO m, HasCallStack) =>
          ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
