@@ -1,4 +1,6 @@
-{-# LANGUAGE OverloadedStrings, FlexibleContexts, DeriveDataTypeable, CPP #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE CPP #-}
+
 -- |A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous
 -- 'BadJSON' exceptions.
@@ -48,6 +50,11 @@ import Data.String
 import Data.Typeable
 
 import Prelude -- hides some "unused import" warnings
+
+#if MIN_VERSION_aeson(2,2,0)
+-- This comes from the attoparsec-aeson package
+import Data.Aeson.Parser (json)
+#endif
 
 #if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.Key             as A

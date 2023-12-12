@@ -1,8 +1,19 @@
-{-# LANGUAGE FlexibleContexts, TypeFamilies, GeneralizedNewtypeDeriving,
-             MultiParamTypeClasses, CPP, UndecidableInstances, ConstraintKinds #-}
-module Test.WebDriver.Monad
-       ( WD(..), runWD, runSession, finallyClose, closeOnException, getSessionHistory, dumpSessionHistory
-       ) where
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE ConstraintKinds #-}
+
+module Test.WebDriver.Monad (
+  WD(..)
+  , runWD
+  , runSession
+  , finallyClose
+  , closeOnException
+  , getSessionHistory
+  , dumpSessionHistory
+  ) where
 
 import Test.WebDriver.Class
 import Test.WebDriver.Commands
@@ -19,7 +30,6 @@ import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
 import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
---import Control.Monad.IO.Class (MonadIO)
 import Control.Exception.Lifted
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Applicative
@@ -29,8 +39,7 @@ import Data.CallStack
 import Prelude -- hides some "unused import" warnings
 
 
-{- |A state monad for WebDriver commands.
--}
+{- | A state monad for WebDriver commands. -}
 newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix, MonadMask)
 

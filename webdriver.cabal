@@ -1,11 +1,11 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.0.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
 name:           webdriver
-version:        0.10.0.0
+version:        0.12.0.0
 synopsis:       a Haskell client for the Selenium WebDriver protocol
 description:    A Selenium WebDriver client for Haskell.
                 You can use it to automate browser sessions
@@ -16,10 +16,10 @@ description:    A Selenium WebDriver client for Haskell.
                 .
                 To find out what's been changed in this version and others,
                 see the change log at
-                <https://github.com/codedownio/hs-webdriver/blob/master/CHANGELOG.md>
+                <https://github.com/haskell-webdriver/haskell-webdriver/blob/main/CHANGELOG.md>
 category:       Web, Browser, Testing, WebDriver, Selenium
-homepage:       https://github.com/codedownio/hs-webdriver#readme
-bug-reports:    https://github.com/codedownio/hs-webdriver/issues
+homepage:       https://github.com/haskell-webdriver/haskell-webdriver#readme
+bug-reports:    https://github.com/haskell-webdriver/haskell-webdriver/issues
 author:         Adam Curtis <kallisti.dev@gmail.com>
 maintainer:     Tom McLaughlin <tom@codedown.io>
 license:        BSD3
@@ -30,14 +30,15 @@ tested-with:
   , GHC == 8.8.4
   , GHC == 8.10.7
   , GHC == 9.0.2
-  , GHC == 9.2.5
+  , GHC == 9.2.7
+  , GHC == 9.4.4
 extra-source-files:
     README.md
     CHANGELOG.md
 
 source-repository head
   type: git
-  location: https://github.com/codedownio/hs-webdriver
+  location: https://github.com/haskell-webdriver/haskell-webdriver
 
 library
   exposed-modules:
@@ -66,10 +67,18 @@ library
       Test.WebDriver.IO
   hs-source-dirs:
       src
+  default-extensions:
+      ScopedTypeVariables
+      OverloadedStrings
+      FlexibleContexts
+      FlexibleInstances
+      RecordWildCards
+      NamedFieldPuns
   ghc-options: -Wall
   build-depends:
       aeson >=0.6.2.0
     , attoparsec >=0.10
+    , attoparsec-aeson >=2
     , base ==4.*
     , base64-bytestring >=1.0
     , bytestring >=0.9

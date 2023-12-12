@@ -3,7 +3,6 @@ name: ci
 on:
   pull_request:
   push:
-    branches: [master]
 
 jobs:
   cabal:
@@ -18,13 +17,14 @@ jobs:
           - "8.8.4"
           - "8.10.7"
           - "9.0.2"
-          - "9.2.5"
+          - "9.2.8"
+          - "9.4.7"
+          - "9.6.3"
 
     steps:
-    - uses: actions/checkout@v2
-      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
+    - uses: actions/checkout@v3
 
-    - uses: haskell/actions/setup@v1
+    - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
       name: Setup Haskell
       with:
@@ -35,7 +35,7 @@ jobs:
       run: |
         cabal freeze
 
-    - uses: actions/cache@v1
+    - uses: actions/cache@v3
       name: Cache ~/.cabal/store
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
@@ -61,19 +61,21 @@ jobs:
           - "8.8.4"
           - "8.10.7"
           - "9.0.2"
-          - "9.2.5"
+          - "9.2.8"
+          - "9.4.7"
+          - "9.6.3"
 
     steps:
-    - uses: actions/checkout@v2
-      if: github.event.action == 'opened' || github.event.action == 'synchronize' || github.event.ref == 'refs/heads/master'
+    - uses: actions/checkout@v3
 
-    - uses: haskell/actions/setup@v1
+    - uses: haskell/actions/setup@v2
       name: Setup Haskell Stack
       with:
         ghc-version: ${{ matrix.ghc }}
         stack-version: "latest"
+        enable-stack: true
 
-    - uses: actions/cache@v1
+    - uses: actions/cache@v3
       name: Cache ~/.stack
       with:
         path: ~/.stack

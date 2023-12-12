@@ -1,4 +1,6 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, DeriveDataTypeable, ConstraintKinds, FlexibleContexts, NamedFieldPuns #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE ConstraintKinds #-}
+
 module Test.WebDriver.Exceptions.Internal
        ( InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
        , UnknownCommand(..), ServerError(..)

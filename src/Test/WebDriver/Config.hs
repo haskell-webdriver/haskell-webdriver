@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, FlexibleContexts #-}
+
 module Test.WebDriver.Config(
     -- * WebDriver configuration
       WDConfig(..), defaultConfig

@@ -1,17 +1,15 @@
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE CPP #-}
 
-module Test.WebDriver.Session
-  ( -- * WDSessionState class
-    WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession
-    -- ** WebDriver sessions
+module Test.WebDriver.Session (
+  -- * WDSessionState class
+  WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession
+  -- ** WebDriver sessions
   , WDSession(..), mostRecentHistory, mostRecentHTTPRequest, SessionId(..), SessionHistory(..)
-    -- * SessionHistoryConfig options
+  -- * SessionHistoryConfig options
   , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
-    -- * Using custom HTTP request headers
+  -- * Using custom HTTP request headers
   , withRequestHeaders, withAuthHeaders
   ) where
 
@@ -22,7 +20,6 @@ import Data.ByteString as BS(ByteString)
 import Data.Text (Text)
 import Data.Maybe (listToMaybe)
 import Data.Monoid
-
 import Control.Applicative
 import Control.Monad.Base
 import Control.Monad.Fail
@@ -30,25 +27,19 @@ import Control.Monad.Trans.Class
 import Control.Monad.Trans.Control
 import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.Identity
-import Control.Monad.Trans.List
 import Control.Monad.Trans.Reader
-import Control.Monad.Trans.Error
 import Control.Monad.Trans.Except
---import Control.Monad.Cont
 import Control.Monad.Trans.Writer.Strict as SW
 import Control.Monad.Trans.Writer.Lazy as LW
 import Control.Monad.Trans.State.Strict as SS
 import Control.Monad.Trans.State.Lazy as LS
 import Control.Monad.Trans.RWS.Strict as SRWS
 import Control.Monad.Trans.RWS.Lazy as LRWS
-
 import Control.Exception.Lifted (SomeException, try, throwIO)
-
---import Network.HTTP.Types.Header (RequestHeaders)
 import Network.HTTP.Client (Manager, Request)
 import Network.HTTP.Types (RequestHeaders)
-
 import Prelude -- hides some "redundant import" warnings
+
 
 {- |An opaque identifier for a WebDriver session. These handles are produced by
 the server on session creation, and act to identify a session in progress. -}
@@ -58,36 +49,36 @@ newtype SessionId = SessionId Text
 {- |The local state of a WebDriver session. This structure is passed
 implicitly through all 'WD' computations -}
 data WDSession = WDSession {
-                             -- server hostname
-                             wdSessHost :: BS.ByteString
-                             -- server port
-                           , wdSessPort :: Int
-                             -- Base path for API requests
-                           , wdSessBasePath :: BS.ByteString
-                             -- |An opaque reference identifying the session to
-                             -- use with 'WD' commands.
-                             -- A value of Nothing indicates that a session
-                             -- hasn't been created yet.
-                             -- Sessions can be created within 'WD' via
-                             -- 'Test.WebDriver.createSession', or created
-                             -- automatically with 'Test.WebDriver.runSession'
-                           , wdSessId   :: Maybe SessionId
-                             -- |The complete history of HTTP requests and
-                             -- responses, most recent first.
-                           , wdSessHist :: [SessionHistory]
-                             -- |Update function used to append new entries to session history
-                           , wdSessHistUpdate :: SessionHistoryConfig
-                             -- |HTTP 'Manager' used for connection pooling by the http-client library.
-                           , wdSessHTTPManager :: Manager
-                             -- |Number of times to retry a HTTP request if it times out
-                           , wdSessHTTPRetryCount :: Int
-                             -- |Custom request headers to add to every HTTP request.
-                           , wdSessRequestHeaders :: RequestHeaders
-                             -- |Custom request headers to add *only* to session creation requests. This is usually done
-                             --  when a WebDriver server requires HTTP auth.
-                           , wdSessAuthHeaders :: RequestHeaders
+    -- server hostname
+    wdSessHost :: BS.ByteString
+    -- server port
+  , wdSessPort :: Int
+    -- Base path for API requests
+  , wdSessBasePath :: BS.ByteString
+    -- |An opaque reference identifying the session to
+    -- use with 'WD' commands.
+    -- A value of Nothing indicates that a session
+    -- hasn't been created yet.
+    -- Sessions can be created within 'WD' via
+    -- 'Test.WebDriver.createSession', or created
+    -- automatically with 'Test.WebDriver.runSession'
+  , wdSessId   :: Maybe SessionId
+    -- |The complete history of HTTP requests and
+    -- responses, most recent first.
+  , wdSessHist :: [SessionHistory]
+    -- |Update function used to append new entries to session history
+  , wdSessHistUpdate :: SessionHistoryConfig
+    -- |HTTP 'Manager' used for connection pooling by the http-client library.
+  , wdSessHTTPManager :: Manager
+    -- |Number of times to retry a HTTP request if it times out
+  , wdSessHTTPRetryCount :: Int
+    -- |Custom request headers to add to every HTTP request.
+  , wdSessRequestHeaders :: RequestHeaders
+    -- |Custom request headers to add *only* to session creation requests. This is usually done
+    --  when a WebDriver server requires HTTP auth.
+  , wdSessAuthHeaders :: RequestHeaders
                            , wdSessCreationResponse :: Maybe Value
-                           }
+  }
 
 
 -- |A function used by 'wdHistoryConfig' to append new entries to session history.
@@ -179,10 +170,6 @@ instance WDSessionState m => WDSessionState (IdentityT m) where
   getSession = lift getSession
   putSession = lift . putSession
 
-instance WDSessionState m => WDSessionState (ListT m) where
-  getSession = lift getSession
-  putSession = lift . putSession
-
 instance (Monoid w, WDSessionState m) => WDSessionState (LW.WriterT w m) where
   getSession = lift getSession
   putSession = lift . putSession
@@ -192,10 +179,6 @@ instance (Monoid w, WDSessionState m) => WDSessionState (SW.WriterT w m) where
   putSession = lift . putSession
 
 instance WDSessionState m => WDSessionState (ReaderT r m) where
-  getSession = lift getSession
-  putSession = lift . putSession
-
-instance (Error e, WDSessionState m) => WDSessionState (ErrorT e m) where
   getSession = lift getSession
   putSession = lift . putSession
 

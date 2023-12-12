@@ -1,5 +1,16 @@
 # Change Log
 
+## 0.12.0.0
+* Support aeson-2.2.0
+
+## 0.11.0.0
+* Support GHC 9.6
+* Fix a link to the wrong GitHub branch in package description
+* Remove instances for deprecated ListT and ErrorT
+
+## 0.10.0.1
+* Update links to reflect this package's new home at https://github.com/haskell-webdriver/haskell-webdriver/
+
 ## 0.10.0.0
 * Add Aeson 2 compatibility to support GHC 9.0 and 9.2
 * Derive MonadMask instance for the WD monad

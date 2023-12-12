@@ -3,10 +3,38 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    hackage: aeson-2.2.0.0@sha256:deeab33f7f2a235c9e9ea76168f27a3669ad51bbdb363e830015352a3b2874ec,6217
+    pantry-tree:
+      sha256: 2c65659ff9ab19047728c8cc2f20869ba7ca78a09fe03cecf826f5857f3d4c95
+      size: 83036
+  original:
+    hackage: aeson-2.2.0.0
+- completed:
+    hackage: attoparsec-aeson-2.2.0.0@sha256:72bbc4227328ab8bd0046d230921f9d2c0c473a2f4b72387524cc5e179dd5b81,1578
+    pantry-tree:
+      sha256: 3e3a9bbb48e3fc8e00f2e1f4f66e49af76c6c67e9038ea8a1cab2c4a886c557b
+      size: 477
+  original:
+    hackage: attoparsec-aeson-2.2.0.0
+- completed:
+    hackage: integer-conversion-0.1@sha256:9f77cc7711d3100a4483f2dd1a22f4be5b59d235a556d910d0e6c5e90a967551,2208
+    pantry-tree:
+      sha256: 17063e15091711b54f9a4a9ccb032f3c2ed68bb4ba097243333469ad8462b748
+      size: 509
+  original:
+    hackage: integer-conversion-0.1
+- completed:
+    hackage: text-iso8601-0.1@sha256:fc10d8de72fc094d0d299644f17421b9430d1c1092a1355c7f0c02d8b6edf6a7,2371
+    pantry-tree:
+      sha256: f72aa62f5f4d1155b3d3f35e8227548a27cee83fb5d0742564b5ef26597f1431
+      size: 427
+  original:
+    hackage: text-iso8601-0.1
 snapshots:
 - completed:
-    sha256: 6d1532d40621957a25bad5195bfca7938e8a06d923c91bc52aa0f3c41181f2d4
-    size: 619204
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/19/33.yaml
-  original: lts-19.33
+    sha256: 0580a03f247573451c0a676673e0c2b474e0d42f78d4a93c4cd10eb32f2cb911
+    size: 698107
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2023/11/10.yaml
+  original: nightly-2023-11-10

@@ -1,10 +1,10 @@
 name: webdriver
-version: 0.10.0.0
+version: 0.12.0.0
 license: BSD3
 license-file: LICENSE
 author: Adam Curtis <kallisti.dev@gmail.com>
 maintainer: Tom McLaughlin <tom@codedown.io>
-github: "codedownio/hs-webdriver"
+github: "haskell-webdriver/haskell-webdriver"
 category: Web, Browser, Testing, WebDriver, Selenium
 synopsis: a Haskell client for the Selenium WebDriver protocol
 description: |
@@ -17,18 +17,27 @@ description: |
 
   To find out what's been changed in this version and others,
   see the change log at
-  <https://github.com/codedownio/hs-webdriver/blob/master/CHANGELOG.md>
+  <https://github.com/haskell-webdriver/haskell-webdriver/blob/main/CHANGELOG.md>
 
 tested-with:
 - GHC == 8.6.5
 - GHC == 8.8.4
 - GHC == 8.10.7
 - GHC == 9.0.2
-- GHC == 9.2.5
+- GHC == 9.2.7
+- GHC == 9.4.4
 
 extra-source-files:
 - README.md
 - CHANGELOG.md
+
+default-extensions:
+- ScopedTypeVariables
+- OverloadedStrings
+- FlexibleContexts
+- FlexibleInstances
+- RecordWildCards
+- NamedFieldPuns
 
 library:
   source-dirs: src
@@ -36,6 +45,7 @@ library:
   dependencies:
   - aeson >= 0.6.2.0
   - attoparsec >= 0.10
+  - attoparsec-aeson >= 2
   - base == 4.*
   - base64-bytestring >= 1.0
   - bytestring >= 0.9

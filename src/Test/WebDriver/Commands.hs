@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedStrings, ScopedTypeVariables, ExistentialQuantification,
-             TemplateHaskell, RecordWildCards, FlexibleContexts #-}
--- |This module exports basic WD actions that can be used to interact with a
+{-# LANGUAGE ExistentialQuantification #-}
+
+-- | This module exports basic WD actions that can be used to interact with a
 -- browser session.
 module Test.WebDriver.Commands
        ( -- * Sessions
