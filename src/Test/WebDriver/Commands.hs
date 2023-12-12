@@ -398,7 +398,7 @@ instance ToJSON Selector where
     ByLinkText t        -> selector "link text" t
     ByPartialLinkText t -> selector "partial link text" t
     ByCSS t             -> selector "css selector" t
-    ByXPath t           -> selector "xpath" (T.replace "[1" "[0+1" t)
+    ByXPath t           -> selector "xpath" t
     where
       selector :: Text -> Text -> Value
       selector sn t = object ["using" .= sn, "value" .= t]
