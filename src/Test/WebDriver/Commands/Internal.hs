@@ -13,7 +13,7 @@ module Test.WebDriver.Commands.Internal
         -- ** Commands with element :id URL parameters
        , doElemCommand, Element(..)
         -- ** Commands with :windowHandle URL parameters
-       , doWinCommand, WindowHandle(..), currentWindow
+       , WindowHandle(..)
         -- * Exceptions
        , NoSessionId(..)
        ) where
@@ -21,7 +21,6 @@ module Test.WebDriver.Commands.Internal
 import Test.WebDriver.Class
 import Test.WebDriver.JSON
 import Test.WebDriver.Session
-import Test.WebDriver.JSON
 import Test.WebDriver.Utils (urlEncode)
 
 import Control.Applicative
@@ -29,7 +28,6 @@ import Control.Exception.Lifted
 import Data.Aeson
 import Data.Aeson.Types
 import Data.CallStack
-import Data.Default.Class
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Typeable
@@ -41,24 +39,17 @@ newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)
 
 instance FromJSON Element where
-  parseJSON (Object o) = Element <$> (o .: "ELEMENT" <|> o .: "element-6066-11e4-a52e-4f735466cecf")
+  parseJSON (Object o) = Element <$> o .: "element-6066-11e4-a52e-4f735466cecf"
   parseJSON v = typeMismatch "Element" v
 
 instance ToJSON Element where
-  toJSON (Element e) = object ["ELEMENT" .= e]
+  toJSON (Element e) = object ["element-6066-11e4-a52e-4f735466cecf" .= e]
 
 
 {- |An opaque identifier for a browser window -}
 newtype WindowHandle = WindowHandle Text
                      deriving (Eq, Ord, Show, Read,
                                FromJSON, ToJSON)
-instance Default WindowHandle where
-  def = currentWindow
-
--- |A special 'WindowHandle' that always refers to the currently focused window.
--- This is also used by the 'Default' instance.
-currentWindow :: WindowHandle
-currentWindow = WindowHandle "current"
 
 instance Exception NoSessionId
 -- |A command requiring a session ID was attempted when no session ID was
@@ -98,12 +89,3 @@ doElemCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
                   Method -> Element -> Text -> a -> wd b
 doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
-
--- |A wrapper around 'doSessCommand' to create window handle URLS.
--- For example, passing a URL of \"/size\" will expand to
--- \"/session/:sessionId/window/:windowHandle/\", where :sessionId and
--- :windowHandle are URL parameters as described in the wire protocol
-doWinCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
-                 Method -> WindowHandle -> Text -> a -> wd b
-doWinCommand m (WindowHandle w) path a =
-  doSessCommand m (T.concat ["/window/", urlEncode w, path]) a

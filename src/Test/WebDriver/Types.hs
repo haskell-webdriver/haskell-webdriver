@@ -20,7 +20,7 @@ module Test.WebDriver.Types (
 
     -- * WebDriver objects and command-specific types
   , Element(..)
-  , WindowHandle(..), currentWindow
+  , WindowHandle(..)
   , Selector(..)
   , JSArg(..)
   , FrameSelector(..)

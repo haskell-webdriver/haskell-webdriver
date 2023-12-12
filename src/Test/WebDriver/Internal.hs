@@ -27,10 +27,9 @@ import Network.HTTP.Types.Status (Status(..))
 import qualified Data.ByteString.Base64.Lazy as B64
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.ByteString.Lazy.Char8 as LBS (unpack, null)
-import qualified Data.ByteString.Lazy.Internal as LBS (ByteString(..))
+import Data.ByteString.Lazy.Char8 as LBS (null)
 import Data.CallStack
-import Data.Text as T (Text, splitOn, null)
+import Data.Text as T (Text)
 import qualified Data.Text.Encoding as TE
 
 import Control.Applicative
@@ -38,20 +37,11 @@ import Control.Exception (Exception, SomeException(..), toException, fromExcepti
 import Control.Exception.Lifted (throwIO)
 import Control.Monad.Base
 
-import Data.String (fromString)
-import Data.Word (Word8)
-
 #if !MIN_VERSION_http_client(0,4,30)
 import Data.Default.Class
 #endif
 
 import Prelude -- hides some "unused import" warnings
-
---This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
-fromStrict :: BS.ByteString -> LBS.ByteString
-fromStrict bs | BS.null bs = LBS.Empty
-              | otherwise = LBS.Chunk bs LBS.Empty
-
 
 --Compatability function to support http-client < 0.4.30
 defaultRequest :: Request
@@ -113,57 +103,23 @@ retryOnTimeout maxRetry go = retry' 0
 
 -- |Parses a 'WDResponse' object from a given HTTP response.
 getJSONResult :: (HasCallStack, WDSessionStateControl s, FromJSON a) => Response ByteString -> s (Either SomeException a)
-getJSONResult r
-  --malformed request errors
-  | code >= 400 && code < 500 = do
-    lastReq <- mostRecentHTTPRequest <$> getSession
-    returnErr . UnknownCommand . maybe reason show $ lastReq
-  --server-side errors
-  | code >= 500 && code < 600 =
-    case lookup hContentType headers of
-      Just ct
-        | "application/json" `BS.isInfixOf` ct ->
-          parseJSON'
-            (maybe body fromStrict $ lookup "X-Response-Body-Start" headers)
-          >>= handleJSONErr
-          >>= maybe returnNull returnErr
-        | otherwise ->
-          returnHTTPErr ServerError
-      Nothing ->
-        returnHTTPErr (ServerError . ("HTTP response missing content type. Server reason was: "++))
-  --redirect case (used as a response to createSession requests)
-  | code == 302 || code == 303 =
-    case lookup hLocation headers of
-      Nothing ->  returnErr . HTTPStatusUnknown code $ LBS.unpack body
-      Just loc -> do
-        let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ BS.unpack loc
-        modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
-        returnNull
-  -- No Content response
-  | code == 204 = returnNull
-  -- HTTP Success
-  | code >= 200 && code < 300 =
-    if LBS.null body
-      then returnNull
-      else do
-        rsp@WDResponse {rspVal = val} <- parseJSON' body
-        handleJSONErr rsp >>= maybe
-          (handleRespSessionId rsp >> Right <$> fromJSON' val)
-          returnErr
-  -- other status codes: return error
-  | otherwise = returnHTTPErr (HTTPStatusUnknown code)
+getJSONResult r =
+  if LBS.null body
+    then returnNull
+    else do
+      rsp@WDResponse {rspVal = val} <- parseJSON' body
+      if code == 200
+        then handleRespSessionId rsp >> Right <$> fromJSON' val
+        else handleJSONErr rsp >>= returnErr
   where
     --helper functions
     returnErr :: (Exception e, Monad m) => e -> m (Either SomeException a)
     returnErr = return . Left . toException
-    returnHTTPErr errType = returnErr . errType $ reason
     returnNull = Right <$> fromJSON' Null
     --HTTP response variables
     code = statusCode status
-    reason = BS.unpack $ statusMessage status
     status = responseStatus r
     body = responseBody r
-    headers = responseHeaders r
 
 handleRespSessionId :: (HasCallStack, WDSessionStateIO s) => WDResponse -> s ()
 handleRespSessionId WDResponse{rspSessId = sessId'} = do
@@ -176,9 +132,8 @@ handleRespSessionId WDResponse{rspSessId = sessId'} = do
                                  ++ ") does not match local session ID (" ++ show sessId ++ ")"
        _ ->  return ()
 
-handleJSONErr :: (HasCallStack, WDSessionStateControl s) => WDResponse -> s (Maybe SomeException)
-handleJSONErr WDResponse{rspStatus = 0} = return Nothing
-handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
+handleJSONErr :: (HasCallStack, WDSessionStateControl s) => WDResponse -> s SomeException
+handleJSONErr WDResponse{rspVal = val} = do
   sess <- getSession
   errInfo <- fromJSON' val
   let screen = B64.decodeLenient <$> errScreen errInfo
@@ -186,47 +141,18 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
       errInfo' = errInfo { errSess = Just sess
                          -- Append the Haskell stack frames to the ones returned from Selenium
                          , errScreen = screen
-                         , errStack = seleniumStack ++ (fmap callStackItemToStackFrame callStack) }
+                         , errStack = seleniumStack ++ fmap callStackItemToStackFrame callStack }
       e errType = toException $ FailedCommand errType errInfo'
-  return . Just $ case status of
-    7   -> e NoSuchElement
-    8   -> e NoSuchFrame
-    9   -> toException . UnknownCommand . errMsg $ errInfo
-    10  -> e StaleElementReference
-    11  -> e ElementNotVisible
-    12  -> e InvalidElementState
-    13  -> e UnknownError
-    15  -> e ElementIsNotSelectable
-    17  -> e JavascriptError
-    19  -> e XPathLookupError
-    21  -> e Timeout
-    23  -> e NoSuchWindow
-    24  -> e InvalidCookieDomain
-    25  -> e UnableToSetCookie
-    26  -> e UnexpectedAlertOpen
-    27  -> e NoAlertOpen
-    28  -> e ScriptTimeout
-    29  -> e InvalidElementCoordinates
-    30  -> e IMENotAvailable
-    31  -> e IMEEngineActivationFailed
-    32  -> e InvalidSelector
-    33  -> e SessionNotCreated
-    34  -> e MoveTargetOutOfBounds
-    51  -> e InvalidXPathSelector
-    52  -> e InvalidXPathSelectorReturnType
-    _   -> e UnknownError
-
+  return $ e $ fromTypeString $ errType errInfo
 
 -- |Internal type representing the JSON response object
 data WDResponse = WDResponse {
                                rspSessId :: Maybe SessionId
-                             , rspStatus :: Word8
                              , rspVal    :: Value
                              }
                   deriving (Eq, Show)
 
 instance FromJSON WDResponse where
   parseJSON (Object o) = WDResponse <$> o .:?? "sessionId" .!= Nothing
-                                    <*> o .: "status"
                                     <*> o .:?? "value" .!= Null
   parseJSON v = typeMismatch "WDResponse" v

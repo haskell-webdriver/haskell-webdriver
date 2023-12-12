@@ -70,7 +70,7 @@ expectNotStale e = catchFailedCommand StaleElementReference $ do
 
 -- | 'expect' an alert to be present on the page, and returns its text.
 expectAlertOpen :: (WebDriver wd, HasCallStack) => wd Text
-expectAlertOpen = catchFailedCommand NoAlertOpen getAlertText
+expectAlertOpen = catchFailedCommand NoSuchAlert getAlertText
 
 -- |Catches any `FailedCommand` exceptions with the given `FailedCommandType` and rethrows as 'ExpectFailed'
 catchFailedCommand :: (MonadBaseControl IO m, HasCallStack) => FailedCommandType -> m a -> m a

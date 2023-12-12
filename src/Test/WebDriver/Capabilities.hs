@@ -10,7 +10,7 @@ import Test.WebDriver.JSON
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch, Pair)
 
-import Data.Text (Text, toLower, toUpper)
+import Data.Text (Text, toLower)
 import Data.Default.Class (Default(..))
 import Data.Word (Word16)
 import Data.Maybe (fromMaybe, catMaybes)
@@ -176,7 +176,7 @@ instance ToJSON Capabilities where
     object $ filter (\p -> snd p /= Null)
            $ [ "browserName" .= browser
              , "version" .= version
-             , "platform" .= platform
+             , "platformName" .= platform
              , "proxy" .= proxy
              , "javascriptEnabled" .= javascriptEnabled
              , "takesScreenshot" .= takesScreenshot
@@ -204,7 +204,7 @@ instance ToJSON Capabilities where
              ]
         Chrome {..}
           -> catMaybes [ opt "chrome.chromedriverVersion" chromeDriverVersion ]
-             ++ [ "chromeOptions" .= object (catMaybes
+             ++ [ "goog:chromeOptions" .= object (catMaybes
                   [ opt "binary" chromeBinary
                   ] ++
                   [ "args"       .= chromeOptions
@@ -615,7 +615,8 @@ data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
               deriving (Eq, Show, Ord, Bounded, Enum)
 
 instance ToJSON Platform where
-  toJSON = String . toUpper . fromString . show
+  toJSON Any = Null
+  toJSON p = String . toLower . fromString $ show p
 
 instance FromJSON Platform where
   parseJSON (String jStr) = case toLower jStr of
@@ -664,17 +665,17 @@ instance FromJSON ProxyType where
 instance ToJSON ProxyType where
   toJSON pt = object $ case pt of
     NoProxy ->
-      ["proxyType" .= ("DIRECT" :: String)]
+      ["proxyType" .= ("direct" :: String)]
     UseSystemSettings ->
-      ["proxyType" .= ("SYSTEM" :: String)]
+      ["proxyType" .= ("system" :: String)]
     AutoDetect ->
-      ["proxyType" .= ("AUTODETECT" :: String)]
+      ["proxyType" .= ("autodetect" :: String)]
     PAC{autoConfigUrl = url} ->
-      ["proxyType" .= ("PAC" :: String)
+      ["proxyType" .= ("pac" :: String)
       ,"proxyAutoconfigUrl" .= url
       ]
     Manual{ftpProxy = ftp, sslProxy = ssl, httpProxy = http} ->
-      ["proxyType" .= ("MANUAL" :: String)
+      ["proxyType" .= ("manual" :: String)
       ,"ftpProxy"  .= ftp
       ,"sslProxy"  .= ssl
       ,"httpProxy" .= http

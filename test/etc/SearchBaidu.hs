@@ -33,7 +33,7 @@ searchBaidu = do
   container <- findElem (ById "container")
   eList1 <- findElems (ByCSS "c-container")
   eList2 <- findElems (ByClass "c-container")
-  expect =<< (fmap and $ zipWithM (<==>) eList1 eList2)
+  expect =<< (fmap and $ zipWithM (==) eList1 eList2)
 
   forM_ eList1 $ \e -> findElemsFrom e (ByTag "a")
 

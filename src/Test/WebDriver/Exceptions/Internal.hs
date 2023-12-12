@@ -7,6 +7,7 @@ module Test.WebDriver.Exceptions.Internal
 
        , FailedCommand(..), failedCommand, mkFailedCommandInfo
        , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
+       , fromTypeString, toTypeString
        , externalCallStack, callStackItemToStackFrame
        ) where
 import Test.WebDriver.Session
@@ -61,37 +62,103 @@ data FailedCommand = FailedCommand FailedCommandType FailedCommandInfo
                    deriving (Show, Typeable)
 
 -- |The type of failed command exception that occured.
-data FailedCommandType = NoSuchElement
-                       | NoSuchFrame
-                       | UnknownFrame
-                       | StaleElementReference
-                       | ElementNotVisible
-                       | InvalidElementState
-                       | UnknownError
-                       | ElementIsNotSelectable
-                       | JavascriptError
-                       | XPathLookupError
-                       | Timeout
-                       | NoSuchWindow
+data FailedCommandType = ElementClickIntercepted
+                       | ElementNotInteractable
+                       | InsecureCertificate
+                       | InvalidArgument
                        | InvalidCookieDomain
-                       | UnableToSetCookie
-                       | UnexpectedAlertOpen
-                       | NoAlertOpen
-                       | ScriptTimeout
-                       | InvalidElementCoordinates
-                       | IMENotAvailable
-                       | IMEEngineActivationFailed
+                       | InvalidElementState
                        | InvalidSelector
-                       | SessionNotCreated
+                       | InvalidSessionId
+                       | JavascriptError
                        | MoveTargetOutOfBounds
-                       | InvalidXPathSelector
-                       | InvalidXPathSelectorReturnType
-                       deriving (Eq, Ord, Enum, Bounded, Show)
+                       | NoSuchAlert
+                       | NoSuchCookie
+                       | NoSuchElement
+                       | NoSuchFrame
+                       | NoSuchWindow
+                       | ScriptTimeout
+                       | SessionNotCreated
+                       | StaleElementReference
+                       | Timeout
+                       | UnableToSetCookie
+                       | UnableToCaptureScreen
+                       | UnexpectedAlertOpen
+                       | UnknownCommandType
+                       | UnknownError
+                       | UnknownMethod
+                       | UnsupportedOperation
+                       deriving (Eq, Show)
+
+toTypeString :: FailedCommandType -> String
+toTypeString t =
+  case t of
+    ElementClickIntercepted -> "element click intercepted"
+    ElementNotInteractable -> "element not interactable"
+    InsecureCertificate -> "insecure certificate"
+    InvalidArgument -> "invalid argument"
+    InvalidCookieDomain -> "invalid cookie domain"
+    InvalidElementState -> "invalid element state"
+    InvalidSelector -> "invalid selector"
+    InvalidSessionId -> "invalid session id"
+    JavascriptError -> "javascript error"
+    MoveTargetOutOfBounds -> "move target out of bounds"
+    NoSuchAlert -> "no such alert"
+    NoSuchCookie -> "no such cookie"
+    NoSuchElement -> "no such element"
+    NoSuchFrame -> "no such frame"
+    NoSuchWindow -> "no such window"
+    ScriptTimeout -> "script timeout"
+    SessionNotCreated -> "session not created"
+    StaleElementReference -> "stale element reference"
+    Timeout -> "timeout"
+    UnableToSetCookie -> "unable to set cookie"
+    UnableToCaptureScreen -> "unable to capture screen"
+    UnexpectedAlertOpen -> "unexpected alert open"
+    UnknownCommandType -> "unknown command type"
+    UnknownError -> "unknown error"
+    UnknownMethod -> "unknown method"
+    UnsupportedOperation -> "unsupported operation"
+
+fromTypeString :: String -> FailedCommandType
+fromTypeString s =
+  case s of
+    "element click intercepted" -> ElementClickIntercepted
+    "element not interactable" -> ElementNotInteractable
+    "insecure certificate" -> InsecureCertificate
+    "invalid argument" -> InvalidArgument
+    "invalid cookie domain" -> InvalidCookieDomain
+    "invalid element state" -> InvalidElementState
+    "invalid selector" -> InvalidSelector
+    "invalid session id" -> InvalidSessionId
+    "javascript error" -> JavascriptError
+    "move target out of bounds" -> MoveTargetOutOfBounds
+    "no such alert" -> NoSuchAlert
+    "no such cookie" -> NoSuchCookie
+    "no such element" -> NoSuchElement
+    "no such frame" -> NoSuchFrame
+    "no such window" -> NoSuchWindow
+    "script timeout" -> ScriptTimeout
+    "session not created" -> SessionNotCreated
+    "stale element reference" -> StaleElementReference
+    "timeout" -> Timeout
+    "unable to set cookie" -> UnableToSetCookie
+    "unable to capture screen" -> UnableToCaptureScreen
+    "unexpected alert open" -> UnexpectedAlertOpen
+    "unknown command type" -> UnknownCommandType
+    "unknown error" -> UnknownError
+    "unknown method" -> UnknownMethod
+    "unsupported operation" -> UnsupportedOperation
+    _ -> UnknownError
 
 -- |Detailed information about the failed command provided by the server.
 data FailedCommandInfo =
   FailedCommandInfo { -- |The error message.
                       errMsg    :: String
+                      -- |The session associated with
+                      -- the exception.
+                    , -- |The error message.
+                      errType   :: String
                       -- |The session associated with
                       -- the exception.
                     , errSess :: Maybe WDSession
@@ -129,19 +196,21 @@ instance Show FailedCommandInfo where
 
 
 -- |Constructs a FailedCommandInfo from only an error message.
-mkFailedCommandInfo :: (WDSessionState s) => String -> CallStack -> s FailedCommandInfo
-mkFailedCommandInfo m cs = do
+mkFailedCommandInfo :: (WDSessionState s) => FailedCommandType -> String -> CallStack -> s FailedCommandInfo
+mkFailedCommandInfo t m cs = do
   sess <- getSession
   return $ FailedCommandInfo { errMsg = m
+                             , errType = toTypeString t
                              , errSess = Just sess
                              , errScreen = Nothing
                              , errClass = Nothing
-                             , errStack = fmap callStackItemToStackFrame cs }
+                             , errStack = fmap callStackItemToStackFrame cs
+                             }
 
 -- |Use GHC's CallStack capabilities to return a callstack to help debug a FailedCommand.
 -- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
 -- should be where the user called into Test.WebDriver
-externalCallStack :: (HasCallStack) => CallStack
+externalCallStack :: HasCallStack => CallStack
 externalCallStack = dropWhile isWebDriverFrame callStack
   where isWebDriverFrame :: ([Char], SrcLoc) -> Bool
         isWebDriverFrame (_, SrcLoc {srcLocModule}) = "Test.WebDriver" `L.isPrefixOf` srcLocModule
@@ -150,7 +219,7 @@ externalCallStack = dropWhile isWebDriverFrame callStack
 -- info present.
 failedCommand :: (HasCallStack, WDSessionStateIO s) => FailedCommandType -> String -> s a
 failedCommand t m = do
-  throwIO . FailedCommand t =<< mkFailedCommandInfo m callStack
+  throwIO . FailedCommand t =<< mkFailedCommandInfo t m callStack
 
 -- |An individual stack frame from the stack trace provided by the server
 -- during a FailedCommand.
@@ -173,6 +242,7 @@ instance Show StackFrame where
 instance FromJSON FailedCommandInfo where
   parseJSON (Object o) =
     FailedCommandInfo <$> (req "message" >>= maybe (return "") return)
+                      <*> (req "error" >>= maybe (return "") return)
                       <*> pure Nothing
                       <*> (fmap TLE.encodeUtf8 <$> opt "screen" Nothing)
                       <*> opt "class"      Nothing
