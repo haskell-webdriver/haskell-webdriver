@@ -41,13 +41,7 @@ newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)
 
 instance FromJSON Element where
-  parseJSON (Object o) =
-    Element <$> do
-      e  <- o .:? "ELEMENT"
-      eG <- o .:? "element-6066-11e4-a52e-4f735466cecf"
-      case e <|> eG of
-        Just e' -> return e'
-        Nothing -> throw . BadJSON $ "ELEMENT or element-6066-11e4-a52e-4f735466cecf required"
+  parseJSON (Object o) = Element <$> (o .: "ELEMENT" <|> o .: "element-6066-11e4-a52e-4f735466cecf")
   parseJSON v = typeMismatch "Element" v
 
 instance ToJSON Element where
