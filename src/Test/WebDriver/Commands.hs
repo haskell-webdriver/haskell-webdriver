@@ -663,24 +663,27 @@ setLocation = noReturn . doSessCommand methodPost "/location"
                         "altitude")
 
 -- |Uploads a file from the local filesystem by its file path.
-uploadFile :: (HasCallStack, WebDriver wd) => FilePath -> wd ()
+-- Returns the remote filepath of the file
+uploadFile :: (HasCallStack, WebDriver wd) => FilePath -> wd Text
 uploadFile path = uploadZipEntry =<< liftBase (readEntry [] path)
 
 -- |Uploads a raw bytestring with associated file info.
+-- Returns the remote filepath of the file
 uploadRawFile :: (HasCallStack, WebDriver wd) =>
                  FilePath          -- ^File path to use with this bytestring.
                  -> Integer        -- ^Modification time
                                    -- (in seconds since Unix epoch).
                  -> LBS.ByteString -- ^ The file contents as a lazy ByteString
-                 -> wd ()
+                 -> wd Text
 uploadRawFile path t str = uploadZipEntry (toEntry path t str)
 
 
 -- |Lowest level interface to the file uploading mechanism.
 -- This allows you to specify the exact details of
 -- the zip entry sent across network.
-uploadZipEntry :: (HasCallStack, WebDriver wd) => Entry -> wd ()
-uploadZipEntry = noReturn . doSessCommand methodPost "/file" . single "file"
+-- Returns the remote filepath of the extracted file
+uploadZipEntry :: (HasCallStack, WebDriver wd) => Entry -> wd Text
+uploadZipEntry = doSessCommand methodPost "/file" . single "file"
                  . TL.decodeUtf8 . B64.encode . fromArchive . (`addEntryToArchive` emptyArchive)
 
 
