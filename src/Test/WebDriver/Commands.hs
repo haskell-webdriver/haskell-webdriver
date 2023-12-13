@@ -305,7 +305,7 @@ windows :: (HasCallStack, WebDriver wd) => wd [WindowHandle]
 windows = doSessCommand methodGet "/window_handles" Null
 
 focusWindow :: (HasCallStack, WebDriver wd) => WindowHandle -> wd ()
-focusWindow w = noReturn $ doSessCommand methodPost "/window" . single "handle" $ w
+focusWindow w = noReturn $ doSessCommand methodPost "/window" . single "name" $ w
 
 -- |Closes the given window
 closeWindow :: (HasCallStack, WebDriver wd) => WindowHandle -> wd ()
