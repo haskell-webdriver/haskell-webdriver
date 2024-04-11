@@ -316,7 +316,7 @@ closeWindow w = do
 
 -- |Maximizes the current  window if not already maximized
 maximize :: (HasCallStack, WebDriver wd) => wd ()
-maximize = ignoreReturn $ doWinCommand methodPost currentWindow "/maximize" Null
+maximize = ignoreReturn $ doWinCommand methodPost "/maximize" Null
 
 data Rect = Rect
   { rectX :: Float

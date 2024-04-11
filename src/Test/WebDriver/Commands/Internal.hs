@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
@@ -29,19 +30,29 @@ import Data.Aeson
 import Data.Aeson.Types
 import Data.CallStack
 import Data.Default.Class
-import Data.HashMap.Strict
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Typeable
 
 import Prelude -- hides some "unused import" warnings
 
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.Key as A
+import qualified Data.Aeson.KeyMap as KM
+
+aesonToList = KM.toList
+#else
+import qualified Data.HashMap.Strict        as HM
+
+aesonToList = HM.toList
+#endif
+
 {- |An opaque identifier for a web page element. -}
 newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)
 
 instance FromJSON Element where
-  parseJSON (Object o) = case elems o of
+  parseJSON (Object o) = case fmap snd (aesonToList o) of
     (String id : _) -> pure $ Element id
     _ -> fail "No elements returned"
   parseJSON v = typeMismatch "Element" v
