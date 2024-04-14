@@ -40,10 +40,12 @@ import Prelude -- hides some "unused import" warnings
 import qualified Data.Aeson.Key as A
 import qualified Data.Aeson.KeyMap as KM
 
+aesonToList :: KM.KeyMap v -> [(A.Key, v)]
 aesonToList = KM.toList
 #else
 import qualified Data.HashMap.Strict        as HM
 
+aesonToList :: HM.KeyMap v -> [(A.Key, v)]
 aesonToList = HM.toList
 #endif
 
@@ -53,7 +55,7 @@ newtype Element = Element Text
 
 instance FromJSON Element where
   parseJSON (Object o) = case fmap snd (aesonToList o) of
-    (String id : _) -> pure $ Element id
+    (String id' : _) -> pure $ Element id'
     _ -> fail "No elements returned"
   parseJSON v = typeMismatch "Element" v
 
