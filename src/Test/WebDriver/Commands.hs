@@ -33,6 +33,7 @@ module Test.WebDriver.Commands
        , WindowHandle(..), currentWindow
        , getCurrentWindow, closeWindow, windows, focusWindow,  maximize
        , Rect(..), getWindowRect, setWindowRect
+       , getWindowSize, setWindowSize, getWindowPos, setWindowPos
          -- * Focusing on frames
        , focusFrame, FrameSelector(..)
          -- * Cookies
@@ -348,6 +349,30 @@ getWindowRect = doWinCommand methodGet "rect" Null
 -- |Set the dimensions of the current window.
 setWindowRect :: (HasCallStack, WebDriver wd) => Rect -> wd ()
 setWindowRect = ignoreReturn . doWinCommand methodPost "rect"
+
+-- |Get the dimensions of the current window. {-# DEPRECATED "Use getWindowRect instead" #-}
+getWindowSize :: (HasCallStack, WebDriver wd) => wd (Word, Word)
+getWindowSize = do
+  Rect {..} <- getWindowRect
+  return (round rectWidth, round rectHeight)
+
+-- |Set the dimensions of the current window. {-# DEPRECATED "Use setWindowRect instead" #-}
+setWindowSize :: (HasCallStack, WebDriver wd) => (Word, Word) -> wd ()
+setWindowSize (width, height) = do
+  Rect {..} <- getWindowRect
+  setWindowRect (Rect rectX rectY (fromIntegral width) (fromIntegral height))
+
+-- |Get the coordinates of the current window. {-# DEPRECATED "Use getWindowRect instead" #-}
+getWindowPos :: (HasCallStack, WebDriver wd) => wd (Int, Int)
+getWindowPos = do
+  Rect {..} <- getWindowRect
+  return (round rectX, round rectY)
+
+-- |Set the coordinates of the current window. {-# DEPRECATED "Use setWindowRect instead" #-}
+setWindowPos :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
+setWindowPos (x, y) = do
+  Rect {..} <- getWindowRect
+  setWindowRect (Rect (fromIntegral x) (fromIntegral y) rectWidth rectHeight)
 
 -- |Retrieve all cookies visible to the current page.
 cookies :: (HasCallStack, WebDriver wd) => wd [Cookie]
