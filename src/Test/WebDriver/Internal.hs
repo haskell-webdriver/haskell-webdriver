@@ -20,7 +20,7 @@ import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..))
 import qualified Network.HTTP.Client as HTTPClient
 
 import Data.Aeson
-import Data.Aeson.Types (typeMismatch)
+import Data.Aeson.Types (Parser, typeMismatch)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 
@@ -247,10 +247,12 @@ instance FromJSON WDResponse where
                          <|> (o .: "value" >>= parseJSONWebDriver)
   parseJSON v = typeMismatch "WDResponse" v
 
+parseJSONSelenium :: Object -> Parser WDResponse
 parseJSONSelenium o = WDResponse <$> o .: "sessionId"
                             <*> o .:?? "status" .!= 0
                             <*> o .:?? "value" .!= Null
 
+parseJSONWebDriver :: Value -> Parser WDResponse
 parseJSONWebDriver (Object o) = do
   sessionId <- o .:?? "sessionId" .!= Nothing
   status <- o .:?? "status" .!= 0
