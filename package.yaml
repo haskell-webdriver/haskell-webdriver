@@ -96,3 +96,20 @@ library:
   - Test.WebDriver.Utils
   other-modules:
   - Test.WebDriver.IO
+
+tests:
+  tests:
+    main: Main.hs
+    source-dirs:
+    - tests
+    ghc-options:
+    - -threaded
+    - -Wall
+    dependencies:
+    - aeson
+    - base
+    - bytestring
+    - filepath
+    - sandwich
+    - string-interpolate
+    - webdriver
