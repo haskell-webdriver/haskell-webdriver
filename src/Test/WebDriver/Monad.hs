@@ -92,7 +92,7 @@ runSession conf wd = do
 
 -- |A finalizer ensuring that the session is always closed at the end of
 -- the given 'WD' action, regardless of any exceptions.
-finallyClose:: HasCallStack => WebDriver wd => wd a -> wd a
+finallyClose :: HasCallStack => WebDriver wd => wd a -> wd a
 finallyClose wd = closeOnException wd <* closeSession
 
 -- |Exception handler that closes the session when an
