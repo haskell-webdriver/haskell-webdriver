@@ -78,8 +78,8 @@ currentWindow = WindowHandle "current"
 instance Exception NoSessionId
 -- |A command requiring a session ID was attempted when no session ID was
 -- available.
-newtype NoSessionId = NoSessionId String
-                 deriving (Eq, Show, Typeable)
+data NoSessionId = NoSessionId String CallStack
+  deriving (Eq, Show, Typeable)
 
 -- |This a convenient wrapper around 'doCommand' that automatically prepends
 -- the session URL parameter to the wire command URL. For example, passing
@@ -91,10 +91,9 @@ doSessCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
 doSessCommand method path args = do
   WDSession { wdSessId = mSessId } <- getSession
   case mSessId of
-      Nothing -> throwIO . NoSessionId $ msg
+      Nothing -> throwIO $ NoSessionId msg callStack
         where
-          msg = "doSessCommand: No session ID found for relative URL "
-                ++ show path
+          msg = "doSessCommand: No session ID found for relative URL " ++ show path
       Just (SessionId sId) ->
         -- Catch BadJSON exceptions here, since most commands go through this function.
         -- Then, re-throw them with "error", which automatically appends a callstack
