@@ -64,6 +64,7 @@ library:
   - network-uri >= 2.6
   - pretty-simple
   - scientific >= 0.2
+  - string-interpolate
   - temporary >= 1.0
   - text >= 0.11.3
   - time > 1.0
@@ -110,6 +111,9 @@ tests:
     - base
     - bytestring
     - filepath
+    - optparse-applicative
     - sandwich
     - string-interpolate
+    - unliftio-core
+    - unliftio
     - webdriver
