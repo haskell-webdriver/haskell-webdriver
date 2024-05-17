@@ -1,6 +1,7 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE QuasiQuotes #-}
 
 module Test.WebDriver.Session (
   -- * WDSessionState class
@@ -20,6 +21,7 @@ import Data.ByteString as BS(ByteString)
 import Data.Text (Text)
 import Data.Maybe (listToMaybe)
 import Data.Monoid
+import Data.String.Interpolate
 import Control.Applicative
 import Control.Monad.Base
 import Control.Monad.Trans.Class
@@ -77,6 +79,9 @@ data WDSession = WDSession {
     --  when a WebDriver server requires HTTP auth.
   , wdSessAuthHeaders :: RequestHeaders
   }
+
+instance Show WDSession where
+  show (WDSession {..}) = [i|<Session #{wdSessId} at #{wdSessHost}:#{wdSessPort}#{wdSessBasePath}>|]
 
 
 -- |A function used by 'wdHistoryConfig' to append new entries to session history.
