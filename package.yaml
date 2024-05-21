@@ -110,10 +110,12 @@ tests:
     - aeson
     - base
     - bytestring
+    - exceptions
     - filepath
     - optparse-applicative
     - sandwich
     - string-interpolate
+    - temporary
     - unliftio-core
     - unliftio
     - webdriver

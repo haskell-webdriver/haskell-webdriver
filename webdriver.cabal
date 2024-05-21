@@ -112,6 +112,8 @@ test-suite tests
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      TestLib.Types
+      TestLib.WebDriverContext
       Paths_webdriver
   hs-source-dirs:
       tests
@@ -127,10 +129,12 @@ test-suite tests
       aeson
     , base
     , bytestring
+    , exceptions
     , filepath
     , optparse-applicative
     , sandwich
     , string-interpolate
+    , temporary
     , unliftio
     , unliftio-core
     , webdriver
