@@ -30,6 +30,19 @@ spec = do
         liftIO $ putStrLn "Got here 3"
         r `shouldBe` (Just A.Null)
 
+    -- it "takes a screenshot" $ liftIO $ do
+    --   openPage [i|https://www.google.com|]
+    --   search <- findElem (ByCSS [i|*[title="Search"]|])
+    --   click search
+    --   sendKeys "Haskell Sandwich" search
+    --   findElem (ByCSS [i|input[type="submit"]|]) >>= click
+
+    --   Just dir <- getCurrentFolder
+    --   screenshot >>= liftIO . BL.writeFile (dir </> "screenshot.png")
+
+    --   liftIO $ threadDelay 3000000
+
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -39,17 +52,3 @@ main = do
   putStrLn [i|clo: #{clo}|]
 
   runSandwichWithCommandLineArgs' defaultOptions userOptions spec
-
-
-  -- introduceWebDriverOptions @() (defaultWdOptions "/tmp/tools") $ do
-  --   it "opens Google and searches" $ withSession1 $ do
-  --     openPage [i|https://www.google.com|]
-  --     search <- findElem (ByCSS [i|*[title="Search"]|])
-  --     click search
-  --     sendKeys "Haskell Sandwich" search
-  --     findElem (ByCSS [i|input[type="submit"]|]) >>= click
-
-  --     Just dir <- getCurrentFolder
-  --     screenshot >>= liftIO . BL.writeFile (dir </> "screenshot.png")
-
-  --     liftIO $ threadDelay 3000000
