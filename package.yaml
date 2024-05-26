@@ -33,12 +33,13 @@ extra-source-files:
 - CHANGELOG.md
 
 default-extensions:
-- ScopedTypeVariables
-- OverloadedStrings
 - FlexibleContexts
 - FlexibleInstances
-- RecordWildCards
+- LambdaCase
 - NamedFieldPuns
+- OverloadedStrings
+- RecordWildCards
+- ScopedTypeVariables
 
 library:
   source-dirs: src
@@ -112,10 +113,16 @@ tests:
     - bytestring
     - exceptions
     - filepath
+    - lens
+    - lens-regex-pcre
     - optparse-applicative
+    - retry
+    - safe
     - sandwich
+    - sandwich-contexts
     - string-interpolate
     - temporary
+    - text
     - unliftio-core
     - unliftio
     - webdriver

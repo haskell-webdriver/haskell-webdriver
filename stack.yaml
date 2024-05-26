@@ -9,3 +9,10 @@ nix:
   packages:
   - pkg-config
   - zlib
+
+extra-deps:
+- git: https://github.com/codedownio/sandwich
+  commit: 7ebd9d75227369e6ad4bc4a7c2913efc4724b923
+  subdirs:
+  - sandwich
+  - sandwich-contexts

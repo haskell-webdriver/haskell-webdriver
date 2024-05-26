@@ -69,12 +69,13 @@ library
   hs-source-dirs:
       src
   default-extensions:
-      ScopedTypeVariables
-      OverloadedStrings
       FlexibleContexts
       FlexibleInstances
-      RecordWildCards
+      LambdaCase
       NamedFieldPuns
+      OverloadedStrings
+      RecordWildCards
+      ScopedTypeVariables
   ghc-options: -Wall
   build-depends:
       aeson >=0.6.2.0
@@ -118,12 +119,13 @@ test-suite tests
   hs-source-dirs:
       tests
   default-extensions:
-      ScopedTypeVariables
-      OverloadedStrings
       FlexibleContexts
       FlexibleInstances
-      RecordWildCards
+      LambdaCase
       NamedFieldPuns
+      OverloadedStrings
+      RecordWildCards
+      ScopedTypeVariables
   ghc-options: -threaded -Wall
   build-depends:
       aeson
@@ -131,10 +133,16 @@ test-suite tests
     , bytestring
     , exceptions
     , filepath
+    , lens
+    , lens-regex-pcre
     , optparse-applicative
+    , retry
+    , safe
     , sandwich
+    , sandwich-contexts
     , string-interpolate
     , temporary
+    , text
     , unliftio
     , unliftio-core
     , webdriver

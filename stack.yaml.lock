@@ -3,7 +3,33 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/lock_files
 
-packages: []
+packages:
+- completed:
+    commit: 7ebd9d75227369e6ad4bc4a7c2913efc4724b923
+    git: https://github.com/codedownio/sandwich
+    name: sandwich
+    pantry-tree:
+      sha256: e8a18205c2af222c86fbab7b8837616f58043f8036fae10a4e9c03ea156d5511
+      size: 6178
+    subdir: sandwich
+    version: 0.2.2.0
+  original:
+    commit: 7ebd9d75227369e6ad4bc4a7c2913efc4724b923
+    git: https://github.com/codedownio/sandwich
+    subdir: sandwich
+- completed:
+    commit: 7ebd9d75227369e6ad4bc4a7c2913efc4724b923
+    git: https://github.com/codedownio/sandwich
+    name: sandwich-contexts
+    pantry-tree:
+      sha256: c92f1279aefc57b20388c32e9bdbe3d8074fbe076ceabb3811ba0afdc1614d39
+      size: 1633
+    subdir: sandwich-contexts
+    version: 0.1.0.0
+  original:
+    commit: 7ebd9d75227369e6ad4bc4a7c2913efc4724b923
+    git: https://github.com/codedownio/sandwich
+    subdir: sandwich-contexts
 snapshots:
 - completed:
     sha256: 4a0e5e187fbef423f9c60072bfb1dd56f2a01a07a2667eb1469bd79073cfceaf
