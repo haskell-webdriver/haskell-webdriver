@@ -12,7 +12,7 @@ nix:
 
 extra-deps:
 - git: https://github.com/codedownio/sandwich
-  commit: 7ebd9d75227369e6ad4bc4a7c2913efc4724b923
+  commit: ef0bb345b07ec89fe526b9348db0a9d02fbf666d
   subdirs:
   - sandwich
   - sandwich-contexts

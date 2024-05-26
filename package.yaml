@@ -115,6 +115,8 @@ tests:
     - filepath
     - lens
     - lens-regex-pcre
+    - monad-logger
+    - mtl
     - optparse-applicative
     - retry
     - safe

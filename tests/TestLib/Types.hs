@@ -35,7 +35,6 @@ data UserOptions = UserOptions {
   , optBrowserToUse :: BrowserToUse
   } deriving (Show)
 
-
 userOptions :: Parser UserOptions
 userOptions = UserOptions
   <$> optional (strOption (long "selenium-jar" <> help "selenium.jar file to use"))
@@ -56,5 +55,19 @@ data WebDriver = WebDriver {
   , webDriverPort :: Int16
   }
 
+data BrowserDependencies = BrowserDependenciesChrome {
+  browserDependenciesChromeChrome :: FilePath
+  , browserDependenciesChromeChromedriver :: FilePath
+  }
+  | BrowserDependenciesFirefox {
+      browserDependenciesFirefoxFirefox :: FilePath
+      , browserDependenciesFirefoxGeckodriver :: FilePath
+      }
+
 webdriver :: Label "webdriver" WebDriver
 webdriver = Label
+
+browserDependencies :: Label "browserDependencies" BrowserDependencies
+browserDependencies = Label
+
+type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies

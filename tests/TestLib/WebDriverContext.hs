@@ -15,6 +15,7 @@ import Control.Monad
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class
 import Data.Function
+import Data.String.Interpolate
 import qualified Data.Text as T
 import Safe
 import System.FilePath
@@ -30,32 +31,38 @@ import UnliftIO.Process
 introduceWebDriver :: forall context m. (
   BaseMonadContext m context, HasCommandLineOptions context UserOptions, MonadThrow m
   , HasFile context "selenium.jar"
+  , HasFile context "java"
+  , HasBrowserDependencies context
   )
-  => () -> SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
-introduceWebDriver _wdOptions = introduceWith "Introduce WebDriver" webdriver withAlloc
+  => SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
+introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
   where
     withAlloc action = do
-      UserOptions {..} <- getUserCommandLineOptions
       Just dir <- getCurrentFolder
       webdriverDir <- liftIO $ createTempDirectory dir "webdriver"
 
-      javaArgs :: [String] <- case optBrowserToUse of
-        UseChrome -> do
+      javaArgs :: [String] <- getContext browserDependencies >>= \case
+        BrowserDependenciesChrome {..} -> do
           let chromedriverLog = webdriverDir </> "chromedriver.log"
           return ([
             "-Dwebdriver.chrome.logfile=" <> chromedriverLog
             , "-Dwebdriver.chrome.verboseLogging=true"
-            ]
-            <> (maybe [] (\x -> ["-Dwebdriver.chrome.driver=" <> x]) optChromeDriver)
-            <> maybe [] (\x -> ["-Dwebdriver.chrome.driver=" <> x]) optChromeBinary
-            )
-        UseFirefox -> return []
+            , "-Dwebdriver.chrome.driver=" <> browserDependenciesChromeChromedriver
+            ])
+        BrowserDependenciesFirefox {..} -> do
+          return ([
+            "-Dwebdriver.gecko.driver=" <> browserDependenciesFirefoxGeckodriver
+            ])
 
+      java <- askFile @"java"
       seleniumJar <- askFile @"selenium.jar"
+
+      let fullArgs = javaArgs <> ["-jar", seleniumJar]
+      debug [i|#{java} #{T.unwords $ fmap T.pack fullArgs}|]
 
       (hRead, hWrite) <- createPipe
 
-      let cp = (proc "java" (javaArgs <> ["-jar", seleniumJar])) {
+      let cp = (proc java fullArgs) {
             create_group = True
             , std_out = UseHandle hWrite
             , std_err = UseHandle hWrite

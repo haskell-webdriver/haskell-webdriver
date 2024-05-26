@@ -9,6 +9,7 @@
 module Main where
 
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import qualified Data.Aeson as A
 import Data.String.Interpolate
 import qualified Data.Text as T
@@ -58,14 +59,26 @@ main = do
 
   runSandwichWithCommandLineArgs' defaultOptions userOptions $
     introduceNixContext nixpkgsReleaseDefault $
+    introduceBinaryViaNixPackage @"java" "jre" $
     (case optSeleniumJar of Just p -> introduceFile @"selenium.jar" p; Nothing -> introduceFileViaNixPackage @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar) $
-    introduceWebDriver () $
+    introduceBrowserDependencies (optBrowserToUse (optUserOptions clo)) $
+    introduceWebDriver $
     spec
 
 
+introduceBrowserDependencies :: forall m context. (
+  MonadUnliftIO m, HasBaseContext context, HasNixContext context
+  ) => BrowserToUse -> SpecFree (LabelValue "browserDependencies" BrowserDependencies :> context) m () -> SpecFree context m ()
+introduceBrowserDependencies browser = introduce "Introduce browser dependencies" browserDependencies alloc (const $ return ())
+  where
+    alloc = case browser of
+      UseChrome ->
+        BrowserDependenciesChrome <$> getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
+                                  <*> getBinaryViaNixPackage @"chromedriver" "chromedriver"
+      UseFirefox ->
+        BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
+                                   <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
+
 
 tryFindSeleniumJar :: FilePath -> IO FilePath
-tryFindSeleniumJar path = do
-  result <- readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""
-  putStrLn [i|result: #{result}|]
-  return $ T.unpack $ T.strip $ T.pack result
+tryFindSeleniumJar path = (T.unpack . T.strip . T.pack) <$> readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""
