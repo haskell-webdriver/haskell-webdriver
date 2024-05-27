@@ -729,7 +729,7 @@ deleteAllKeys s = noReturn $ doStorageCommand methodDelete s "" Null
 
 -- |An HTML 5 storage type
 data WebStorageType = LocalStorage | SessionStorage
-                    deriving (Eq, Show, Ord, Bounded, Enum)
+  deriving (Eq, Show, Ord, Bounded, Enum)
 
 -- |Get the value associated with a key in the given web storage area.
 -- Unset keys result in empty strings, since the Web Storage spec
