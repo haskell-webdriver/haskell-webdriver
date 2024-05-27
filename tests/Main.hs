@@ -23,16 +23,40 @@ import TestLib.WebDriverContext
 import UnliftIO.Process
 
 
-spec :: TopSpecWithOptions' UserOptions
+type SpecWithWebDirver = forall context. (
+  HasBaseContext context
+  , HasCommandLineOptions context UserOptions
+  , HasWebDriverContext context
+  , HasFile context "google-chrome-stable"
+  ) => SpecFree context IO ()
+
+
+spec :: SpecWithWebDirver
 spec = do
-  it "tests async" $ liftIO $ do
-    runSession (defaultConfig { wdCapabilities = defaultCaps { browser = (chrome { chromeBinary = Just "/nix/store/nb4vdqyy0by2h75794aqhw409iccpvmq-google-chrome-125.0.6422.60/bin/google-chrome-stable" }) } }) . finallyClose $ do
-      liftIO $ putStrLn "Got here 1"
-      openPage "http://www.wikipedia.org/"
-      liftIO $ putStrLn "Got here 2"
-      r <- asyncJS [] "arguments[0]();"
-      liftIO $ putStrLn "Got here 3"
-      r `shouldBe` (Just A.Null)
+  it "tests async" $ do
+    WebDriver {..} <- getContext webdriver
+    chromeBinaryPath <- askFile @"google-chrome-stable"
+
+    let (w, h) = (1920, 1080) :: (Int, Int)
+    let config = defaultConfig {
+          wdHost = webDriverHostname
+          , wdPort = fromIntegral webDriverPort
+          , wdCapabilities = defaultCaps {
+              browser = (chrome {
+                            chromeBinary = Just chromeBinaryPath
+                            -- , chromeOptions = "--headless=new":[i|--window-size=#{w},#{h}|]:(chromeOptions chrome)
+                            })
+              }
+          }
+
+    withRunInIO $ \runInIO -> do
+      liftIO $ runSession config . finallyClose $ do
+        liftIO $ runInIO $ info "Got here 1"
+        openPage "http://www.wikipedia.org/"
+        liftIO $ runInIO $ info "Got here 2"
+        r <- asyncJS [] "arguments[0]();"
+        liftIO $ runInIO $ info "Got here 3"
+        r `shouldBe` (Just A.Null)
 
   -- it "takes a screenshot" $ liftIO $ do
   --   openPage [i|https://www.google.com|]
@@ -52,7 +76,7 @@ main = do
   args <- getArgs
   putStrLn [i|args: #{args}|]
 
-  clo <- parseCommandLineArgs userOptions spec
+  clo <- parseCommandLineArgs userOptions (return ())
   putStrLn [i|clo: #{clo}|]
 
   let CommandLineWebdriverOptions {..} = optWebdriverOptions clo
@@ -61,6 +85,7 @@ main = do
     introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $
     introduceBinaryViaNixPackage @"java" "jre" $
     (case optSeleniumJar of Just p -> introduceFile @"selenium.jar" p; Nothing -> introduceFileViaNixPackage @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar) $
+    (case optChromeBinary of Just p -> introduceFile @"google-chrome-stable" p; Nothing -> introduceBinaryViaNixPackage @"google-chrome-stable" "google-chrome") $
     introduceBrowserDependencies (optBrowserToUse (optUserOptions clo)) $
     introduceWebDriver $
     spec

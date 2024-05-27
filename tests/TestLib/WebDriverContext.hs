@@ -84,7 +84,6 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
           void $ action $ WebDriver hostname port
 
 
-
 seleniumOutFileName, seleniumErrFileName :: FilePath
 seleniumOutFileName = "stdout.txt"
 seleniumErrFileName = "stderr.txt"

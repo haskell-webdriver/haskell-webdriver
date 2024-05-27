@@ -68,6 +68,8 @@ data BrowserDependencies = BrowserDependenciesChrome {
 webdriver :: Label "webdriver" WebDriver
 webdriver = Label
 
+type HasWebDriverContext context = HasLabel context "webdriver" WebDriver
+
 browserDependencies :: Label "browserDependencies" BrowserDependencies
 browserDependencies = Label
 
