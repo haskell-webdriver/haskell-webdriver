@@ -7,12 +7,13 @@ packages:
 nix:
   pure: false
   packages:
+  - pcre
   - pkg-config
   - zlib
 
 extra-deps:
 - git: https://github.com/codedownio/sandwich
-  commit: ef0bb345b07ec89fe526b9348db0a9d02fbf666d
+  commit: b3eef612aa3d083b0d2a588b2c543ee212938668
   subdirs:
   - sandwich
   - sandwich-contexts

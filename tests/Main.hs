@@ -58,7 +58,7 @@ main = do
   let CommandLineWebdriverOptions {..} = optWebdriverOptions clo
 
   runSandwichWithCommandLineArgs' defaultOptions userOptions $
-    introduceNixContext nixpkgsReleaseDefault $
+    introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $
     introduceBinaryViaNixPackage @"java" "jre" $
     (case optSeleniumJar of Just p -> introduceFile @"selenium.jar" p; Nothing -> introduceFileViaNixPackage @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar) $
     introduceBrowserDependencies (optBrowserToUse (optUserOptions clo)) $
@@ -71,14 +71,16 @@ introduceBrowserDependencies :: forall m context. (
   ) => BrowserToUse -> SpecFree (LabelValue "browserDependencies" BrowserDependencies :> context) m () -> SpecFree context m ()
 introduceBrowserDependencies browser = introduce "Introduce browser dependencies" browserDependencies alloc (const $ return ())
   where
-    alloc = case browser of
-      UseChrome ->
-        BrowserDependenciesChrome <$> getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
-                                  <*> getBinaryViaNixPackage @"chromedriver" "chromedriver"
-      UseFirefox ->
-        BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
-                                   <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
-
+    alloc = do
+      deps <- case browser of
+        UseChrome ->
+          BrowserDependenciesChrome <$> getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
+                                    <*> getBinaryViaNixPackage @"chromedriver" "chromedriver"
+        UseFirefox ->
+          BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
+                                     <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"
+      debug [i|Got browser dependencies: #{deps}|]
+      return deps
 
 tryFindSeleniumJar :: FilePath -> IO FilePath
 tryFindSeleniumJar path = (T.unpack . T.strip . T.pack) <$> readCreateProcess (proc "find" [path, "-name", "*.jar"]) ""

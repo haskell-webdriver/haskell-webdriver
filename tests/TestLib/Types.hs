@@ -63,6 +63,7 @@ data BrowserDependencies = BrowserDependenciesChrome {
       browserDependenciesFirefoxFirefox :: FilePath
       , browserDependenciesFirefoxGeckodriver :: FilePath
       }
+  deriving (Show)
 
 webdriver :: Label "webdriver" WebDriver
 webdriver = Label
