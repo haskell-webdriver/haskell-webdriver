@@ -127,6 +127,7 @@ tests:
     - string-interpolate
     - temporary
     - text
+    - transformers
     - unliftio-core
     - unliftio
     - webdriver

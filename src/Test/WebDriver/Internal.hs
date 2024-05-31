@@ -176,14 +176,17 @@ getJSONResult r
 
 handleRespSessionId :: (HasCallStack, WDSessionStateIO s) => WDResponse -> s ()
 handleRespSessionId WDResponse{rspSessId = sessId'} = do
-    sess@WDSession { wdSessId = sessId} <- getSession
-    case (sessId, (==) <$> sessId <*> sessId') of
-       -- if our monad has an uninitialized session ID, initialize it from the response object
-       (Nothing, _)    -> putSession sess { wdSessId = sessId' }
-       -- if the response ID doesn't match our local ID, throw an error.
-       (_, Just False) -> throwIO . ServerError $ "Server response session ID (" ++ show sessId'
-                                 ++ ") does not match local session ID (" ++ show sessId ++ ")"
-       _ ->  return ()
+  sess@WDSession { wdSessId = sessId} <- getSession
+  case (sessId, (==) <$> sessId <*> sessId') of
+    -- If our monad has an uninitialized session ID, initialize it from the response object
+    (Nothing, _) -> do
+      putSession (sess { wdSessId = sessId' })
+
+    -- If the response ID doesn't match our local ID, throw an error.
+    (_, Just False) ->
+      throwIO . ServerError $ "Server response session ID (" ++ show sessId' ++ ") does not match local session ID (" ++ show sessId ++ ")"
+
+    _ ->  return ()
 
 handleJSONErr :: (HasCallStack, WDSessionStateControl s) => WDResponse -> s (Maybe SomeException)
 handleJSONErr WDResponse{rspStatus = 0} = return Nothing

@@ -80,7 +80,7 @@ data WDSession = WDSession {
   }
 
 instance Show WDSession where
-  show (WDSession {..}) = [i|<Session #{wdSessId} at #{wdSessHost}:#{wdSessPort}#{wdSessBasePath}>|]
+  show (WDSession {..}) = [i|<Session [#{wdSessId}] at #{wdSessHost}:#{wdSessPort}#{wdSessBasePath}>|]
 
 
 -- |A function used by 'wdHistoryConfig' to append new entries to session history.

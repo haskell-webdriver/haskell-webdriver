@@ -8,6 +8,7 @@
 module Test.WebDriver.Monad (
   WD(..)
   , runWD
+  , runWD'
   , runSession
   , finallyClose
   , closeOnException
@@ -25,7 +26,7 @@ import Control.Monad.Base (MonadBase, liftBase)
 import Control.Monad.Fix
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Control (MonadBaseControl(..), StM)
-import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put)
+import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put, runStateT)
 import Control.Exception.Lifted
 import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
 import Control.Applicative
@@ -77,6 +78,10 @@ instance WebDriver WD where
 -- 'WDSession' as state for WebDriver requests.
 runWD :: HasCallStack => WDSession -> WD a -> IO a
 runWD sess (WD wd) = evalStateT wd sess
+
+-- | Same as 'runWD', but also returns the final 'WDSession'.
+runWD' :: HasCallStack => WDSession -> WD a -> IO (a, WDSession)
+runWD' sess (WD wd) = runStateT wd sess
 
 -- |Executes a 'WD' computation within the 'IO' monad, automatically creating a new session beforehand.
 --

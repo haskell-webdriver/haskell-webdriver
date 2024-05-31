@@ -116,7 +116,7 @@ test-suite tests
   other-modules:
       Spec
       Spec.Clicking
-      Spec.Screenshot
+      Spec.Screenshots
       Spec.Windows
       TestLib.Contexts.BrowserDependencies
       TestLib.Contexts.Session
@@ -155,6 +155,7 @@ test-suite tests
     , string-interpolate
     , temporary
     , text
+    , transformers
     , unliftio
     , unliftio-core
     , webdriver

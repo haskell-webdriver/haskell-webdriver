@@ -9,10 +9,12 @@ module TestLib.Contexts.Session where
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Control.Monad.Trans.Control
+import Data.String.Interpolate
 import Test.Sandwich
 import Test.WebDriver
 import Test.WebDriver.Class
 import Test.WebDriver.Config
+import Test.WebDriver.Monad
 import Test.WebDriver.Session
 import TestLib.Contexts.BrowserDependencies
 import TestLib.Contexts.WebDriver
@@ -24,14 +26,23 @@ instance (HasWDSession context, MonadIO m, MonadBaseControl IO m) => WDSessionSt
   getSession = do
     sessVar <- getContext wdSession
     readIORef sessVar
+
   putSession sess = do
     sessVar <- getContext wdSession
     writeIORef sessVar sess
 
 instance (HasWDSession context, MonadIO m, MonadBaseControl IO m) => WebDriver (ExampleT context m) where
   doCommand rm t a = do
-    sess <- getContext wdSession >>= readIORef
-    liftIO $ runWD sess $ doCommand rm t a
+    sess <- getSession
+
+    -- Running this in the WD monad creates a StateT which temporarily takes over holding
+    -- our session state. But when it completes, we get it back and write it into our own
+    -- session var.
+    (ret, sess') <- liftIO $ runWD' sess $ doCommand rm t a
+
+    putSession sess'
+
+    pure ret
 
 getWDConfig :: (MonadIO m, MonadReader context m, HasWebDriverContext context) => BrowserDependencies -> m WDConfig
 getWDConfig browserDeps = do
