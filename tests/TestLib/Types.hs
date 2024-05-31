@@ -13,6 +13,7 @@ import Data.Int
 import GHC.Stack
 import Options.Applicative
 import Test.Sandwich hiding (BrowserToUse(..))
+import Test.Sandwich.Contexts.Files
 
 
 data BrowserToUse = UseChrome | UseFirefox
@@ -74,3 +75,12 @@ browserDependencies :: Label "browserDependencies" BrowserDependencies
 browserDependencies = Label
 
 type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies
+
+-- * Spec types
+
+type SpecWithWebDirver = forall context. (
+  HasBaseContext context
+  , HasCommandLineOptions context UserOptions
+  , HasWebDriverContext context
+  , HasFile context "google-chrome-stable"
+  ) => SpecFree context IO ()

@@ -113,6 +113,9 @@ test-suite tests
   type: exitcode-stdio-1.0
   main-is: Main.hs
   other-modules:
+      Spec
+      Spec.Clicking
+      Spec.Windows
       TestLib.Types
       TestLib.WebDriverContext
       Paths_webdriver
