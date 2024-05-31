@@ -17,3 +17,6 @@ extra-deps:
   subdirs:
   - sandwich
   - sandwich-contexts
+
+# - /home/tom/tools/sandwich/sandwich
+# - /home/tom/tools/sandwich/sandwich-contexts

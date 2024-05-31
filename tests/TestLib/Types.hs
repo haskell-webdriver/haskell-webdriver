@@ -1,86 +1,41 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
 module TestLib.Types where
 
-import Control.Monad.IO.Unlift
-import Data.Int
-import GHC.Stack
-import Options.Applicative
+import Data.IORef
 import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Nix
+import Test.WebDriver.Session
+import TestLib.Contexts.BrowserDependencies
+import TestLib.Contexts.WebDriver
+import TestLib.Types.Cli
 
 
-data BrowserToUse = UseChrome | UseFirefox
-  deriving (Show)
 
-browserToUse :: (forall f a. Mod f a) -> Parser BrowserToUse
-browserToUse maybeInternal =
-  flag' UseFirefox (long "firefox" <> help "Use Firefox" <> maybeInternal)
-  <|> flag UseChrome UseChrome (long "chrome" <> help "Use Chrome (default)" <> maybeInternal)
+wdSession :: Label "wdSession" (IORef WDSession)
+wdSession = Label
 
-data UserOptions = UserOptions {
-  optSeleniumJar :: Maybe FilePath
-
-  , optChromeBinary :: Maybe FilePath
-  , optChromeDriver :: Maybe FilePath
-
-  , optFirefoxBinary :: Maybe FilePath
-  , optGeckoDriver :: Maybe FilePath
-
-  , optBrowserToUse :: BrowserToUse
-  } deriving (Show)
-
-userOptions :: Parser UserOptions
-userOptions = UserOptions
-  <$> optional (strOption (long "selenium-jar" <> help "selenium.jar file to use"))
-
-  <*> optional (strOption (long "chrome-binary" <> help "Path to Chrome binary"))
-  <*> optional (strOption (long "chromedriver" <> help "Path to chromedriver"))
-
-  <*> optional (strOption (long "firefox-binary" <> help "Path to Firefox binary"))
-  <*> optional (strOption (long "geckodriver" <> help "Path to geckodriver"))
-
-  <*> browserToUse mempty
-
-type BaseMonad m = (HasCallStack, MonadUnliftIO m)
-type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
-
-data WebDriver = WebDriver {
-  webDriverHostname :: String
-  , webDriverPort :: Int16
-  }
-
-data BrowserDependencies = BrowserDependenciesChrome {
-  browserDependenciesChromeChrome :: FilePath
-  , browserDependenciesChromeChromedriver :: FilePath
-  }
-  | BrowserDependenciesFirefox {
-      browserDependenciesFirefoxFirefox :: FilePath
-      , browserDependenciesFirefoxGeckodriver :: FilePath
-      }
-  deriving (Show)
-
-webdriver :: Label "webdriver" WebDriver
-webdriver = Label
-
-type HasWebDriverContext context = HasLabel context "webdriver" WebDriver
-
-browserDependencies :: Label "browserDependencies" BrowserDependencies
-browserDependencies = Label
-
-type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies
+type HasWDSession context = HasLabel context "wdSession" (IORef WDSession)
 
 -- * Spec types
 
-type SpecWithWebDirver = forall context. (
+type SpecWithWebDriver = forall context. (
   HasBaseContext context
   , HasCommandLineOptions context UserOptions
+  , HasBrowserDependencies context
   , HasWebDriverContext context
   , HasFile context "google-chrome-stable"
+  , HasNixContext context
+  ) => SpecFree context IO ()
+
+type SpecWithBrowserDeps = forall context. (
+  HasBaseContext context
+  , HasBrowserDependencies context
+  , HasWebDriverContext context
   ) => SpecFree context IO ()

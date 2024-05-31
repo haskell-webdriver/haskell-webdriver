@@ -38,6 +38,7 @@ default-extensions:
 - LambdaCase
 - NamedFieldPuns
 - OverloadedStrings
+- QuasiQuotes
 - RecordWildCards
 - ScopedTypeVariables
 
@@ -115,6 +116,7 @@ tests:
     - filepath
     - lens
     - lens-regex-pcre
+    - monad-control
     - monad-logger
     - mtl
     - optparse-applicative

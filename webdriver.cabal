@@ -74,6 +74,7 @@ library
       LambdaCase
       NamedFieldPuns
       OverloadedStrings
+      QuasiQuotes
       RecordWildCards
       ScopedTypeVariables
   ghc-options: -Wall
@@ -116,8 +117,11 @@ test-suite tests
       Spec
       Spec.Clicking
       Spec.Windows
+      TestLib.Contexts.BrowserDependencies
+      TestLib.Contexts.Session
+      TestLib.Contexts.WebDriver
       TestLib.Types
-      TestLib.WebDriverContext
+      TestLib.Types.Cli
       Paths_webdriver
   hs-source-dirs:
       tests
@@ -127,6 +131,7 @@ test-suite tests
       LambdaCase
       NamedFieldPuns
       OverloadedStrings
+      QuasiQuotes
       RecordWildCards
       ScopedTypeVariables
   ghc-options: -threaded -Wall
@@ -138,6 +143,7 @@ test-suite tests
     , filepath
     , lens
     , lens-regex-pcre
+    , monad-control
     , monad-logger
     , mtl
     , optparse-applicative

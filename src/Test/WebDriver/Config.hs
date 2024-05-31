@@ -1,24 +1,34 @@
 
 module Test.WebDriver.Config(
-    -- * WebDriver configuration
-      WDConfig(..), defaultConfig
-    -- * Capabilities helpers
-    , modifyCaps, useBrowser, useVersion, usePlatform, useProxy
-    -- * SessionHistoryConfig options
-    , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
-    -- * Overloadable configuration
-    , WebDriverConfig(..)
-    ) where
+  -- * WebDriver configuration
+  WDConfig(..)
+  , defaultConfig
+
+  -- * Capabilities helpers
+  , modifyCaps
+  , useBrowser
+  , useVersion
+  , usePlatform
+  , useProxy
+
+  -- * SessionHistoryConfig options
+  , SessionHistoryConfig
+  , noHistory
+  , unlimitedHistory
+  , onlyMostRecentHistory
+
+  -- * Overloadable configuration
+  , WebDriverConfig(..)
+  ) where
+
+import Control.Monad.Base
+import Data.Default.Class (Default(..))
+import Data.String (fromString)
+import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
+import Network.HTTP.Types (RequestHeaders)
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Session
 
-import Data.Default.Class (Default(..))
-import Data.String (fromString)
-
-import Control.Monad.Base
-
-import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
-import Network.HTTP.Types (RequestHeaders)
 
 -- |WebDriver session configuration
 data WDConfig = WDConfig {

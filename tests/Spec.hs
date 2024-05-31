@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -F -pgmF sandwich-discover #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -11,28 +11,17 @@
 
 module Spec where
 
-import Control.Monad.IO.Class
-import Control.Monad.IO.Unlift
-import qualified Data.Aeson as A
-import Data.String.Interpolate
-import qualified Data.Text as T
-import System.Environment
 import Test.Sandwich hiding (BrowserToUse(..))
-import Test.Sandwich.Contexts.Files
-import Test.Sandwich.Contexts.Nix
-import Test.WebDriver
 import TestLib.Types
-import TestLib.WebDriverContext
-import UnliftIO.Process
 
 #insert_test_imports
 
 
-spec :: TopSpec
+spec :: SpecWithWebDriver
 spec = describe "Selenium tests" $ do
   $(getSpecFromFolder defaultGetSpecFromFolderOptions)
 
--- spec :: SpecWithWebDirver
+-- spec :: SpecWithWebDriver
 -- spec = do
 --   tests
 

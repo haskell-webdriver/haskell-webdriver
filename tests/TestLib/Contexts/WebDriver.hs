@@ -1,31 +1,48 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module TestLib.WebDriverContext where
+module TestLib.Contexts.WebDriver where
 
 import Control.Lens
 import Control.Lens.Regex.Text
 import Control.Monad
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import Data.Function
+import Data.Int
 import Data.String.Interpolate
 import qualified Data.Text as T
+import GHC.Stack
 import Safe
 import System.FilePath
 import System.IO (hGetLine)
 import System.IO.Temp
 import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Files
-import TestLib.Types
+import TestLib.Contexts.BrowserDependencies
+import TestLib.Types.Cli
 import UnliftIO.Async
 import UnliftIO.Process
+
+
+data WebDriverContext = WebDriverContext {
+  webDriverHostname :: String
+  , webDriverPort :: Int16
+  }
+
+webdriver :: Label "webdriver" WebDriverContext
+webdriver = Label
+
+type HasWebDriverContext context = HasLabel context "webdriver" WebDriverContext
+
+type BaseMonad m = (HasCallStack, MonadUnliftIO m)
+type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
 
 
 introduceWebDriver :: forall context m. (
@@ -34,7 +51,7 @@ introduceWebDriver :: forall context m. (
   , HasFile context "java"
   , HasBrowserDependencies context
   )
-  => SpecFree (LabelValue "webdriver" WebDriver :> context) m () -> SpecFree context m ()
+  => SpecFree (LabelValue "webdriver" WebDriverContext :> context) m () -> SpecFree context m ()
 introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
   where
     withAlloc action = do
@@ -81,7 +98,7 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
             _ -> loop
 
         withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ ->
-          void $ action $ WebDriver hostname port
+          void $ action $ WebDriverContext hostname port
 
 
 seleniumOutFileName, seleniumErrFileName :: FilePath
