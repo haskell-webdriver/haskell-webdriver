@@ -45,15 +45,15 @@ getWDConfig browserDeps = do
 
 getCapabilities :: MonadIO m => BrowserDependencies -> m Capabilities
 getCapabilities (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
-  browser = (chrome {
-                chromeBinary = Just browserDependenciesChromeChrome
-                -- , chromeOptions = "--headless=new":[i|--window-size=#{w},#{h}|]:(chromeOptions chrome)
-                })
+  browser = chrome {
+      chromeBinary = Just browserDependenciesChromeChrome
+      -- , chromeOptions = "--headless=new":[i|--window-size=#{w},#{h}|]:(chromeOptions chrome)
+      }
   }
 getCapabilities (BrowserDependenciesFirefox {..}) = pure $ defaultCaps {
-  browser = (firefox {
-                ffBinary = Just browserDependenciesFirefoxFirefox
-                })
+  browser = firefox {
+      ffBinary = Just browserDependenciesFirefoxFirefox
+      }
   }
 
 introduceSession :: forall m context. (
@@ -70,6 +70,8 @@ introduceSession = introduce "Introduce session" wdSession alloc cleanup
 
       session' <- pushContext wdSession baseSessionVar $
         createSession (wdCapabilities wdConfig)
+
+      info [i|Created session: #{session'}|]
 
       writeIORef baseSessionVar session'
 

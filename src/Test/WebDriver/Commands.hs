@@ -124,10 +124,10 @@ getActualCaps = doSessCommand methodGet "" Null
 
 -- |Close the current session and the browser associated with it.
 closeSession :: (HasCallStack, WebDriver wd) => wd ()
-closeSession = do s@WDSession {} <- getSession
-                  noReturn $ doSessCommand methodDelete "" Null
-                  putSession s { wdSessId = Nothing }
-
+closeSession = do
+  s@WDSession {} <- getSession
+  noReturn $ doSessCommand methodDelete "" Null
+  putSession s { wdSessId = Nothing }
 
 -- |Sets the amount of time (ms) we implicitly wait when searching for elements.
 setImplicitWait :: (HasCallStack, WebDriver wd) => Integer -> wd ()

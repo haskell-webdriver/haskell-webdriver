@@ -11,46 +11,40 @@ module Test.WebDriver.Internal
        , getJSONResult, handleJSONErr, handleRespSessionId
        , WDResponse(..)
        ) where
-import Test.WebDriver.Class
-import Test.WebDriver.JSON
-import Test.WebDriver.Session
-import Test.WebDriver.Exceptions.Internal
 
-import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..))
-import qualified Network.HTTP.Client as HTTPClient
-
+import Control.Applicative
+import Control.Exception (Exception, SomeException(..), toException, fromException, try)
+import Control.Exception.Lifted (throwIO)
+import Control.Monad.Base
+import Control.Monad.IO.Class
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
-import Network.HTTP.Types.Header
-import Network.HTTP.Types.Status (Status(..))
-
 import qualified Data.ByteString.Base64.Lazy as B64
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.ByteString.Lazy.Char8 as LBS (unpack, null)
 import qualified Data.ByteString.Lazy.Internal as LBS (ByteString(..))
 import Data.CallStack
+import Data.Char
+import Data.String (fromString)
 import Data.Text as T (Text, splitOn, null)
 import qualified Data.Text.Encoding as TE
-
-import Control.Applicative
-import Control.Exception (Exception, SomeException(..), toException, fromException, try)
-import Control.Exception.Lifted (throwIO)
-import Control.Monad.Base
-
-import Data.String (fromString)
 import Data.Word (Word8)
+import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..))
+import qualified Network.HTTP.Client as HTTPClient
+import Network.HTTP.Types.Header
+import Network.HTTP.Types.Status (Status(..))
+import Prelude -- hides some "unused import" warnings
+import System.Environment
+import Test.WebDriver.Class
+import Test.WebDriver.Exceptions.Internal
+import Test.WebDriver.JSON
+import Test.WebDriver.Session
+import Text.Pretty.Simple
 
 #if !MIN_VERSION_http_client(0,4,30)
 import Data.Default.Class
 #endif
-
-import Prelude -- hides some "unused import" warnings
-
-import Control.Monad.IO.Class
-import Data.Char
-import System.Environment
-import Text.Pretty.Simple
 
 --This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
 fromStrict :: BS.ByteString -> LBS.ByteString

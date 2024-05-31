@@ -34,7 +34,7 @@ type SpecWithWebDriver = forall context. (
   , HasNixContext context
   ) => SpecFree context IO ()
 
-type SpecWithBrowserDeps = forall context. (
+type SessionSpec = forall context. (
   HasBaseContext context
   , HasBrowserDependencies context
   , HasWebDriverContext context

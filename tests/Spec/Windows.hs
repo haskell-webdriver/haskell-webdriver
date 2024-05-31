@@ -5,7 +5,7 @@ import Test.Sandwich
 import TestLib.Types
 
 
-tests :: SpecWithBrowserDeps
+tests :: SessionSpec
 tests = describe "Windows" $ do
   it "works" $ do
     pending

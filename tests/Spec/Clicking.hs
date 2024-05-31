@@ -8,7 +8,7 @@ import TestLib.Contexts.Session
 import TestLib.Types
 
 
-tests :: SpecWithBrowserDeps
+tests :: SessionSpec
 tests = introduceSession $ describe "Clicking" $ do
   it "works" $ do
     openPage "http://www.wikipedia.org/"
