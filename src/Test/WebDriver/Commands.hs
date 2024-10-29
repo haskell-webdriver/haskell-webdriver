@@ -77,10 +77,10 @@ module Test.WebDriver.Commands (
 import Codec.Archive.Zip
 import Control.Applicative
 import Control.Exception (SomeException)
-import Control.Exception.Lifted (throwIO, handle)
-import qualified Control.Exception.Lifted as L
+import Control.Exception.Safe (throwIO, handle)
+import qualified Control.Exception.Safe as L
 import Control.Monad
-import Control.Monad.Base
+import Control.Monad.IO.Class
 import Data.Aeson
 import Data.Aeson.Types
 import Data.ByteString.Base64.Lazy as B64
@@ -93,6 +93,7 @@ import Data.Text (Text, append, toUpper, toLower)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Encoding as TL
 import Network.URI hiding (path)  -- suppresses warnings
+import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.Internal
@@ -102,7 +103,6 @@ import Test.WebDriver.JSON
 import Test.WebDriver.Session
 import Test.WebDriver.Utils (urlEncode)
 
-import Prelude -- hides some "unused import" warnings
 
 -- |Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action.
 --
@@ -248,7 +248,7 @@ asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
 
 -- |Save a screenshot to a particular location
 saveScreenshot :: (HasCallStack, WebDriver wd) => FilePath -> wd ()
-saveScreenshot path = screenshot >>= liftBase . LBS.writeFile path
+saveScreenshot path = screenshot >>= liftIO . LBS.writeFile path
 
 -- |Grab a screenshot of the current page as a PNG image
 screenshot :: (HasCallStack, WebDriver wd) => wd LBS.ByteString
@@ -693,7 +693,7 @@ setLocation = noReturn . doSessCommand methodPost "/location"
 -- |Uploads a file from the local filesystem by its file path.
 -- Returns the remote filepath of the file
 uploadFile :: (HasCallStack, WebDriver wd) => FilePath -> wd Text
-uploadFile path = uploadZipEntry =<< liftBase (readEntry [] path)
+uploadFile path = uploadZipEntry =<< liftIO (readEntry [] path)
 
 -- |Uploads a raw bytestring with associated file info.
 -- Returns the remote filepath of the file

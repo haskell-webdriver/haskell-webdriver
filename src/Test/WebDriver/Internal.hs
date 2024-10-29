@@ -13,9 +13,7 @@ module Test.WebDriver.Internal
        ) where
 
 import Control.Applicative
-import Control.Exception (Exception, SomeException(..), toException, fromException, try)
-import Control.Exception.Lifted (throwIO)
-import Control.Monad.Base
+import Control.Exception.Safe (Exception, SomeException(..), toException, fromException, throwIO, try)
 import Control.Monad.IO.Class
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
@@ -68,8 +66,7 @@ printInDebugEnv s = do
     _ -> pure ()
 
 -- |Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
-mkRequest :: (MonadIO s, WDSessionState s, ToJSON a) =>
-             Method -> Text -> a -> s Request
+mkRequest :: (WDSessionState s, ToJSON a) => Method -> Text -> a -> s Request
 mkRequest meth wdPath args = do
   WDSession {..} <- getSession
   let body = case toJSON args of
@@ -92,10 +89,10 @@ mkRequest meth wdPath args = do
   return req
 
 -- |Sends an HTTP request to the remote WebDriver server
-sendHTTPRequest :: (MonadIO s, WDSessionStateIO s) => Request -> s (Either SomeException (Response ByteString))
+sendHTTPRequest :: (WDSessionStateIO s) => Request -> s (Either SomeException (Response ByteString))
 sendHTTPRequest req = do
   s@WDSession{..} <- getSession
-  (nRetries, tryRes) <- liftBase . retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
+  (nRetries, tryRes) <- liftIO . retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
   let h = SessionHistory { histRequest = req
                          , histResponse = tryRes
                          , histRetryCount = nRetries

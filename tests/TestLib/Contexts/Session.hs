@@ -5,10 +5,9 @@
 
 module TestLib.Contexts.Session where
 
-
+import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
-import Control.Monad.Trans.Control
 import Data.String.Interpolate
 import Test.Sandwich
 import Test.WebDriver
@@ -22,7 +21,7 @@ import TestLib.Types
 import UnliftIO.IORef
 
 
-instance (HasWDSession context, MonadIO m, MonadBaseControl IO m) => WDSessionState (ExampleT context m) where
+instance (HasWDSession context, MonadIO m) => WDSessionState (ExampleT context m) where
   getSession = do
     sessVar <- getContext wdSession
     readIORef sessVar
@@ -31,7 +30,7 @@ instance (HasWDSession context, MonadIO m, MonadBaseControl IO m) => WDSessionSt
     sessVar <- getContext wdSession
     writeIORef sessVar sess
 
-instance (HasWDSession context, MonadIO m, MonadBaseControl IO m) => WebDriver (ExampleT context m) where
+instance (HasWDSession context, MonadIO m, MonadCatch m) => WebDriver (ExampleT context m) where
   doCommand rm t a = do
     sess <- getSession
 
@@ -68,8 +67,8 @@ getCapabilities (BrowserDependenciesFirefox {..}) = pure $ defaultCaps {
   }
 
 introduceSession :: forall m context. (
-  MonadUnliftIO m, MonadBaseControl IO m
-  , HasBaseContext context, HasBrowserDependencies context, HasWebDriverContext context
+  MonadUnliftIO m, MonadCatch m
+  , HasBrowserDependencies context, HasWebDriverContext context
   ) => SpecFree (LabelValue "wdSession" (IORef WDSession) :> context) m () -> SpecFree context m ()
 introduceSession = introduce "Introduce session" wdSession alloc cleanup
   where
@@ -88,6 +87,4 @@ introduceSession = introduce "Introduce session" wdSession alloc cleanup
 
       pure baseSessionVar
 
-    cleanup var = do
-      pushContext wdSession var $
-        closeSession
+    cleanup var = pushContext wdSession var closeSession

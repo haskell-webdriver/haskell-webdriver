@@ -33,7 +33,7 @@ main = do
   runSandwichWithCommandLineArgs' defaultOptions userOptions $
     introduceNixContext (nixpkgsReleaseDefault { nixpkgsDerivationAllowUnfree = True }) $
     introduceBinaryViaNixPackage @"java" "jre" $
-    (case optSeleniumJar of Just p -> introduceFile @"selenium.jar" p; Nothing -> introduceFileViaNixPackage @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar) $
+    (case optSeleniumJar of Just p -> introduceFile @"selenium.jar" p; Nothing -> introduceFileViaNixPackage' @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar) $
     (case optChromeBinary of Just p -> introduceFile @"google-chrome-stable" p; Nothing -> introduceBinaryViaNixPackage @"google-chrome-stable" "google-chrome") $
     introduceBrowserDependencies $
     introduceWebDriver $ do

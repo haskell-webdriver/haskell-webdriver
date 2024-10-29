@@ -2,83 +2,85 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ConstraintKinds #-}
 
-module Test.WebDriver.Commands.Wait
-       ( -- * Wait on expected conditions
-         waitUntil, waitUntil'
-       , waitWhile, waitWhile'
-         -- * Expected conditions
-       , ExpectFailed (..), expect, unexpected
-       , expectAny, expectAll
-       , expectNotStale, expectAlertOpen
-       , catchFailedCommand
-         -- ** Convenience functions
-       , onTimeout
-       ) where
-import Test.WebDriver.Commands
-import Test.WebDriver.Class
-import Test.WebDriver.Exceptions
-import Test.WebDriver.Session
+module Test.WebDriver.Commands.Wait (
+  -- * Wait on expected conditions
+  waitUntil, waitUntil'
+  , waitWhile, waitWhile'
+
+  -- * Expected conditions
+  , ExpectFailed (..), expect, unexpected
+  , expectAny, expectAll
+  , expectNotStale, expectAlertOpen
+  , catchFailedCommand
+
+  -- ** Convenience functions
+  , onTimeout
+  ) where
 
 import Control.Concurrent
-import Control.Exception.Lifted
-import Control.Monad.Base
-import Control.Monad.Trans.Control
-
+import Control.Exception.Safe
+import Control.Monad.IO.Class
 import Data.CallStack
 import qualified Data.Foldable as F
 import Data.Text (Text)
 import Data.Time.Clock
-import Data.Typeable
+import Test.WebDriver.Class
+import Test.WebDriver.Commands
+import Test.WebDriver.Exceptions
+import Test.WebDriver.Session
 
 #if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
 #endif
+
 
 instance Exception ExpectFailed
 -- |An exception representing the failure of an expected condition.
 data ExpectFailed = ExpectFailed String deriving (Show, Eq, Typeable)
 
 -- |throws 'ExpectFailed'. This is nice for writing your own abstractions.
-unexpected :: (MonadBaseControl IO m, HasCallStack) =>
-              String -- ^ Reason why the expected condition failed.
-           -> m a
+unexpected :: (
+  MonadThrow m, HasCallStack
+  )
+  => String -- ^ Reason why the expected condition failed.
+  -> m a
 unexpected = throwIO . ExpectFailed
 
 -- |An expected condition. This function allows you to express assertions in
 -- your explicit wait. This function raises 'ExpectFailed' if the given
 -- boolean is False, and otherwise does nothing.
-expect :: (MonadBaseControl IO m, HasCallStack) => Bool -> m ()
+expect :: (MonadThrow m, HasCallStack) => Bool -> m ()
 expect b
-  | b         = return ()
+  | b = return ()
   | otherwise = unexpected "Test.WebDriver.Commands.Wait.expect"
 
 -- |Apply a monadic predicate to every element in a list, and 'expect' that
 -- at least one succeeds.
-expectAny :: (F.Foldable f, MonadBaseControl IO m, HasCallStack) => (a -> m Bool) -> f a -> m ()
+expectAny :: (HasCallStack, F.Foldable f, MonadThrow m) => (a -> m Bool) -> f a -> m ()
 expectAny p xs = expect . F.or =<< mapM p (F.toList xs)
 
 -- |Apply a monadic predicate to every element in a list, and 'expect' that all
 -- succeed.
-expectAll :: (F.Foldable f, MonadBaseControl IO m, HasCallStack) => (a -> m Bool) -> f a -> m ()
+expectAll :: (HasCallStack, F.Foldable f, MonadThrow m) => (a -> m Bool) -> f a -> m ()
 expectAll p xs = expect . F.and =<< mapM p (F.toList xs)
 
 -- | 'expect' the given 'Element' to not be stale and returns it
-expectNotStale :: (WebDriver wd, HasCallStack) => Element -> wd Element
+expectNotStale :: (HasCallStack, WebDriver wd) => Element -> wd Element
 expectNotStale e = catchFailedCommand StaleElementReference $ do
     _ <- isEnabled e -- Any command will force a staleness check
     return e
 
 -- | 'expect' an alert to be present on the page, and returns its text.
-expectAlertOpen :: (WebDriver wd, HasCallStack) => wd Text
+expectAlertOpen :: (HasCallStack, WebDriver wd) => wd Text
 expectAlertOpen = catchFailedCommand NoAlertOpen getAlertText
 
 -- |Catches any `FailedCommand` exceptions with the given `FailedCommandType` and rethrows as 'ExpectFailed'
-catchFailedCommand :: (MonadBaseControl IO m, HasCallStack) => FailedCommandType -> m a -> m a
+catchFailedCommand :: (HasCallStack, MonadCatch m) => FailedCommandType -> m a -> m a
 catchFailedCommand t1 m = m `catch` handler
-    where
-        handler e@(FailedCommand t2 _)
-            | t1 == t2 = unexpected . show $ e
-        handler e = throwIO e
+  where
+    handler e@(FailedCommand t2 _)
+      | t1 == t2 = unexpected . show $ e
+    handler e = throwIO e
 
 -- |Wait until either the given action succeeds or the timeout is reached.
 -- The action will be retried every .5 seconds until no 'ExpectFailed' or
@@ -124,30 +126,31 @@ waitEither failure success = wait' handler
 
     handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
 
-wait' :: (WDSessionStateIO m, HasCallStack) =>
-         ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
-wait' handler waitAmnt t wd = waitLoop =<< liftBase getCurrentTime
+wait' :: (
+  WDSessionStateIO m, HasCallStack
+  ) => ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
+wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
   where
     timeout = realToFrac t
     waitLoop startTime = handler retry wd
       where
         retry why = do
-          now <- liftBase getCurrentTime
+          now <- liftIO getCurrentTime
           if diffUTCTime now startTime >= timeout
             then
               failedCommand Timeout $ "wait': explicit wait timed out (" ++ why ++ ")."
             else do
-              liftBase . threadDelay $ waitAmnt
+              liftIO . threadDelay $ waitAmnt
               waitLoop startTime
 
--- |Convenience function to catch 'FailedCommand' 'Timeout' exceptions
+-- | Convenience function to catch 'FailedCommand' 'Timeout' exceptions
 -- and perform some action.
 --
 -- Example:
 --
 -- > waitUntil 5 (getText <=< findElem $ ByCSS ".class")
 -- >    `onTimeout` return ""
-onTimeout :: (MonadBaseControl IO m, HasCallStack) => m a -> m a -> m a
+onTimeout :: (HasCallStack, MonadCatch m) => m a -> m a -> m a
 onTimeout m r = m `catch` handler
   where
     handler (FailedCommand Timeout _) = r

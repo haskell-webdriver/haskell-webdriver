@@ -21,7 +21,7 @@ module Test.WebDriver.Config(
   , WebDriverConfig(..)
   ) where
 
-import Control.Monad.Base
+import Control.Monad.IO.Class
 import Data.Default.Class (Default(..))
 import Data.String (fromString)
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
@@ -82,25 +82,27 @@ defaultConfig = def
 -- |Class of types that can configure a WebDriver session.
 class WebDriverConfig c where
     -- |Produces a 'Capabilities' from the given configuration.
-    mkCaps :: MonadBase IO m => c -> m Capabilities
+    mkCaps :: MonadIO m => c -> m Capabilities
 
     -- |Produces a 'WDSession' from the given configuration.
-    mkSession :: MonadBase IO m => c -> m WDSession
+    mkSession :: MonadIO m => c -> m WDSession
 
 instance WebDriverConfig WDConfig where
-    mkCaps = return . getCaps
+  mkCaps = return . getCaps
 
-    mkSession WDConfig{..} = do
-      manager <- maybe createManager return wdHTTPManager
-      return WDSession { wdSessHost = fromString $ wdHost
-                       , wdSessPort = wdPort
-                       , wdSessRequestHeaders = wdRequestHeaders
-                       , wdSessAuthHeaders = wdAuthHeaders
-                       , wdSessBasePath = fromString $ wdBasePath
-                       , wdSessId = Nothing
-                       , wdSessHist = []
-                       , wdSessHistUpdate = wdHistoryConfig
-                       , wdSessHTTPManager = manager
-                       , wdSessHTTPRetryCount = wdHTTPRetryCount }
-      where
-        createManager = liftBase $ newManager defaultManagerSettings
+  mkSession WDConfig{..} = do
+    manager <- maybe createManager return wdHTTPManager
+    return WDSession {
+      wdSessHost = fromString $ wdHost
+      , wdSessPort = wdPort
+      , wdSessRequestHeaders = wdRequestHeaders
+      , wdSessAuthHeaders = wdAuthHeaders
+      , wdSessBasePath = fromString $ wdBasePath
+      , wdSessId = Nothing
+      , wdSessHist = []
+      , wdSessHistUpdate = wdHistoryConfig
+      , wdSessHTTPManager = manager
+      , wdSessHTTPRetryCount = wdHTTPRetryCount
+      }
+    where
+      createManager = liftIO $ newManager defaultManagerSettings

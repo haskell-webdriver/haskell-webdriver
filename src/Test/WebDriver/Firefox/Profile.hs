@@ -28,6 +28,10 @@ module Test.WebDriver.Firefox.Profile (
   , ProfileParseError(..)
   ) where
 
+import Control.Applicative
+import Control.Arrow
+import Control.Exception.Safe hiding (try)
+import Control.Monad
 import Control.Monad.IO.Class
 import Data.Aeson (Result(..), encode, fromJSON)
 import Data.Aeson.Parser (jstring, value')
@@ -36,21 +40,16 @@ import Data.ByteString as BS (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import qualified Data.HashMap.Strict as HM
 import Data.Text (Text)
-import Test.WebDriver.Common.Profile
-
-import System.FilePath hiding (addExtension, hasExtension)
 import System.Directory
-import System.IO.Temp (createTempDirectory)
 import qualified System.Directory.Tree as DS
-
-import Control.Monad
-import Control.Exception.Lifted hiding (try)
-import Control.Applicative
-import Control.Arrow
+import System.FilePath hiding (addExtension, hasExtension)
+import System.IO.Temp (createTempDirectory)
+import Test.WebDriver.Common.Profile
 
 #if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
 #endif
+
 
 -- | Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
 data Firefox

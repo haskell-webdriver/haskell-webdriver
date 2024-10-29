@@ -26,7 +26,6 @@ import System.IO.Temp
 import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Files
 import TestLib.Contexts.BrowserDependencies
-import TestLib.Types.Cli
 import UnliftIO.Async
 import UnliftIO.Process
 
@@ -46,7 +45,7 @@ type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
 
 
 introduceWebDriver :: forall context m. (
-  BaseMonadContext m context, HasCommandLineOptions context UserOptions, MonadThrow m
+  BaseMonadContext m context, MonadThrow m
   , HasFile context "selenium.jar"
   , HasFile context "java"
   , HasBrowserDependencies context

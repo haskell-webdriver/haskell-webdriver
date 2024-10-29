@@ -3,23 +3,18 @@
 
 module Test.WebDriver.Capabilities where
 
+import Control.Applicative
+import Data.Aeson
+import Data.Aeson.Types (Parser, typeMismatch, Pair)
+import Data.Default.Class (Default(..))
+import Data.Maybe (fromMaybe, catMaybes)
+import Data.String (fromString)
+import Data.Text (Text, toLower, toUpper)
+import Data.Word (Word16)
+import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Chrome.Extension
 import Test.WebDriver.Firefox.Profile
 import Test.WebDriver.JSON
-
-import Data.Aeson
-import Data.Aeson.Types (Parser, typeMismatch, Pair)
-
-import Data.Text (Text, toLower, toUpper)
-import Data.Default.Class (Default(..))
-import Data.Word (Word16)
-import Data.Maybe (fromMaybe, catMaybes)
-import Data.String (fromString)
-
-import Control.Applicative
-import Control.Exception.Lifted (throw)
-
-import Prelude -- hides some "unused import" warnings
 
 #if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.KeyMap          as HM (delete, toList, empty)
@@ -682,13 +677,12 @@ instance ToJSON UnexpectedAlertBehavior where
   toJSON IgnoreAlert  = String "ignore"
 
 instance FromJSON UnexpectedAlertBehavior where
-  parseJSON (String s) =
-    return $ case s of
-      "accept"  -> AcceptAlert
-      "dismiss" -> DismissAlert
-      "ignore"  -> IgnoreAlert
-      err       -> throw . BadJSON
-                   $ "Invalid string value for UnexpectedAlertBehavior: " ++ show err
+  parseJSON (String s) = case s of
+    "accept" -> return AcceptAlert
+    "dismiss" -> return DismissAlert
+    "ignore" -> return IgnoreAlert
+    err -> fail ("Invalid string value for UnexpectedAlertBehavior: " ++ show err)
+
   parseJSON v = typeMismatch "UnexpectedAlertBehavior" v
 
 -- |Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
@@ -713,18 +707,19 @@ instance ToJSON LogLevel where
     LogAll -> "ALL"
 
 instance FromJSON LogLevel where
-  parseJSON (String s) = return $ case s of
-    "OFF" -> LogOff
-    "SEVERE" -> LogSevere
-    "WARNING" -> LogWarning
-    "INFO" -> LogInfo
-    "CONFIG" -> LogConfig
-    "FINE" -> LogFine
-    "FINER" -> LogFiner
-    "FINEST" -> LogFinest
-    "DEBUG" -> LogDebug
-    "ALL" -> LogAll
-    _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
+  parseJSON (String s) = case s of
+    "OFF" -> return LogOff
+    "SEVERE" -> return LogSevere
+    "WARNING" -> return LogWarning
+    "INFO" -> return LogInfo
+    "CONFIG" -> return LogConfig
+    "FINE" -> return LogFine
+    "FINER" -> return LogFiner
+    "FINEST" -> return LogFinest
+    "DEBUG" -> return LogDebug
+    "ALL" -> return LogAll
+    _ -> fail ("Invalid logging preference: " ++ show s)
+
   parseJSON other = typeMismatch "LogLevel" other
 
 
@@ -747,14 +742,15 @@ instance ToJSON IELogLevel where
     IELogFatal -> "FATAL"
 
 instance FromJSON IELogLevel where
-  parseJSON (String s) = return $ case s of
-    "TRACE" -> IELogTrace
-    "DEBIG" -> IELogDebug
-    "INFO"  -> IELogInfo
-    "WARN"  -> IELogWarn
-    "ERROR" -> IELogError
-    "FATAL" -> IELogFatal
-    _ -> throw . BadJSON $ "Invalid logging preference: " ++ show s
+  parseJSON (String s) = case s of
+    "TRACE" -> return IELogTrace
+    "DEBIG" -> return IELogDebug
+    "INFO"  -> return IELogInfo
+    "WARN"  -> return IELogWarn
+    "ERROR" -> return IELogError
+    "FATAL" -> return IELogFatal
+    _ -> fail ("Invalid logging preference: " ++ show s)
+
   parseJSON other = typeMismatch "IELogLevel" other
 
 -- |Specifies how elements scroll into the viewport. (see 'ieElementScrollBehavior')

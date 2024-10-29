@@ -6,35 +6,32 @@
 -- | Internal functions used to implement the functions exported by
 -- "Test.WebDriver.Commands". These may be useful for implementing non-standard
 -- webdriver commands.
-module Test.WebDriver.Commands.Internal
-       (-- * Low-level webdriver functions
-         doCommand
-        -- ** Commands with :sessionId URL parameter
-       , doSessCommand, SessionId(..)
-        -- ** Commands with element :id URL parameters
-       , doElemCommand, Element(..)
-        -- ** Commands with :windowHandle URL parameters
-       , doWinCommand, WindowHandle(..), currentWindow
-        -- * Exceptions
-       , NoSessionId(..)
-       ) where
-
-import Test.WebDriver.Class
-import Test.WebDriver.JSON
-import Test.WebDriver.Session
-import Test.WebDriver.Utils (urlEncode)
+module Test.WebDriver.Commands.Internal (
+  -- * Low-level webdriver functions
+  doCommand
+  -- ** Commands with :sessionId URL parameter
+  , doSessCommand, SessionId(..)
+  -- ** Commands with element :id URL parameters
+  , doElemCommand, Element(..)
+  -- ** Commands with :windowHandle URL parameters
+  , doWinCommand, WindowHandle(..), currentWindow
+  -- * Exceptions
+  , NoSessionId(..)
+  ) where
 
 import Control.Applicative
-import Control.Exception.Lifted
+import Control.Exception.Safe
 import Data.Aeson
 import Data.Aeson.Types
 import Data.CallStack
 import Data.Default.Class
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Typeable
-
 import Prelude -- hides some "unused import" warnings
+import Test.WebDriver.Class
+import Test.WebDriver.JSON
+import Test.WebDriver.Session
+import Test.WebDriver.Utils (urlEncode)
 
 #if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.Key as A
@@ -86,8 +83,9 @@ data NoSessionId = NoSessionId String CallStack
 -- a URL of \"/refresh\" will expand to \"/session/:sessionId/refresh\", where
 -- :sessionId is a URL parameter as described in
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol>
-doSessCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
-                  Method -> Text -> a -> wd b
+doSessCommand :: (
+  HasCallStack, WebDriver wd, ToJSON a, FromJSON b
+  ) => Method -> Text -> a -> wd b
 doSessCommand method path args = do
   WDSession { wdSessId = mSessId } <- getSession
   case mSessId of

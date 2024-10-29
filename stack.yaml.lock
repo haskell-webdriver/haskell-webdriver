@@ -5,29 +5,29 @@
 
 packages:
 - completed:
-    commit: b3eef612aa3d083b0d2a588b2c543ee212938668
+    commit: e295a2e93f1dc03d8c31eb78f4efb74ea6720fbb
     git: https://github.com/codedownio/sandwich
     name: sandwich
     pantry-tree:
-      sha256: e8a18205c2af222c86fbab7b8837616f58043f8036fae10a4e9c03ea156d5511
+      sha256: f5d3c08650a459b6d9172b970f4e8e772ab6e6265541fc96db5d065e035f9edc
       size: 6178
     subdir: sandwich
     version: 0.2.2.0
   original:
-    commit: b3eef612aa3d083b0d2a588b2c543ee212938668
+    commit: e295a2e93f1dc03d8c31eb78f4efb74ea6720fbb
     git: https://github.com/codedownio/sandwich
     subdir: sandwich
 - completed:
-    commit: b3eef612aa3d083b0d2a588b2c543ee212938668
+    commit: e295a2e93f1dc03d8c31eb78f4efb74ea6720fbb
     git: https://github.com/codedownio/sandwich
     name: sandwich-contexts
     pantry-tree:
-      sha256: 9e20be1cb748ef71493ffde2b8b973cd26fc84495d20f12e651efbfb86ed1055
-      size: 1633
+      sha256: 5125c93edd1be09ea96b26db1fc04c54e35fbd257c7abe00157f5c37e80ed877
+      size: 1717
     subdir: sandwich-contexts
     version: 0.1.0.0
   original:
-    commit: b3eef612aa3d083b0d2a588b2c543ee212938668
+    commit: e295a2e93f1dc03d8c31eb78f4efb74ea6720fbb
     git: https://github.com/codedownio/sandwich
     subdir: sandwich-contexts
 snapshots:

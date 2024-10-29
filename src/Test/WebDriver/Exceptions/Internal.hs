@@ -1,33 +1,31 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ConstraintKinds #-}
 
-module Test.WebDriver.Exceptions.Internal
-       ( InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
-       , UnknownCommand(..), ServerError(..)
+module Test.WebDriver.Exceptions.Internal (
+  InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
+  , UnknownCommand(..), ServerError(..)
 
-       , FailedCommand(..), failedCommand, mkFailedCommandInfo
-       , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
-       , externalCallStack, callStackItemToStackFrame
-       ) where
-import Test.WebDriver.Session
-import Test.WebDriver.JSON
+  , FailedCommand(..), failedCommand, mkFailedCommandInfo
+  , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
+  , externalCallStack, callStackItemToStackFrame
+  ) where
 
+import Control.Applicative
+import Control.Exception (Exception)
+import Control.Exception.Safe (throwIO)
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.CallStack
 import qualified Data.List as L
+import Data.Maybe (fromMaybe, catMaybes)
 import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TLE
-
-import Control.Applicative
-import Control.Exception (Exception)
-import Control.Exception.Lifted (throwIO)
-
-import Data.Maybe (fromMaybe, catMaybes)
 import Data.Typeable (Typeable)
-
 import Prelude -- hides some "unused import" warnings
+import Test.WebDriver.JSON
+import Test.WebDriver.Session
+
 
 instance Exception InvalidURL
 -- |An invalid URL was given
@@ -148,8 +146,7 @@ externalCallStack = dropWhile isWebDriverFrame callStack
 -- |Convenience function to throw a 'FailedCommand' locally with no server-side
 -- info present.
 failedCommand :: (HasCallStack, WDSessionStateIO s) => FailedCommandType -> String -> s a
-failedCommand t m = do
-  throwIO . FailedCommand t =<< mkFailedCommandInfo m externalCallStack
+failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m externalCallStack
 
 -- |An individual stack frame from the stack trace provided by the server
 -- during a FailedCommand.
