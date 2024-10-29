@@ -1,41 +1,42 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-} -- suppress warnings from attoparsec
 
 -- | A module for working with Firefox profiles. Firefox profiles are manipulated
 -- in pure code and then \"prepared\" for network transmission.
 
-module Test.WebDriver.Firefox.Profile
-       ( -- * Profiles
-         Firefox, Profile(..), PreparedProfile
-       , defaultProfile
-         -- * Preferences
-       , ProfilePref(..), ToPref(..)
-       , addPref, getPref, deletePref
-         -- * Extensions
-       , addExtension, deleteExtension, hasExtension
-         -- * Other files and directories
-       , addFile, deleteFile, hasFile
-         -- * Miscellaneous profile operations
-       , unionProfiles, onProfileFiles, onProfilePrefs
-         -- * Loading and preparing profiles
-       , prepareProfile, prepareTempProfile
-         -- ** Preparing profiles from disk
-       , loadProfile, prepareLoadedProfile, prepareLoadedProfile_
-         -- ** Preparing zip archives
-       , prepareZippedProfile, prepareZipArchive, prepareRawZip
-         -- ** Preferences parsing error
-       , ProfileParseError(..)
-       ) where
-import Test.WebDriver.Common.Profile
+module Test.WebDriver.Firefox.Profile (
+  -- * Profiles
+  Firefox, Profile(..), PreparedProfile, defaultProfile
+  -- * Preferences
+  , ProfilePref(..), ToPref(..)
+  , addPref, getPref, deletePref
+  -- * Extensions
+  , addExtension, deleteExtension, hasExtension
+  -- * Other files and directories
+  , addFile, deleteFile, hasFile
+  -- * Miscellaneous profile operations
+  , unionProfiles, onProfileFiles, onProfilePrefs
+  -- * Loading and preparing profiles
+  , prepareProfile, prepareTempProfile
+  -- ** Preparing profiles from disk
+  , loadProfile, prepareLoadedProfile, prepareLoadedProfile_
+  -- ** Preparing zip archives
+  , prepareZippedProfile, prepareZipArchive, prepareRawZip
+  -- ** Preferences parsing error
+  , ProfileParseError(..)
+  ) where
+
+import Control.Monad.IO.Class
 import Data.Aeson (Result(..), encode, fromJSON)
 import Data.Aeson.Parser (jstring, value')
 import Data.Attoparsec.ByteString.Char8 as AP
-import qualified Data.HashMap.Strict as HM
-import Data.Text (Text)
 import Data.ByteString as BS (readFile)
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import qualified Data.HashMap.Strict as HM
+import Data.Text (Text)
+import Test.WebDriver.Common.Profile
 
 import System.FilePath hiding (addExtension, hasExtension)
 import System.Directory
@@ -43,8 +44,6 @@ import System.IO.Temp (createTempDirectory)
 import qualified System.Directory.Tree as DS
 
 import Control.Monad
-import Control.Monad.Base
-import Control.Monad.Trans.Control
 import Control.Exception.Lifted hiding (try)
 import Control.Applicative
 import Control.Arrow
@@ -128,20 +127,20 @@ defaultProfile =
 -- To make automated browser run smoothly, preferences found in
 -- 'defaultProfile' are automatically merged into the preferences of the on-disk-- profile. The on-disk profile's preference will override those found in the
 -- default profile.
-loadProfile :: MonadBaseControl IO m => FilePath -> m (Profile Firefox)
-loadProfile path = liftBase $ do
+loadProfile :: MonadIO m => FilePath -> m (Profile Firefox)
+loadProfile path = do
   unionProfiles defaultProfile <$> (Profile <$> getFiles <*> getPrefs)
   where
     userPrefFile = path </> "prefs" <.> "js"
 
     getFiles = HM.fromList . map (id &&& (path </>)) . filter isNotIgnored
-               <$> getDirectoryContents path
+               <$> liftIO (getDirectoryContents path)
       where isNotIgnored = (`notElem`
                          [".", "..", "OfflineCache", "Cache"
                          ,"parent.lock", ".parentlock", ".lock"
                          ,userPrefFile])
 
-    getPrefs = do
+    getPrefs = liftIO $ do
        prefFileExists <- doesFileExist userPrefFile
        if prefFileExists
         then HM.fromList <$> (parsePrefs =<< BS.readFile userPrefFile)
@@ -158,12 +157,11 @@ loadProfile path = liftBase $ do
 -- a temp directory before zip archiving them, this operation is likely to be slow
 -- for large profiles. In such a case, consider using 'prepareLoadedProfile_' or
 -- 'prepareZippedProfile' instead.
-prepareProfile :: MonadBaseControl IO m =>
-                  Profile Firefox -> m (PreparedProfile Firefox)
+prepareProfile :: MonadIO m => Profile Firefox -> m (PreparedProfile Firefox)
 prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
-  = liftBase $ do
-      tmpdir <- mkTemp
-      mapM_ (installPath tmpdir) . HM.toList $ files
+  = do
+      tmpdir <- liftIO mkTemp
+      mapM_ (liftIO . installPath tmpdir) . HM.toList $ files
       installUserPrefs tmpdir
       prepareLoadedProfile_ tmpdir
 --        <* removeDirectoryRecursive tmpdir
@@ -186,7 +184,7 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
         ignoreIOException :: IOException -> IO ()
         ignoreIOException = print
 
-    installUserPrefs d = LBS.writeFile (d </> "user" <.> "js") str
+    installUserPrefs d = liftIO $ LBS.writeFile (d </> "user" <.> "js") str
       where
         str = LBS.concat
             . map (\(k, v) -> LBS.concat [ "user_pref(", encode k,
@@ -196,7 +194,7 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
 -- |Apply a function on a default profile, and
 -- prepare the result. The Profile passed to the handler function is
 -- the default profile used by sessions when Nothing is specified
-prepareTempProfile :: MonadBaseControl IO m =>
+prepareTempProfile :: MonadIO m =>
                      (Profile Firefox -> Profile Firefox)
                      -> m (PreparedProfile Firefox)
 prepareTempProfile f = prepareProfile . f $ defaultProfile
@@ -205,7 +203,7 @@ prepareTempProfile f = prepareProfile . f $ defaultProfile
 -- a handler function, and then prepare the result for network transmission.
 --
 -- NOTE: like 'prepareProfile', the same caveat about large profiles applies.
-prepareLoadedProfile :: MonadBaseControl IO m =>
+prepareLoadedProfile :: MonadIO m =>
                         FilePath
                         -> (Profile Firefox -> Profile Firefox)
                         -> m (PreparedProfile Firefox)
