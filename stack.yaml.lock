@@ -32,7 +32,7 @@ packages:
     subdir: sandwich-contexts
 snapshots:
 - completed:
-    sha256: 4a0e5e187fbef423f9c60072bfb1dd56f2a01a07a2667eb1469bd79073cfceaf
-    size: 713340
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/20.yaml
-  original: lts-22.20
+    sha256: 6c5aeace2ca5ecde793a9e0acfaa730ec8f384aa2f6183a2a252f5f9ec55d623
+    size: 720039
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/39.yaml
+  original: lts-22.39
