@@ -2,77 +2,77 @@
 
 -- | This module exports basic WD actions that can be used to interact with a
 -- browser session.
-module Test.WebDriver.Commands
-       ( -- * Sessions
-         createSession, closeSession, sessions, getActualCaps
-         -- * Browser interaction
-         -- ** Web navigation
-       , openPage, forward, back, refresh
-         -- ** Page info
-       , getCurrentURL, getSource, getTitle, saveScreenshot, screenshot, screenshotBase64
-         -- * Timeouts
-       , setImplicitWait, setScriptTimeout, setPageLoadTimeout
-         -- * Web elements
-       , Element(..), Selector(..)
-         -- ** Searching for elements
-       , findElem, findElems, findElemFrom, findElemsFrom
-         -- ** Interacting with elements
-       , click, submit, getText
-         -- *** Sending key inputs to elements
-       , sendKeys, sendRawKeys, clearInput
-         -- ** Element information
-       , attr, cssProp, elemRect
-       , isSelected, isEnabled, isDisplayed
-       , tagName, activeElem, elemInfo
-         -- ** Element equality
-       , (<==>), (</=>)
-         -- * Javascript
-       , executeJS, asyncJS
-       , JSArg(..)
-         -- * Windows
-       , WindowHandle(..), currentWindow
-       , getCurrentWindow, closeWindow, windows, focusWindow,  maximize
-       , Rect(..), getWindowRect, setWindowRect
-       , getWindowSize, setWindowSize, getWindowPos, setWindowPos
-         -- * Focusing on frames
-       , focusFrame, FrameSelector(..)
-         -- * Cookies
-       , Cookie(..), mkCookie
-       , cookies, setCookie, deleteCookie, deleteVisibleCookies, deleteCookieByName
-         -- * Alerts
-       , getAlertText, replyToAlert, acceptAlert, dismissAlert
-         -- * Mouse gestures
-       , moveTo, moveToCenter, moveToFrom
-       , clickWith, MouseButton(..)
-       , mouseDown, mouseUp, withMouseDown, doubleClick
-         -- * HTML 5 Web Storage
-       , WebStorageType(..), storageSize, getAllKeys, deleteAllKeys
-       , getKey, setKey, deleteKey
-         -- * HTML 5 Application Cache
-       , ApplicationCacheStatus(..)
-       , getApplicationCacheStatus
-         -- * Mobile device support
-         -- ** Screen orientation
-       , Orientation(..)
-       , getOrientation, setOrientation
-         -- ** Geo-location
-       , getLocation, setLocation
-         -- ** Touch gestures
-       , touchClick, touchDown, touchUp, touchMove
-       , touchScroll, touchScrollFrom, touchDoubleClick
-       , touchLongClick, touchFlick, touchFlickFrom
-         -- * IME support
-       , availableIMEEngines, activeIMEEngine, checkIMEActive
-       , activateIME, deactivateIME
-         -- * Uploading files to remote server
-         -- |These functions allow you to upload a file to a remote server.
-         -- Note that this operation isn't supported by all WebDriver servers,
-         -- and the location where the file is stored is not standardized.
-       , uploadFile, uploadRawFile, uploadZipEntry
-         -- * Server information and logs
-       , serverStatus
-       , getLogs, getLogTypes, LogType, LogEntry(..), LogLevel(..)
-       ) where
+module Test.WebDriver.Commands (
+  -- * Sessions
+  createSession, closeSession, sessions, getActualCaps
+  -- * Browser interaction
+  -- ** Web navigation
+  , openPage, forward, back, refresh
+  -- ** Page info
+  , getCurrentURL, getSource, getTitle, saveScreenshot, screenshot, screenshotBase64
+  -- * Timeouts
+  , setImplicitWait, setScriptTimeout, setPageLoadTimeout
+  -- * Web elements
+  , Element(..), Selector(..)
+  -- ** Searching for elements
+  , findElem, findElems, findElemFrom, findElemsFrom
+  -- ** Interacting with elements
+  , click, submit, getText
+  -- *** Sending key inputs to elements
+  , sendKeys, sendRawKeys, clearInput
+  -- ** Element information
+  , attr, cssProp, elemRect
+  , isSelected, isEnabled, isDisplayed
+  , tagName, activeElem, elemInfo
+  -- ** Element equality
+  , (<==>), (</=>)
+  -- * Javascript
+  , executeJS, asyncJS
+  , JSArg(..)
+  -- * Windows
+  , WindowHandle(..), currentWindow
+  , getCurrentWindow, closeWindow, windows, focusWindow,  maximize
+  , Rect(..), getWindowRect, setWindowRect
+  , getWindowSize, setWindowSize, getWindowPos, setWindowPos
+  -- * Focusing on frames
+  , focusFrame, FrameSelector(..)
+  -- * Cookies
+  , Cookie(..), mkCookie
+  , cookies, setCookie, deleteCookie, deleteVisibleCookies, deleteCookieByName
+  -- * Alerts
+  , getAlertText, replyToAlert, acceptAlert, dismissAlert
+  -- * Mouse gestures
+  , moveTo, moveToCenter, moveToFrom
+  , clickWith, MouseButton(..)
+  , mouseDown, mouseUp, withMouseDown, doubleClick
+  -- * HTML 5 Web Storage
+  , WebStorageType(..), storageSize, getAllKeys, deleteAllKeys
+  , getKey, setKey, deleteKey
+  -- * HTML 5 Application Cache
+  , ApplicationCacheStatus(..)
+  , getApplicationCacheStatus
+  -- * Mobile device support
+  -- ** Screen orientation
+  , Orientation(..)
+  , getOrientation, setOrientation
+  -- ** Geo-location
+  , getLocation, setLocation
+  -- ** Touch gestures
+  , touchClick, touchDown, touchUp, touchMove
+  , touchScroll, touchScrollFrom, touchDoubleClick
+  , touchLongClick, touchFlick, touchFlickFrom
+  -- * IME support
+  , availableIMEEngines, activeIMEEngine, checkIMEActive
+  , activateIME, deactivateIME
+  -- * Uploading files to remote server
+  -- | These functions allow you to upload a file to a remote server.
+  -- Note that this operation isn't supported by all WebDriver servers,
+  -- and the location where the file is stored is not standardized.
+  , uploadFile, uploadRawFile, uploadZipEntry
+  -- * Server information and logs
+  , serverStatus
+  , getLogs, getLogTypes, LogType, LogEntry(..), LogLevel(..)
+  ) where
 
 import Codec.Archive.Zip
 import Control.Applicative
