@@ -23,6 +23,8 @@ data UserOptions = UserOptions {
   , optGeckoDriver :: Maybe FilePath
 
   , optBrowserToUse :: BrowserToUse
+
+  , optHeadless :: Maybe Bool
   } deriving (Show)
 
 userOptions :: Parser UserOptions
@@ -36,3 +38,5 @@ userOptions = UserOptions
   <*> optional (strOption (long "geckodriver" <> help "Path to geckodriver"))
 
   <*> browserToUse mempty
+
+  <*> optional (flag False True (long "headless" <> help "Run the test browser in headless mode"))
