@@ -53,7 +53,7 @@ import Data.Attoparsec.Number (Number(..))
 #endif
 
 
--- |This structure allows you to construct and manipulate profiles in pure code,
+-- | This structure allows you to construct and manipulate profiles in pure code,
 -- deferring execution of IO operations until the profile is \"prepared\". This
 -- type is shared by both Firefox and Opera profiles; when a distinction
 -- must be made, the phantom type parameter is used to differentiate.
@@ -74,7 +74,7 @@ data Profile b = Profile
                  }
                deriving (Eq, Show)
 
--- |Represents a profile that has been prepared for
+-- | Represents a profile that has been prepared for
 -- network transmission. The profile cannot be modified in this form.
 newtype PreparedProfile b = PreparedProfile ByteString
   deriving (Eq, Show)
@@ -85,7 +85,7 @@ instance FromJSON (PreparedProfile s) where
 instance ToJSON (PreparedProfile s) where
   toJSON (PreparedProfile s) = toJSON $ TL.decodeUtf8 s
 
--- |A profile preference value. This is the subset of JSON values that excludes
+-- | A profile preference value. This is the subset of JSON values that excludes
 -- arrays, objects, and null.
 data ProfilePref = PrefInteger !Integer
                  | PrefDouble  !Double
@@ -113,9 +113,9 @@ instance FromJSON ProfilePref where
   parseJSON other = typeMismatch "ProfilePref" other
 
 instance Exception ProfileParseError
--- |An error occured while attempting to parse a profile's preference file.
+-- | An error occured while attempting to parse a profile's preference file.
 newtype ProfileParseError = ProfileParseError String
-                          deriving  (Eq, Show, Read, Typeable)
+  deriving  (Eq, Show, Read, Typeable)
 
 -- |A typeclass to convert types to profile preference values
 class ToPref a where
@@ -161,70 +161,70 @@ instance (HasResolution r) => ToPref (Fixed r) where
 instance ToPref ProfilePref where
   toPref = id
 
--- |Retrieve a preference from a profile by key name.
+-- | Retrieve a preference from a profile by key name.
 getPref :: Text -> Profile b -> Maybe ProfilePref
 getPref k (Profile _ m) = HM.lookup k m
 
--- |Add a new preference entry to a profile, overwriting any existing entry
+-- | Add a new preference entry to a profile, overwriting any existing entry
 -- with the same key.
 addPref :: ToPref a => Text -> a -> Profile b -> Profile b
 addPref k v p = onProfilePrefs p $ HM.insert k (toPref v)
 
--- |Delete an existing preference entry from a profile. This operation is
+-- | Delete an existing preference entry from a profile. This operation is
 -- silent if the preference wasn't found.
 deletePref :: Text -> Profile b -> Profile b
 deletePref k p = onProfilePrefs p $ HM.delete k
 
--- |Add a file to the profile directory. The first argument is the source
+-- | Add a file to the profile directory. The first argument is the source
 -- of the file on the local filesystem. The second argument is the destination
 -- as a path relative to a profile directory. Overwrites any file that
 -- previously pointed to the same destination
 addFile :: FilePath -> FilePath -> Profile b -> Profile b
 addFile src dest p = onProfileFiles p $ HM.insert dest src
 
--- |Delete a file from the profile directory. The first argument is the name of
+-- | Delete a file from the profile directory. The first argument is the name of
 -- file within the profile directory.
 deleteFile :: FilePath -> Profile b -> Profile b
 deleteFile path prof = onProfileFiles prof $ HM.delete path
 
--- |Determines if a profile contains the given file, specified as a path
+-- | Determines if a profile contains the given file, specified as a path
 -- relative to the profile directory.
 hasFile :: String -> Profile b -> Bool
 hasFile path (Profile files _) = path `HM.member` files
 
--- |Add a new extension to the profile. The file path should refer to
+-- | Add a new extension to the profile. The file path should refer to
 -- a .xpi file or an extension directory on the filesystem.
 addExtension :: FilePath -> Profile b -> Profile b
 addExtension path = addFile path ("extensions" </> name)
   where (_, name) = splitFileName path
 
--- |Delete an existing extension from the profile. The string parameter
+-- | Delete an existing extension from the profile. The string parameter
 -- should refer to an .xpi file or directory located within the extensions
 -- directory of the profile. This operation has no effect if the extension was
 -- never added to the profile.
 deleteExtension :: String -> Profile b -> Profile b
 deleteExtension name = deleteFile ("extensions" </> name)
 
--- |Determines if a profile contains the given extension. specified as an
+-- | Determines if a profile contains the given extension. specified as an
 -- .xpi file or directory name
 hasExtension :: String -> Profile b -> Bool
 hasExtension name prof = hasFile ("extensions" </> name) prof
 
 
--- |Takes the union of two profiles. This is the union of their 'HashMap'
+-- | Takes the union of two profiles. This is the union of their 'HashMap'
 -- fields.
 unionProfiles :: Profile b -> Profile b -> Profile b
 unionProfiles (Profile f1 p1) (Profile f2 p2)
   = Profile (f1 `HM.union` f2) (p1 `HM.union` p2)
 
--- |Modifies the 'profilePrefs' field of a profile.
+-- | Modifies the 'profilePrefs' field of a profile.
 onProfilePrefs :: Profile b
                   -> (HM.HashMap Text ProfilePref
                       -> HM.HashMap Text ProfilePref)
                   -> Profile b
 onProfilePrefs (Profile hs hm) f = Profile hs (f hm)
 
--- |Modifies the 'profileFiles' field of a profile
+-- | Modifies the 'profileFiles' field of a profile
 onProfileFiles :: Profile b
                   -> (HM.HashMap FilePath FilePath
                       -> HM.HashMap FilePath FilePath)
@@ -232,7 +232,7 @@ onProfileFiles :: Profile b
 onProfileFiles (Profile ls hm) f = Profile (f ls) hm
 
 
--- |Efficiently load an existing profile from disk and prepare it for network
+-- | Efficiently load an existing profile from disk and prepare it for network
 -- transmission.
 prepareLoadedProfile_ :: MonadIO m => FilePath -> m (PreparedProfile a)
 prepareLoadedProfile_ path = liftIO $ do
@@ -242,15 +242,15 @@ prepareLoadedProfile_ path = liftIO $ do
     liftIO (addFilesToArchive [OptRecursive] emptyArchive ["."])
     <* setCurrentDirectory oldWd
 
--- |Prepare a zip file of a profile on disk for network transmission.
+-- | Prepare a zip file of a profile on disk for network transmission.
 -- This function is very efficient at loading large profiles from disk.
 prepareZippedProfile :: MonadIO m => FilePath -> m (PreparedProfile a)
 prepareZippedProfile path = prepareRawZip <$> liftIO (LBS.readFile path)
 
--- |Prepare a zip archive of a profile for network transmission.
+-- | Prepare a zip archive of a profile for network transmission.
 prepareZipArchive :: Archive -> PreparedProfile a
 prepareZipArchive = prepareRawZip . fromArchive
 
--- |Prepare a ByteString of raw zip data for network transmission
+-- | Prepare a ByteString of raw zip data for network transmission
 prepareRawZip :: ByteString -> PreparedProfile a
 prepareRawZip = PreparedProfile . B64.encode

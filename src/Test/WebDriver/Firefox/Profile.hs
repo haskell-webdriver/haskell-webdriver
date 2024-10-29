@@ -52,10 +52,10 @@ import Control.Arrow
 import Prelude hiding (catch)
 #endif
 
--- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
+-- | Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
 data Firefox
 
--- |Default Firefox Profile, used when no profile is supplied.
+-- | Default Firefox Profile, used when no profile is supplied.
 defaultProfile :: Profile Firefox
 defaultProfile =
   Profile HM.empty
@@ -121,7 +121,7 @@ defaultProfile =
 #endif
 
 
--- |Load an existing profile from the file system. Any prepared changes made to
+-- | Load an existing profile from the file system. Any prepared changes made to
 -- the 'Profile' will have no effect to the profile on disk.
 --
 -- To make automated browser run smoothly, preferences found in
@@ -148,7 +148,7 @@ loadProfile path = do
       where parsePrefs s = either (throwIO . ProfileParseError) return
                            $ parseOnly prefsParser s
 
--- |Prepare a firefox profile for network transmission.
+-- | Prepare a firefox profile for network transmission.
 -- Internally, this function constructs a Firefox profile within a temp
 -- directory, archives it as a zip file, and then base64 encodes the zipped
 -- data. The temporary directory is deleted afterwards.
@@ -191,15 +191,13 @@ prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
                                            ", ", encode v, ");\n"])
             . HM.toList $ prefs
 
--- |Apply a function on a default profile, and
+-- | Apply a function on a default profile, and
 -- prepare the result. The Profile passed to the handler function is
 -- the default profile used by sessions when Nothing is specified
-prepareTempProfile :: MonadIO m =>
-                     (Profile Firefox -> Profile Firefox)
-                     -> m (PreparedProfile Firefox)
+prepareTempProfile :: MonadIO m => (Profile Firefox -> Profile Firefox) -> m (PreparedProfile Firefox)
 prepareTempProfile f = prepareProfile . f $ defaultProfile
 
--- |Convenience function to load an existing Firefox profile from disk, apply
+-- | Convenience function to load an existing Firefox profile from disk, apply
 -- a handler function, and then prepare the result for network transmission.
 --
 -- NOTE: like 'prepareProfile', the same caveat about large profiles applies.
