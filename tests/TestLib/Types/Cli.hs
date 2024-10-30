@@ -24,7 +24,7 @@ data UserOptions = UserOptions {
 
   , optBrowserToUse :: BrowserToUse
 
-  , optHeadless :: Maybe Bool
+  , optHeadlessTests :: Maybe Bool
   } deriving (Show)
 
 userOptions :: Parser UserOptions
@@ -39,4 +39,4 @@ userOptions = UserOptions
 
   <*> browserToUse mempty
 
-  <*> optional (flag False True (long "headless" <> help "Run the test browser in headless mode"))
+  <*> optional (flag False True (long "headless-tests" <> help "Run the test browser in headless mode"))

@@ -36,6 +36,7 @@ type SpecWithWebDriver = forall context. (
 
 type SessionSpec = forall context. (
   HasBaseContext context
+  , HasCommandLineOptions context UserOptions
   , HasBrowserDependencies context
   , HasWebDriverContext context
   ) => SpecFree context IO ()

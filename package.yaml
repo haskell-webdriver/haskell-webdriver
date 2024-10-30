@@ -112,12 +112,16 @@ tests:
     - bytestring
     - exceptions
     - filepath
+    - http-client
+    - http-types
     - lens
     - lens-regex-pcre
+    - monad-logger
     - mtl
     - network
     - optparse-applicative
     - safe
+    - safe-exceptions
     - sandwich
     - sandwich-contexts
     - string-interpolate
@@ -125,4 +129,5 @@ tests:
     - text
     - unliftio-core
     - unliftio
+    - vector
     - webdriver

@@ -93,10 +93,11 @@ sendHTTPRequest :: (WDSessionStateIO s) => Request -> s (Either SomeException (R
 sendHTTPRequest req = do
   s@WDSession{..} <- getSession
   (nRetries, tryRes) <- liftIO . retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
-  let h = SessionHistory { histRequest = req
-                         , histResponse = tryRes
-                         , histRetryCount = nRetries
-                         }
+  let h = SessionHistory {
+        histRequest = req
+        , histResponse = tryRes
+        , histRetryCount = nRetries
+        }
   putSession s { wdSessHist = wdSessHistUpdate h wdSessHist }
   liftIO $ printInDebugEnv tryRes
   return tryRes

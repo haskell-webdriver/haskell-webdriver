@@ -137,12 +137,16 @@ test-suite tests
     , bytestring
     , exceptions
     , filepath
+    , http-client
+    , http-types
     , lens
     , lens-regex-pcre
+    , monad-logger
     , mtl
     , network
     , optparse-applicative
     , safe
+    , safe-exceptions
     , sandwich
     , sandwich-contexts
     , string-interpolate
@@ -150,5 +154,6 @@ test-suite tests
     , text
     , unliftio
     , unliftio-core
+    , vector
     , webdriver
   default-language: Haskell2010
