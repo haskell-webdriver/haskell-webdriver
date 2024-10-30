@@ -1,8 +1,9 @@
 
 module Spec.Clicking where
 
-import Data.Aeson as A
+import Data.String.Interpolate
 import Test.Sandwich
+import Test.Sandwich.Contexts.Waits
 import Test.WebDriver
 import TestLib.Contexts.Session
 import TestLib.Types
@@ -12,5 +13,10 @@ tests :: SessionSpec
 tests = introduceSession $ describe "Clicking" $ do
   it "works" $ do
     openPage "http://www.wikipedia.org/"
-    r <- asyncJS [] "arguments[0]();"
-    r `shouldBe` (Just A.Null)
+    el <- findElem (ByCSS "div[lang=es] a")
+    click el
+
+    waitUntil 60 $ do
+      url <- getCurrentURL
+      info [i|Got URL: #{url}|]
+      url `shouldContain` "es.wikipedia.org"
