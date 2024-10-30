@@ -82,7 +82,7 @@ catchFailedCommand t1 m = m `catch` handler
       | t1 == t2 = unexpected . show $ e
     handler e = throwIO e
 
--- |Wait until either the given action succeeds or the timeout is reached.
+-- | Wait until either the given action succeeds or the timeout is reached.
 -- The action will be retried every .5 seconds until no 'ExpectFailed' or
 -- 'FailedCommand' 'NoSuchElement' exceptions occur. If the timeout is reached,
 -- then a 'Timeout' exception will be raised. The timeout value

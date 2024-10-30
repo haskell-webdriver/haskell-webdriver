@@ -10,6 +10,8 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Monad.Reader
 import Data.Aeson as A
+import Data.ByteString
+import qualified Data.ByteString.Lazy as BL
 import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Vector as V
@@ -40,11 +42,16 @@ instance (HasWDSession context, MonadIO m) => WDSessionState (ExampleT context m
 instance (HasWDSession context, MonadIO m, MonadCatch m) => WebDriver (ExampleT context m) where
   doCommand method path args = do
     req <- mkRequest method path args
-    debug [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req}|]
+    debug [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req} (#{showRequestBody (HC.requestBody req)})|]
     response <- sendHTTPRequest req >>= either throwIO return
     let (N.Status code _) = HC.responseStatus response
     debug [i|<-- #{code} #{HC.responseBody response}|]
     getJSONResult response >>= either throwIO return
+    where
+      showRequestBody :: HC.RequestBody -> ByteString
+      showRequestBody (HC.RequestBodyLBS bytes) = BL.toStrict bytes
+      showRequestBody (HC.RequestBodyBS bytes) = bytes
+      showRequestBody _ = "<request body>"
 
 getWDConfig :: (
   MonadIO m, MonadReader context m, MonadLogger m
