@@ -13,6 +13,7 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.WebDriver.Session
 import TestLib.Contexts.BrowserDependencies
+import TestLib.Contexts.StaticServer
 import TestLib.Contexts.WebDriver
 import TestLib.Types.Cli
 

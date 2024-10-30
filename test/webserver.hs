@@ -22,6 +22,6 @@ wdConfigs = map (`useBrowser` conf) browsers
     conf = defaultConfig { wdPort = getPort serverConf }
 
 main = bracket
-  ( forkIO $ runSettings serverConf (staticApp serverStaticConf) )
+  (forkIO $ runSettings serverConf (staticApp serverStaticConf))
   (\_ -> return ()) -- (\_ -> mapM_ BasicTests.runTestsWith wdConfigs )
   killThread

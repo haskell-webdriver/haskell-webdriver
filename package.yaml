@@ -130,4 +130,6 @@ tests:
     - unliftio-core
     - unliftio
     - vector
+    - wai-app-static
+    - warp
     - webdriver

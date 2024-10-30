@@ -115,6 +115,7 @@ test-suite tests
       Spec.Windows
       TestLib.Contexts.BrowserDependencies
       TestLib.Contexts.Session
+      TestLib.Contexts.StaticServer
       TestLib.Contexts.WebDriver
       TestLib.Types
       TestLib.Types.Cli
@@ -155,5 +156,7 @@ test-suite tests
     , unliftio
     , unliftio-core
     , vector
+    , wai-app-static
+    , warp
     , webdriver
   default-language: Haskell2010
