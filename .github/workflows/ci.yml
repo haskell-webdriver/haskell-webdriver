@@ -94,7 +94,7 @@ jobs:
 
     - name: Test
       run: |
-        stack test --system-ghc
+        stack test --system-ghc --ta="--headless-tests"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
