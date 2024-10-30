@@ -13,13 +13,13 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         ghc:
-          - "8.6.5"
-          - "8.8.4"
-          - "8.10.7"
-          - "9.0.2"
-          - "9.2.8"
-          - "9.4.7"
-          - "9.6.3"
+        - "8.6.5"
+        - "8.8.4"
+        - "8.10.7"
+        - "9.0.2"
+        - "9.2.8"
+        - "9.4.7"
+        - "9.6.3"
 
     steps:
     - uses: actions/checkout@v3
@@ -57,26 +57,33 @@ jobs:
       fail-fast: false
       matrix:
         ghc:
-          - "8.6.5"
-          - "8.8.4"
-          - "8.10.7"
-          - "9.0.2"
-          - "9.2.8"
-          - "9.4.8"
-          - "9.6.6"
+        - "8.6.5"
+        - "8.8.4"
+        - "8.10.7"
+        - "9.0.2"
+        - "9.2.8"
+        - "9.4.8"
+        - "9.6.6"
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    - uses: haskell/actions/setup@v2
+    - uses: cachix/install-nix-action@v27
+      if: runner.os != 'Windows'
+      with:
+        # release-24.05
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
+
+    - uses: haskell-actions/setup@v2
       name: Setup Haskell Stack
       with:
+        enable-stack: true
         ghc-version: ${{ matrix.ghc }}
         stack-version: "latest"
-        enable-stack: true
 
-    - uses: actions/cache@v3
-      name: Cache ~/.stack
+    - uses: actions/cache/restore@v4
+      name: Cache restore ~/.stack
+      id: cache-restore
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-stack
@@ -88,3 +95,9 @@ jobs:
     - name: Test
       run: |
         stack test --system-ghc
+
+    - uses: actions/cache/save@v4
+      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
