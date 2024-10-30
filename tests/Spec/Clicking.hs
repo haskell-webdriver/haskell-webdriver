@@ -8,10 +8,15 @@ import Test.WebDriver
 import TestLib.Contexts.Session
 import TestLib.Types
 
+-- import Control.Concurrent
+-- import Control.Monad.IO.Class
+
 
 tests :: SessionSpec
 tests = introduceSession $ describe "Clicking" $ do
   it "works" $ do
+    -- liftIO $ threadDelay 120000000
+
     openPage "http://www.wikipedia.org/"
     el <- findElem (ByCSS "div[lang=es] a")
     click el

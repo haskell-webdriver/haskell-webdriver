@@ -31,6 +31,7 @@ type SpecWithWebDriver = forall context. (
   , HasCommandLineOptions context UserOptions
   , HasBrowserDependencies context
   , HasWebDriverContext context
+  , HasStaticServerContext context
   , HasFile context "google-chrome-stable"
   , HasNixContext context
   ) => SpecFree context IO ()
