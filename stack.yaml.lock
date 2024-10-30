@@ -30,6 +30,13 @@ packages:
     commit: e295a2e93f1dc03d8c31eb78f4efb74ea6720fbb
     git: https://github.com/codedownio/sandwich
     subdir: sandwich-contexts
+- completed:
+    hackage: vty-windows-0.2.0.3@sha256:0c010b1086a725046a8bb08bb1e6bfdfdb3cfe1c72d6fa77c37306ef9ec774d8,2844
+    pantry-tree:
+      sha256: 958fd0386c589130177c841df63368ff191eb296f9ed2fd050de10e266c354eb
+      size: 2160
+  original:
+    hackage: vty-windows-0.2.0.3
 snapshots:
 - completed:
     sha256: 6c5aeace2ca5ecde793a9e0acfaa730ec8f384aa2f6183a2a252f5f9ec55d623

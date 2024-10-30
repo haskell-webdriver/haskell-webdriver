@@ -49,8 +49,9 @@ library:
   - -Wredundant-constraints
   - -Wunused-packages
   dependencies:
-  - aeson >= 0.6.2.0
+  - aeson >= 1.4.1.0 && <2.3
   - attoparsec >= 0.10
+  - attoparsec-aeson >=2.1.0.0 && <2.3
   - base == 4.*
   - base64-bytestring >= 1.0
   - bytestring >= 0.9
@@ -114,8 +115,6 @@ tests:
     - filepath
     - http-client
     - http-types
-    - lens
-    - lens-regex-pcre
     - monad-logger
     - mtl
     - network
@@ -133,3 +132,4 @@ tests:
     - wai-app-static
     - warp
     - webdriver
+    build-tools: sandwich:sandwich-discover

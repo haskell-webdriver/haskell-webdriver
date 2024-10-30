@@ -1,27 +1,20 @@
 
 module Spec.Clicking where
 
-import Data.String.Interpolate
 import Test.Sandwich
-import Test.Sandwich.Contexts.Waits
 import Test.WebDriver
 import TestLib.Contexts.Session
+import TestLib.Contexts.StaticServer
 import TestLib.Types
-
--- import Control.Concurrent
--- import Control.Monad.IO.Class
 
 
 tests :: SessionSpec
-tests = introduceSession $ describe "Clicking" $ do
-  it "works" $ do
-    -- liftIO $ threadDelay 120000000
+tests = introduceSession $ describe "Clicking" $ before "Open test page" openSimpleTestPage $ do
+  it "Clicks a button" $ do
+    findElem (ByCSS "#numberLabel") >>= getText >>= (`shouldBe` "0")
 
-    openPage "http://www.wikipedia.org/"
-    el <- findElem (ByCSS "div[lang=es] a")
-    click el
+    findElem (ByCSS "#incrementButton") >>= click
+    findElem (ByCSS "#numberLabel") >>= getText >>= (`shouldBe` "1")
 
-    waitUntil 60 $ do
-      url <- getCurrentURL
-      info [i|Got URL: #{url}|]
-      url `shouldContain` "es.wikipedia.org"
+    findElem (ByCSS "#incrementButton") >>= click
+    findElem (ByCSS "#numberLabel") >>= getText >>= (`shouldBe` "2")

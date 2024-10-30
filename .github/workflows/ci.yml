@@ -13,16 +13,23 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         ghc:
-          - "8.6.5"
-          - "8.8.4"
-          - "8.10.7"
-          - "9.0.2"
-          - "9.2.8"
-          - "9.4.7"
-          - "9.6.3"
+        - "8.6.5"
+        - "8.8.4"
+        - "8.10.7"
+        - "9.0.2"
+        - "9.2.8"
+        - "9.4.8"
+        - "9.6.6"
+        - "9.8.2"
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+
+    - uses: cachix/install-nix-action@v27
+      if: runner.os != 'Windows'
+      with:
+        # release-24.05
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
 
     - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
@@ -39,16 +46,30 @@ jobs:
       name: Cache ~/.cabal/store
       with:
         path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
-        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}
+        key: ${{ runner.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project.freeze') }}-key2
 
     - name: Build
       run: |
-        cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
-        cabal build all
+        # cabal configure \
+        #   --enable-tests \
+        #   --enable-benchmarks \
+        #   --test-show-details=direct \
+        #   --extra-include-dirs=/opt/homebrew/include \
+        #   --extra-lib-dirs=/opt/homebrew/lib
+        cabal build all \
+          --extra-include-dirs=/opt/homebrew/include \
+          --extra-lib-dirs=/opt/homebrew/lib
 
     - name: Test
       run: |
-        cabal test all
+        cabal test all --test-option="--headless-tests"
+
+    - name: Archive test_runs
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: code-coverage-report
+        path: test_runs
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}
@@ -57,26 +78,33 @@ jobs:
       fail-fast: false
       matrix:
         ghc:
-          - "8.6.5"
-          - "8.8.4"
-          - "8.10.7"
-          - "9.0.2"
-          - "9.2.8"
-          - "9.4.8"
-          - "9.6.6"
+        - "8.6.5"
+        - "8.8.4"
+        - "8.10.7"
+        - "9.0.2"
+        - "9.2.8"
+        - "9.4.8"
+        - "9.6.6"
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
-    - uses: haskell/actions/setup@v2
+    - uses: cachix/install-nix-action@v27
+      if: runner.os != 'Windows'
+      with:
+        # release-24.05
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
+
+    - uses: haskell-actions/setup@v2
       name: Setup Haskell Stack
       with:
+        enable-stack: true
         ghc-version: ${{ matrix.ghc }}
         stack-version: "latest"
-        enable-stack: true
 
-    - uses: actions/cache@v3
-      name: Cache ~/.stack
+    - uses: actions/cache/restore@v4
+      name: Cache restore ~/.stack
+      id: cache-restore
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-stack
@@ -87,4 +115,10 @@ jobs:
 
     - name: Test
       run: |
-        stack test --system-ghc
+        stack test --system-ghc --ta="--headless-tests"
+
+    - uses: actions/cache/save@v4
+      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+      with:
+        path: ~/.stack
+        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
