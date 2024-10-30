@@ -115,6 +115,7 @@ tests:
     - lens
     - lens-regex-pcre
     - mtl
+    - network
     - optparse-applicative
     - safe
     - sandwich

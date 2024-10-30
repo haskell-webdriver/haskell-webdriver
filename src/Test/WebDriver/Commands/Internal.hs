@@ -89,18 +89,18 @@ doSessCommand :: (
 doSessCommand method path args = do
   WDSession { wdSessId = mSessId } <- getSession
   case mSessId of
-      Nothing -> throwIO $ NoSessionId msg callStack
-        where
-          msg = "doSessCommand: No session ID found for relative URL " ++ show path
-      Just (SessionId sId) ->
-        -- Catch BadJSON exceptions here, since most commands go through this function.
-        -- Then, re-throw them with "error", which automatically appends a callstack
-        -- to the message in modern GHCs.
-        -- This callstack makes it easy to see which command caused the BadJSON exception,
-        -- without exposing too many internals.
-        catch
-          (doCommand method (T.concat ["/session/", urlEncode sId, path]) args)
-          (\(e :: BadJSON) -> error $ show e)
+    Nothing -> throwIO $ NoSessionId msg callStack
+      where
+        msg = "doSessCommand: No session ID found for relative URL " ++ show path
+    Just (SessionId sId) ->
+      -- Catch BadJSON exceptions here, since most commands go through this function.
+      -- Then, re-throw them with "error", which automatically appends a callstack
+      -- to the message in modern GHCs.
+      -- This callstack makes it easy to see which command caused the BadJSON exception,
+      -- without exposing too many internals.
+      catch
+        (doCommand method (T.concat ["/session/", urlEncode sId, path]) args)
+        (\(e :: BadJSON) -> error $ show e)
 
 -- |A wrapper around 'doSessCommand' to create element URLs.
 -- For example, passing a URL of "/active" will expand to

@@ -11,7 +11,7 @@ module TestLib.Contexts.WebDriver where
 import Control.Lens
 import Control.Lens.Regex.Text
 import Control.Monad
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Data.Function
@@ -19,12 +19,14 @@ import Data.Int
 import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
+import Network.Socket (PortNumber)
 import Safe
 import System.FilePath
 import System.IO (hGetLine)
 import System.IO.Temp
 import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Files
+import Test.Sandwich.Contexts.Util.Ports
 import TestLib.Contexts.BrowserDependencies
 import UnliftIO.Async
 import UnliftIO.Process
@@ -32,7 +34,7 @@ import UnliftIO.Process
 
 data WebDriverContext = WebDriverContext {
   webDriverHostname :: String
-  , webDriverPort :: Int16
+  , webDriverPort :: PortNumber
   }
 
 webdriver :: Label "webdriver" WebDriverContext
@@ -45,7 +47,7 @@ type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
 
 
 introduceWebDriver :: forall context m. (
-  BaseMonadContext m context, MonadThrow m
+  BaseMonadContext m context, MonadCatch m
   , HasFile context "selenium.jar"
   , HasFile context "java"
   , HasBrowserDependencies context
@@ -73,7 +75,12 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
       java <- askFile @"java"
       seleniumJar <- askFile @"selenium.jar"
 
-      let fullArgs = javaArgs <> ["-jar", seleniumJar]
+      port <- findFreePortOrException
+
+      let fullArgs = javaArgs <> [
+            "-jar", seleniumJar
+            , "-port", show port
+            ]
       debug [i|#{java} #{T.unwords $ fmap T.pack fullArgs}|]
 
       (hRead, hWrite) <- createPipe
@@ -88,12 +95,12 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
         let hostname = "localhost"
 
         -- Read from the (combined) output stream until we see the up and running message
-        port <- fix $ \loop -> do
+        fix $ \loop -> do
           line <- fmap T.pack $ liftIO $ hGetLine hRead
           debug line
 
           case line ^.. [regex|Selenium Server is up and running on port (\d+)|] . group 0 of
-            [(readMay . T.unpack) -> Just port] -> pure port
+            [(readMay . T.unpack) -> Just (_port :: Int16)] -> pure ()
             _ -> loop
 
         withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ ->
