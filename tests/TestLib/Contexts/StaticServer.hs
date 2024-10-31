@@ -98,4 +98,4 @@ openStaticServerUrl url = do
 openSimpleTestPage :: (
   MonadReader context m, HasStaticServerContext context, WebDriver m
   ) => m ()
-openSimpleTestPage = openStaticServerUrl "/simpleTest.html"
+openSimpleTestPage = openStaticServerUrl "/test.html"

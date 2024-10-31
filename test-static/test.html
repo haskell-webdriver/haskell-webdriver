@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+
+  <body>
+    <h1>Button clicking</h1>
+    <button id="incrementButton">Increment</button>
+    <label id="numberLabel">0</label>
+
+    <script>
+     let count = 0;
+     const btn = document.getElementById("incrementButton");
+     const label = document.getElementById("numberLabel");
+
+     btn.addEventListener("click", function() {
+       count++;
+       label.textContent = count;
+     });
+    </script>
+
+    <h1>Checkboxes</h1>
+    <input type="checkbox" id="checkbox" name="checkbox" value="checked">
+    <label for="checkbox">Check me</label><br><br>
+  </body>
+</html>
