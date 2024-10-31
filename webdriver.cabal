@@ -110,6 +110,7 @@ test-suite tests
   main-is: Main.hs
   other-modules:
       Spec
+      Spec.Checkboxes
       Spec.Clicking
       Spec.Screenshots
       Spec.Windows

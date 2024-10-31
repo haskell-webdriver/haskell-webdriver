@@ -2,7 +2,6 @@
 module Spec.Clicking where
 
 import Test.Sandwich
-import Test.Sandwich.Contexts.Waits
 import Test.WebDriver
 import TestLib.Contexts.Session
 import TestLib.Contexts.StaticServer

@@ -1,0 +1,147 @@
+#+title: To test
+:PROPERTIES:
+:COOKIE_DATA: todo recursive
+:END:
+#+STARTUP: indent
+
+* Sessions
+** createSession
+** closeSession
+** sessions
+** getActualCaps
+* Browser interaction
+** openPage
+** forward
+** back
+** refresh
+* Page info
+** getCurrentURL
+** getSource
+** getTitle
+** saveScreenshot
+** screenshot
+** screenshotBase64
+* Timeouts
+** setImplicitWait
+** setScriptTimeout
+** setPageLoadTimeout
+* Web elements
+** Element(..)
+** Selector(..)
+* Searching for elements
+** DONE findElem
+** findElems
+** findElemFrom
+** findElemsFrom
+* Interacting with elements
+** DONE click
+** submit
+** getText
+* Sending key inputs to elements
+** sendKeys
+** sendRawKeys
+** clearInput
+* Element information
+** attr
+** cssProp
+** elemRect
+** isSelected
+** isEnabled
+** DONE isDisplayed
+** tagName
+** activeElem
+** elemInfo
+* Element equality
+** (<==>)
+** (</=>)
+* Javascript
+** executeJS
+** asyncJS
+** JSArg(..)
+* Windows
+** WindowHandle(..)
+** currentWindow
+** getCurrentWindow
+** closeWindow
+** windows
+** focusWindow
+** maximize
+** Rect(..)
+** getWindowRect
+** setWindowRect
+** getWindowSize
+** setWindowSize
+** getWindowPos
+** setWindowPos
+* Focusing on frames
+** focusFrame
+** FrameSelector(..)
+* Cookies
+** Cookie(..)
+** mkCookie
+** cookies
+** setCookie
+** deleteCookie
+** deleteVisibleCookies
+** deleteCookieByName
+* Alerts
+** getAlertText
+** replyToAlert
+** acceptAlert
+** dismissAlert
+* Mouse gestures
+** moveTo
+** moveToCenter
+** moveToFrom
+** clickWith
+** MouseButton(..)
+** mouseDown
+** mouseUp
+** withMouseDown
+** doubleClick
+* HTML 5 Web Storage
+** WebStorageType(..)
+** storageSize
+** getAllKeys
+** deleteAllKeys
+** getKey
+** setKey
+** deleteKey
+* HTML 5 Application Cache
+** ApplicationCacheStatus(..)
+** getApplicationCacheStatus
+* Mobile device support
+** Orientation(..)
+** getOrientation
+** setOrientation
+* Geo-location
+** getLocation
+** setLocation
+* Touch gestures
+** touchClick
+** touchDown
+** touchUp
+** touchMove
+** touchScroll
+** touchScrollFrom
+** touchDoubleClick
+** touchLongClick
+** touchFlick
+** touchFlickFrom
+* IME support
+** availableIMEEngines
+** activeIMEEngine
+** checkIMEActive
+** activateIME
+** deactivateIME
+* Uploading files to remote server
+** uploadFile
+** uploadRawFile
+** uploadZipEntry
+* Server information and logs
+** serverStatus
+** getLogs
+** getLogTypes
+** LogType
+** LogEntry(..)
+** LogLevel(..)
