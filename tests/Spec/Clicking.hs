@@ -6,18 +6,19 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Waits
 import Test.WebDriver
 import TestLib.Contexts.Session
+import TestLib.Contexts.StaticServer
 import TestLib.Types
 
--- import Control.Concurrent
--- import Control.Monad.IO.Class
+import Control.Concurrent
+import Control.Monad.IO.Class
 
 
 tests :: SessionSpec
-tests = introduceSession $ describe "Clicking" $ do
+tests = introduceSession $ describe "Clicking" $ before "Open test page" openSimpleTestPage $ do
   it "works" $ do
-    -- liftIO $ threadDelay 120000000
+    liftIO $ threadDelay 30000000
 
-    openPage "http://www.wikipedia.org/"
+    -- openPage "http://www.wikipedia.org/"
     -- el <- findElem (ByCSS "div[lang=es] a")
     -- click el
 

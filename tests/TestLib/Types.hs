@@ -41,4 +41,5 @@ type SessionSpec = forall context. (
   , HasCommandLineOptions context UserOptions
   , HasBrowserDependencies context
   , HasWebDriverContext context
+  , HasStaticServerContext context
   ) => SpecFree context IO ()
