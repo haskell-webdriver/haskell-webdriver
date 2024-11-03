@@ -57,7 +57,7 @@ jobs:
       run: |
         cabal configure --enable-tests --enable-benchmarks --test-show-details=direct
         cabal build all \
-          --extra-include-dirs=/usr/local/pcre/include
+          --extra-include-dirs=/opt/homebrew/include
 
     - name: Test
       run: |
