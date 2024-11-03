@@ -58,9 +58,11 @@ jobs:
           --enable-tests \
           --enable-benchmarks \
           --test-show-details=direct \
-          --extra-include-dirs=/opt/homebrew/include
+          --extra-include-dirs=/opt/homebrew/include \
+          --extra-lib-dirs=/opt/homebrew/lib
         cabal build all \
-          --extra-include-dirs=/opt/homebrew/include
+          --extra-include-dirs=/opt/homebrew/include \
+          --extra-lib-dirs=/opt/homebrew/lib
 
     - name: Test
       run: |
