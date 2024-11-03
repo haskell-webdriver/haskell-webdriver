@@ -34,7 +34,7 @@ jobs:
         # echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
         # # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
         # echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
-        find / -name pcre.h
+        sudo find / -name pcre.h
 
     - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
