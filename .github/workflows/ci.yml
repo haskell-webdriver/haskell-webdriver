@@ -29,7 +29,7 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
-        brew install pcre pkg-config
+        brew install pcre2 pkg-config
         # # For older GHCs
         # brew install llvm@13 --quiet # Suppress deprecation warning
         # echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
