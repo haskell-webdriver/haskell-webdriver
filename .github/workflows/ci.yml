@@ -20,6 +20,7 @@ jobs:
         - "9.2.8"
         - "9.4.8"
         - "9.6.6"
+        - "9.8.2"
 
     steps:
     - uses: actions/checkout@v4
@@ -28,7 +29,7 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
-        brew install pcre
+        brew install pcre pkg-config
         # # For older GHCs
         # brew install llvm@13 --quiet # Suppress deprecation warning
         # echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
