@@ -134,6 +134,8 @@ test-suite tests
       RecordWildCards
       ScopedTypeVariables
   ghc-options: -threaded -Wall -Wredundant-constraints -Wunused-packages
+  build-tool-depends:
+      sandwich:sandwich-discover
   build-depends:
       aeson
     , base

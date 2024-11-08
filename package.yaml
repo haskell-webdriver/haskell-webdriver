@@ -132,3 +132,4 @@ tests:
     - wai-app-static
     - warp
     - webdriver
+    build-tools: sandwich:sandwich-discover
