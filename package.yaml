@@ -1,5 +1,5 @@
 name: webdriver
-version: 0.12.0.0
+version: 0.12.0.1
 license: BSD3
 license-file: LICENSE
 author: Adam Curtis <kallisti.dev@gmail.com>
