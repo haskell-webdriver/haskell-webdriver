@@ -7,7 +7,6 @@ packages:
 nix:
   pure: false
   packages:
-  - pcre
   - pkg-config
   - zlib
 
@@ -17,6 +16,8 @@ extra-deps:
   subdirs:
   - sandwich
   - sandwich-contexts
+
+- vty-windows-0.2.0.3
 
 # - /home/tom/tools/sandwich/sandwich
 # - /home/tom/tools/sandwich/sandwich-contexts

@@ -115,8 +115,6 @@ tests:
     - filepath
     - http-client
     - http-types
-    - lens
-    - lens-regex-pcre
     - monad-logger
     - mtl
     - network

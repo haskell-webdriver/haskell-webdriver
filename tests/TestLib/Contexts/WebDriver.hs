@@ -8,8 +8,6 @@
 
 module TestLib.Contexts.WebDriver where
 
-import Control.Lens
-import Control.Lens.Regex.Text
 import Control.Monad
 import Control.Monad.Catch (MonadCatch)
 import Control.Monad.IO.Class
@@ -99,9 +97,9 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
           line <- fmap T.pack $ liftIO $ hGetLine hRead
           debug line
 
-          case line ^.. [regex|Selenium Server is up and running on port (\d+)|] . group 0 of
-            [(readMay . T.unpack) -> Just (_port :: Int16)] -> pure ()
-            _ -> loop
+          case "Selenium Server is up and running" `T.isInfixOf` line of
+            True -> return ()
+            False -> loop
 
         withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ ->
           void $ action $ WebDriverContext hostname port
