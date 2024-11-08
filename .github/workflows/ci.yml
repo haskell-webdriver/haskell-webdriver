@@ -25,18 +25,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Install dependencies (macOS)
-      if: runner.os == 'macOS'
-      run: |
-        brew update
-        brew install pcre2 pkg-config
-        # # For older GHCs
-        # brew install llvm@13 --quiet # Suppress deprecation warning
-        # echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
-        # # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
-        # echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
-        set +e
-        sudo find / -name pcre.h
+    # - name: Install dependencies (macOS)
+    #   if: runner.os == 'macOS'
+    #   run: |
+    #     brew update
+    #     brew install pcre2 pkg-config
 
     - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
