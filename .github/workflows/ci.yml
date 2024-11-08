@@ -64,12 +64,12 @@ jobs:
       run: |
         cabal test all --test-option="--headless-tests"
 
-    - name: Archive test_runs
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: code-coverage-report
-        path: test_runs
+    # - name: Archive test_runs
+    #   uses: actions/upload-artifact@v4
+    #   if: always()
+    #   with:
+    #     name: test-runs-${{ runner.os }}-${{ matrix.ghc }}
+    #     path: test_runs
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}
