@@ -8,3 +8,4 @@ cabal.sandbox.config
 *.hi
 *.exe
 *.o
+test_runs
