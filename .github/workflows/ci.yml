@@ -25,11 +25,11 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # - name: Install dependencies (macOS)
-    #   if: runner.os == 'macOS'
-    #   run: |
-    #     brew update
-    #     brew install pcre2 pkg-config
+    - uses: cachix/install-nix-action@v27
+      if: runner.os != 'Windows'
+      with:
+        # release-24.05
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
 
     - uses: haskell/actions/setup@v2
       id: setup-haskell-cabal
