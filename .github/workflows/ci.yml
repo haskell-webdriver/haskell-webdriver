@@ -62,7 +62,7 @@ jobs:
 
     - name: Test
       run: |
-        cabal test all
+        cabal test all --test-option="--headless-tests"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4
