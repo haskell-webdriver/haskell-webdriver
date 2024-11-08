@@ -42,7 +42,7 @@ import Data.String (fromString)
 import Data.Word (Word8)
 
 #if !MIN_VERSION_http_client(0,4,30)
-import Data.Default.Class
+import Data.Default (def)
 #endif
 
 import Prelude -- hides some "unused import" warnings

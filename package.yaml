@@ -50,7 +50,7 @@ library:
   - base64-bytestring >= 1.0
   - bytestring >= 0.9
   - call-stack
-  - data-default-class
+  - data-default
   - directory > 1.0
   - directory-tree >= 0.11
   - exceptions >= 0.4

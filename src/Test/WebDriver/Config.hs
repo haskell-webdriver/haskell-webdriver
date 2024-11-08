@@ -12,7 +12,7 @@ module Test.WebDriver.Config(
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Session
 
-import Data.Default.Class (Default(..))
+import Data.Default (Default, def)
 import Data.String (fromString)
 
 import Control.Monad.Base

@@ -11,7 +11,7 @@ import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch, Pair)
 
 import Data.Text (Text, toLower, toUpper)
-import Data.Default.Class (Default(..))
+import Data.Default (Default, def)
 import Data.Word (Word16)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.String (fromString)
