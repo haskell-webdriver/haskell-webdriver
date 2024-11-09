@@ -12,12 +12,9 @@ nix:
 
 extra-deps:
 - git: https://github.com/codedownio/sandwich
-  commit: e295a2e93f1dc03d8c31eb78f4efb74ea6720fbb
+  commit: ade66e123f6beab5f340193c61c3791c0cc2d8f7
   subdirs:
   - sandwich
   - sandwich-contexts
 
 - vty-windows-0.2.0.3
-
-# - /home/tom/tools/sandwich/sandwich
-# - /home/tom/tools/sandwich/sandwich-contexts
