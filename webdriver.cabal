@@ -150,7 +150,7 @@ test-suite tests
     , optparse-applicative
     , safe
     , safe-exceptions
-    , sandwich
+    , sandwich >=0.3.0.1
     , sandwich-contexts
     , string-interpolate
     , temporary
