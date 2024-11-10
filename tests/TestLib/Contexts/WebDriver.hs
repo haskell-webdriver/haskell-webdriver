@@ -27,6 +27,7 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Util.Ports
 import TestLib.Contexts.BrowserDependencies
 import UnliftIO.Async
+import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Process
 
 
@@ -100,6 +101,8 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
           case "Selenium Server is up and running" `T.isInfixOf` line of
             True -> return ()
             False -> loop
+
+        threadDelay 10000000
 
         withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ ->
           void $ action $ WebDriverContext hostname port
