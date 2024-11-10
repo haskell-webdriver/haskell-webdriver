@@ -64,12 +64,12 @@ jobs:
       run: |
         cabal test all --test-options="--headless-tests --firefox"
 
-    # - name: Archive test_runs
-    #   uses: actions/upload-artifact@v4
-    #   if: always()
-    #   with:
-    #     name: test-runs-${{ runner.os }}-${{ matrix.ghc }}
-    #     path: test_runs
+    - name: Archive test_runs
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-runs-${{ runner.os }}-${{ matrix.ghc }}
+        path: test_runs
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}
@@ -111,11 +111,14 @@ jobs:
 
     - name: Build
       run: |
-        stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --system-ghc \
+          --test --no-run-tests \
+          --bench --no-run-benchmarks
 
     - name: Test
       run: |
-        stack test --system-ghc --ta="--headless-tests"
+        stack test --system-ghc \
+          --ta="--headless-tests"
 
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
