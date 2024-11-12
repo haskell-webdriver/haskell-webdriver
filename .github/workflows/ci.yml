@@ -62,7 +62,7 @@ jobs:
 
     - name: Test
       run: |
-        cabal test all --test-options="--headless-tests --firefox"
+        cabal test all --test-options="--headless-tests --use-firefox"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4

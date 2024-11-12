@@ -10,8 +10,8 @@ data BrowserToUse = UseChrome | UseFirefox
 
 browserToUse :: (forall f a. Mod f a) -> Parser BrowserToUse
 browserToUse maybeInternal =
-  flag' UseFirefox (long "firefox" <> help "Use Firefox" <> maybeInternal)
-  <|> flag UseChrome UseChrome (long "chrome" <> help "Use Chrome (default)" <> maybeInternal)
+  flag' UseFirefox (long "use-firefox" <> help "Use Firefox" <> maybeInternal)
+  <|> flag UseChrome UseChrome (long "use-chrome" <> help "Use Chrome (default)" <> maybeInternal)
 
 data UserOptions = UserOptions {
   optSeleniumJar :: Maybe FilePath
