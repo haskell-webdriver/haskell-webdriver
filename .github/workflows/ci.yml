@@ -56,9 +56,19 @@ jobs:
           --extra-include-dirs=/opt/homebrew/include \
           --extra-lib-dirs=/opt/homebrew/lib
 
+    - uses: browser-actions/setup-chrome@v1
+      with:
+        install-chromedriver: true
+
     - name: Test
       run: |
-        cabal test all --test-options="--headless-tests"
+        CHROME=$(which chrome)
+        CHROMEDRIVER=$(which chromedriver)
+
+        echo "CHROME: $CHROME"
+        echo "CHROMEDRIVER: $CHROMEDRIVER"
+
+        cabal test all --test-options="--headless-tests --chrome $CHROME --chromedriver $CHROMEDRIVER"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4

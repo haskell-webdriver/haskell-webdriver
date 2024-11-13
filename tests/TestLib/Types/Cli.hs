@@ -31,10 +31,10 @@ userOptions :: Parser UserOptions
 userOptions = UserOptions
   <$> optional (strOption (long "selenium-jar" <> help "selenium.jar file to use"))
 
-  <*> optional (strOption (long "chrome-binary" <> help "Path to Chrome binary"))
+  <*> optional (strOption (long "chrome" <> help "Path to Chrome binary"))
   <*> optional (strOption (long "chromedriver" <> help "Path to chromedriver"))
 
-  <*> optional (strOption (long "firefox-binary" <> help "Path to Firefox binary"))
+  <*> optional (strOption (long "firefox" <> help "Path to Firefox binary"))
   <*> optional (strOption (long "geckodriver" <> help "Path to geckodriver"))
 
   <*> browserToUse mempty
