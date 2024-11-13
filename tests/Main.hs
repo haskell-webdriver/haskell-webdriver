@@ -27,7 +27,6 @@ main = do
   putStrLn [i|args: #{args}|]
 
   clo <- parseCommandLineArgs userOptions (return ())
-  putStrLn [i|clo: #{clo}|]
 
   let CommandLineWebdriverOptions {..} = optWebdriverOptions clo
 
