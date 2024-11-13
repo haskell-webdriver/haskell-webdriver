@@ -42,6 +42,8 @@ jobs:
       run: |
         cabal freeze
 
+    - uses: DeterminateSystems/magic-nix-cache-action@main
+
     - uses: actions/cache@v3
       name: Cache ~/.cabal/store
       with:
@@ -50,19 +52,13 @@ jobs:
 
     - name: Build
       run: |
-        # cabal configure \
-        #   --enable-tests \
-        #   --enable-benchmarks \
-        #   --test-show-details=direct \
-        #   --extra-include-dirs=/opt/homebrew/include \
-        #   --extra-lib-dirs=/opt/homebrew/lib
         cabal build all \
           --extra-include-dirs=/opt/homebrew/include \
           --extra-lib-dirs=/opt/homebrew/lib
 
     - name: Test
       run: |
-        cabal test all --test-options="--headless-tests --firefox"
+        cabal test all --test-options="--headless-tests"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4
@@ -101,6 +97,8 @@ jobs:
         enable-stack: true
         ghc-version: ${{ matrix.ghc }}
         stack-version: "latest"
+
+    - uses: DeterminateSystems/magic-nix-cache-action@main
 
     - uses: actions/cache/restore@v4
       name: Cache restore ~/.stack
