@@ -50,7 +50,6 @@ introduceWebDriver :: forall context m. (
   => SpecFree (LabelValue "webdriver" WebDriverContext :> context) m () -> SpecFree context m ()
 introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
   where
-    withAlloc :: (HasCallStack => WebDriverContext -> ExampleT context m [Result]) -> ExampleT context m ()
     withAlloc action = do
       Just dir <- getCurrentFolder
       webdriverDir <- liftIO $ createTempDirectory dir "webdriver"
