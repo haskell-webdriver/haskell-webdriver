@@ -65,6 +65,7 @@ library:
   - http-types >= 0.8
   - network-uri >= 2.6
   - pretty-simple
+  - retry
   - safe-exceptions
   - scientific >= 0.2
   - string-interpolate
@@ -119,7 +120,7 @@ tests:
     - mtl
     - network
     - optparse-applicative
-    - safe
+    - retry
     - safe-exceptions
     - sandwich
     - sandwich-contexts

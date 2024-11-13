@@ -2,6 +2,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -9,16 +10,15 @@
 module TestLib.Contexts.WebDriver where
 
 import Control.Monad
-import Control.Monad.Catch (MonadCatch)
+import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
+import Control.Retry
 import Data.Function
-import Data.Int
 import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
-import Network.Socket (PortNumber)
-import Safe
+import Network.Socket
 import System.FilePath
 import System.IO (hGetLine)
 import System.IO.Temp
@@ -26,6 +26,7 @@ import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Util.Ports
 import TestLib.Contexts.BrowserDependencies
+import TestLib.Waits
 import UnliftIO.Async
 import UnliftIO.Process
 
@@ -45,7 +46,7 @@ type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
 
 
 introduceWebDriver :: forall context m. (
-  BaseMonadContext m context, MonadCatch m
+  BaseMonadContext m context, MonadMask m
   , HasFile context "selenium.jar"
   , HasFile context "java"
   , HasBrowserDependencies context
@@ -101,7 +102,12 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
             True -> return ()
             False -> loop
 
-        withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ ->
+        withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ -> do
+          addr:_ <- liftIO $ getAddrInfo (Just defaultHints) (Just "127.0.0.1") (Just (show port))
+
+          let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 5_000_000 $ exponentialBackoff 1000
+          waitForSocket policy addr
+
           void $ action $ WebDriverContext hostname port
 
 
