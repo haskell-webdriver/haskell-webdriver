@@ -10,23 +10,8 @@ import Data.String.Interpolate
 import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
+import TestLib.Types
 import TestLib.Types.Cli
-
-
-data BrowserDependencies = BrowserDependenciesChrome {
-  browserDependenciesChromeChrome :: FilePath
-  , browserDependenciesChromeChromedriver :: FilePath
-  }
-  | BrowserDependenciesFirefox {
-      browserDependenciesFirefoxFirefox :: FilePath
-      , browserDependenciesFirefoxGeckodriver :: FilePath
-      }
-  deriving (Show)
-
-browserDependencies :: Label "browserDependencies" BrowserDependencies
-browserDependencies = Label
-
-type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies
 
 
 introduceBrowserDependencies :: forall m context. (

@@ -21,7 +21,6 @@ import Control.Monad.Reader
 import Data.Function
 import Data.String.Interpolate
 import GHC.Stack
-import Network.Socket (PortNumber)
 import Network.Wai.Application.Static
 import Network.Wai.Handler.Warp
 import System.FilePath
@@ -29,21 +28,12 @@ import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Util.Ports
 import Test.WebDriver.Class
 import Test.WebDriver.Commands
+import TestLib.Types
 import UnliftIO.Async
 import UnliftIO.Directory
 import UnliftIO.Exception
 import UnliftIO.MVar
 
-
-data StaticServerContext = StaticServerContext {
-  staticServerHostname :: String
-  , staticServerPort :: PortNumber
-  }
-
-staticServer :: Label "staticServer" StaticServerContext
-staticServer = Label
-
-type HasStaticServerContext context = HasLabel context "staticServer" StaticServerContext
 
 introduceStaticServer :: forall context m. (
   HasCallStack, MonadUnliftIO m, MonadCatch m

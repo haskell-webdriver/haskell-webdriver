@@ -25,21 +25,16 @@ import System.IO.Temp
 import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Util.Ports
-import TestLib.Contexts.BrowserDependencies
+import Test.Sandwich.Waits
+import Test.WebDriver.Commands
+import Test.WebDriver.Config
+import TestLib.Types
+import TestLib.Types.Cli
 import TestLib.Waits
 import UnliftIO.Async
+import UnliftIO.IORef
 import UnliftIO.Process
 
-
-data WebDriverContext = WebDriverContext {
-  webDriverHostname :: String
-  , webDriverPort :: PortNumber
-  }
-
-webdriver :: Label "webdriver" WebDriverContext
-webdriver = Label
-
-type HasWebDriverContext context = HasLabel context "webdriver" WebDriverContext
 
 type BaseMonad m = (HasCallStack, MonadUnliftIO m)
 type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
@@ -50,10 +45,12 @@ introduceWebDriver :: forall context m. (
   , HasFile context "selenium.jar"
   , HasFile context "java"
   , HasBrowserDependencies context
+  , HasCommandLineOptions context UserOptions
   )
   => SpecFree (LabelValue "webdriver" WebDriverContext :> context) m () -> SpecFree context m ()
 introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
   where
+    withAlloc :: (HasCallStack => WebDriverContext -> ExampleT context m [Result]) -> ExampleT context m ()
     withAlloc action = do
       Just dir <- getCurrentFolder
       webdriverDir <- liftIO $ createTempDirectory dir "webdriver"
@@ -102,13 +99,26 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
             True -> return ()
             False -> loop
 
-        withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ -> do
-          addr:_ <- liftIO $ getAddrInfo (Just defaultHints) (Just "127.0.0.1") (Just (show port))
+        let webDriverContext = WebDriverContext hostname port
 
+        withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ -> do
+          -- Wait for a successful connectino to the server socket
+          addr:_ <- liftIO $ getAddrInfo (Just defaultHints) (Just "127.0.0.1") (Just (show port))
           let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 5_000_000 $ exponentialBackoff 1000
           waitForSocket policy addr
 
-          void $ action $ WebDriverContext hostname port
+          -- Wait for a successful call to /status
+          waitUntil 120 $ do
+            browserDeps <- getContext browserDependencies
+
+            wdConfig <- getWDConfig' webDriverContext browserDeps
+            baseSessionVar <- mkSession wdConfig >>= newIORef
+
+            pushContext wdSession baseSessionVar $ do
+              status <- serverStatus
+              info [i|WebDriver server status: #{status}|]
+
+          void $ action webDriverContext
 
 
 seleniumOutFileName, seleniumErrFileName :: FilePath
