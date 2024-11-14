@@ -21,6 +21,12 @@ jobs:
         - "9.4.8"
         - "9.6.6"
         - "9.8.2"
+        exclude:
+        # haskell-actions/setup@v2 can't install these
+        - os: macOS-latest
+          ghc: 8.6.5
+        - os: macOS-latest
+          ghc: 8.8.4
 
     steps:
     - uses: actions/checkout@v4
@@ -31,7 +37,17 @@ jobs:
         # release-24.05
         nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
 
-    - uses: haskell/actions/setup@v2
+    - name: Install dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        # For older GHCs
+        brew install llvm@13 --quiet # Suppress deprecation warning
+        echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
+        # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
+        echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
+
+    - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
       name: Setup Haskell
       with:
@@ -57,18 +73,26 @@ jobs:
           --extra-lib-dirs=/opt/homebrew/lib
 
     - uses: browser-actions/setup-chrome@v1
+      id: setup-chrome
       with:
         install-chromedriver: true
 
     - name: Test
       run: |
-        CHROME=$(which chrome)
-        CHROMEDRIVER=$(which chromedriver)
+        CHROME="${{ steps.setup-chrome.outputs.chrome-path }}"
+        CHROMEDRIVER="${{ steps.setup-chrome.outputs.chromedriver-path }}"
 
         echo "CHROME: $CHROME"
         echo "CHROMEDRIVER: $CHROMEDRIVER"
 
-        cabal test all --test-options="--headless-tests --chrome $CHROME --chromedriver $CHROMEDRIVER"
+        echo "Full test options: --headless-tests --webdriver-chrome $CHROME --webdriver-chromedriver $CHROMEDRIVER"
+
+        cabal test all \
+          --test-option="--headless-tests" \
+          --test-option="--webdriver-chrome" \
+          --test-option="$CHROME" \
+          --test-option="--webdriver-chromedriver" \
+          --test-option="$CHROMEDRIVER"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4

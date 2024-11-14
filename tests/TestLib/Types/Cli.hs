@@ -29,13 +29,13 @@ data UserOptions = UserOptions {
 
 userOptions :: Parser UserOptions
 userOptions = UserOptions
-  <$> optional (strOption (long "selenium-jar" <> help "selenium.jar file to use"))
+  <$> optional (strOption (long "webdriver-selenium-jar" <> help "selenium.jar file to use"))
 
-  <*> optional (strOption (long "chrome" <> help "Path to Chrome binary"))
-  <*> optional (strOption (long "chromedriver" <> help "Path to chromedriver"))
+  <*> optional (strOption (long "webdriver-chrome" <> help "Path to Chrome binary"))
+  <*> optional (strOption (long "webdriver-chromedriver" <> help "Path to chromedriver"))
 
-  <*> optional (strOption (long "firefox" <> help "Path to Firefox binary"))
-  <*> optional (strOption (long "geckodriver" <> help "Path to geckodriver"))
+  <*> optional (strOption (long "webdriver-firefox" <> help "Path to Firefox binary"))
+  <*> optional (strOption (long "webdriver-geckodriver" <> help "Path to geckodriver"))
 
   <*> browserToUse mempty
 
