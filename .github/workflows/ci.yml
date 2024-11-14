@@ -13,7 +13,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         ghc:
-        - "8.6.5"
         - "8.8.4"
         - "8.10.7"
         - "9.0.2"
@@ -22,9 +21,7 @@ jobs:
         - "9.6.6"
         - "9.8.2"
         exclude:
-        # haskell-actions/setup@v2 can't install these
-        - os: macOS-latest
-          ghc: 8.6.5
+        # haskell-actions/setup@v2 can't install older GHCs
         - os: macOS-latest
           ghc: 8.8.4
 
