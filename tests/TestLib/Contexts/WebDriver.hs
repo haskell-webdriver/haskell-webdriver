@@ -77,7 +77,8 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
 
       let fullArgs = javaArgs <> [
             "-jar", seleniumJar
-            , "-port", show port
+            , "standalone"
+            , "--port", show port
             ]
       debug [i|#{java} #{T.unwords $ fmap T.pack fullArgs}|]
 
@@ -97,7 +98,7 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
           line <- fmap T.pack $ liftIO $ hGetLine hRead
           debug line
 
-          case "Selenium Server is up and running" `T.isInfixOf` line of
+          case "Started Selenium Standalone" `T.isInfixOf` line of
             True -> return ()
             False -> loop
 

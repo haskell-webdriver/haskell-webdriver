@@ -7,6 +7,8 @@
 
 module Main where
 
+import Control.Monad.Catch (MonadMask)
+import Control.Monad.IO.Unlift
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Spec as Spec
@@ -34,13 +36,31 @@ main = do
   runSandwichWithCommandLineArgs' defaultOptions userOptions $
     introduceNixContext (nixpkgsRelease { nixpkgsDerivationAllowUnfree = True }) $
     introduceBinaryViaNixPackage @"java" "jre" $
-    (case optSeleniumJar of Just p -> introduceFile @"selenium.jar" p; Nothing -> introduceFileViaNixPackage' @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar) $
+    (case optSeleniumJar of Just p -> introduceFile @"selenium.jar" p; Nothing -> introduceSeleniumFromNix) $
     (case optChromeBinary of Just p -> introduceFile @"google-chrome-stable" p; Nothing -> introduceBinaryViaNixPackage @"google-chrome-stable" "google-chrome") $
     introduceStaticServer $
     introduceBrowserDependencies $
     introduceWebDriver $ do
     Spec.spec
 
+
+-- introduceSeleniumFromNix = introduceFileViaNixPackage' @"selenium.jar" "selenium-server-standalone" tryFindSeleniumJar
+
+introduceSeleniumFromNix :: forall context m. (
+  HasBaseContext context, HasNixContext context, MonadUnliftIO m, MonadMask m
+  )
+  => SpecFree (LabelValue "file-selenium.jar" (EnvironmentFile "selenium.jar") :> context) m ()
+  -> SpecFree context m ()
+introduceSeleniumFromNix = introduceFileViaNixDerivation' @"selenium.jar" [i|{ fetchurl, selenium-server-standalone }:
+
+selenium-server-standalone.overrideAttrs (oldAttrs: {
+  version = "4.26.0";
+  src = fetchurl {
+    url = "https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.26.0/selenium-server-4.26.0.jar";
+    hash = "sha256-GROJhXM0UqvgAzk1D9dFcaQ9Ee+KrVWinBjTPzJszwo=";
+  };
+})
+|] tryFindSeleniumJar
 
 -- | Nixpkgs release 24.05, accessed 11\/9\/2024.
 -- You can compute updated values for this release (or others) by running
