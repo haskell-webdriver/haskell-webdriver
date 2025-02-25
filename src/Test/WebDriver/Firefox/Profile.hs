@@ -1,57 +1,73 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE LambdaCase #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-} -- suppress warnings from attoparsec
 
 -- | A module for working with Firefox profiles. Firefox profiles are manipulated
 -- in pure code and then \"prepared\" for network transmission.
 
-module Test.WebDriver.Firefox.Profile
-       ( -- * Profiles
-         Firefox, Profile(..), PreparedProfile
-       , defaultProfile
-         -- * Preferences
-       , ProfilePref(..), ToPref(..)
-       , addPref, getPref, deletePref
-         -- * Extensions
-       , addExtension, deleteExtension, hasExtension
-         -- * Other files and directories
-       , addFile, deleteFile, hasFile
-         -- * Miscellaneous profile operations
-       , unionProfiles, onProfileFiles, onProfilePrefs
-         -- * Loading and preparing profiles
-       , prepareProfile, prepareTempProfile
-         -- ** Preparing profiles from disk
-       , loadProfile, prepareLoadedProfile, prepareLoadedProfile_
-         -- ** Preparing zip archives
-       , prepareZippedProfile, prepareZipArchive, prepareRawZip
-         -- ** Preferences parsing error
-       , ProfileParseError(..)
-       ) where
-import Test.WebDriver.Common.Profile
-import Data.Aeson (Result(..), encode, fromJSON)
-import Data.Aeson.Parser (jstring, value')
-import Data.Attoparsec.ByteString.Char8 as AP
-import qualified Data.HashMap.Strict as HM
-import Data.Text (Text)
-import Data.ByteString as BS (readFile)
-import qualified Data.ByteString.Lazy.Char8 as LBS
+module Test.WebDriver.Firefox.Profile (
+  -- * Profiles
+  Firefox
+  , Profile(..)
+  , PreparedProfile
+  , defaultProfile
+  -- * Preferences
+  , ProfilePref(..)
+  , ToPref(..)
+  , addPref
+  , getPref
+  , deletePref
+  -- * Extensions
+  , addExtension
+  , deleteExtension
+  , hasExtension
+  -- * Other files and directories
+  , addFile
+  , deleteFile
+  , hasFile
+  -- * Miscellaneous profile operations
+  , unionProfiles
+  , onProfileFiles
+  , onProfilePrefs
+  -- * Loading and preparing profiles
+  , prepareProfile
+  , prepareTempProfile
+  -- ** Preparing profiles from disk
+  , loadProfile
+  , prepareLoadedProfile
+  -- ** Preparing zip archives
+  , prepareZippedProfile
+  , prepareZipArchive
+  , prepareRawZip
+  -- ** Preferences parsing error
+  , ProfileParseError(..)
+  ) where
 
-import System.FilePath hiding (addExtension, hasExtension)
-import System.Directory
-import System.IO.Temp (createTempDirectory)
-import qualified System.Directory.Tree as DS
-
+import Codec.Archive.Zip
+import Control.Applicative
+import Control.Arrow
+import Control.Exception.Lifted hiding (try)
 import Control.Monad
 import Control.Monad.Base
 import Control.Monad.Trans.Control
-import Control.Exception.Lifted hiding (try)
-import Control.Applicative
-import Control.Arrow
+import Data.Aeson (Result(..), encode, fromJSON)
+import Data.Aeson.Parser (jstring, value')
+import Data.Attoparsec.ByteString.Char8 as AP
+import Data.ByteString as BS (readFile)
+import qualified Data.ByteString.Lazy.Char8 as LBS
+import Data.Function ((&))
+import qualified Data.HashMap.Strict as HM
+import Data.Text (Text)
+import System.Directory
+import System.FilePath hiding (addExtension, hasExtension)
+import Test.WebDriver.Common.Profile
 
 #if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
 import Prelude hiding (catch)
 #endif
+
 
 -- |Phantom type used in the parameters of 'Profile' and 'PreparedProfile'
 data Firefox
@@ -149,66 +165,56 @@ loadProfile path = liftBase $ do
       where parsePrefs s = either (throwIO . ProfileParseError) return
                            $ parseOnly prefsParser s
 
--- |Prepare a firefox profile for network transmission.
--- Internally, this function constructs a Firefox profile within a temp
--- directory, archives it as a zip file, and then base64 encodes the zipped
--- data. The temporary directory is deleted afterwards.
---
--- NOTE: because this function has to copy the profile files into a
--- a temp directory before zip archiving them, this operation is likely to be slow
--- for large profiles. In such a case, consider using 'prepareLoadedProfile_' or
--- 'prepareZippedProfile' instead.
-prepareProfile :: MonadBaseControl IO m =>
-                  Profile Firefox -> m (PreparedProfile Firefox)
-prepareProfile Profile {profileFiles = files, profilePrefs = prefs}
-  = liftBase $ do
-      tmpdir <- mkTemp
-      mapM_ (installPath tmpdir) . HM.toList $ files
-      installUserPrefs tmpdir
-      prepareLoadedProfile_ tmpdir
---        <* removeDirectoryRecursive tmpdir
-  where
-    installPath destDir (destPath, src) = do
-      let dest = destDir </> destPath
-      isDir <- doesDirectoryExist src
-      if isDir
-        then do
-          createDirectoryIfMissing True dest `catch` ignoreIOException
-          (_ DS.:/ dir) <- DS.readDirectoryWithL LBS.readFile src
-          handle ignoreIOException . void
-              $ DS.writeDirectoryWith LBS.writeFile (dest DS.:/ dir)
-        else do
-          let dir = takeDirectory dest
-          when (not . null $ dir) $
-            createDirectoryIfMissing True dir `catch` ignoreIOException
-          copyFile src dest `catch` ignoreIOException
-      where
-        ignoreIOException :: IOException -> IO ()
-        ignoreIOException = print
+-- | Prepare a firefox profile for network transmission.
+-- Internally, this function constructs a Firefox profile as a zip archive,
+-- then base64 encodes the zipped data.
+prepareProfile :: forall m. (MonadBaseControl IO m) => Profile Firefox -> m (PreparedProfile Firefox)
+prepareProfile ffProfile = prepareZipArchive <$> prepareProfileArchive ffProfile
 
-    installUserPrefs d = LBS.writeFile (d </> "user" <.> "js") str
-      where
-        str = LBS.concat
-            . map (\(k, v) -> LBS.concat [ "user_pref(", encode k,
-                                           ", ", encode v, ");\n"])
-            . HM.toList $ prefs
+-- | Prepare a firefox profile for network transmission.
+-- Internally, this function constructs a Firefox profile as a zip archive,
+-- then base64 encodes the zipped data.
+prepareProfileArchive :: forall m. (MonadBaseControl IO m) => Profile Firefox -> m Archive
+prepareProfileArchive (Profile {profileFiles = files, profilePrefs = prefs}) = do
+  let baseArchive = emptyArchive
+                  & addEntryToArchive (toEntry ("user" <.> "js") 0 userJsContents)
+
+  liftBase $ foldM addProfileFile baseArchive (HM.toList files)
+
+  where
+    userJsContents = LBS.concat
+        . map (\(k, v) -> LBS.concat [ "user_pref(", encode k,
+                                       ", ", encode v, ");\n"])
+        . HM.toList $ prefs
+
+    addProfileFile :: Archive -> (FilePath, FilePath) -> IO Archive
+    addProfileFile archive (dest, pathOnDisk) = doesPathExist pathOnDisk >>= \case
+      False -> throwIO $ userError ("Path didn't exist: " ++ show pathOnDisk)
+      True -> doesDirectoryExist pathOnDisk >>= \case
+        False -> do
+          bytes <- LBS.readFile pathOnDisk
+          return $ archive
+                 & addEntryToArchive (toEntry dest 0 bytes)
+        True -> do
+          contents <- listDirectory pathOnDisk
+          foldM addProfileFile archive [(dest </> x, pathOnDisk </> x) | x <- contents]
 
 -- |Apply a function on a default profile, and
 -- prepare the result. The Profile passed to the handler function is
 -- the default profile used by sessions when Nothing is specified
-prepareTempProfile :: MonadBaseControl IO m =>
-                     (Profile Firefox -> Profile Firefox)
-                     -> m (PreparedProfile Firefox)
+prepareTempProfile :: (MonadBaseControl IO m) => (Profile Firefox -> Profile Firefox) -> m (PreparedProfile Firefox)
 prepareTempProfile f = prepareProfile . f $ defaultProfile
 
 -- |Convenience function to load an existing Firefox profile from disk, apply
 -- a handler function, and then prepare the result for network transmission.
 --
 -- NOTE: like 'prepareProfile', the same caveat about large profiles applies.
-prepareLoadedProfile :: MonadBaseControl IO m =>
-                        FilePath
-                        -> (Profile Firefox -> Profile Firefox)
-                        -> m (PreparedProfile Firefox)
+prepareLoadedProfile :: (
+  MonadBaseControl IO m
+  )
+  => FilePath
+  -> (Profile Firefox -> Profile Firefox)
+  -> m (PreparedProfile Firefox)
 prepareLoadedProfile path f = liftM f (loadProfile path) >>= prepareProfile
 
 -- firefox prefs.js parser
@@ -235,9 +241,3 @@ prefsParser = many1 $ do
         comment = inlineComment <|> lineComment
         lineComment = char '#' *> manyTill anyChar endOfLine
         inlineComment = string "/*" *> manyTill anyChar (string "*/")
-
-
-mkTemp :: IO FilePath
-mkTemp = do
-  d <- getTemporaryDirectory
-  createTempDirectory d ""

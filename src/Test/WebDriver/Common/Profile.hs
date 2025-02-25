@@ -6,31 +6,55 @@
 
 -- | A type for profile preferences. These preference values are used by both
 -- Firefox and Opera profiles.
-module Test.WebDriver.Common.Profile
-       ( -- *Profiles and profile preferences
-         Profile(..), PreparedProfile(..), ProfilePref(..), ToPref(..)
-         -- * Preferences
-       , getPref, addPref, deletePref
-         -- * Extensions
-       , addExtension, deleteExtension, hasExtension
-         -- * Other files and directories
-       , addFile, deleteFile, hasFile
-         -- * Miscellaneous profile operations
-       , unionProfiles, onProfileFiles, onProfilePrefs
-         -- *Preparing profiles from disk
-       , prepareLoadedProfile_
-         -- *Preparing zipped profiles
-       , prepareZippedProfile, prepareZipArchive,
-         prepareRawZip
-         -- *Profile errors
-       , ProfileParseError(..)
-       ) where
+module Test.WebDriver.Common.Profile (
+  -- *Profiles and profile preferences
+  Profile(..)
+  , PreparedProfile(..)
+  , ProfilePref(..)
+  , ToPref(..)
+  -- * Preferences
+  , getPref
+  , addPref
+  , deletePref
+  -- * Extensions
+  , addExtension
+  , deleteExtension
+  , hasExtension
+  -- * Other files and directories
+  , addFile
+  , deleteFile
+  , hasFile
+  -- * Miscellaneous profile operations
+  , unionProfiles
+  , onProfileFiles
+  , onProfilePrefs
+  -- * Preparing zipped profiles
+  , prepareZippedProfile
+  , prepareZipArchive
+  , prepareRawZip
+  -- * Profile errors
+  , ProfileParseError(..)
+  ) where
 
 import Codec.Archive.Zip
+import Control.Applicative
+import Control.Exception
+import Control.Monad.Base
 import Data.Aeson
 import Data.Aeson.Types
-import System.Directory
-import System.FilePath hiding (addExtension, hasExtension)
+import qualified Data.ByteString.Base64.Lazy as B64
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy as LBS
+import Data.Fixed
+import qualified Data.HashMap.Strict as HM
+import Data.Int
+import Data.Ratio
+import Data.Text (Text, pack)
+import qualified Data.Text.Lazy.Encoding as TL
+import Data.Typeable
+import Data.Word
+import Prelude -- hides some "unused import" warnings
+import System.FilePath ((</>), splitFileName)
 
 #if MIN_VERSION_aeson(0,7,0)
 import Data.Scientific
@@ -38,26 +62,6 @@ import Data.Scientific
 import Data.Attoparsec.Number (Number(..))
 #endif
 
-import qualified Data.HashMap.Strict as HM
-import Data.Text (Text, pack)
-import Data.ByteString.Lazy (ByteString)
---import qualified Data.ByteString as SBS
-import qualified Data.ByteString.Lazy as LBS
-import qualified Data.ByteString.Base64.Lazy as B64
-import qualified Data.Text.Lazy.Encoding as TL
-
-
-import Data.Fixed
-import Data.Ratio
-import Data.Int
-import Data.Word
-import Data.Typeable
-
-import Control.Exception
-import Control.Applicative
-import Control.Monad.Base
-
-import Prelude -- hides some "unused import" warnings
 
 -- |This structure allows you to construct and manipulate profiles in pure code,
 -- deferring execution of IO operations until the profile is \"prepared\". This
@@ -237,20 +241,6 @@ onProfileFiles :: Profile b
                   -> Profile b
 onProfileFiles (Profile ls hm) f = Profile (f ls) hm
 
-
--- |Efficiently load an existing profile from disk and prepare it for network
--- transmission.
-prepareLoadedProfile_ :: MonadBase IO m =>
-                        FilePath -> m (PreparedProfile a)
-prepareLoadedProfile_ path = liftBase $ do
-  oldWd <- getCurrentDirectory
-  setCurrentDirectory path
-  prepareZipArchive <$>
-    liftBase (addFilesToArchive [OptRecursive]
-              emptyArchive ["."])
-    <* setCurrentDirectory oldWd
-
--- |Prepare a zip file of a profile on disk for network transmission.
 -- This function is very efficient at loading large profiles from disk.
 prepareZippedProfile :: MonadBase IO m =>
                         FilePath -> m (PreparedProfile a)
