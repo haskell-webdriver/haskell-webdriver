@@ -24,6 +24,12 @@ jobs:
         # haskell-actions/setup@v2 can't install older GHCs
         - os: macOS-latest
           ghc: 8.8.4
+        # These don't work on GitHub CI anymore because they need llvm@13, which became
+        # disabled on 12/31/2024
+        - os: macOS-latest
+          ghc: 8.10.7
+        - os: macOS-latest
+          ghc: 9.0.2
 
     steps:
     - uses: actions/checkout@v4
@@ -38,9 +44,6 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
-        # For older GHCs
-        brew install llvm@13 --quiet # Suppress deprecation warning
-        echo /opt/homebrew/opt/llvm@13/bin >> $GITHUB_PATH
         # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
         echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
 
