@@ -41,7 +41,7 @@ import Test.WebDriver.Session
 import Text.Pretty.Simple
 
 #if !MIN_VERSION_http_client(0,4,30)
-import Data.Default.Class
+import Data.Default (def)
 #endif
 
 --This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10

@@ -24,7 +24,7 @@ import Control.Exception.Safe
 import Data.Aeson
 import Data.Aeson.Types
 import Data.CallStack
-import Data.Default.Class
+import Data.Default (Default, def)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Prelude -- hides some "unused import" warnings

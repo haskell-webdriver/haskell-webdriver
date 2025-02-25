@@ -6,7 +6,7 @@ module Test.WebDriver.Capabilities where
 import Control.Applicative
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch, Pair)
-import Data.Default.Class (Default(..))
+import Data.Default (Default, def)
 import Data.Maybe (fromMaybe, catMaybes)
 import Data.String (fromString)
 import Data.Text (Text, toLower, toUpper)

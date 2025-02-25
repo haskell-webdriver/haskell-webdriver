@@ -22,7 +22,7 @@ module Test.WebDriver.Config(
   ) where
 
 import Control.Monad.IO.Class
-import Data.Default.Class (Default(..))
+import Data.Default (Default, def)
 import Data.String (fromString)
 import Data.String.Interpolate
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)

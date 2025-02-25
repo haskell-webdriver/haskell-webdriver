@@ -1,5 +1,5 @@
 name: webdriver
-version: 0.12.0.0
+version: 0.12.0.1
 license: BSD3
 license-file: LICENSE
 author: Adam Curtis <kallisti.dev@gmail.com>
@@ -56,7 +56,7 @@ library:
   - base64-bytestring >= 1.0
   - bytestring >= 0.9
   - call-stack
-  - data-default-class
+  - data-default
   - directory > 1.0
   - directory-tree >= 0.11
   - exceptions >= 0.4
