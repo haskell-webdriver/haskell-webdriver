@@ -8,20 +8,31 @@
 -- Firefox and Opera profiles.
 module Test.WebDriver.Common.Profile (
   -- *Profiles and profile preferences
-  Profile(..), PreparedProfile(..), ProfilePref(..), ToPref(..)
+  Profile(..)
+  , PreparedProfile(..)
+  , ProfilePref(..)
+  , ToPref(..)
   -- * Preferences
-  , getPref, addPref, deletePref
+  , getPref
+  , addPref
+  , deletePref
   -- * Extensions
-  , addExtension, deleteExtension, hasExtension
+  , addExtension
+  , deleteExtension
+  , hasExtension
   -- * Other files and directories
-  , addFile, deleteFile, hasFile
+  , addFile
+  , deleteFile
+  , hasFile
   -- * Miscellaneous profile operations
-  , unionProfiles, onProfileFiles, onProfilePrefs
-  -- *Preparing profiles from disk
-  , prepareLoadedProfile_
-  -- *Preparing zipped profiles
-  , prepareZippedProfile, prepareZipArchive, prepareRawZip
-  -- *Profile errors
+  , unionProfiles
+  , onProfileFiles
+  , onProfilePrefs
+  -- * Preparing zipped profiles
+  , prepareZippedProfile
+  , prepareZipArchive
+  , prepareRawZip
+  -- * Profile errors
   , ProfileParseError(..)
   ) where
 
@@ -43,7 +54,6 @@ import qualified Data.Text.Lazy.Encoding as TL
 import Data.Typeable
 import Data.Word
 import Prelude -- hides some "unused import" warnings
-import System.Directory
 import System.FilePath ((</>), splitFileName)
 
 #if MIN_VERSION_aeson(0,7,0)
@@ -230,17 +240,6 @@ onProfileFiles :: Profile b
                       -> HM.HashMap FilePath FilePath)
                   -> Profile b
 onProfileFiles (Profile ls hm) f = Profile (f ls) hm
-
-
--- | Efficiently load an existing profile from disk and prepare it for network
--- transmission.
-prepareLoadedProfile_ :: MonadIO m => FilePath -> m (PreparedProfile a)
-prepareLoadedProfile_ path = liftIO $ do
-  oldWd <- getCurrentDirectory
-  setCurrentDirectory path
-  prepareZipArchive <$>
-    liftIO (addFilesToArchive [OptRecursive] emptyArchive ["."])
-    <* setCurrentDirectory oldWd
 
 -- | Prepare a zip file of a profile on disk for network transmission.
 -- This function is very efficient at loading large profiles from disk.
