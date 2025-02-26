@@ -112,6 +112,7 @@ test-suite tests
       Spec.Checkboxes
       Spec.Clicking
       Spec.Screenshots
+      Spec.Scripts
       Spec.Windows
       TestLib.Contexts.BrowserDependencies
       TestLib.Contexts.Session
