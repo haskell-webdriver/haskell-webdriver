@@ -1,11 +1,20 @@
 
-resolver: nightly-2023-11-10
+resolver: lts-22.39
 
 packages:
 - '.'
 
+nix:
+  pure: false
+  packages:
+  - pkg-config
+  - zlib
+
 extra-deps:
-- aeson-2.2.0.0
-- attoparsec-aeson-2.2.0.0
-- integer-conversion-0.1
-- text-iso8601-0.1
+- git: https://github.com/codedownio/sandwich
+  commit: ade66e123f6beab5f340193c61c3791c0cc2d8f7
+  subdirs:
+  - sandwich
+  - sandwich-contexts
+
+- vty-windows-0.2.0.3
