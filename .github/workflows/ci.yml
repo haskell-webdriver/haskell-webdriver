@@ -149,6 +149,13 @@ jobs:
       run: |
         stack test --system-ghc --ta="--headless-tests"
 
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-runs-stack-${{ matrix.ghc }}
+        path: test_runs
+        retention-days: 7
+
     - uses: actions/cache/save@v4
       if: always() && steps.cache-restore.outputs.cache-hit != 'true'
       with:
