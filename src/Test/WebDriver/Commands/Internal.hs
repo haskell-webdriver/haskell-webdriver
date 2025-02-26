@@ -84,7 +84,7 @@ data NoSessionId = NoSessionId String CallStack
 -- :sessionId is a URL parameter as described in
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol>
 doSessCommand :: (
-  HasCallStack, WebDriver wd, ToJSON a, FromJSON b
+  HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
   ) => Method -> Text -> a -> wd b
 doSessCommand method path args = do
   WDSession { wdSessId = mSessId } <- getSession
@@ -106,13 +106,15 @@ doSessCommand method path args = do
 -- For example, passing a URL of "/active" will expand to
 -- \"/session/:sessionId/element/:id/active\", where :sessionId and :id are URL
 -- parameters as described in the wire protocol.
-doElemCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
-                  Method -> Element -> Text -> a -> wd b
+doElemCommand :: (
+  HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
+  ) => Method -> Element -> Text -> a -> wd b
 doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
 
 -- |A wrapper around 'doSessCommand' to create window handle URLS.
-doWinCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
-                 Method -> Text -> a -> wd b
+doWinCommand :: (
+  HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
+  ) => Method -> Text -> a -> wd b
 doWinCommand m path a =
   doSessCommand m (T.concat ["/window/", path]) a

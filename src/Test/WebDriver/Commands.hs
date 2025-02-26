@@ -81,7 +81,7 @@ import Control.Exception.Safe (throwIO, handle)
 import qualified Control.Exception.Safe as L
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Aeson
+import Data.Aeson as Aeson
 import Data.Aeson.Types
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString, writeFile)
@@ -746,8 +746,9 @@ deleteKey :: (HasCallStack, WebDriver wd) => WebStorageType -> Text -> wd ()
 deleteKey s k = noReturn $ doStorageCommand methodPost s ("/key/" `T.append` urlEncode k) Null
 
 -- | A wrapper around 'doSessCommand' to create web storage requests.
-doStorageCommand :: (HasCallStack, WebDriver wd, ToJSON a, FromJSON b) =>
-                     Method -> WebStorageType -> Text -> a -> wd b
+doStorageCommand :: (
+  HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
+  ) => Method -> WebStorageType -> Text -> a -> wd b
 doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
   where s' = case s of
           LocalStorage -> "local_storage"
@@ -777,6 +778,13 @@ instance FromJSON LogEntry where
              <*> (fromMaybe "" <$> o .: "message")
   parseJSON v = typeMismatch "LogEntry" v
 
+instance ToJSON LogEntry where
+  toJSON (LogEntry {..}) = Aeson.object [
+    ("timestamp", Aeson.Number (fromIntegral logTime))
+    , ("level", toJSON logLevel)
+    , ("message", Aeson.String logMsg)
+    ]
+
 type LogType = String
 
 -- | Retrieve the log buffer for a given log type. The server-side log buffer is reset after each request.
@@ -790,19 +798,34 @@ getLogs t = doSessCommand methodPost "/log" . object $ ["type" .= t]
 getLogTypes :: (HasCallStack, WebDriver wd) => wd [LogType]
 getLogTypes = doSessCommand methodGet "/log/types" Null
 
-data ApplicationCacheStatus = Uncached | Idle | Checking | Downloading | UpdateReady | Obsolete deriving (Eq, Enum, Bounded, Ord, Show, Read)
+data ApplicationCacheStatus =
+  Uncached
+  | Idle
+  | Checking
+  | Downloading
+  | UpdateReady
+  | Obsolete
+  deriving (Eq, Enum, Bounded, Ord, Show, Read)
 
 instance FromJSON ApplicationCacheStatus where
-    parseJSON val = do
-        n <- parseJSON val
-        case n :: Integer of
-            0 -> return Uncached
-            1 -> return Idle
-            2 -> return Checking
-            3 -> return Downloading
-            4 -> return UpdateReady
-            5 -> return Obsolete
-            err -> fail $ "Invalid JSON for ApplicationCacheStatus: " ++ show err
+  parseJSON val = do
+    n <- parseJSON val
+    case n :: Integer of
+      0 -> return Uncached
+      1 -> return Idle
+      2 -> return Checking
+      3 -> return Downloading
+      4 -> return UpdateReady
+      5 -> return Obsolete
+      err -> fail $ "Invalid JSON for ApplicationCacheStatus: " ++ show err
+
+instance ToJSON ApplicationCacheStatus where
+  toJSON Uncached = Aeson.Number 0
+  toJSON Idle = Aeson.Number 1
+  toJSON Checking = Aeson.Number 2
+  toJSON Downloading = Aeson.Number 3
+  toJSON UpdateReady = Aeson.Number 4
+  toJSON Obsolete = Aeson.Number 5
 
 getApplicationCacheStatus :: (HasCallStack, WebDriver wd) => wd ApplicationCacheStatus
 getApplicationCacheStatus = doSessCommand methodGet "/application_cache/status" Null

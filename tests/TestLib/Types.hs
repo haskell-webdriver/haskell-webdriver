@@ -119,8 +119,14 @@ instance (HasWDSession context, MonadIO m, MonadCatch m) => WebDriver (ExampleT 
     debug [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req} (#{showRequestBody (HC.requestBody req)})|]
     response <- sendHTTPRequest req >>= either throwIO return
     let (N.Status code _) = HC.responseStatus response
-    debug [i|<-- #{code} #{HC.responseBody response}|]
-    getJSONResult response >>= either throwIO return
+    getJSONResult response >>= \case
+      Left e -> do
+        warn [i|<-- #{code} Exception: #{e}|]
+        throwIO e
+      Right result -> do
+        debug [i|<-- #{code} #{A.encode result}|]
+        return result
+
     where
       showRequestBody :: HC.RequestBody -> ByteString
       showRequestBody (HC.RequestBodyLBS bytes) = BL.toStrict bytes

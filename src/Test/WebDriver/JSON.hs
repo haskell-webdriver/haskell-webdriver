@@ -79,6 +79,9 @@ instance FromJSON NoReturn where
   parseJSON (String "")             = return NoReturn
   parseJSON other                   = typeMismatch "no return value" other
 
+instance ToJSON NoReturn where
+  toJSON NoReturn = Aeson.String "<no return>"
+
 -- |Convenience function to handle webdriver commands with no return value.
 noReturn :: WebDriver wd => wd NoReturn -> wd ()
 noReturn = void

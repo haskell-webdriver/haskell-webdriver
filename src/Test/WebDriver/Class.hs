@@ -33,7 +33,7 @@ import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't wo
 -- "Test.WebDriver.Commands". For more information on the wire protocol see
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol>
 class (WDSessionStateControl wd) => WebDriver wd where
-  doCommand :: (HasCallStack, ToJSON a, FromJSON b) =>
+  doCommand :: (HasCallStack, ToJSON a, FromJSON b, ToJSON b) =>
                    Method      -- ^HTTP request method
                 -> Text        -- ^URL of request
                 -> a           -- ^JSON parameters passed in the body

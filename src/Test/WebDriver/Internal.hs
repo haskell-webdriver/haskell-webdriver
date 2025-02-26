@@ -227,13 +227,13 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
     _   -> e UnknownError
 
 
--- |Internal type representing the JSON response object
+-- | Internal type representing the JSON response object
 data WDResponse = WDResponse {
-                               rspSessId :: Maybe SessionId
-                             , rspStatus :: Word8
-                             , rspVal    :: Value
-                             }
-                  deriving (Eq, Show)
+  rspSessId :: Maybe SessionId
+  , rspStatus :: Word8
+  , rspVal    :: Value
+  }
+  deriving (Eq, Show)
 
 instance FromJSON WDResponse where
   -- We try both options as the wire format changes depending on
