@@ -84,7 +84,7 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
       info [i|Detected Selenium version: #{seleniumVersion}|]
       let extraArgs = case seleniumVersion of
             Selenium3 -> ["-port", show port]
-            Selenium4 -> ["standalone", "--port", show port]
+            Selenium4 -> ["standalone", "--port", show port, "--host", "localhost"]
             SeleniumUnknown -> ["-port", show port]
 
       let fullArgs = javaArgs
