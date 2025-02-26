@@ -226,27 +226,29 @@ a `fromJSON` instance to use.
 @
 -}
 executeJS :: (HasCallStack, F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
-executeJS a s = fromJSON' =<< getResult
-  where
-    -- The W3C spec says /execute/sync, but Selenium 3.141.59 seems to only work with /execute!
-    -- TODO: get separate tests of Selenium 3 and 4 working
-    getResult = doSessCommand methodPost "/execute" . pair ("args", "script") $ (F.toList a,s)
+executeJS a s = do
+  endpoint <- askSeleniumVersion >>= \case
+    Selenium3 -> pure "/execute"
+    Selenium4 -> pure "/execute/sync"
+  (doSessCommand methodPost endpoint . pair ("args", "script") $ (F.toList a,s))
+    >>= fromJSON'
 
-{- | Executes a snippet of Javascript code asynchronously. This function works
-similarly to 'executeJS', except that the Javascript is passed a callback
-function as its final argument. The script should call this function
-to signal that it has finished executing, passing to it a value that will be
-returned as the result of asyncJS. A result of Nothing indicates that the
-Javascript function timed out (see 'setScriptTimeout')
--}
+-- | Executes a snippet of Javascript code asynchronously. This function works
+-- similarly to 'executeJS', except that the Javascript is passed a callback
+-- function as its final argument. The script should call this function
+-- to signal that it has finished executing, passing to it a value that will be
+-- returned as the result of asyncJS. A result of Nothing indicates that the
+-- Javascript function timed out (see 'setScriptTimeout')
 asyncJS :: (HasCallStack, F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd (Maybe a)
-asyncJS a s = handle timeout $ Just <$> (fromJSON' =<< getResult)
+asyncJS a s = handle timeout $ do
+  endpoint <- askSeleniumVersion >>= \case
+    Selenium3 -> pure "/execute_async"
+    Selenium4 -> pure "/execute/async"
+  Just <$> (fromJSON' =<< getResult endpoint)
+
   where
-    -- The W3C spec says /execute/async, but Selenium 3.141.59 seems to only work with /execute_async!
-    -- TODO: get separate tests of Selenium 3 and 4 working
-    -- getResult = doSessCommand methodPost "/execute/async" . pair ("args", "script")
-    getResult = doSessCommand methodPost "/execute_async" . pair ("args", "script")
-                $ (F.toList a,s)
+    getResult endpoint = doSessCommand methodPost endpoint . pair ("args", "script") $ (F.toList a,s)
+
     timeout (FailedCommand Timeout _)       = return Nothing
     timeout (FailedCommand ScriptTimeout _) = return Nothing
     timeout err = throwIO err

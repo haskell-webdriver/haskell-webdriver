@@ -53,7 +53,10 @@ data WDConfig = WDConfig {
   , wdHTTPManager :: Maybe Manager
   -- | Number of times to retry a HTTP request if it times out (default 0)
   , wdHTTPRetryCount :: Int
-}
+  -- | Selenium version to target.
+  , wdSeleniumVersion :: SeleniumVersion
+  }
+
 instance Show WDConfig where
   show (WDConfig {..}) = [i|WDConfig<#{wdHost}:#{wdPort}#{wdBasePath}>|]
 
@@ -74,6 +77,7 @@ instance Default WDConfig where
     , wdBasePath = "/wd/hub"
     , wdHTTPManager = Nothing
     , wdHTTPRetryCount = 0
+    , wdSeleniumVersion = Selenium3
     }
 
 {- |A default session config connects to localhost on port 4444, and hasn't been
@@ -106,6 +110,7 @@ instance WebDriverConfig WDConfig where
       , wdSessHistUpdate = wdHistoryConfig
       , wdSessHTTPManager = manager
       , wdSessHTTPRetryCount = wdHTTPRetryCount
+      , wdSessSeleniumVersion = wdSeleniumVersion
       }
     where
       createManager = liftIO $ newManager defaultManagerSettings

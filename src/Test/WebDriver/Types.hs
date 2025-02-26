@@ -2,25 +2,44 @@
 
 module Test.WebDriver.Types (
   -- * WebDriver sessions
-  WD(..), WDSession(..), SessionId(..), SessionHistory
+  WD(..)
+  , WDSession(..)
+  , SessionId(..)
+  , SessionHistory
 
     -- * WebDriver configuration
-  , WDConfig(..), defaultConfig, SessionHistoryConfig
+  , WDConfig(..)
+  , defaultConfig
+  , SessionHistoryConfig
+  , SeleniumVersion
 
     -- * Capabilities
-  , Capabilities(..), defaultCaps, allCaps
-  , Platform(..), ProxyType(..), UnexpectedAlertBehavior(..)
+  , Capabilities(..)
+  , defaultCaps
+  , allCaps
+  , Platform(..)
+  , ProxyType(..)
+  , UnexpectedAlertBehavior(..)
 
     -- ** Browser-specific capabilities
   , Browser(..),
 
     -- ** Default settings for browsers
-    firefox, chrome, ie, opera, iPhone, iPad, android
-  , LogLevel(..), IELogLevel(..), IEElementScrollBehavior(..)
+    firefox
+  , chrome
+  , ie
+  , opera
+  , iPhone
+  , iPad
+  , android
+  , LogLevel(..)
+  , IELogLevel(..)
+  , IEElementScrollBehavior(..)
 
     -- * WebDriver objects and command-specific types
   , Element(..)
-  , WindowHandle(..), currentWindow
+  , WindowHandle(..)
+  , currentWindow
   , Selector(..)
   , JSArg(..)
   , FrameSelector(..)
@@ -32,12 +51,19 @@ module Test.WebDriver.Types (
   , ApplicationCacheStatus(..)
 
     -- * Exceptions
-  , InvalidURL(..), NoSessionId(..), BadJSON(..)
-  , HTTPStatusUnknown(..), HTTPConnError(..)
-  , UnknownCommand(..), ServerError(..)
-  , FailedCommand(..), FailedCommandType(..)
-  , FailedCommandInfo(..), StackFrame(..)
-  , mkFailedCommandInfo, failedCommand
+  , InvalidURL(..)
+  , NoSessionId(..)
+  , BadJSON(..)
+  , HTTPStatusUnknown(..)
+  , HTTPConnError(..)
+  , UnknownCommand(..)
+  , ServerError(..)
+  , FailedCommand(..)
+  , FailedCommandType(..)
+  , FailedCommandInfo(..)
+  , StackFrame(..)
+  , mkFailedCommandInfo
+  , failedCommand
   ) where
 
 import Test.WebDriver.Capabilities

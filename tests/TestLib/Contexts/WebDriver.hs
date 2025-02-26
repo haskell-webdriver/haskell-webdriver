@@ -32,6 +32,7 @@ import Test.Sandwich.Contexts.Util.Ports
 import Test.Sandwich.Waits
 import Test.WebDriver.Commands
 import Test.WebDriver.Config
+import Test.WebDriver.Session (SeleniumVersion(..))
 import TestLib.Types
 import TestLib.Types.Cli
 import TestLib.Waits
@@ -43,12 +44,6 @@ import UnliftIO.Process
 
 type BaseMonad m = (HasCallStack, MonadUnliftIO m)
 type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
-
-data SeleniumVersion =
-  Selenium3
-  | Selenium4
-  | SeleniumUnknown
-  deriving (Show, Eq)
 
 introduceWebDriver :: forall context m. (
   BaseMonadContext m context, MonadMask m
@@ -82,12 +77,12 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
 
       port <- findFreePortOrException
 
-      let seleniumVersion = autodetectSeleniumVersionByFileName seleniumJar
-      info [i|Detected Selenium version: #{seleniumVersion}|]
-      let extraArgs = case seleniumVersion of
-            Selenium3 -> ["-port", show port]
-            Selenium4 -> ["standalone", "--port", show port, "--host", "localhost"]
-            SeleniumUnknown -> ["-port", show port]
+      let maybeSeleniumVersion = autodetectSeleniumVersionByFileName seleniumJar
+      info [i|Detected Selenium version: #{maybeSeleniumVersion}|]
+      let extraArgs = case maybeSeleniumVersion of
+            Just Selenium3 -> ["-port", show port]
+            Just Selenium4 -> ["standalone", "--port", show port, "--host", "localhost"]
+            Nothing -> ["-port", show port]
 
       let fullArgs = javaArgs
                    <> ["-jar", seleniumJar]
@@ -114,7 +109,7 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
             True -> return ()
             False -> loop
 
-        let webDriverContext = WebDriverContext hostname port
+        let webDriverContext = WebDriverContext (fromMaybe Selenium3 maybeSeleniumVersion) hostname port
 
         withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ -> do
           -- Wait for a successful connectino to the server socket
@@ -136,11 +131,11 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
           void $ action webDriverContext
 
 
-autodetectSeleniumVersionByFileName :: FilePath -> SeleniumVersion
+autodetectSeleniumVersionByFileName :: FilePath -> Maybe SeleniumVersion
 autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodetectSeleniumMajorVersionByFileName of
-  Just 3 -> Selenium3
-  Just 4 -> Selenium4
-  _ -> SeleniumUnknown
+  Just 3 -> Just Selenium3
+  Just 4 -> Just Selenium4
+  _ -> Nothing
   where
     autodetectSeleniumMajorVersionByFileName :: Maybe Int
     autodetectSeleniumMajorVersionByFileName
@@ -163,9 +158,5 @@ autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodet
               [x] -> Just x
               _ -> Nothing
 
-autodetectSeleniumVersion :: FilePath -> FilePath -> m SeleniumVersion
-autodetectSeleniumVersion _java _seleniumJar = undefined
-
-seleniumOutFileName, seleniumErrFileName :: FilePath
-seleniumOutFileName = "stdout.txt"
-seleniumErrFileName = "stderr.txt"
+-- autodetectSeleniumVersion :: FilePath -> FilePath -> m SeleniumVersion
+-- autodetectSeleniumVersion _java _seleniumJar = undefined

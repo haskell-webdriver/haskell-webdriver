@@ -4,13 +4,30 @@
 
 module Test.WebDriver.Session (
   -- * WDSessionState class
-  WDSessionState(..), WDSessionStateIO, WDSessionStateControl, modifySession, withSession
+  WDSessionState(..)
+  , WDSessionStateIO
+  , WDSessionStateControl
+  , modifySession
+  , withSession
+
   -- ** WebDriver sessions
-  , WDSession(..), mostRecentHistory, mostRecentHTTPRequest, SessionId(..), SessionHistory(..)
+  , WDSession(..)
+  , mostRecentHistory
+  , mostRecentHTTPRequest
+  , SessionId(..)
+  , SessionHistory(..)
+  , SeleniumVersion(..)
+  , askSeleniumVersion
+
   -- * SessionHistoryConfig options
-  , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
+  , SessionHistoryConfig
+  , noHistory
+  , unlimitedHistory
+  , onlyMostRecentHistory
+
   -- * Using custom HTTP request headers
-  , withRequestHeaders, withAuthHeaders
+  , withRequestHeaders
+  , withAuthHeaders
   ) where
 
 import Test.WebDriver.Session.History
@@ -41,13 +58,18 @@ import Network.HTTP.Types (RequestHeaders)
 import Prelude -- hides some "redundant import" warnings
 
 
-{- | An opaque identifier for a WebDriver session. These handles are produced by
-the server on session creation, and act to identify a session in progress. -}
+-- | An opaque identifier for a WebDriver session. These handles are produced by
+-- the server on session creation, and act to identify a session in progress.
 newtype SessionId = SessionId Text
   deriving (Eq, Ord, Show, Read, FromJSON, ToJSON)
 
-{- | The local state of a WebDriver session. This structure is passed
-implicitly through all 'WD' computations -}
+data SeleniumVersion =
+  Selenium3
+  | Selenium4
+  deriving (Show, Eq)
+
+-- | The local state of a WebDriver session. This structure is passed
+-- implicitly through all 'WD' computations
 data WDSession = WDSession {
   -- server hostname
   wdSessHost :: BS.ByteString
@@ -55,16 +77,12 @@ data WDSession = WDSession {
   , wdSessPort :: Int
   -- Base path for API requests
   , wdSessBasePath :: BS.ByteString
-  -- | An opaque reference identifying the session to
-  -- use with 'WD' commands.
-  -- A value of Nothing indicates that a session
-  -- hasn't been created yet.
-  -- Sessions can be created within 'WD' via
-  -- 'Test.WebDriver.createSession', or created
-  -- automatically with 'Test.WebDriver.runSession'
+  -- | An opaque reference identifying the session to use with 'WD' commands.
+  -- A value of Nothing indicates that a session hasn't been created yet.
+  -- Sessions can be created within 'WD' via 'Test.WebDriver.createSession', or
+  -- created automatically with 'Test.WebDriver.runSession'
   , wdSessId   :: Maybe SessionId
-  -- | The complete history of HTTP requests and
-  -- responses, most recent first.
+  -- | The complete history of HTTP requests and responses, most recent first.
   , wdSessHist :: [SessionHistory]
   -- | Update function used to append new entries to session history
   , wdSessHistUpdate :: SessionHistoryConfig
@@ -74,9 +92,14 @@ data WDSession = WDSession {
   , wdSessHTTPRetryCount :: Int
   -- | Custom request headers to add to every HTTP request.
   , wdSessRequestHeaders :: RequestHeaders
-  -- | Custom request headers to add *only* to session creation requests. This is usually done
-  --  when a WebDriver server requires HTTP auth.
+  -- | Custom request headers to add *only* to session creation requests. This is
+  -- usually done when a WebDriver server requires HTTP auth.
   , wdSessAuthHeaders :: RequestHeaders
+  -- | Selenium version to target. If 'Selenium3', we'll use the legacy JSON wire
+  -- protocol defined here: https://www.selenium.dev/documentation/legacy/json_wire_protocol/.
+  -- For 'Selenium4', we'll use the official W3C WebDriver spec:
+  -- https://www.w3.org/TR/webdriver1/#new-session
+  , wdSessSeleniumVersion :: SeleniumVersion
   }
 
 instance Show WDSession where
@@ -106,6 +129,11 @@ class (MonadIO m, Applicative m) => WDSessionState m where
 
   -- | Sets a new session state for the monad
   putSession :: WDSession -> m ()
+
+askSeleniumVersion :: WDSessionState m => m SeleniumVersion
+askSeleniumVersion = do
+  WDSession {wdSessSeleniumVersion} <- getSession
+  return wdSessSeleniumVersion
 
 -- | Constraint synonym for the common pairing of 'WDSessionState' and 'MonadBase' 'IO'.
 type WDSessionStateIO m = (WDSessionState m, MonadIO m, MonadThrow m)

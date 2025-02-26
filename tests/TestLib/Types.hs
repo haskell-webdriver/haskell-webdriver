@@ -86,7 +86,8 @@ type HasBrowserDependencies context = HasLabel context "browserDependencies" Bro
 -- * WebDriver
 
 data WebDriverContext = WebDriverContext {
-  webDriverHostname :: String
+  webDriverSeleniumVersion :: SeleniumVersion
+  , webDriverHostname :: String
   , webDriverPort :: PortNumber
   }
 
@@ -155,6 +156,7 @@ getWDConfig' (WebDriverContext {..}) browserDeps = do
     wdHost = webDriverHostname
     , wdPort = fromIntegral webDriverPort
     , wdCapabilities = caps
+    , wdSeleniumVersion = webDriverSeleniumVersion
     }
 
 getCapabilities :: MonadIO m => Bool -> BrowserDependencies -> m Capabilities
