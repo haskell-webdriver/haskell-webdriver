@@ -115,6 +115,7 @@ test-suite tests
       Spec.Scripts
       Spec.Windows
       TestLib.Contexts.BrowserDependencies
+      TestLib.Contexts.Selenium4
       TestLib.Contexts.Session
       TestLib.Contexts.StaticServer
       TestLib.Contexts.WebDriver

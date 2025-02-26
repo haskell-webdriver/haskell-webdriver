@@ -1,8 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -15,6 +15,8 @@ import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import Control.Retry
 import Data.Function
+import qualified Data.List as L
+import Data.Maybe
 import Data.String.Interpolate
 import qualified Data.Text as T
 import GHC.Stack
@@ -31,6 +33,7 @@ import Test.WebDriver.Config
 import TestLib.Types
 import TestLib.Types.Cli
 import TestLib.Waits
+import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.IORef
 import UnliftIO.Process
@@ -39,6 +42,11 @@ import UnliftIO.Process
 type BaseMonad m = (HasCallStack, MonadUnliftIO m)
 type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
 
+data SeleniumVersion =
+  Selenium3
+  | Selenium4
+  | SeleniumUnknown
+  deriving (Show, Eq)
 
 introduceWebDriver :: forall context m. (
   BaseMonadContext m context, MonadMask m
@@ -72,10 +80,16 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
 
       port <- findFreePortOrException
 
-      let fullArgs = javaArgs <> [
-            "-jar", seleniumJar
-            , "-port", show port
-            ]
+      let seleniumVersion = autodetectSeleniumVersionByFileName seleniumJar
+      info [i|Detected Selenium version: #{seleniumVersion}|]
+      let extraArgs = case seleniumVersion of
+            Selenium3 -> ["-port", show port]
+            Selenium4 -> ["standalone", "--port", show port]
+            SeleniumUnknown -> ["-port", show port]
+
+      let fullArgs = javaArgs
+                   <> ["-jar", seleniumJar]
+                   <> extraArgs
       debug [i|#{java} #{T.unwords $ fmap T.pack fullArgs}|]
 
       (hRead, hWrite) <- createPipe
@@ -94,7 +108,7 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
           line <- fmap T.pack $ liftIO $ hGetLine hRead
           debug line
 
-          case "Selenium Server is up and running" `T.isInfixOf` line of
+          case "Selenium Server is up and running" `T.isInfixOf` line || "Started Selenium Standalone" `T.isInfixOf` line of
             True -> return ()
             False -> loop
 
@@ -119,6 +133,36 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
 
           void $ action webDriverContext
 
+
+autodetectSeleniumVersionByFileName :: FilePath -> SeleniumVersion
+autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodetectSeleniumMajorVersionByFileName of
+  Just 3 -> Selenium3
+  Just 4 -> Selenium4
+  _ -> SeleniumUnknown
+  where
+    autodetectSeleniumMajorVersionByFileName :: Maybe Int
+    autodetectSeleniumMajorVersionByFileName
+      | not ("selenium-server-" `L.isPrefixOf` seleniumJar) = Nothing
+      | not (".jar" `L.isSuffixOf` seleniumJar) = Nothing
+      | otherwise = do
+          let parts = seleniumJar
+                    & drop (length ("selenium-server-" :: String))
+                    & T.dropEnd (length (".jar" :: String)) . T.pack
+                    & T.splitOn "."
+                    & fmap T.unpack
+                    & fmap readMaybe
+
+          case any (== Nothing) parts of
+            True -> Nothing
+            False -> case catMaybes parts of
+              [x, _, _, _] -> Just x
+              [x, _, _] -> Just x
+              [x, _] -> Just x
+              [x] -> Just x
+              _ -> Nothing
+
+autodetectSeleniumVersion :: FilePath -> FilePath -> m SeleniumVersion
+autodetectSeleniumVersion _java _seleniumJar = undefined
 
 seleniumOutFileName, seleniumErrFileName :: FilePath
 seleniumOutFileName = "stdout.txt"

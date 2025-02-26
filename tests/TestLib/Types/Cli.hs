@@ -14,9 +14,7 @@ browserToUse maybeInternal =
   <|> flag UseChrome UseChrome (long "use-chrome" <> help "Use Chrome (default)" <> maybeInternal)
 
 data UserOptions = UserOptions {
-  optSeleniumJar :: Maybe FilePath
-
-  , optChromeBinary :: Maybe FilePath
+  optChromeBinary :: Maybe FilePath
   , optChromeDriver :: Maybe FilePath
 
   , optFirefoxBinary :: Maybe FilePath
@@ -29,9 +27,7 @@ data UserOptions = UserOptions {
 
 userOptions :: Parser UserOptions
 userOptions = UserOptions
-  <$> optional (strOption (long "webdriver-selenium-jar" <> help "selenium.jar file to use"))
-
-  <*> optional (strOption (long "webdriver-chrome" <> help "Path to Chrome binary"))
+  <$> optional (strOption (long "webdriver-chrome" <> help "Path to Chrome binary"))
   <*> optional (strOption (long "webdriver-chromedriver" <> help "Path to chromedriver"))
 
   <*> optional (strOption (long "webdriver-firefox" <> help "Path to Firefox binary"))
