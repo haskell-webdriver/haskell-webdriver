@@ -122,25 +122,26 @@ data Capabilities =
                } deriving (Eq, Show)
 
 instance Default Capabilities where
-  def = Capabilities { browser = firefox
-                     , version = Nothing
-                     , platform = Any
-                     , javascriptEnabled = Nothing
-                     , takesScreenshot = Nothing
-                     , handlesAlerts = Nothing
-                     , databaseEnabled = Nothing
-                     , locationContextEnabled = Nothing
-                     , applicationCacheEnabled = Nothing
-                     , browserConnectionEnabled = Nothing
-                     , cssSelectorsEnabled = Nothing
-                     , webStorageEnabled = Nothing
-                     , rotatable = Nothing
-                     , acceptSSLCerts = Nothing
-                     , nativeEvents = Nothing
-                     , proxy = UseSystemSettings
-                     , unexpectedAlertBehavior = Nothing
-                     , additionalCaps = []
-                     }
+  def = Capabilities {
+    browser = firefox
+    , version = Nothing
+    , platform = Any
+    , javascriptEnabled = Nothing
+    , takesScreenshot = Nothing
+    , handlesAlerts = Nothing
+    , databaseEnabled = Nothing
+    , locationContextEnabled = Nothing
+    , applicationCacheEnabled = Nothing
+    , browserConnectionEnabled = Nothing
+    , cssSelectorsEnabled = Nothing
+    , webStorageEnabled = Nothing
+    , rotatable = Nothing
+    , acceptSSLCerts = Nothing
+    , nativeEvents = Nothing
+    , proxy = UseSystemSettings
+    , unexpectedAlertBehavior = Nothing
+    , additionalCaps = []
+    }
 
 -- |Default capabilities. This is the same as the 'Default' instance, but with
 -- less polymorphism. By default, we use 'firefox' of an unspecified 'version'
@@ -152,19 +153,20 @@ defaultCaps = def
 -- |Same as 'defaultCaps', but with all 'Maybe' 'Bool' capabilities set to
 -- 'Just' 'True'.
 allCaps :: Capabilities
-allCaps = defaultCaps { javascriptEnabled = Just True
-                      , takesScreenshot = Just True
-                      , handlesAlerts = Just True
-                      , databaseEnabled = Just True
-                      , locationContextEnabled = Just True
-                      , applicationCacheEnabled = Just True
-                      , browserConnectionEnabled = Just True
-                      , cssSelectorsEnabled = Just True
-                      , webStorageEnabled = Just True
-                      , rotatable = Just True
-                      , acceptSSLCerts = Just True
-                      , nativeEvents = Just True
-                      }
+allCaps = defaultCaps {
+  javascriptEnabled = Just True
+  , takesScreenshot = Just True
+  , handlesAlerts = Just True
+  , databaseEnabled = Just True
+  , locationContextEnabled = Just True
+  , applicationCacheEnabled = Just True
+  , browserConnectionEnabled = Just True
+  , cssSelectorsEnabled = Just True
+  , webStorageEnabled = Just True
+  , rotatable = Just True
+  , acceptSSLCerts = Just True
+  , nativeEvents = Just True
+  }
 
 instance ToJSON Capabilities where
   toJSON Capabilities{..} =
@@ -345,167 +347,169 @@ instance FromJSON Capabilities where
 
   parseJSON v = typeMismatch "Capabilities" v
 
--- |This constructor simultaneously specifies which browser the session will
+-- | This constructor simultaneously specifies which browser the session will
 -- use, while also providing browser-specific configuration. Default
 -- configuration is provided for each browser by 'firefox', 'chrome', 'opera',
 -- 'ie', etc.
 --
 -- This library uses 'firefox' as its 'Default' browser configuration, when no
 -- browser choice is specified.
-data Browser = Firefox { -- |The firefox profile to use. If Nothing,
-                         -- a default temporary profile is automatically created
-                         -- and used.
-                         ffProfile :: Maybe (PreparedProfile Firefox)
-                         -- |Firefox logging preference
-                       , ffLogPref :: LogLevel
-                         -- |Server-side path to Firefox binary. If Nothing,
-                         -- use a sensible system-based default.
-                       , ffBinary :: Maybe FilePath
-                         -- |Available after Firefox 52, and required only for Firefox
-                         -- geckodriver. Indicates whether untrusted and self-signed TLS
-                         -- certificates are implicitly trusted on navigation for the
-                         -- duration of the session.
-                       , ffAcceptInsecureCerts :: Maybe Bool
-                       }
-             | Chrome { -- |Version of the Chrome Webdriver server server to use
-                        --
-                        -- for more information on chromedriver see
-                        -- <https://github.com/SeleniumHQ/selenium/wiki/ChromeDriver>
-                        chromeDriverVersion :: Maybe String
-                        -- |Server-side path to Chrome binary. If Nothing,
-                        -- use a sensible system-based default.
-                      , chromeBinary :: Maybe FilePath
-                        -- |A list of command-line options to pass to the
-                        -- Chrome binary.
-                      , chromeOptions :: [String]
-                        -- |A list of extensions to use.
-                      , chromeExtensions :: [ChromeExtension]
-                        -- | Experimental options not yet exposed through a standard API.
-                      , chromeExperimentalOptions :: Object
-                      }
-             | IE { -- |Whether to skip the protected mode check. If set, tests
-                    -- may become flaky, unresponsive, or browsers may hang. If
-                    -- not set, and protected mode settings are not the same for
-                    -- all zones, an exception will be thrown on driver
-                    -- construction.
-                    ieIgnoreProtectedModeSettings :: Bool
-                    -- |Indicates whether to skip the check that the browser's zoom
-                    -- level is set to 100%. Value is set to false by default.
-                  , ieIgnoreZoomSetting :: Bool
-                    -- |Allows the user to specify the initial URL loaded when IE
-                    -- starts. Intended to be used with ignoreProtectedModeSettings
-                    -- to allow the user to initialize IE in the proper Protected Mode
-                    -- zone. Using this capability may cause browser instability or
-                    -- flaky and unresponsive code. Only \"best effort\" support is
-                    -- provided when using this capability.
-                  , ieInitialBrowserUrl :: Maybe Text
-                    -- |Allows the user to specify whether elements are scrolled into
-                    -- the viewport for interaction to align with the top or bottom
-                    -- of the viewport. The default value is to align with the top of
-                    -- the viewport.
-                  , ieElementScrollBehavior :: IEElementScrollBehavior
-                    -- |Determines whether persistent hovering is enabled (true by
-                    -- default). Persistent hovering is achieved by continuously firing
-                    -- mouse over events at the last location the mouse cursor has been
-                    -- moved to.
-                  , ieEnablePersistentHover :: Bool
-                    -- |Determines whether the driver should attempt to remove obsolete
-                    -- elements from the element cache on page navigation (true by
-                    -- default). This is to help manage the IE driver's memory footprint
-                    -- , removing references to invalid elements.
-                  , ieEnableElementCacheCleanup :: Bool
-                    -- |Determines whether to require that the IE window have focus
-                    -- before performing any user interaction operations (mouse or
-                    -- keyboard events). This capability is false by default, but
-                    -- delivers much more accurate native events interactions.
-                  , ieRequireWindowFocus :: Bool
-                    -- |The timeout, in milliseconds, that the driver will attempt to
-                    -- locate and attach to a newly opened instance of Internet Explorer
-                    -- . The default is zero, which indicates waiting indefinitely.
-                  , ieBrowserAttachTimeout :: Integer
-                    -- |The path to file where server should write log messages to.
-                    -- By default it writes to stdout.
-                  , ieLogFile :: Maybe FilePath
-                    -- |The log level used by the server. Defaults to 'IELogFatal'
-                  , ieLogLevel :: IELogLevel
-                    -- |The address of the host adapter on which the server will listen
-                    -- for commands.
-                  , ieHost :: Maybe Text
-                    -- |The path to the directory used to extract supporting files used
-                    -- by the server. Defaults to the TEMP directory if not specified.
-                  , ieExtractPath :: Maybe Text
-                    -- |Suppresses diagnostic output when the server is started.
-                  , ieSilent :: Bool
-                    -- |Forces launching Internet Explorer using the CreateProcess API.
-                    -- If this option is not specified, IE is launched using the
-                    -- IELaunchURL, if it is available. For IE 8 and above, this option
-                    -- requires the TabProcGrowth registry value to be set to 0.
-                  , ieForceCreateProcess :: Bool
-                    -- |Specifies command-line switches with which to launch Internet
-                    -- Explorer. This is only valid when used with the
-                    -- forceCreateProcess.
-                  , ieSwitches :: Maybe Text
-                  }
-             | Opera { -- |Server-side path to the Opera binary
-                       operaBinary    :: Maybe FilePath
-                     --, operaNoRestart :: Maybe Bool
-                       -- |Which Opera product we're using, e.g. \"desktop\",
-                       -- \"core\"
-                     , operaProduct   :: Maybe String
-                       -- |Whether the Opera instance should stay open after
-                       -- we close the session. If false, closing the session
-                       -- closes the browser.
-                     , operaDetach    :: Bool
-                       -- |Whether to auto-start the Opera binary. If false,
-                       -- OperaDriver will wait for a connection from the
-                       -- browser. By default this is True.
-                     , operaAutoStart :: Bool
-                       -- |Whether to use Opera's alternative implicit wait
-                       -- implementation. It will use an in-browser heuristic
-                       -- to guess when a page has finished loading. This
-                       -- feature is experimental, and disabled by default.
-                     , operaIdle      :: Bool
-                       -- |(*nix only) which X display to use.
-                     , operaDisplay   :: Maybe Int
-                     --, operaProfile   :: Maybe (PreparedProfile Opera)
-                       -- |Path to the launcher binary to use. The launcher
-                       -- is a gateway between OperaDriver and the Opera
-                       -- browser. If Nothing, OperaDriver will use the
-                       -- launcher supplied with the package.
-                     , operaLauncher  :: Maybe FilePath
-                       -- |The port we should use to connect to Opera. If Just 0
-                       -- , use a random port. If Nothing, use the default
-                       -- Opera port. The default 'opera' constructor uses
-                       -- Just 0, since Nothing is likely to cause "address
-                       -- already in use" errors.
-                     , operaPort      :: Maybe Word16
-                       -- |The host Opera should connect to. Unless you're
-                       -- starting Opera manually you won't need this.
-                     , operaHost      :: Maybe String
-                       -- |Command-line arguments to pass to Opera.
-                     , operaOptions   :: Maybe String
-                       -- |Where to send the log output. If Nothing, logging is
-                       -- disabled.
-                     , operaLogFile   :: Maybe FilePath
-                       -- |Log level preference. Defaults to 'LogInfo'
-                     , operaLogPref   :: LogLevel
-                     }
+data Browser = Firefox {
+  -- | The firefox profile to use. If Nothing,
+    -- a default temporary profile is automatically created
+    -- and used.
+    ffProfile :: Maybe (PreparedProfile Firefox)
+    -- | Firefox logging preference
+  , ffLogPref :: LogLevel
+    -- | Server-side path to Firefox binary. If Nothing,
+    -- use a sensible system-based default.
+  , ffBinary :: Maybe FilePath
+    -- | Available after Firefox 52, and required only for Firefox
+    -- geckodriver. Indicates whether untrusted and self-signed TLS
+    -- certificates are implicitly trusted on navigation for the
+    -- duration of the session.
+  , ffAcceptInsecureCerts :: Maybe Bool
+  }
+  | Chrome {
+      -- | Version of the Chrome Webdriver server server to use
+      --
+      -- for more information on chromedriver see
+      -- <https://github.com/SeleniumHQ/selenium/wiki/ChromeDriver>
+      chromeDriverVersion :: Maybe String
+      -- | Server-side path to Chrome binary. If Nothing,
+      -- use a sensible system-based default.
+    , chromeBinary :: Maybe FilePath
+      -- | A list of command-line options to pass to the
+      -- Chrome binary.
+    , chromeOptions :: [String]
+      -- | A list of extensions to use.
+    , chromeExtensions :: [ChromeExtension]
+      -- | Experimental options not yet exposed through a standard API.
+    , chromeExperimentalOptions :: Object
+    }
+  | IE {
+      -- | Whether to skip the protected mode check. If set, tests
+      -- may become flaky, unresponsive, or browsers may hang. If
+      -- not set, and protected mode settings are not the same for
+      -- all zones, an exception will be thrown on driver
+      -- construction.
+      ieIgnoreProtectedModeSettings :: Bool
+      -- | Indicates whether to skip the check that the browser's zoom
+      -- level is set to 100%. Value is set to false by default.
+    , ieIgnoreZoomSetting :: Bool
+      -- | Allows the user to specify the initial URL loaded when IE
+      -- starts. Intended to be used with ignoreProtectedModeSettings
+      -- to allow the user to initialize IE in the proper Protected Mode
+      -- zone. Using this capability may cause browser instability or
+      -- flaky and unresponsive code. Only \"best effort\" support is
+      -- provided when using this capability.
+    , ieInitialBrowserUrl :: Maybe Text
+      -- | Allows the user to specify whether elements are scrolled into
+      -- the viewport for interaction to align with the top or bottom
+      -- of the viewport. The default value is to align with the top of
+      -- the viewport.
+    , ieElementScrollBehavior :: IEElementScrollBehavior
+      -- | Determines whether persistent hovering is enabled (true by
+      -- default). Persistent hovering is achieved by continuously firing
+      -- mouse over events at the last location the mouse cursor has been
+      -- moved to.
+    , ieEnablePersistentHover :: Bool
+      -- | Determines whether the driver should attempt to remove obsolete
+      -- elements from the element cache on page navigation (true by
+      -- default). This is to help manage the IE driver's memory footprint
+      -- , removing references to invalid elements.
+    , ieEnableElementCacheCleanup :: Bool
+      -- | Determines whether to require that the IE window have focus
+      -- before performing any user interaction operations (mouse or
+      -- keyboard events). This capability is false by default, but
+      -- delivers much more accurate native events interactions.
+    , ieRequireWindowFocus :: Bool
+      -- | The timeout, in milliseconds, that the driver will attempt to
+      -- locate and attach to a newly opened instance of Internet Explorer
+      -- . The default is zero, which indicates waiting indefinitely.
+    , ieBrowserAttachTimeout :: Integer
+      -- | The path to file where server should write log messages to.
+      -- By default it writes to stdout.
+    , ieLogFile :: Maybe FilePath
+      -- | The log level used by the server. Defaults to 'IELogFatal'
+    , ieLogLevel :: IELogLevel
+      -- | The address of the host adapter on which the server will listen
+      -- for commands.
+    , ieHost :: Maybe Text
+      -- | The path to the directory used to extract supporting files used
+      -- by the server. Defaults to the TEMP directory if not specified.
+    , ieExtractPath :: Maybe Text
+      -- | Suppresses diagnostic output when the server is started.
+    , ieSilent :: Bool
+      -- | Forces launching Internet Explorer using the CreateProcess API.
+      -- If this option is not specified, IE is launched using the
+      -- IELaunchURL, if it is available. For IE 8 and above, this option
+      -- requires the TabProcGrowth registry value to be set to 0.
+    , ieForceCreateProcess :: Bool
+      -- | Specifies command-line switches with which to launch Internet
+      -- Explorer. This is only valid when used with the
+      -- forceCreateProcess.
+    , ieSwitches :: Maybe Text
+    }
+  | Opera {
+      -- | Server-side path to the Opera binary
+        operaBinary    :: Maybe FilePath
+        --, operaNoRestart :: Maybe Bool
+      -- | Which Opera product we're using, e.g. \"desktop\", \"core\"
+      , operaProduct   :: Maybe String
+      -- | Whether the Opera instance should stay open after
+      -- we close the session. If false, closing the session
+      -- closes the browser.
+      , operaDetach    :: Bool
+      -- | Whether to auto-start the Opera binary. If false,
+      -- OperaDriver will wait for a connection from the
+      -- browser. By default this is True.
+      , operaAutoStart :: Bool
+      -- | Whether to use Opera's alternative implicit wait
+      -- implementation. It will use an in-browser heuristic
+      -- to guess when a page has finished loading. This
+      -- feature is experimental, and disabled by default.
+      , operaIdle      :: Bool
+      -- | (*nix only) which X display to use.
+      , operaDisplay   :: Maybe Int
+      --, operaProfile   :: Maybe (PreparedProfile Opera)
+      -- | Path to the launcher binary to use. The launcher
+      -- is a gateway between OperaDriver and the Opera
+      -- browser. If Nothing, OperaDriver will use the
+      -- launcher supplied with the package.
+      , operaLauncher  :: Maybe FilePath
+      -- | The port we should use to connect to Opera. If Just 0
+      -- , use a random port. If Nothing, use the default
+      -- Opera port. The default 'opera' constructor uses
+      -- Just 0, since Nothing is likely to cause "address
+      -- already in use" errors.
+      , operaPort      :: Maybe Word16
+      -- | The host Opera should connect to. Unless you're
+      -- starting Opera manually you won't need this.
+      , operaHost      :: Maybe String
+      -- | Command-line arguments to pass to Opera.
+      , operaOptions   :: Maybe String
+      -- | Where to send the log output. If Nothing, logging is
+      -- disabled.
+      , operaLogFile   :: Maybe FilePath
+      -- | Log level preference. Defaults to 'LogInfo'
+      , operaLogPref   :: LogLevel
+      }
+  | Phantomjs {
+      phantomjsBinary  :: Maybe FilePath
+      , phantomjsOptions :: [String]
+      }
 
-             | Phantomjs { phantomjsBinary  :: Maybe FilePath
-                         , phantomjsOptions :: [String]
-                         }
-
-             | HTMLUnit
-             | IPhone
-             | IPad
-             | Android
-             -- |some other browser, specified by a string name
-             | Browser Text
-             deriving (Eq, Show)
+  | HTMLUnit
+  | IPhone
+  | IPad
+  | Android
+  -- | some other browser, specified by a string name
+  | Browser Text
+  deriving (Eq, Show)
 
 instance Default Browser where
   def = firefox
-
 
 instance ToJSON Browser where
   toJSON Firefox {}   = String "firefox"
@@ -532,54 +536,56 @@ instance FromJSON Browser where
   parseJSON v = typeMismatch "Browser" v
 
 
--- |Default Firefox settings. All Maybe fields are set to Nothing. ffLogPref
+-- | Default Firefox settings. All Maybe fields are set to Nothing. ffLogPref
 -- is set to 'LogInfo'.
 firefox :: Browser
 firefox = Firefox Nothing def Nothing Nothing
 
--- |Default Chrome settings. All Maybe fields are set to Nothing, no options are
+-- | Default Chrome settings. All Maybe fields are set to Nothing, no options are
 -- specified, and no extensions are used.
 chrome :: Browser
 chrome = Chrome Nothing Nothing [] [] HM.empty
 
--- |Default IE settings. See the 'IE' constructor for more details on
+-- | Default IE settings. See the 'IE' constructor for more details on
 -- individual defaults
 ie :: Browser
-ie = IE { ieIgnoreProtectedModeSettings = True
-        , ieIgnoreZoomSetting = False
-        , ieInitialBrowserUrl = Nothing
-        , ieElementScrollBehavior = def
-        , ieEnablePersistentHover = True
-        , ieEnableElementCacheCleanup = True
-        , ieRequireWindowFocus = False
-        , ieBrowserAttachTimeout = 0
-        , ieLogFile = Nothing
-        , ieLogLevel = def
-        , ieHost = Nothing
-        , ieExtractPath = Nothing
-        , ieSilent = False
-        , ieForceCreateProcess = False
-        , ieSwitches = Nothing
-        }
+ie = IE {
+  ieIgnoreProtectedModeSettings = True
+  , ieIgnoreZoomSetting = False
+  , ieInitialBrowserUrl = Nothing
+  , ieElementScrollBehavior = def
+  , ieEnablePersistentHover = True
+  , ieEnableElementCacheCleanup = True
+  , ieRequireWindowFocus = False
+  , ieBrowserAttachTimeout = 0
+  , ieLogFile = Nothing
+  , ieLogLevel = def
+  , ieHost = Nothing
+  , ieExtractPath = Nothing
+  , ieSilent = False
+  , ieForceCreateProcess = False
+  , ieSwitches = Nothing
+  }
 
--- |Default Opera settings. See the 'Opera' constructor for more details on
+-- | Default Opera settings. See the 'Opera' constructor for more details on
 -- individual defaults.
 opera :: Browser
-opera = Opera { operaBinary = Nothing
-              --, operaNoRestart = Nothing
-              , operaProduct = Nothing
-              , operaDetach = False
-              , operaAutoStart = True
-              , operaDisplay = Nothing
-              , operaIdle = False
---              , operaProfile = Nothing
-              , operaLauncher = Nothing
-              , operaHost = Nothing
-              , operaPort = Just 0
-              , operaOptions = Nothing
-              , operaLogFile = Nothing
-              , operaLogPref = def
-              }
+opera = Opera {
+  operaBinary = Nothing
+  --, operaNoRestart = Nothing
+  , operaProduct = Nothing
+  , operaDetach = False
+  , operaAutoStart = True
+  , operaDisplay = Nothing
+  , operaIdle = False
+  -- , operaProfile = Nothing
+  , operaLauncher = Nothing
+  , operaHost = Nothing
+  , operaPort = Just 0
+  , operaOptions = Nothing
+  , operaLogFile = Nothing
+  , operaLogPref = def
+  }
 
 phantomjs :: Browser
 phantomjs = Phantomjs Nothing []
@@ -599,7 +605,7 @@ iPad = IPad
 android :: Browser
 android = Android
 
--- |Represents platform options supported by WebDriver. The value Any represents
+-- | Represents platform options supported by WebDriver. The value Any represents
 -- no preference.
 data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
               deriving (Eq, Show, Ord, Bounded, Enum)
@@ -686,7 +692,7 @@ instance FromJSON UnexpectedAlertBehavior where
 
   parseJSON v = typeMismatch "UnexpectedAlertBehavior" v
 
--- |Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
+-- | Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
 data LogLevel = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
               | LogFine | LogFiner | LogFinest | LogDebug | LogAll
              deriving (Eq, Show, Read, Ord, Bounded, Enum)
@@ -724,7 +730,7 @@ instance FromJSON LogLevel where
   parseJSON other = typeMismatch "LogLevel" other
 
 
--- |Logging levels for Internet Explorer
+-- | Logging levels for Internet Explorer
 data IELogLevel = IELogTrace | IELogDebug | IELogInfo | IELogWarn | IELogError
                 | IELogFatal
                 deriving (Eq, Show, Read, Ord, Bounded, Enum)
@@ -754,7 +760,7 @@ instance FromJSON IELogLevel where
 
   parseJSON other = typeMismatch "IELogLevel" other
 
--- |Specifies how elements scroll into the viewport. (see 'ieElementScrollBehavior')
+-- | Specifies how elements scroll into the viewport. (see 'ieElementScrollBehavior')
 data IEElementScrollBehavior = AlignTop | AlignBottom
                              deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
