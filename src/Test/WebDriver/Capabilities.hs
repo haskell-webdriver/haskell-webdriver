@@ -72,54 +72,54 @@ support the capability. Thus, for Maybe Bool fields, both Nothing and
 Just False indicate a lack of support for the desired capability.
 -}
 data Capabilities =
-  Capabilities { -- |Browser choice and browser specific settings.
-                 browser                  :: Browser
-                 -- |Browser version to use.
-               , version                  :: Maybe String
-                 -- |Platform on which the browser should run.
-               , platform                 :: Platform
-                 -- |Proxy configuration settings.
-               , proxy                    :: ProxyType
-                 -- |Whether the session supports executing JavaScript via
-                 -- 'executeJS' and 'asyncJS'.
-               , javascriptEnabled        :: Maybe Bool
-                 -- |Whether the session supports taking screenshots of the
-                 -- current page with the 'screenshot' command
-               , takesScreenshot          :: Maybe Bool
-                 -- |Whether the session can interact with modal popups,
-                 -- such as window.alert and window.confirm via
-                 -- 'acceptAlerts', 'dismissAlerts', etc.
-               , handlesAlerts            :: Maybe Bool
-                 -- |Whether the session can interact with database storage.
-               , databaseEnabled          :: Maybe Bool
-                 -- |Whether the session can set and query the browser's
-                 -- location context with 'setLocation' and 'getLocation'.
-               , locationContextEnabled   :: Maybe Bool
-                 -- |Whether the session can interact with the application cache
-                 -- .
-               , applicationCacheEnabled  :: Maybe Bool
-                 -- |Whether the session can query for the browser's
-                 -- connectivity and disable it if desired
-               , browserConnectionEnabled :: Maybe Bool
-                 -- |Whether the session supports CSS selectors when searching
-                 -- for elements.
-               , cssSelectorsEnabled      :: Maybe Bool
-                 -- |Whether Web Storage ('getKey', 'setKey', etc) support is
-                 -- enabled
-               , webStorageEnabled        :: Maybe Bool
-                 -- |Whether the session can rotate the current page's current
-                 -- layout between 'Portrait' and 'Landscape' orientations.
-               , rotatable                :: Maybe Bool
-                 -- |Whether the session should accept all SSL certs by default
-               , acceptSSLCerts           :: Maybe Bool
-                 -- |Whether the session is capable of generating native OS
-                 -- events when simulating user input.
-               , nativeEvents             :: Maybe Bool
-                 -- |How the session should handle unexpected alerts.
-               , unexpectedAlertBehavior :: Maybe UnexpectedAlertBehavior
-                 -- |A list of ('Text', 'Value') pairs specifying additional non-standard capabilities.
-               , additionalCaps           :: [Pair]
-               } deriving (Eq, Show)
+  Capabilities {
+  -- | Browser choice and browser specific settings.
+    browser                  :: Browser
+  -- | Browser version to use.
+  , version                  :: Maybe String
+  -- | Platform on which the browser should run.
+  , platform                 :: Platform
+  -- | Proxy configuration settings.
+  , proxy                    :: ProxyType
+  -- | Whether the session supports executing JavaScript via
+  -- 'executeJS' and 'asyncJS'.
+  , javascriptEnabled        :: Maybe Bool
+  -- | Whether the session supports taking screenshots of the
+  -- current page with the 'screenshot' command
+  , takesScreenshot          :: Maybe Bool
+  -- | Whether the session can interact with modal popups,
+  -- such as window.alert and window.confirm via
+  -- 'acceptAlerts', 'dismissAlerts', etc.
+  , handlesAlerts            :: Maybe Bool
+  -- | Whether the session can interact with database storage.
+  , databaseEnabled          :: Maybe Bool
+  -- | Whether the session can set and query the browser's
+  -- location context with 'setLocation' and 'getLocation'.
+  , locationContextEnabled   :: Maybe Bool
+  -- | Whether the session can interact with the application cache.
+  , applicationCacheEnabled  :: Maybe Bool
+  -- | Whether the session can query for the browser's
+  -- connectivity and disable it if desired
+  , browserConnectionEnabled :: Maybe Bool
+  -- | Whether the session supports CSS selectors when searching
+  -- for elements.
+  , cssSelectorsEnabled      :: Maybe Bool
+  -- | Whether Web Storage ('getKey', 'setKey', etc) support is
+  -- enabled
+  , webStorageEnabled        :: Maybe Bool
+  -- | Whether the session can rotate the current page's current
+  -- layout between 'Portrait' and 'Landscape' orientations.
+  , rotatable                :: Maybe Bool
+  -- | Whether the session should accept all SSL certs by default
+  , acceptSSLCerts           :: Maybe Bool
+  -- | Whether the session is capable of generating native OS
+  -- events when simulating user input.
+  , nativeEvents             :: Maybe Bool
+  -- | How the session should handle unexpected alerts.
+  , unexpectedAlertBehavior :: Maybe UnexpectedAlertBehavior
+  -- | A list of ('Text', 'Value') pairs specifying additional non-standard capabilities.
+  , additionalCaps           :: [Pair]
+  } deriving (Eq, Show)
 
 instance Default Capabilities where
   def = Capabilities {
@@ -173,8 +173,8 @@ instance ToJSON Capabilities where
     object $ filter (\p -> snd p /= Null)
            $ [ "browserName" .= browser
              , "version" .= version
-             , "platform" .= platform
-             , "proxy" .= proxy
+             -- , "platform" .= platform
+             -- , "proxy" .= proxy
              , "javascriptEnabled" .= javascriptEnabled
              , "takesScreenshot" .= takesScreenshot
              , "handlesAlerts" .= handlesAlerts
@@ -195,8 +195,8 @@ instance ToJSON Capabilities where
       browserInfo = case browser of
         Firefox {..}
           -> ["firefox_profile" .= ffProfile
-             ,"loggingPrefs" .= object ["driver" .= ffLogPref]
-             ,"firefox_binary" .= ffBinary
+             -- ,"loggingPrefs" .= object ["driver" .= ffLogPref]
+             -- ,"firefox_binary" .= ffBinary
              ,"acceptInsecureCerts" .= fromMaybe False ffAcceptInsecureCerts
              ]
         Chrome {..}
@@ -290,14 +290,16 @@ instance FromJSON Capabilities where
           additionalCapabilities = HM.toList . foldr HM.delete o . knownCapabilities
 
           knownCapabilities browser =
-            [ "browserName", "version", "platform", "proxy"
+            -- [ "browserName", "version", "platform", "proxy"
+            [ "browserName", "version", "proxy"
             , "javascriptEnabled", "takesScreenshot", "handlesAlerts"
             , "databaseEnabled", "locationContextEnabled"
             , "applicationCacheEnabled", "browserConnectionEnabled"
             , "cssSelectorEnabled","webStorageEnabled", "rotatable"
             , "acceptSslCerts", "nativeEvents", "unexpectedBrowserBehaviour"]
             ++ case browser of
-              Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary", "acceptInsecureCerts"]
+              -- Firefox {} -> ["firefox_profile", "loggingPrefs", "firefox_binary", "acceptInsecureCerts"]
+              Firefox {} -> ["firefox_profile", "acceptInsecureCerts"]
               Chrome {} -> ["chrome.chromedriverVersion", "chrome.extensions", "chrome.switches", "chrome.extensions"]
               IE {} -> ["ignoreProtectedModeSettings", "ignoreZoomSettings", "initialBrowserUrl", "elementScrollBehavior"
                        ,"enablePersistentHover", "enableElementCacheCleanup", "requireWindowFocus", "browserAttachTimeout"
@@ -453,7 +455,7 @@ data Browser = Firefox {
     }
   | Opera {
       -- | Server-side path to the Opera binary
-        operaBinary    :: Maybe FilePath
+      operaBinary    :: Maybe FilePath
         --, operaNoRestart :: Maybe Bool
       -- | Which Opera product we're using, e.g. \"desktop\", \"core\"
       , operaProduct   :: Maybe String
@@ -608,7 +610,7 @@ android = Android
 -- | Represents platform options supported by WebDriver. The value Any represents
 -- no preference.
 data Platform = Windows | XP | Vista | Mac | Linux | Unix | Any
-              deriving (Eq, Show, Ord, Bounded, Enum)
+  deriving (Eq, Show, Ord, Bounded, Enum)
 
 instance ToJSON Platform where
   toJSON = String . toUpper . fromString . show
@@ -693,9 +695,18 @@ instance FromJSON UnexpectedAlertBehavior where
   parseJSON v = typeMismatch "UnexpectedAlertBehavior" v
 
 -- | Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
-data LogLevel = LogOff | LogSevere | LogWarning | LogInfo | LogConfig
-              | LogFine | LogFiner | LogFinest | LogDebug | LogAll
-             deriving (Eq, Show, Read, Ord, Bounded, Enum)
+data LogLevel =
+  LogOff
+  | LogSevere
+  | LogWarning
+  | LogInfo
+  | LogConfig
+  | LogFine
+  | LogFiner
+  | LogFinest
+  | LogDebug
+  | LogAll
+  deriving (Eq, Show, Read, Ord, Bounded, Enum)
 
 instance Default LogLevel where
   def = LogInfo
@@ -731,9 +742,14 @@ instance FromJSON LogLevel where
 
 
 -- | Logging levels for Internet Explorer
-data IELogLevel = IELogTrace | IELogDebug | IELogInfo | IELogWarn | IELogError
-                | IELogFatal
-                deriving (Eq, Show, Read, Ord, Bounded, Enum)
+data IELogLevel =
+  IELogTrace
+  | IELogDebug
+  | IELogInfo
+  | IELogWarn
+  | IELogError
+  | IELogFatal
+  deriving (Eq, Show, Read, Ord, Bounded, Enum)
 
 instance Default IELogLevel where
   def = IELogFatal
@@ -762,7 +778,7 @@ instance FromJSON IELogLevel where
 
 -- | Specifies how elements scroll into the viewport. (see 'ieElementScrollBehavior')
 data IEElementScrollBehavior = AlignTop | AlignBottom
-                             deriving (Eq, Ord, Show, Read, Enum, Bounded)
+  deriving (Eq, Ord, Show, Read, Enum, Bounded)
 
 instance Default IEElementScrollBehavior where
   def = AlignTop
