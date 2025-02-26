@@ -58,7 +58,6 @@ library:
   - call-stack
   - data-default
   - directory > 1.0
-  - directory-tree >= 0.11
   - exceptions >= 0.4
   - filepath > 1.0
   - http-client >= 0.3
@@ -68,7 +67,6 @@ library:
   - safe-exceptions
   - scientific >= 0.2
   - string-interpolate
-  - temporary >= 1.0
   - text >= 0.11.3
   - time > 1.0
   - transformers >= 0.4
