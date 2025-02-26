@@ -99,7 +99,10 @@ jobs:
       if: always()
       with:
         name: test-runs-${{ github.run_number }}-${{ runner.os }}-${{ matrix.ghc }}
-        path: test_runs
+        path: |
+          test_runs
+          !test_runs/**/gcroot
+        retention-days: 7
 
   stack:
     name: stack / ghc ${{ matrix.ghc }}
@@ -153,7 +156,9 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: test-runs-stack-${{ matrix.ghc }}
-        path: test_runs
+        path: |
+          test_runs
+          !test_runs/**/gcroot
         retention-days: 7
 
     - uses: actions/cache/save@v4
