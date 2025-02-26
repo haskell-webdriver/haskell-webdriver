@@ -1,5 +1,5 @@
 
-module Test.WebDriver.Config(
+module Test.WebDriver.Config (
   -- * WebDriver configuration
   WDConfig(..)
   , defaultConfig

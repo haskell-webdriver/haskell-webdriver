@@ -619,19 +619,20 @@ instance FromJSON Platform where
     err -> fail $ "Invalid Platform string " ++ show err
   parseJSON v = typeMismatch "Platform" v
 
--- |Available settings for the proxy 'Capabilities' field
-data ProxyType = NoProxy
-               | UseSystemSettings
-               | AutoDetect
-                 -- |Use a proxy auto-config file specified by URL
-               | PAC { autoConfigUrl :: String }
-                 -- |Manually specify proxy hosts as hostname:port strings.
-                 -- Note that behavior is undefined for empty strings.
-               | Manual { ftpProxy  :: String
-                        , sslProxy  :: String
-                        , httpProxy :: String
-                        }
-               deriving (Eq, Show)
+-- | Available settings for the proxy 'Capabilities' field
+data ProxyType =
+  NoProxy
+  | UseSystemSettings
+  | AutoDetect
+    -- |Use a proxy auto-config file specified by URL
+  | PAC { autoConfigUrl :: String }
+    -- |Manually specify proxy hosts as hostname:port strings.
+    -- Note that behavior is undefined for empty strings.
+  | Manual { ftpProxy  :: String
+           , sslProxy  :: String
+           , httpProxy :: String
+           }
+  deriving (Eq, Show)
 
 instance FromJSON ProxyType where
   parseJSON (Object obj) = do

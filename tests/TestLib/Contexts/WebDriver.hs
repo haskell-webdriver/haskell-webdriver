@@ -7,7 +7,9 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE ViewPatterns #-}
 
-module TestLib.Contexts.WebDriver where
+module TestLib.Contexts.WebDriver (
+  introduceWebDriver
+  ) where
 
 import Control.Monad
 import Control.Monad.Catch (MonadMask)

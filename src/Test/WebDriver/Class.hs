@@ -33,14 +33,16 @@ import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't wo
 -- "Test.WebDriver.Commands". For more information on the wire protocol see
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol>
 class (WDSessionStateControl wd) => WebDriver wd where
-  doCommand :: (HasCallStack, ToJSON a, FromJSON b, ToJSON b) =>
-                   Method      -- ^HTTP request method
-                -> Text        -- ^URL of request
-                -> a           -- ^JSON parameters passed in the body
-                               -- of the request. Note that, as a special case,
-                               -- anything that converts to Data.Aeson.Null will
-                               -- result in an empty request body.
-                -> wd b        -- ^The JSON result of the HTTP request.
+  doCommand :: (
+    HasCallStack, ToJSON a, FromJSON b, ToJSON b
+    )
+    => Method      -- ^ HTTP request method
+    -> Text        -- ^ URL of request
+    -> a           -- ^ JSON parameters passed in the body
+                   -- of the request. Note that, as a special case,
+                   -- anything that converts to Data.Aeson.Null will
+                   -- result in an empty request body.
+    -> wd b        -- ^ The JSON result of the HTTP request.
 
 instance WebDriver wd => WebDriver (SS.StateT s wd) where
   doCommand rm t a = lift (doCommand rm t a)
