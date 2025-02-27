@@ -23,54 +23,53 @@ import qualified Data.HashMap.Strict        as HM (delete, toList, empty)
 #endif
 
 
--- |A typeclass for readable 'Capabilities'
+-- | A typeclass for readable 'Capabilities'
 class GetCapabilities t where
   getCaps :: t -> Capabilities
 
 instance GetCapabilities Capabilities where
   getCaps = id
 
--- |A typeclass for writable 'Capabilities'
+-- | A typeclass for writable 'Capabilities'
 class SetCapabilities t where
   setCaps :: Capabilities -> t -> t
 
--- |Read/write 'Capabilities'
+-- | Read/write 'Capabilities'
 type HasCapabilities t = (GetCapabilities t, SetCapabilities t)
 
--- |Modifies the 'wdCapabilities' field of a 'WDConfig' by applying the given function. Overloaded to work with any 'HasCapabilities' instance.
+-- | Modifies the 'wdCapabilities' field of a 'WDConfig' by applying the given function. Overloaded to work with any 'HasCapabilities' instance.
 modifyCaps :: HasCapabilities t => (Capabilities -> Capabilities) -> t -> t
 modifyCaps f c = setCaps (f (getCaps c)) c
 
--- |A helper function for setting the 'browser' capability of a 'HasCapabilities' instance
+-- | A helper function for setting the 'browser' capability of a 'HasCapabilities' instance
 useBrowser :: HasCapabilities t => Browser -> t -> t
 useBrowser b = modifyCaps $ \c -> c { browser = b }
 
--- |A helper function for setting the 'version' capability of a 'HasCapabilities' instance
+-- | A helper function for setting the 'version' capability of a 'HasCapabilities' instance
 useVersion :: HasCapabilities t => String -> t -> t
 useVersion v = modifyCaps $ \c -> c { version = Just v }
 
--- |A helper function for setting the 'platform' capability of a 'HasCapabilities' instance
+-- | A helper function for setting the 'platform' capability of a 'HasCapabilities' instance
 usePlatform :: HasCapabilities t => Platform -> t -> t
 usePlatform p = modifyCaps $ \c -> c { platform = p }
 
--- |A helper function for setting the 'useProxy' capability of a 'HasCapabilities' instance
+-- | A helper function for setting the 'useProxy' capability of a 'HasCapabilities' instance
 useProxy :: HasCapabilities t => ProxyType -> t -> t
 useProxy p = modifyCaps $ \c -> c { proxy = p }
 
 
-{- |A structure describing the capabilities of a session. This record
-serves dual roles.
-
-* It's used to specify the desired capabilities for a session before
-it's created. In this usage, fields that are set to Nothing indicate
-that we have no preference for that capability.
-
-* When received from the server , it's used to
-describe the actual capabilities given to us by the WebDriver
-server. Here a value of Nothing indicates that the server doesn't
-support the capability. Thus, for Maybe Bool fields, both Nothing and
-Just False indicate a lack of support for the desired capability.
--}
+-- | A structure describing the capabilities of a session. This record
+-- serves dual roles.
+--
+-- It's used to specify the desired capabilities for a session before
+-- it's created. In this usage, fields that are set to Nothing indicate
+-- that we have no preference for that capability.
+--
+-- When received from the server , it's used to
+-- describe the actual capabilities given to us by the WebDriver
+-- server. Here a value of Nothing indicates that the server doesn't
+-- support the capability. Thus, for Maybe Bool fields, both Nothing and
+-- Just False indicate a lack of support for the desired capability.
 data Capabilities =
   Capabilities {
   -- | Browser choice and browser specific settings.
