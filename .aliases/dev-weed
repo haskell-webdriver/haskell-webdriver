@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+SCRIPTDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+cd "$SCRIPTDIR/.."
+
+echo "Generating weeds.txt"
+NO_REBUILD=""
+for arg do
+    shift
+    [ "$arg" = "--no-rebuild" ] && NO_REBUILD=t && continue
+done
+if [[ -z "$NO_REBUILD" ]]; then
+    find . -name "*.hie" | xargs rm -rf
+    stack build
+fi
+nix run .#weeder | sort | grep -v '$sel' > weeds.txt

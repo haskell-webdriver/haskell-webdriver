@@ -1,0 +1,5 @@
+roots = [
+  "Main.main"
+  , "main"
+  ]
+type-class-roots = true

@@ -1,6 +1,14 @@
 
 resolver: lts-22.43
 
+ghc-options:
+  "$locals": >-
+    -fwrite-ide-info
+    -hiedir .hie
+    -dumpdir .ghcdump
+    -Wredundant-constraints
+    -j8
+
 packages:
 - '.'
 
