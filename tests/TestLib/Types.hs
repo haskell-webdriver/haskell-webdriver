@@ -39,7 +39,6 @@ import Data.ByteString
 import qualified Data.ByteString.Lazy as BL
 import Data.Maybe
 import Data.String.Interpolate
-import qualified Data.Vector as V
 import qualified Network.HTTP.Client as HC
 import Network.HTTP.Types.Status as N
 import Network.Socket (PortNumber)

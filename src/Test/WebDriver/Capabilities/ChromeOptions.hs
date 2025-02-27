@@ -2,10 +2,7 @@
 
 module Test.WebDriver.Capabilities.ChromeOptions where
 
-import Data.Aeson
 import Data.Aeson.TH
-import Data.String (fromString)
-import Data.Text (Text, toLower, toUpper)
 import Test.WebDriver.Capabilities.Aeson
 
 

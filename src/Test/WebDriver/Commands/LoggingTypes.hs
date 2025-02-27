@@ -2,10 +2,9 @@
 module Test.WebDriver.Commands.LoggingTypes where
 
 import Data.Aeson as Aeson
-import Data.Aeson.Types (Parser, typeMismatch, Pair)
+import Data.Aeson.Types (typeMismatch)
 import Data.Maybe
 import Data.Text
-import Test.WebDriver.Capabilities
 
 
 -- | A record that represents a single log entry.

@@ -2,7 +2,7 @@
 module Test.WebDriver.Capabilities.Platform where
 
 import Data.Aeson
-import Data.Aeson.Types (Parser, typeMismatch, Pair)
+import Data.Aeson.Types (typeMismatch)
 import Data.String (fromString)
 import Data.Text (Text, toLower, toUpper)
 

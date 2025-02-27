@@ -2,10 +2,7 @@
 
 module Test.WebDriver.Capabilities.FirefoxOptions where
 
-import Data.Aeson
 import Data.Aeson.TH
-import Data.String (fromString)
-import Data.Text (Text, toLower, toUpper)
 import Test.WebDriver.Capabilities.Aeson
 
 -- https://developer.mozilla.org/en-US/docs/Web/WebDriver/Capabilities/firefoxOptions

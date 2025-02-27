@@ -15,15 +15,7 @@ module Test.WebDriver.Capabilities (
   , Platform(..)
   ) where
 
-import Control.Applicative
-import Data.Aeson
 import Data.Aeson.TH
-import Data.Aeson.Types (Parser, typeMismatch, Pair)
-import Data.Default (Default, def)
-import Data.Maybe (fromMaybe, catMaybes)
-import Data.String (fromString)
-import Data.Text (Text, toLower, toUpper)
-import Data.Word (Word16)
 import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Capabilities.ChromeOptions
 import Test.WebDriver.Capabilities.FirefoxOptions
@@ -31,15 +23,6 @@ import Test.WebDriver.Capabilities.Platform
 import Test.WebDriver.Capabilities.Proxy
 import Test.WebDriver.Capabilities.Timeouts
 import Test.WebDriver.Capabilities.UserPromptHandler
-import Test.WebDriver.Chrome.Extension
-import Test.WebDriver.Firefox.Profile
-import Test.WebDriver.JSON
-
-#if MIN_VERSION_aeson(2,0,0)
-import qualified Data.Aeson.KeyMap          as HM (delete, toList, empty)
-#else
-import qualified Data.HashMap.Strict        as HM (delete, toList, empty)
-#endif
 
 
 -- | A structure describing the capabilities of a session. This record
