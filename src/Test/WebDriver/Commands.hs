@@ -94,9 +94,10 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy.Encoding as TL
 import Network.URI hiding (path)  -- suppresses warnings
 import Prelude -- hides some "unused import" warnings
-import Test.WebDriver.Capabilities
+import Test.WebDriver.Capabilities (Capabilities)
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.Internal
+import Test.WebDriver.Commands.LoggingTypes
 import Test.WebDriver.Cookies
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
@@ -762,33 +763,6 @@ doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#status>
 serverStatus :: (HasCallStack, WebDriver wd) => wd Value   -- todo: make this a record type
 serverStatus = doCommand methodGet "/status" Null
-
--- | A record that represents a single log entry.
-data LogEntry =
-  LogEntry { logTime  :: Integer  -- ^ timestamp for the log entry. The standard
-                                  -- does not specify the epoch or the unit of
-                                  -- time.
-           , logLevel :: LogLevel -- ^ log verbosity level
-           , logMsg   :: Text
-           }
-  deriving (Eq, Ord, Show, Read)
-
-
-instance FromJSON LogEntry where
-  parseJSON (Object o) =
-    LogEntry <$> o .: "timestamp"
-             <*> o .: "level"
-             <*> (fromMaybe "" <$> o .: "message")
-  parseJSON v = typeMismatch "LogEntry" v
-
-instance ToJSON LogEntry where
-  toJSON (LogEntry {..}) = Aeson.object [
-    ("timestamp", Aeson.Number (fromIntegral logTime))
-    , ("level", toJSON logLevel)
-    , ("message", Aeson.String logMsg)
-    ]
-
-type LogType = String
 
 -- | Retrieve the log buffer for a given log type. The server-side log buffer is reset after each request.
 --

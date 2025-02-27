@@ -4,13 +4,6 @@ module Test.WebDriver.Config (
   WDConfig(..)
   , defaultConfig
 
-  -- * Capabilities helpers
-  , modifyCaps
-  , useBrowser
-  , useVersion
-  , usePlatform
-  , useProxy
-
   -- * SessionHistoryConfig options
   , SessionHistoryConfig
   , noHistory
@@ -60,19 +53,13 @@ data WDConfig = WDConfig {
 instance Show WDConfig where
   show (WDConfig {..}) = [i|WDConfig<#{wdHost}:#{wdPort}#{wdBasePath}>|]
 
-instance GetCapabilities WDConfig where
-  getCaps = wdCapabilities
-
-instance SetCapabilities WDConfig where
-  setCaps caps conf = conf { wdCapabilities = caps }
-
 instance Default WDConfig where
   def = WDConfig {
     wdHost = "127.0.0.1"
     , wdPort = 4444
     , wdRequestHeaders = []
     , wdAuthHeaders = []
-    , wdCapabilities = def
+    , wdCapabilities = defaultCaps
     , wdHistoryConfig = unlimitedHistory
     , wdBasePath = "/wd/hub"
     , wdHTTPManager = Nothing
@@ -80,9 +67,9 @@ instance Default WDConfig where
     , wdSeleniumVersion = Selenium3
     }
 
-{- |A default session config connects to localhost on port 4444, and hasn't been
-initialized server-side. This value is the same as 'def' but with a less
-polymorphic type. -}
+-- | A default session config connects to localhost on port 4444, and hasn't been
+-- initialized server-side. This value is the same as 'def' but with a less
+-- polymorphic type.
 defaultConfig :: WDConfig
 defaultConfig = def
 
@@ -95,7 +82,7 @@ class WebDriverConfig c where
   mkSession :: MonadIO m => c -> m WDSession
 
 instance WebDriverConfig WDConfig where
-  mkCaps = return . getCaps
+  mkCaps (WDConfig {..}) = return wdCapabilities
 
   mkSession (WDConfig {..}) = do
     manager <- maybe createManager return wdHTTPManager

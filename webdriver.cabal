@@ -65,6 +65,14 @@ library
       Test.WebDriver.Types
       Test.WebDriver.Utils
   other-modules:
+      Test.WebDriver.Capabilities.Aeson
+      Test.WebDriver.Capabilities.ChromeOptions
+      Test.WebDriver.Capabilities.FirefoxOptions
+      Test.WebDriver.Capabilities.Platform
+      Test.WebDriver.Capabilities.Proxy
+      Test.WebDriver.Capabilities.Timeouts
+      Test.WebDriver.Capabilities.UserPromptHandler
+      Test.WebDriver.Commands.LoggingTypes
       Paths_webdriver
   hs-source-dirs:
       src

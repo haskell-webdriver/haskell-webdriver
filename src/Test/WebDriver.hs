@@ -6,34 +6,55 @@ providing most of the functionality you're likely to want.
 module Test.WebDriver (
   -- * WebDriver monad
   WD(..)
+
   -- * Running WebDriver commands
-  , runSession, withSession, runWD
+  , runSession
+  , withSession
+  , runWD
+
   -- * WebDriver configuration
-  , WDConfig(..), defaultConfig
-  -- ** Configuration helper functions
-  -- | Instead of working with the 'Capabilities' record directly, you can use
-  --   these config modifier functions to specify common options.
-  , useBrowser, useProxy, useVersion, usePlatform
+  , WDConfig(..)
+  , defaultConfig
+
   -- ** Session history configuration
-  , SessionHistoryConfig, noHistory, unlimitedHistory, onlyMostRecentHistory
+  , SessionHistoryConfig
+  , noHistory
+  , unlimitedHistory
+  , onlyMostRecentHistory
+
   -- ** HTTP request header utilities
-  , withRequestHeaders, withAuthHeaders
+  , withRequestHeaders
+  , withAuthHeaders
+
   -- * WebDriver commands
   , module Test.WebDriver.Commands
+
   -- * Capabilities (advanced configuration)
-  , Capabilities(..), defaultCaps, allCaps, modifyCaps
-  , Platform(..), ProxyType(..)
+  , Capabilities(..)
+  , defaultCaps
+  , Platform(..)
+  , ProxyType(..)
+
   -- ** Browser-specific capabilities
-  , Browser(..), LogLevel(..)
+  -- , Browser(..)
+  , LogLevel(..)
+
   -- *** Browser defaults
-  , firefox, chrome, ie, opera, iPhone, iPad, android
+  -- , firefox, chrome, ie, opera, iPhone, iPad, android
+
   -- * Exception handling
-  , finallyClose, closeOnException
+  , finallyClose
+  , closeOnException
+
   , module Test.WebDriver.Exceptions
+
   -- * Accessing session history
-  , SessionHistory(..), getSessionHistory, dumpSessionHistory
+  , SessionHistory(..)
+  , getSessionHistory
+  , dumpSessionHistory
   ) where
 
+import Test.WebDriver.Capabilities.Proxy
 import Test.WebDriver.Commands
 import Test.WebDriver.Config
 import Test.WebDriver.Exceptions

@@ -47,6 +47,7 @@ import Test.Sandwich
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.WebDriver
+import Test.WebDriver.Capabilities
 import Test.WebDriver.Class
 import Test.WebDriver.Internal
 import Test.WebDriver.Session
@@ -163,19 +164,17 @@ getWDConfig' (WebDriverContext {..}) browserDeps = do
 
 getCapabilities :: MonadIO m => Bool -> BrowserDependencies -> m Capabilities
 getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
-  browser = chrome {
-      chromeBinary = Just browserDependenciesChromeChrome
-      , chromeOptions = (if headless then ["--headless"] else []) <> (chromeOptions chrome)
+  capabilitiesGoogChromeOptions = Just $ defaultChromeOptions {
+      chromeOptionsArgs = Just ((if headless then ["--headless"] else []) <> (fromMaybe [] (chromeOptionsArgs defaultChromeOptions)))
+      , chromeOptionsBinary = Just browserDependenciesChromeChrome
       }
   }
 getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps {
-  browser = firefox {
-      ffBinary = Just browserDependenciesFirefoxFirefox
+  capabilitiesMozFirefoxOptions = Just $ defaultFirefoxOptions {
+      firefoxOptionsBinary = Just browserDependenciesFirefoxFirefox
+      , firefoxOptionsArgs = Just ((if headless then ["--headless"] else []) <> (fromMaybe [] (firefoxOptionsArgs defaultFirefoxOptions)))
       }
-  , additionalCaps = if headless then headlessCaps else []
   }
-  where
-    headlessCaps = [("moz:firefoxOptions", A.object [("args", A.Array (V.fromList ["-headless"]))])]
 
 -- * Spec types
 

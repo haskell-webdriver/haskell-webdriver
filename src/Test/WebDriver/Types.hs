@@ -7,36 +7,35 @@ module Test.WebDriver.Types (
   , SessionId(..)
   , SessionHistory
 
-    -- * WebDriver configuration
+  -- * WebDriver configuration
   , WDConfig(..)
   , defaultConfig
   , SessionHistoryConfig
   , SeleniumVersion
 
-    -- * Capabilities
+  -- * Capabilities
   , Capabilities(..)
   , defaultCaps
-  , allCaps
   , Platform(..)
-  , ProxyType(..)
-  , UnexpectedAlertBehavior(..)
+  -- , ProxyType(..)
+  -- , UnexpectedAlertBehavior(..)
 
-    -- ** Browser-specific capabilities
-  , Browser(..),
+  -- ** Browser-specific capabilities
+  -- , Browser(..)
 
-    -- ** Default settings for browsers
-    firefox
-  , chrome
-  , ie
-  , opera
-  , iPhone
-  , iPad
-  , android
-  , LogLevel(..)
-  , IELogLevel(..)
-  , IEElementScrollBehavior(..)
+  -- ** Default settings for browsers
+  --   firefox
+  -- , chrome
+  -- , ie
+  -- , opera
+  -- , iPhone
+  -- , iPad
+  -- , android
+  -- , LogLevel(..)
+  -- , IELogLevel(..)
+  -- , IEElementScrollBehavior(..)
 
-    -- * WebDriver objects and command-specific types
+  -- * WebDriver objects and command-specific types
   , Element(..)
   , WindowHandle(..)
   , currentWindow
@@ -47,7 +46,7 @@ module Test.WebDriver.Types (
   , Orientation(..)
   , MouseButton(..)
   , WebStorageType(..)
-  , LogType, LogEntry(..)
+  , LogType, LogEntry(..), LogLevel(..)
   , ApplicationCacheStatus(..)
 
     -- * Exceptions
