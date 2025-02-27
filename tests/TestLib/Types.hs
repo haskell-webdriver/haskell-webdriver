@@ -39,6 +39,7 @@ import Data.ByteString
 import qualified Data.ByteString.Lazy as BL
 import Data.Maybe
 import Data.String.Interpolate
+import Lens.Micro
 import qualified Network.HTTP.Client as HC
 import Network.HTTP.Types.Status as N
 import Network.Socket (PortNumber)
@@ -163,16 +164,16 @@ getWDConfig' (WebDriverContext {..}) browserDeps = do
 
 getCapabilities :: MonadIO m => Bool -> BrowserDependencies -> m Capabilities
 getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
-  capabilitiesGoogChromeOptions = Just $ defaultChromeOptions {
-      chromeOptionsArgs = Just ((if headless then ["--headless"] else []) <> (fromMaybe [] (chromeOptionsArgs defaultChromeOptions)))
-      , chromeOptionsBinary = Just browserDependenciesChromeChrome
-      }
+  capabilitiesGoogChromeOptions = Just $
+    defaultChromeOptions
+      & over (chromeOptionsArgs . non []) (if headless then ("--headless" :) else id)
+      & set chromeOptionsBinary (Just browserDependenciesChromeChrome)
   }
 getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps {
-  capabilitiesMozFirefoxOptions = Just $ defaultFirefoxOptions {
-      firefoxOptionsBinary = Just browserDependenciesFirefoxFirefox
-      , firefoxOptionsArgs = Just ((if headless then ["--headless"] else []) <> (fromMaybe [] (firefoxOptionsArgs defaultFirefoxOptions)))
-      }
+  capabilitiesMozFirefoxOptions = Just $
+    defaultFirefoxOptions
+      & set firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
+      & over (firefoxOptionsArgs . non []) (if headless then ("-headless" :) else id)
   }
 
 -- * Spec types

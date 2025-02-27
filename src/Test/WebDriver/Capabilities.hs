@@ -6,11 +6,8 @@ module Test.WebDriver.Capabilities (
   Capabilities(..)
   , defaultCaps
 
-  , ChromeOptions(..)
-  , defaultChromeOptions
-
-  , FirefoxOptions(..)
-  , defaultFirefoxOptions
+  , module Test.WebDriver.Capabilities.ChromeOptions
+  , module Test.WebDriver.Capabilities.FirefoxOptions
 
   , Platform(..)
   ) where
