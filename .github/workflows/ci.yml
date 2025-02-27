@@ -13,13 +13,16 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         ghc:
-        - "8.8.4"
-        - "8.10.7"
+        # - "8.8.4"
+        # - "8.10.7"
         - "9.0.2"
         - "9.2.8"
         - "9.4.8"
         - "9.6.6"
-        - "9.8.2"
+        - "9.8.4"
+        browser-arg:
+        - "--use-firefox"
+        - "--use-chrome"
         exclude:
         # haskell-actions/setup@v2 can't install older GHCs
         - os: macOS-latest
@@ -79,20 +82,14 @@ jobs:
 
     - name: Test
       run: |
-        CHROME="${{ steps.setup-chrome.outputs.chrome-path }}"
-        CHROMEDRIVER="${{ steps.setup-chrome.outputs.chromedriver-path }}"
-
-        echo "CHROME: $CHROME"
-        echo "CHROMEDRIVER: $CHROMEDRIVER"
-
-        echo "Full test options: --headless-tests --webdriver-chrome $CHROME --webdriver-chromedriver $CHROMEDRIVER"
+        # CHROME="${{ steps.setup-chrome.outputs.chrome-path }}"
+        # CHROMEDRIVER="${{ steps.setup-chrome.outputs.chromedriver-path }}"
+        # echo "CHROME: $CHROME"
+        # echo "CHROMEDRIVER: $CHROMEDRIVER"
 
         cabal test all \
           --test-option="--headless-tests" \
-          --test-option="--webdriver-chrome" \
-          --test-option="$CHROME" \
-          --test-option="--webdriver-chromedriver" \
-          --test-option="$CHROMEDRIVER"
+          --test-option="${{ matrix.browser-arg }}"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4
@@ -111,13 +108,16 @@ jobs:
       fail-fast: false
       matrix:
         ghc:
-        - "8.6.5"
-        - "8.8.4"
-        - "8.10.7"
+        # - "8.6.5"
+        # - "8.8.4"
+        # - "8.10.7"
         - "9.0.2"
         - "9.2.8"
         - "9.4.8"
         - "9.6.6"
+        browser-arg:
+        - "--use-firefox"
+        - "--use-chrome"
 
     steps:
     - uses: actions/checkout@v4
@@ -150,7 +150,7 @@ jobs:
 
     - name: Test
       run: |
-        stack test --system-ghc --ta="--headless-tests"
+        stack test --system-ghc --ta="--headless-tests ${{ matrix.browser-arg }}"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4
