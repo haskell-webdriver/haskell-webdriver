@@ -6,7 +6,7 @@ on:
 
 jobs:
   cabal:
-    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }} / ${{ matrix.browser }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -20,9 +20,9 @@ jobs:
         - "9.4.8"
         - "9.6.6"
         - "9.8.4"
-        browser-arg:
-        - "--use-firefox"
-        - "--use-chrome"
+        browser:
+        - firefox
+        - chrome
         exclude:
         # haskell-actions/setup@v2 can't install older GHCs
         - os: macOS-latest
@@ -89,20 +89,20 @@ jobs:
 
         cabal test all \
           --test-option="--headless-tests" \
-          --test-option="${{ matrix.browser-arg }}"
+          --test-option="--use-${{ matrix.browser }}"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-runs-${{ github.run_number }}-${{ runner.os }}-${{ matrix.ghc }}
+        name: test-runs-${{ github.run_number }}-${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.browser }}
         path: |
           test_runs
           !test_runs/**/gcroot
         retention-days: 7
 
   stack:
-    name: stack / ghc ${{ matrix.ghc }}
+    name: stack / ghc ${{ matrix.ghc }} / ${{ matrix.browser }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -115,9 +115,9 @@ jobs:
         - "9.2.8"
         - "9.4.8"
         - "9.6.6"
-        browser-arg:
-        - "--use-firefox"
-        - "--use-chrome"
+        browser:
+        - firefox
+        - chrome
 
     steps:
     - uses: actions/checkout@v4
@@ -150,13 +150,13 @@ jobs:
 
     - name: Test
       run: |
-        stack test --system-ghc --ta="--headless-tests ${{ matrix.browser-arg }}"
+        stack test --system-ghc --ta="--headless-tests --use-${{ matrix.browser }}"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: test-runs-stack-${{ matrix.ghc }}
+        name: test-runs-stack-${{ matrix.ghc }}-${{ matrix.browser }}
         path: |
           test_runs
           !test_runs/**/gcroot
