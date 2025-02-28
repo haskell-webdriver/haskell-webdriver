@@ -10,13 +10,16 @@ import qualified Data.List as L
 baseOptions :: A.Options
 baseOptions = A.defaultOptions
 
-toCamel1, toCamel2 :: A.Options
+toCamel1, toCamel2, toCamel3 :: A.Options
 toCamel1 = baseOptions { A.fieldLabelModifier = snakeToCamelCase . toSnakeAndDropN 1 . dropLeadingUnderscore }
 toCamel2 = baseOptions { A.fieldLabelModifier = snakeToCamelCase . toSnakeAndDropN 2 . dropLeadingUnderscore }
+toCamel3 = baseOptions { A.fieldLabelModifier = snakeToCamelCase . toSnakeAndDropN 3 . dropLeadingUnderscore }
 
-toCamelC1, toCamelC2 :: A.Options
+toCamelC1, toCamelC2, toCamelC3, toCamelC4 :: A.Options
 toCamelC1 = baseOptions { A.constructorTagModifier = snakeToCamelCase . toSnakeAndDropN 1 }
 toCamelC2 = baseOptions { A.constructorTagModifier = snakeToCamelCase . toSnakeAndDropN 2 }
+toCamelC3 = baseOptions { A.constructorTagModifier = snakeToCamelCase . toSnakeAndDropN 3 }
+toCamelC4 = baseOptions { A.constructorTagModifier = snakeToCamelCase . toSnakeAndDropN 4 }
 
 -- | For 'UserPromptHandler', which maps things like
 -- UserPromptHandlerAcceptAndNotify -> "accept and notify"
