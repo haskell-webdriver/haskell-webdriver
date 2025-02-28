@@ -12,4 +12,4 @@ data Timeouts = Timeouts {
   , timeoutsImplicitMs :: Maybe Int
   }
   deriving (Show, Eq)
-deriveJSON timeoutsOptions ''Timeouts
+deriveJSON toCamelC2 ''Timeouts

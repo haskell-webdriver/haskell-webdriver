@@ -35,24 +35,30 @@ import Test.WebDriver.Capabilities.UserPromptHandler
 -- Thus, for Maybe Bool fields, both Nothing and Just False indicate
 -- a lack of support for the desired capability.
 data Capabilities = Capabilities {
+  -- | Identifies the user agent.
   capabilitiesBrowserName :: Maybe String
+  -- | Identifies the version of the user agent.
   , capabilitiesBrowserVersion :: Maybe String
-
+  -- | Identifies the operating system of the endpoint node.
   , capabilitiesPlatformName :: Maybe Platform
-
+  -- | Indicates whether untrusted and self-signed TLS certificates are implicitly trusted on navigation for the
+  -- duration of the session.
   , capabilitiesAcceptInsecureCerts :: Maybe Bool
-
+  -- | Defines the current session’s page load strategy.
   , capabilitiesPageLoadStrategy :: Maybe String
-
+  -- | Defines the current session’s proxy configuration.
   , capabilitiesProxy :: Maybe Proxy
-
+  -- | Indicates whether the remote end supports all of the commands in Resizing and Positioning Windows.
   , capabilitiesSetWindowRect :: Maybe Bool
-
+  -- | Describes the timeouts imposed on certain session operations.
   , capabilitiesTimeouts :: Maybe Timeouts
-
+  -- | Describes the current session’s user prompt handler.
   , capabilitiesUnhandledPromptBehavior :: Maybe UserPromptHandler
 
+  -- * Vendor-specific stuff
+  -- | Chrome options
   , capabilitiesGoogChromeOptions :: Maybe ChromeOptions
+  -- | Firefox options
   , capabilitiesMozFirefoxOptions :: Maybe FirefoxOptions
   } deriving (Eq, Show)
 

@@ -13,7 +13,7 @@ data ProxyType =
   | ProxyTypeSystem
   | ProxyTypeManual
   deriving (Show, Eq)
-deriveJSON toSnakeC2 ''ProxyType
+deriveJSON toCamelC2 ''ProxyType
 
 data Proxy = Proxy {
   proxyType :: ProxyType
