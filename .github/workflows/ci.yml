@@ -59,6 +59,8 @@ jobs:
 
     - name: Freeze
       run: |
+        cabal update
+        cabal configure --enable-tests
         cabal freeze
 
     - uses: DeterminateSystems/magic-nix-cache-action@main
