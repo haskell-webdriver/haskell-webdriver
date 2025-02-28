@@ -26,6 +26,7 @@ introduceBrowserDependencies = introduce "Introduce browser dependencies" browse
         UseChrome ->
           BrowserDependenciesChrome <$> getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
                                     <*> getBinaryViaNixPackage @"chromedriver" "chromedriver"
+                                    <*> pure optChromeNoSandbox
         UseFirefox ->
           BrowserDependenciesFirefox <$> getBinaryViaNixPackage @"firefox" "firefox"
                                      <*> getBinaryViaNixPackage @"geckodriver" "geckodriver"

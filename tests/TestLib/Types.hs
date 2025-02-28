@@ -72,6 +72,7 @@ type HasStaticServerContext context = HasLabel context "staticServer" StaticServ
 data BrowserDependencies = BrowserDependenciesChrome {
   browserDependenciesChromeChrome :: FilePath
   , browserDependenciesChromeChromedriver :: FilePath
+  , browserDependenciesChromeNoSandbox :: Maybe Bool
   }
   | BrowserDependenciesFirefox {
       browserDependenciesFirefoxFirefox :: FilePath
@@ -168,6 +169,7 @@ getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
   , capabilitiesGoogChromeOptions = Just $
     defaultChromeOptions
       & over (chromeOptionsArgs . non []) (if headless then ("--headless" :) else id)
+      & over (chromeOptionsArgs . non []) (if browserDependenciesChromeNoSandbox == Just True then ("--no-sandbox" :) else id)
       & set chromeOptionsBinary (Just browserDependenciesChromeChrome)
   }
 getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps {

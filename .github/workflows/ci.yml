@@ -77,21 +77,12 @@ jobs:
           --extra-include-dirs=/opt/homebrew/include \
           --extra-lib-dirs=/opt/homebrew/lib
 
-    - uses: browser-actions/setup-chrome@v1
-      id: setup-chrome
-      with:
-        install-chromedriver: true
-
     - name: Test
       run: |
-        # CHROME="${{ steps.setup-chrome.outputs.chrome-path }}"
-        # CHROMEDRIVER="${{ steps.setup-chrome.outputs.chromedriver-path }}"
-        # echo "CHROME: $CHROME"
-        # echo "CHROMEDRIVER: $CHROMEDRIVER"
-
         cabal test all \
           --test-option="--headless-tests" \
-          --test-option="--use-${{ matrix.browser }}"
+          --test-option="--use-${{ matrix.browser }}" \
+          --test-option="--webdriver-chrome-no-sandbox"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4
@@ -152,7 +143,7 @@ jobs:
 
     - name: Test
       run: |
-        stack test --system-ghc --ta="--headless-tests --use-${{ matrix.browser }}"
+        stack test --system-ghc --ta="--headless-tests --use-${{ matrix.browser }} --webdriver-chrome-no-sandbox"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4
