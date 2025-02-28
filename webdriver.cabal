@@ -168,7 +168,6 @@ test-suite tests
     , text
     , unliftio
     , unliftio-core
-    , vector
     , wai-app-static
     , warp
     , webdriver
