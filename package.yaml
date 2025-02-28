@@ -62,7 +62,6 @@ library:
   - filepath > 1.0
   - http-client >= 0.3
   - http-types >= 0.8
-  - microlens >= 0.4.0.0
   - microlens-th >= 0.4.0.0
   - network-uri >= 2.6
   - pretty-simple
@@ -115,6 +114,7 @@ tests:
     - filepath
     - http-client
     - http-types
+    - microlens
     - monad-logger
     - mtl
     - network

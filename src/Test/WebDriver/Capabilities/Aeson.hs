@@ -8,7 +8,7 @@ import qualified Data.List as L
 
 
 baseOptions :: A.Options
-baseOptions = A.defaultOptions
+baseOptions = A.defaultOptions { omitNothingFields = True }
 
 toCamel1, toCamel2, toCamel3 :: A.Options
 toCamel1 = baseOptions { A.fieldLabelModifier = snakeToCamelCase . toSnakeAndDropN 1 . dropLeadingUnderscore }
@@ -27,7 +27,9 @@ toSpacedC3 :: A.Options
 toSpacedC3 = baseOptions { A.constructorTagModifier = snakeToSpaced . toSnakeAndDropN 3 }
 
 capabilitiesOptions :: A.Options
-capabilitiesOptions = A.defaultOptions { A.fieldLabelModifier = specialCases . snakeToCamelCase . toSnakeAndDropN 1 . dropLeadingUnderscore }
+capabilitiesOptions = baseOptions {
+  A.fieldLabelModifier = specialCases . snakeToCamelCase . toSnakeAndDropN 1 . dropLeadingUnderscore
+  }
   where
     specialCases "googChromeOptions" = "goog:chromeOptions"
     specialCases "mozFirefoxOptions" = "moz:firefoxOptions"

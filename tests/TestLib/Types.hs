@@ -164,13 +164,15 @@ getWDConfig' (WebDriverContext {..}) browserDeps = do
 
 getCapabilities :: MonadIO m => Bool -> BrowserDependencies -> m Capabilities
 getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
-  capabilitiesGoogChromeOptions = Just $
+  capabilitiesBrowserName = Just "chrome"
+  , capabilitiesGoogChromeOptions = Just $
     defaultChromeOptions
       & over (chromeOptionsArgs . non []) (if headless then ("--headless" :) else id)
       & set chromeOptionsBinary (Just browserDependenciesChromeChrome)
   }
 getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps {
-  capabilitiesMozFirefoxOptions = Just $
+  capabilitiesBrowserName = Just "firefox"
+  , capabilitiesMozFirefoxOptions = Just $
     defaultFirefoxOptions
       & set firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
       & over (firefoxOptionsArgs . non []) (if headless then ("-headless" :) else id)
