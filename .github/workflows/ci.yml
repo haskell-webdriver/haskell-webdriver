@@ -79,6 +79,12 @@ jobs:
 
     - name: Test
       run: |
+        if [ "$RUNNER_OS" == "macOS" ]; then
+          echo "Running on macOS!"
+          echo "firefox: $(which firefox)"
+          echo "geckodriver: $(which geckodriver)"
+        fi
+
         cabal test all \
           --test-option="--headless-tests" \
           --test-option="--use-${{ matrix.browser }}" \
