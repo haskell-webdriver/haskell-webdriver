@@ -14,23 +14,31 @@ tests = introduceSession $ describe "Windows" $ before "Open test page" openSimp
   it "getCurrentWindow / focusWindow" $ do
     h <- getCurrentWindow
     info [i|Got current window: #{h}|]
-    focusWindow h
 
-  it "getWindowRect" $ do
-    rect <- getWindowRect
-    info [i|Got rect: #{rect}|]
+  it "focusWindow" $ do
+    getCurrentWindow >>= focusWindow
 
-  it "setWindowRect" $ do
-    -- TODO: modify the rect
-    getWindowRect >>= setWindowRect
+  it "windows" $ do
+    ws <- windows
+    info [i|windows: #{ws}|]
 
-  it "getWindowSize" $ do
-    size <- getWindowSize
-    info [i|Got size: #{size}|]
+  it "maximize" $ do
+    maximize
 
-  it "setWindowSize" $ do
-    -- TODO: modify the size
-    getWindowSize >>= setWindowSize
+  it "minimize" $ do
+    minimize
+
+  it "fullscreen" $ do
+    fullscreen
+
+  describe "rect" $ do
+    it "getWindowRect" $ do
+      rect <- getWindowRect
+      info [i|Got rect: #{rect}|]
+
+    it "setWindowRect" $ do
+      -- TODO: modify the rect
+      getWindowRect >>= setWindowRect
 
   it "closeWindow" $ do
     getCurrentWindow >>= closeWindow

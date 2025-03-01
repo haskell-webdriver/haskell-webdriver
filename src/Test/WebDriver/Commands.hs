@@ -64,20 +64,20 @@ module Test.WebDriver.Commands (
   , JSArg(..)
 
   -- * Windows
-  , WindowHandle(..)
   , currentWindow
   , getCurrentWindow
   , closeWindow
   , windows
   , focusWindow
-  , maximize
-  , Rect(..)
+  -- ** Resizing and positioning windows
   , getWindowRect
   , setWindowRect
-  , getWindowSize
-  , setWindowSize
-  , getWindowPos
-  , setWindowPos
+  , maximize
+  , minimize
+  , fullscreen
+  -- ** Types
+  , WindowHandle(..)
+  , Rect(..)
 
   -- * Focusing on frames
   , focusFrame
@@ -411,9 +411,17 @@ closeWindow w = do
   ignoreReturn $ doSessCommand methodDelete "/window" Null
   unless (w == cw) $ focusWindow cw
 
--- | Maximizes the current  window if not already maximized
+-- | Maximizes the current window
 maximize :: (HasCallStack, WebDriver wd) => wd ()
-maximize = ignoreReturn $ doWinCommand methodPost "/maximize" Null
+maximize = ignoreReturn $ doSessCommand methodPost "/window/maximize" Null
+
+-- | Minimizes the current window
+minimize :: (HasCallStack, WebDriver wd) => wd ()
+minimize = ignoreReturn $ doSessCommand methodPost "/window/minimize" Null
+
+-- | Fullscreens the current window
+fullscreen :: (HasCallStack, WebDriver wd) => wd ()
+fullscreen = ignoreReturn $ doSessCommand methodPost "/window/fullscreen" Null
 
 data Rect = Rect
   { rectX :: Float
@@ -440,35 +448,11 @@ instance ToJSON Rect where
 
 -- | Get the dimensions of the current window.
 getWindowRect :: (HasCallStack, WebDriver wd) => wd Rect
-getWindowRect = doWinCommand methodGet "rect" Null
+getWindowRect = doSessCommand methodGet "/window/rect" Null
 
 -- | Set the dimensions of the current window.
 setWindowRect :: (HasCallStack, WebDriver wd) => Rect -> wd ()
-setWindowRect = ignoreReturn . doWinCommand methodPost "rect"
-
--- | Get the dimensions of the current window. {-# DEPRECATED "Use getWindowRect instead" #-}
-getWindowSize :: (HasCallStack, WebDriver wd) => wd (Word, Word)
-getWindowSize = do
-  Rect {..} <- getWindowRect
-  return (round rectWidth, round rectHeight)
-
--- | Set the dimensions of the current window. {-# DEPRECATED "Use setWindowRect instead" #-}
-setWindowSize :: (HasCallStack, WebDriver wd) => (Word, Word) -> wd ()
-setWindowSize (width, height) = do
-  Rect {..} <- getWindowRect
-  setWindowRect (Rect rectX rectY (fromIntegral width) (fromIntegral height))
-
--- | Get the coordinates of the current window. {-# DEPRECATED "Use getWindowRect instead" #-}
-getWindowPos :: (HasCallStack, WebDriver wd) => wd (Int, Int)
-getWindowPos = do
-  Rect {..} <- getWindowRect
-  return (round rectX, round rectY)
-
--- | Set the coordinates of the current window. {-# DEPRECATED "Use setWindowRect instead" #-}
-setWindowPos :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
-setWindowPos (x, y) = do
-  Rect {..} <- getWindowRect
-  setWindowRect (Rect (fromIntegral x) (fromIntegral y) rectWidth rectHeight)
+setWindowRect = ignoreReturn . doSessCommand methodPost "/window/rect"
 
 -- | Retrieve all cookies visible to the current page.
 cookies :: (HasCallStack, WebDriver wd) => wd [Cookie]

@@ -10,11 +10,15 @@ module Test.WebDriver.Commands.Internal (
   -- * Low-level webdriver functions
   doCommand
   -- ** Commands with :sessionId URL parameter
-  , doSessCommand, SessionId(..)
+  , doSessCommand
+  , SessionId(..)
   -- ** Commands with element :id URL parameters
-  , doElemCommand, Element(..)
+  , doElemCommand
+  , Element(..)
   -- ** Commands with :windowHandle URL parameters
-  , doWinCommand, WindowHandle(..), currentWindow
+  , WindowHandle(..)
+  , currentWindow
+
   -- * Exceptions
   , NoSessionId(..)
   ) where
@@ -46,7 +50,7 @@ aesonToList :: HM.KeyMap v -> [(A.Key, v)]
 aesonToList = HM.toList
 #endif
 
-{- |An opaque identifier for a web page element. -}
+-- | An opaque identifier for a web page element
 newtype Element = Element Text
                   deriving (Eq, Ord, Show, Read)
 
@@ -60,25 +64,25 @@ instance ToJSON Element where
   toJSON (Element e) = object ["ELEMENT" .= e]
 
 
-{- |An opaque identifier for a browser window -}
+-- | An opaque identifier for a browser window
 newtype WindowHandle = WindowHandle Text
                      deriving (Eq, Ord, Show, Read,
                                FromJSON, ToJSON)
 instance Default WindowHandle where
   def = currentWindow
 
--- |A special 'WindowHandle' that always refers to the currently focused window.
+-- | A special 'WindowHandle' that always refers to the currently focused window.
 -- This is also used by the 'Default' instance.
 currentWindow :: WindowHandle
 currentWindow = WindowHandle "current"
 
 instance Exception NoSessionId
--- |A command requiring a session ID was attempted when no session ID was
+-- | A command requiring a session ID was attempted when no session ID was
 -- available.
 data NoSessionId = NoSessionId String CallStack
   deriving (Eq, Show, Typeable)
 
--- |This a convenient wrapper around 'doCommand' that automatically prepends
+-- | This a convenient wrapper around 'doCommand' that automatically prepends
 -- the session URL parameter to the wire command URL. For example, passing
 -- a URL of \"/refresh\" will expand to \"/session/:sessionId/refresh\", where
 -- :sessionId is a URL parameter as described in
@@ -102,7 +106,7 @@ doSessCommand method path args = do
         (doCommand method (T.concat ["/session/", urlEncode sId, path]) args)
         (\(e :: BadJSON) -> error $ show e)
 
--- |A wrapper around 'doSessCommand' to create element URLs.
+-- | A wrapper around 'doSessCommand' to create element URLs.
 -- For example, passing a URL of "/active" will expand to
 -- \"/session/:sessionId/element/:id/active\", where :sessionId and :id are URL
 -- parameters as described in the wire protocol.
@@ -111,10 +115,3 @@ doElemCommand :: (
   ) => Method -> Element -> Text -> a -> wd b
 doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
-
--- |A wrapper around 'doSessCommand' to create window handle URLS.
-doWinCommand :: (
-  HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
-  ) => Method -> Text -> a -> wd b
-doWinCommand m path a =
-  doSessCommand m (T.concat ["/window/", path]) a
