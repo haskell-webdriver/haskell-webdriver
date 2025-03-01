@@ -4,74 +4,166 @@
 -- browser session.
 module Test.WebDriver.Commands (
   -- * Sessions
-  createSession, closeSession, sessions, getActualCaps
+  createSession
+  , closeSession
+  , sessions
+  , getActualCaps
+
   -- * Browser interaction
   -- ** Web navigation
-  , openPage, forward, back, refresh
+  , openPage
+  , forward
+  , back
+  , refresh
   -- ** Page info
-  , getCurrentURL, getSource, getTitle, saveScreenshot, screenshot, screenshotBase64
+  , getCurrentURL
+  , getSource
+  , getTitle
+  , saveScreenshot
+  , screenshot
+  , screenshotBase64
+
   -- * Timeouts
-  , setImplicitWait, setScriptTimeout, setPageLoadTimeout
+  , setImplicitWait
+  , setScriptTimeout
+  , setPageLoadTimeout
+
   -- * Web elements
-  , Element(..), Selector(..)
+  , Element(..)
+  , Selector(..)
   -- ** Searching for elements
-  , findElem, findElems, findElemFrom, findElemsFrom
+  , findElem
+  , findElems
+  , findElemFrom
+  , findElemsFrom
   -- ** Interacting with elements
-  , click, submit, getText
+  , click
+  , submit
+  , getText
   -- *** Sending key inputs to elements
-  , sendKeys, sendRawKeys, clearInput
+  , sendKeys
+  , sendRawKeys
+  , clearInput
   -- ** Element information
-  , attr, cssProp, elemRect
-  , isSelected, isEnabled, isDisplayed
-  , tagName, activeElem, elemInfo
+  , attr
+  , cssProp
+  , elemRect
+  , isSelected
+  , isEnabled
+  , isDisplayed
+  , tagName
+  , activeElem
+  , elemInfo
   -- ** Element equality
-  , (<==>), (</=>)
+  , (<==>)
+  , (</=>)
+
   -- * Javascript
-  , executeJS, asyncJS
+  , executeJS
+  , asyncJS
   , JSArg(..)
+
   -- * Windows
-  , WindowHandle(..), currentWindow
-  , getCurrentWindow, closeWindow, windows, focusWindow,  maximize
-  , Rect(..), getWindowRect, setWindowRect
-  , getWindowSize, setWindowSize, getWindowPos, setWindowPos
+  , WindowHandle(..)
+  , currentWindow
+  , getCurrentWindow
+  , closeWindow
+  , windows
+  , focusWindow
+  , maximize
+  , Rect(..)
+  , getWindowRect
+  , setWindowRect
+  , getWindowSize
+  , setWindowSize
+  , getWindowPos
+  , setWindowPos
+
   -- * Focusing on frames
-  , focusFrame, FrameSelector(..)
+  , focusFrame
+  , FrameSelector(..)
+
   -- * Cookies
-  , Cookie(..), mkCookie
-  , cookies, setCookie, deleteCookie, deleteVisibleCookies, deleteCookieByName
+  , mkCookie
+  , cookies
+  , setCookie
+  , deleteCookie
+  , deleteVisibleCookies
+  , deleteCookieByName
+  , Cookie(..)
+
   -- * Alerts
-  , getAlertText, replyToAlert, acceptAlert, dismissAlert
+  , getAlertText
+  , replyToAlert
+  , acceptAlert
+  , dismissAlert
+
   -- * Mouse gestures
-  , moveTo, moveToCenter, moveToFrom
-  , clickWith, MouseButton(..)
-  , mouseDown, mouseUp, withMouseDown, doubleClick
+  , moveTo
+  , moveToCenter
+  , moveToFrom
+  , clickWith
+  , mouseDown
+  , mouseUp
+  , withMouseDown
+  , doubleClick
+  , MouseButton(..)
+
   -- * HTML 5 Web Storage
-  , WebStorageType(..), storageSize, getAllKeys, deleteAllKeys
-  , getKey, setKey, deleteKey
+  , storageSize
+  , getAllKeys
+  , deleteAllKeys
+  , getKey
+  , setKey
+  , deleteKey
+  , WebStorageType(..)
+
   -- * HTML 5 Application Cache
   , ApplicationCacheStatus(..)
   , getApplicationCacheStatus
+
   -- * Mobile device support
   -- ** Screen orientation
   , Orientation(..)
-  , getOrientation, setOrientation
+  , getOrientation
+  , setOrientation
   -- ** Geo-location
-  , getLocation, setLocation
+  , getLocation
+  , setLocation
   -- ** Touch gestures
-  , touchClick, touchDown, touchUp, touchMove
-  , touchScroll, touchScrollFrom, touchDoubleClick
-  , touchLongClick, touchFlick, touchFlickFrom
+  , touchClick
+  , touchDown
+  , touchUp
+  , touchMove
+  , touchScroll
+  , touchScrollFrom
+  , touchDoubleClick
+  , touchLongClick
+  , touchFlick
+  , touchFlickFrom
+
   -- * IME support
-  , availableIMEEngines, activeIMEEngine, checkIMEActive
-  , activateIME, deactivateIME
+  , availableIMEEngines
+  , activeIMEEngine
+  , checkIMEActive
+  , activateIME
+  , deactivateIME
+
   -- * Uploading files to remote server
   -- | These functions allow you to upload a file to a remote server.
   -- Note that this operation isn't supported by all WebDriver servers,
   -- and the location where the file is stored is not standardized.
-  , uploadFile, uploadRawFile, uploadZipEntry
+  , uploadFile
+  , uploadRawFile
+  , uploadZipEntry
+
   -- * Server information and logs
   , serverStatus
-  , getLogs, getLogTypes, LogType, LogEntry(..), LogLevel(..)
+  , getLogs
+  , getLogTypes
+  , LogType
+  , LogEntry(..)
+  , LogLevel(..)
   ) where
 
 import Codec.Archive.Zip
@@ -302,11 +394,11 @@ focusFrame s = noReturn $ doSessCommand methodPost "/frame" . single "id" $ s
 
 -- | Returns a handle to the currently focused window
 getCurrentWindow :: (HasCallStack, WebDriver wd) => wd WindowHandle
-getCurrentWindow = doSessCommand methodGet "/window_handle" Null
+getCurrentWindow = doSessCommand methodGet "/window" Null
 
 -- | Returns a list of all windows available to the session
 windows :: (HasCallStack, WebDriver wd) => wd [WindowHandle]
-windows = doSessCommand methodGet "/window_handles" Null
+windows = doSessCommand methodGet "/window/handles" Null
 
 focusWindow :: (HasCallStack, WebDriver wd) => WindowHandle -> wd ()
 focusWindow w = noReturn $ doSessCommand methodPost "/window" . single "handle" $ w
