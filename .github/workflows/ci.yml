@@ -13,7 +13,6 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         ghc:
-        # - "8.8.4"
         # - "8.10.7"
         - "9.0.2"
         - "9.2.8"
@@ -24,15 +23,16 @@ jobs:
         - firefox
         - chrome
         exclude:
-        # haskell-actions/setup@v2 can't install older GHCs
-        - os: macOS-latest
-          ghc: 8.8.4
         # These don't work on GitHub CI anymore because they need llvm@13, which became
         # disabled on 12/31/2024
         - os: macOS-latest
           ghc: 8.10.7
         - os: macOS-latest
           ghc: 9.0.2
+        # We can't install Firefox on macOS using Nix, and it's not immediately clear how you can
+        # set up Firefox + geckodriver on Github Actions on macOS
+        - os: macOS-latest
+          browser: firefox
 
     steps:
     - uses: actions/checkout@v4
