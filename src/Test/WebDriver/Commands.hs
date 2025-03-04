@@ -725,7 +725,7 @@ uploadRawFile path t str = uploadZipEntry (toEntry path t str)
 -- the zip entry sent across network.
 -- Returns the remote filepath of the extracted file
 uploadZipEntry :: (HasCallStack, WebDriver wd) => Entry -> wd Text
-uploadZipEntry = doSessCommand methodPost "/file" . single "file"
+uploadZipEntry = doSessCommand methodPost "/se/file" . single "file"
                  . TL.decodeUtf8 . B64.encode . fromArchive . (`addEntryToArchive` emptyArchive)
 
 
