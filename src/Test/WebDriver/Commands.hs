@@ -4,10 +4,7 @@
 -- browser session.
 module Test.WebDriver.Commands (
   -- * Sessions
-  createSession
-  , closeSession
-  , sessions
-  , getActualCaps
+  module Test.WebDriver.Commands.Sessions
 
   -- * Browser interaction
   -- ** Web navigation
@@ -158,7 +155,6 @@ module Test.WebDriver.Commands (
   , uploadZipEntry
 
   -- * Server information and logs
-  , serverStatus
   , getLogs
   , getLogTypes
   , LogType
@@ -186,43 +182,15 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy.Encoding as TL
 import Network.URI hiding (path)  -- suppresses warnings
 import Prelude -- hides some "unused import" warnings
-import Test.WebDriver.Capabilities (Capabilities)
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.Internal
 import Test.WebDriver.Commands.LoggingTypes
+import Test.WebDriver.Commands.Sessions
 import Test.WebDriver.Cookies
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
-import Test.WebDriver.Session
 import Test.WebDriver.Utils (urlEncode)
 
-
--- | Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action.
---
--- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
-createSession :: (HasCallStack, WebDriver wd) => Capabilities -> wd WDSession
-createSession caps = do
-  -- ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "desiredCapabilities" $ caps
-  -- It seems Selenium 3 actually goes into W3C protocol mode if it sees capabilities that look like the following.
-  ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "capabilities" $ single "alwaysMatch" caps
-  getSession
-
--- | Retrieve a list of active sessions and their 'Capabilities'.
-sessions :: (HasCallStack, WebDriver wd) => wd [(SessionId, Capabilities)]
-sessions = do
-  objs <- doCommand methodGet "/sessions" Null
-  mapM (parsePair "id" "capabilities" "sessions") objs
-
--- | Get the actual server-side 'Capabilities' of the current session.
-getActualCaps :: (HasCallStack, WebDriver wd) => wd Capabilities
-getActualCaps = doSessCommand methodGet "" Null
-
--- | Close the current session and the browser associated with it.
-closeSession :: (HasCallStack, WebDriver wd) => wd ()
-closeSession = do
-  s@WDSession {} <- getSession
-  noReturn $ doSessCommand methodDelete "" Null
-  putSession s { wdSessId = Nothing }
 
 -- | Sets the amount of time (ms) we implicitly wait when searching for elements.
 setImplicitWait :: (HasCallStack, WebDriver wd) => Integer -> wd ()
@@ -833,12 +801,6 @@ doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
   where s' = case s of
           LocalStorage -> "local_storage"
           SessionStorage -> "session_storage"
-
--- | Get information from the server as a JSON 'Object'. For more information
--- about this object see
--- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#status>
-serverStatus :: (HasCallStack, WebDriver wd) => wd Value   -- todo: make this a record type
-serverStatus = doCommand methodGet "/status" Null
 
 -- | Retrieve the log buffer for a given log type. The server-side log buffer is reset after each request.
 --

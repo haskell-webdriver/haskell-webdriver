@@ -73,6 +73,7 @@ library
       Test.WebDriver.Capabilities.Timeouts
       Test.WebDriver.Capabilities.UserPromptHandler
       Test.WebDriver.Commands.LoggingTypes
+      Test.WebDriver.Commands.Sessions
       Paths_webdriver
   hs-source-dirs:
       src
@@ -122,6 +123,7 @@ test-suite tests
       Spec.Clicking
       Spec.Screenshots
       Spec.Scripts
+      Spec.Sessions
       Spec.Windows
       TestLib.Contexts.BrowserDependencies
       TestLib.Contexts.Selenium4
