@@ -173,7 +173,7 @@ import Control.Exception.Safe (throwIO, handle)
 import qualified Control.Exception.Safe as L
 import Control.Monad
 import Control.Monad.IO.Class
-import Data.Aeson as Aeson
+import Data.Aeson as A
 import Data.Aeson.Types
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString, writeFile)
@@ -413,15 +413,15 @@ closeWindow w = do
 
 -- | Maximizes the current window
 maximize :: (HasCallStack, WebDriver wd) => wd ()
-maximize = ignoreReturn $ doSessCommand methodPost "/window/maximize" Null
+maximize = ignoreReturn $ doSessCommand methodPost "/window/maximize" (A.object [])
 
 -- | Minimizes the current window
 minimize :: (HasCallStack, WebDriver wd) => wd ()
-minimize = ignoreReturn $ doSessCommand methodPost "/window/minimize" Null
+minimize = ignoreReturn $ doSessCommand methodPost "/window/minimize" (A.object [])
 
 -- | Fullscreens the current window
 fullscreen :: (HasCallStack, WebDriver wd) => wd ()
-fullscreen = ignoreReturn $ doSessCommand methodPost "/window/fullscreen" Null
+fullscreen = ignoreReturn $ doSessCommand methodPost "/window/fullscreen" (A.object [])
 
 data Rect = Rect
   { rectX :: Float
@@ -873,12 +873,12 @@ instance FromJSON ApplicationCacheStatus where
       err -> fail $ "Invalid JSON for ApplicationCacheStatus: " ++ show err
 
 instance ToJSON ApplicationCacheStatus where
-  toJSON Uncached = Aeson.Number 0
-  toJSON Idle = Aeson.Number 1
-  toJSON Checking = Aeson.Number 2
-  toJSON Downloading = Aeson.Number 3
-  toJSON UpdateReady = Aeson.Number 4
-  toJSON Obsolete = Aeson.Number 5
+  toJSON Uncached = A.Number 0
+  toJSON Idle = A.Number 1
+  toJSON Checking = A.Number 2
+  toJSON Downloading = A.Number 3
+  toJSON UpdateReady = A.Number 4
+  toJSON Obsolete = A.Number 5
 
 getApplicationCacheStatus :: (HasCallStack, WebDriver wd) => wd ApplicationCacheStatus
 getApplicationCacheStatus = doSessCommand methodGet "/application_cache/status" Null

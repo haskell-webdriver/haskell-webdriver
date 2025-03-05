@@ -3,6 +3,7 @@ module Spec.Windows where
 
 import Data.String.Interpolate
 import Test.Sandwich
+import Test.Sandwich.Waits
 import Test.WebDriver.Commands
 import TestLib.Contexts.Session
 import TestLib.Contexts.StaticServer
@@ -40,5 +41,13 @@ tests = introduceSession $ describe "Windows" $ before "Open test page" openSimp
       -- TODO: modify the rect
       getWindowRect >>= setWindowRect
 
-  it "closeWindow" $ do
+  it "windows / closeWindow" $ do
+    findElem (ByCSS "#openWindowButton") >>= click
+
+    waitUntil 30 $ do
+      (length <$> windows) >>= (`shouldBe` 2)
+
     getCurrentWindow >>= closeWindow
+
+    waitUntil 30 $ do
+      (length <$> windows) >>= (`shouldBe` 1)

@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
 -- | A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous
@@ -63,12 +63,12 @@ fromText = id
 
 
 instance Exception BadJSON
--- |An error occured when parsing a JSON value.
+-- | An error occured when parsing a JSON value.
 newtype BadJSON = BadJSON String
              deriving (Eq, Show, Typeable)
 
 
--- |A type indicating that we expect no return value from the webdriver request.
+-- | A type indicating that we expect no return value from the webdriver request.
 -- Its FromJSON instance parses successfully for any values that indicate lack of
 -- a return value (a notion that varies from server to server).
 data NoReturn = NoReturn
@@ -82,50 +82,47 @@ instance FromJSON NoReturn where
 instance ToJSON NoReturn where
   toJSON NoReturn = Aeson.String "<no return>"
 
--- |Convenience function to handle webdriver commands with no return value.
+-- | Convenience function to handle webdriver commands with no return value.
 noReturn :: WebDriver wd => wd NoReturn -> wd ()
 noReturn = void
 
--- |Convenience function to ignore result of a webdriver command.
+-- | Convenience function to ignore result of a webdriver command.
 ignoreReturn :: WebDriver wd => wd Value -> wd ()
 ignoreReturn = void
 
--- |Construct a singleton JSON 'object' from a key and value.
+-- | Construct a singleton JSON 'object' from a key and value.
 single :: ToJSON a => Text -> a -> Value
 single a x = object [(fromText a) .= x]
 
--- |Construct a 2-element JSON 'object' from a pair of keys and a pair of
+-- | Construct a 2-element JSON 'object' from a pair of keys and a pair of
 -- values.
 pair :: (ToJSON a, ToJSON b) => (Text,Text) -> (a,b) -> Value
 pair (a,b) (x,y) = object [fromText a .= x, fromText b .= y]
 
--- |Construct a 3-element JSON 'object' from a triple of keys and a triple of
+-- | Construct a 3-element JSON 'object' from a triple of keys and a triple of
 -- values.
-triple :: (ToJSON a, ToJSON b, ToJSON c) =>
-          (Text,Text,Text) -> (a,b,c) -> Value
+triple :: (ToJSON a, ToJSON b, ToJSON c) => (Text,Text,Text) -> (a,b,c) -> Value
 triple (a,b,c) (x,y,z) = object [fromText a .= x, fromText b.= y, fromText c .= z]
 
-
--- |Parse a lazy 'ByteString' as a top-level JSON 'Value', then convert it to an
+-- | Parse a lazy 'ByteString' as a top-level JSON 'Value', then convert it to an
 -- instance of 'FromJSON'..
 parseJSON' :: MonadThrow wd => FromJSON a => ByteString -> wd a
 parseJSON' = apResultToWD . AP.parse json
 
--- |Convert a JSON 'Value' to an instance of 'FromJSON'.
+-- | Convert a JSON 'Value' to an instance of 'FromJSON'.
 fromJSON' :: MonadThrow wd => FromJSON a => Value -> wd a
 fromJSON' = aesonResultToWD . fromJSON
 
--- |This operator is a wrapper over Aeson's '.:' operator.
+-- | This operator is a wrapper over Aeson's '.:' operator.
 (!:) :: (MonadThrow wd, FromJSON a) => Object -> Text -> wd a
 o !: k = aesonResultToWD $ parse (.: fromText k) o
 
--- |Due to a breaking change in the '.:?' operator of aeson 0.10 (see <https://github.com/bos/aeson/issues/287>) that was subsequently reverted, this operator
+-- | Due to a breaking change in the '.:?' operator of aeson 0.10 (see <https://github.com/bos/aeson/issues/287>) that was subsequently reverted, this operator
 -- was added to provide consistent behavior compatible with all aeson versions. If the field is either missing or `Null`, this operator should return a `Nothing` result.
 (.:??) :: FromJSON a => Object -> Text -> Parser (Maybe a)
 o .:?? k = fmap join (o .:? fromText k)
 
-
--- |Parse a JSON 'Object' as a pair. The first two string arguments specify the
+-- | Parse a JSON 'Object' as a pair. The first two string arguments specify the
 -- keys to extract from the object. The third string is the name of the
 -- calling function, for better error reporting.
 parsePair :: (
@@ -138,8 +135,7 @@ parsePair a b funcName v =
                 ": cannot parse non-object JSON response as a (" ++ a
                 ++ ", " ++ b ++ ") pair" ++ ")"
 
-
--- |Parse a JSON Object as a triple. The first three string arguments
+-- | Parse a JSON Object as a triple. The first three string arguments
 -- specify the keys to extract from the object. The fourth string is the name
 -- of the calling function, for better error reporting.
 parseTriple :: (
@@ -154,15 +150,13 @@ parseTriple a b c funcName v =
                 ": cannot parse non-object JSON response as a (" ++ a
                 ++ ", " ++ b ++ ", " ++ c ++ ") pair"
 
-
-
--- |Convert an attoparsec parser result to 'WD'.
+-- | Convert an attoparsec parser result to 'WD'.
 apResultToWD :: (MonadThrow wd, FromJSON a) => AP.Result Value -> wd a
 apResultToWD p = case p of
   Done _ res -> fromJSON' res
   Fail _ _ err -> throwIO $ BadJSON err
 
--- | Convert an Aeson parser result to 'WD'.
+-- |  Convert an Aeson parser result to 'WD'.
 aesonResultToWD :: (MonadThrow wd) => Aeson.Result a -> wd a
 aesonResultToWD r = case r of
   Success val -> return val

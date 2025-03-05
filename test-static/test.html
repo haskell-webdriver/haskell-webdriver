@@ -15,10 +15,9 @@
 
     <script>
      let count = 0;
-     const btn = document.getElementById("incrementButton");
      const label = document.getElementById("numberLabel");
 
-     btn.addEventListener("click", function() {
+     document.getElementById("incrementButton").addEventListener("click", function() {
        count++;
        label.textContent = count;
      });
@@ -27,5 +26,14 @@
     <h1>Checkboxes</h1>
     <input type="checkbox" id="checkbox" name="checkbox" value="checked">
     <label for="checkbox">Check me</label><br><br>
+
+    <h1>Window opening</h1>
+    <button id="openWindowButton">Open window</button>
+
+    <script>
+     document.getElementById("openWindowButton").addEventListener("click", function() {
+       window.open(window.location.href, '_blank');
+     });
+    </script>
   </body>
 </html>
