@@ -6,19 +6,8 @@ module Test.WebDriver.Commands (
   -- * Sessions
   module Test.WebDriver.Commands.Sessions
 
-  -- * Browser interaction
-  -- ** Web navigation
-  , openPage
-  , forward
-  , back
-  , refresh
-  -- ** Page info
-  , getCurrentURL
-  , getSource
-  , getTitle
-  , saveScreenshot
-  , screenshot
-  , screenshotBase64
+  -- * Navigation
+  , module Test.WebDriver.Commands.Navigation
 
   -- * Timeouts
   , setImplicitWait
@@ -55,7 +44,8 @@ module Test.WebDriver.Commands (
   , (<==>)
   , (</=>)
 
-  -- * Javascript
+  -- * Document handling
+  , getSource
   , executeJS
   , asyncJS
   , JSArg(..)
@@ -146,6 +136,11 @@ module Test.WebDriver.Commands (
   , activateIME
   , deactivateIME
 
+  -- * Screen capture
+  , saveScreenshot
+  , screenshot
+  , screenshotBase64
+
   -- * Uploading files to remote server
   -- | These functions allow you to upload a file to a remote server.
   -- Note that this operation isn't supported by all WebDriver servers,
@@ -180,11 +175,12 @@ import Data.String (fromString)
 import Data.Text (Text, append, toUpper, toLower)
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Encoding as TL
-import Network.URI hiding (path)  -- suppresses warnings
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
+import Test.WebDriver.Commands.Common (noObject)
 import Test.WebDriver.Commands.Internal
 import Test.WebDriver.Commands.LoggingTypes
+import Test.WebDriver.Commands.Navigation
 import Test.WebDriver.Commands.Sessions
 import Test.WebDriver.Cookies
 import Test.WebDriver.Exceptions.Internal
@@ -216,28 +212,6 @@ setPageLoadTimeout :: (HasCallStack, WebDriver wd) => Integer -> wd ()
 setPageLoadTimeout ms = ignoreReturn $ doSessCommand methodPost "/timeouts" params
   where params = object ["type" .= ("page load" :: String)
                         ,"ms"   .= ms ]
-
--- | Gets the URL of the current page.
-getCurrentURL :: (HasCallStack, WebDriver wd) => wd String
-getCurrentURL = doSessCommand methodGet "/url" Null
-
--- | Opens a new page by the given URL.
-openPage :: (HasCallStack, WebDriver wd) => String -> wd ()
-openPage url
-  | isURI url = noReturn . doSessCommand methodPost "/url" . single "url" $ url
-  | otherwise = throwIO . InvalidURL $ url
-
--- | Navigate forward in the browser history.
-forward :: (HasCallStack, WebDriver wd) => wd ()
-forward = noReturn $ doSessCommand methodPost "/forward" noObject
-
--- | Navigate backward in the browser history.
-back :: (HasCallStack, WebDriver wd) => wd ()
-back = noReturn $ doSessCommand methodPost "/back" noObject
-
--- | Refresh the current page
-refresh :: (HasCallStack, WebDriver wd) => wd ()
-refresh = noReturn $ doSessCommand methodPost "/refresh" noObject
 
 -- | An existential wrapper for any 'ToJSON' instance. This allows us to pass
 -- parameters of many different types to Javascript code.
@@ -448,10 +422,6 @@ deleteVisibleCookies = noReturn $ doSessCommand methodDelete "/cookie" Null
 getSource :: (HasCallStack, WebDriver wd) => wd Text
 getSource = doSessCommand methodGet "/source" Null
 
--- | Get the title of the current page.
-getTitle :: (HasCallStack, WebDriver wd) => wd Text
-getTitle = doSessCommand methodGet "/title" Null
-
 -- | Specifies element(s) within a DOM tree using various selection methods.
 data Selector = ByTag Text
               | ByLinkText Text
@@ -496,10 +466,6 @@ findElemsFrom e = doElemCommand methodPost e "/elements"
 elemInfo :: (HasCallStack, WebDriver wd) => Element -> wd Value
 elemInfo e = doElemCommand methodGet e "" Null
 {-# DEPRECATED elemInfo "This command does not work with Marionette (Firefox) driver, and is likely to be completely removed in Selenium 4" #-}
-
--- Selenium 3.x doesn't seem to like receiving Null for click parameter
-noObject :: Value
-noObject = Object mempty
 
 -- | Click on an element.
 click :: (HasCallStack, WebDriver wd) => Element -> wd ()

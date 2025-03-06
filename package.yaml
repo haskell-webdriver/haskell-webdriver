@@ -118,6 +118,7 @@ tests:
     - monad-logger
     - mtl
     - network
+    - network-uri
     - optparse-applicative
     - retry
     - safe-exceptions

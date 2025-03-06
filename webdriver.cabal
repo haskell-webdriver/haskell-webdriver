@@ -72,7 +72,9 @@ library
       Test.WebDriver.Capabilities.Proxy
       Test.WebDriver.Capabilities.Timeouts
       Test.WebDriver.Capabilities.UserPromptHandler
+      Test.WebDriver.Commands.Common
       Test.WebDriver.Commands.LoggingTypes
+      Test.WebDriver.Commands.Navigation
       Test.WebDriver.Commands.Sessions
       Paths_webdriver
   hs-source-dirs:
@@ -121,6 +123,7 @@ test-suite tests
       Spec
       Spec.Checkboxes
       Spec.Clicking
+      Spec.Navigation
       Spec.Screenshots
       Spec.Scripts
       Spec.Sessions
@@ -160,6 +163,7 @@ test-suite tests
     , monad-logger
     , mtl
     , network
+    , network-uri
     , optparse-applicative
     , retry
     , safe-exceptions
