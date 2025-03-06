@@ -311,17 +311,17 @@ activateIME = noReturn . doSessCommand methodPost "/ime/activate" . single "engi
 deactivateIME :: (HasCallStack, WebDriver wd) => wd ()
 deactivateIME = noReturn $ doSessCommand methodPost "/ime/deactivate" Null
 
-
 -- | Specifies the frame used by 'Test.WebDriver.Commands.focusFrame'
-data FrameSelector = WithIndex Integer
-                     -- | Focus on a frame by name or ID
-                   | WithName Text
-                     -- | Focus on a frame 'Element'
-                   | WithElement Element
-                     -- | Focus on the first frame, or the main document
-                     -- if iframes are used.
-                   | DefaultFrame
-                   deriving (Eq, Show, Read)
+data FrameSelector =
+  WithIndex Integer
+  -- | Focus on a frame by name or ID
+  | WithName Text
+  -- | Focus on a frame 'Element'
+  | WithElement Element
+  -- | Focus on the first frame, or the main document
+  -- if iframes are used.
+  | DefaultFrame
+  deriving (Eq, Show, Read)
 
 instance ToJSON FrameSelector where
   toJSON s = case s of

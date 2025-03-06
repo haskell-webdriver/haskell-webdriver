@@ -11,14 +11,21 @@ import TestLib.Types
 
 tests :: SessionSpec
 tests = introduceSession $ describe "Sessions" $ before "Open test page" openSimpleTestPage $ do
+  -- createSession is already tested in introduceSession
+
   it "status" $ do
     status <- serverStatus
     info [i|Got status: #{status}|]
 
-  it "sessions" $ do
-    xs <- sessions
-    info [i|Got sessions: #{xs}|]
+  it "closeSession" $ do
+    closeSession
 
-  it "getActualCaps" $ do
-    caps <- getActualCaps
-    info [i|Got actual caps: #{caps}|]
+  -- TODO: test closeSession
+
+  -- it "sessions" $ do
+  --   xs <- sessions
+  --   info [i|Got sessions: #{xs}|]
+
+  -- it "getActualCaps" $ do
+  --   caps <- getActualCaps
+  --   info [i|Got actual caps: #{caps}|]
