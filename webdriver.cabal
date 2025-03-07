@@ -126,6 +126,7 @@ test-suite tests
       Spec.Navigation
       Spec.Screenshots
       Spec.Scripts
+      Spec.SeleniumFileUploads
       Spec.Sessions
       Spec.Windows
       TestLib.Contexts.BrowserDependencies
