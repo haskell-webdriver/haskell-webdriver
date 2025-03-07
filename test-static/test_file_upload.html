@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+      Test page file upload
+    </title>
+  </head>
+
+  <body>
+    <form method="POST" enctype="multipart/form-data">
+      <fieldset>
+        <input type="file">
+      </fieldset>
+    </form>
+    <div id="contents" />
+    <script>
+      document.querySelector('input')
+        .addEventListener('change', (e) => {
+          const f = e.target.files[0]
+          window.contents.innerText = f
+            ? `${f.name} ${f.size}`
+            : "no file"
+        })
+    </script>
+  </body>
+</html>
