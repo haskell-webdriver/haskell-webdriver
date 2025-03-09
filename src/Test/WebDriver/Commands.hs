@@ -74,9 +74,6 @@ module Test.WebDriver.Commands (
   , asyncJS
   , JSArg(..)
 
-  -- * Windows
-  -- , currentWindow
-
   -- ** Types
   , WindowHandle(..)
   , Rect(..)

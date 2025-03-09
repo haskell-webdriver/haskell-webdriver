@@ -17,7 +17,6 @@ module Test.WebDriver.Commands.Internal (
   , Element(..)
   -- ** Commands with :windowHandle URL parameters
   , WindowHandle(..)
-  , currentWindow
 
   -- * Exceptions
   , NoSessionId(..)
@@ -28,7 +27,6 @@ import Control.Exception.Safe
 import Data.Aeson
 import Data.Aeson.Types
 import Data.CallStack
-import Data.Default (Default, def)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Prelude -- hides some "unused import" warnings
@@ -66,15 +64,7 @@ instance ToJSON Element where
 
 -- | An opaque identifier for a browser window
 newtype WindowHandle = WindowHandle Text
-                     deriving (Eq, Ord, Show, Read,
-                               FromJSON, ToJSON)
-instance Default WindowHandle where
-  def = currentWindow
-
--- | A special 'WindowHandle' that always refers to the currently focused window.
--- This is also used by the 'Default' instance.
-currentWindow :: WindowHandle
-currentWindow = WindowHandle "current"
+  deriving (Eq, Ord, Show, Read, FromJSON, ToJSON)
 
 instance Exception NoSessionId
 -- | A command requiring a session ID was attempted when no session ID was
