@@ -1,8 +1,5 @@
 
 module Test.WebDriver.Commands.Sessions (
-  -- * Sessions
-  -- See https://www.w3.org/TR/webdriver1/#sessions
-
   createSession
   , closeSession
   , serverStatus

@@ -23,6 +23,12 @@ tests = introduceSession $ describe "Windows" $ before "Open test page" openSimp
     ws <- windows
     info [i|windows: #{ws}|]
 
+  it "focusFrame" $ do
+    pending
+
+  it "focusParentFrame" $ do
+    pending
+
   it "maximize" $ do
     maximize
 

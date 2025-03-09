@@ -15,7 +15,7 @@ tests = introduceSession $
     before "Open test page" (openStaticServerUrl "/test_file_upload.html") $ do
       it "Upload file and type its path to the input" $ do
         filePath <- uploadRawFile "/shopping.txt" 0 "Eggs, Ham, Cheese"
-        sendKeys filePath =<< findElem (ByCSS "input")
+        findElem (ByCSS "input") >>= sendKeys filePath
+
       it "Page should display its name and size" $ do
-        desc <- getText =<< findElem (ByCSS "#contents")
-        desc `shouldBe` "shopping.txt 17"
+        findElem (ByCSS "#contents") >>= getText >>= (`shouldBe` "shopping.txt 17")
