@@ -74,6 +74,8 @@ library
       Test.WebDriver.Capabilities.UserPromptHandler
       Test.WebDriver.Commands.CommandContexts
       Test.WebDriver.Commands.Common
+      Test.WebDriver.Commands.ElementRetrieval
+      Test.WebDriver.Commands.ElementState
       Test.WebDriver.Commands.LoggingTypes
       Test.WebDriver.Commands.Navigation
       Test.WebDriver.Commands.Sessions
@@ -124,6 +126,8 @@ test-suite tests
       Spec
       Spec.Checkboxes
       Spec.Clicking
+      Spec.ElementRetrieval
+      Spec.ElementState
       Spec.Navigation
       Spec.Screenshots
       Spec.Scripts

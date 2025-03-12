@@ -50,7 +50,7 @@ aesonToList = HM.toList
 
 -- | An opaque identifier for a web page element
 newtype Element = Element Text
-                  deriving (Eq, Ord, Show, Read)
+  deriving (Eq, Ord, Show, Read)
 
 instance FromJSON Element where
   parseJSON (Object o) = case fmap snd (aesonToList o) of

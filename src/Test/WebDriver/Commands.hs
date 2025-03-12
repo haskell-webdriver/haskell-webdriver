@@ -33,6 +33,22 @@ module Test.WebDriver.Commands (
   -- See https://www.w3.org/TR/webdriver1/#command-contexts.
   , module Test.WebDriver.Commands.CommandContexts
 
+  -- * Element Retrieval
+  -- | The Find Element, Find Elements, Find Element From Element, and Find
+  -- Elements From Element commands allow lookup of individual elements and
+  -- collections of elements. Element retrieval searches are performed using
+  -- pre-order traversal of the document’s nodes that match the provided
+  -- selector’s expression. Elements are serialized and returned as web
+  -- elements.
+  --
+  -- See https://www.w3.org/TR/webdriver1/#element-retrieval.
+  , module Test.WebDriver.Commands.ElementRetrieval
+
+  -- * Element State
+  --
+  -- See https://www.w3.org/TR/webdriver1/#element-state.
+  , module Test.WebDriver.Commands.ElementState
+
   -- * Timeouts
   , setImplicitWait
   , setScriptTimeout
@@ -41,28 +57,15 @@ module Test.WebDriver.Commands (
   -- * Web elements
   , Element(..)
   , Selector(..)
-  -- ** Searching for elements
-  , findElem
-  , findElems
-  , findElemFrom
-  , findElemsFrom
   -- ** Interacting with elements
   , click
   , submit
-  , getText
   -- *** Sending key inputs to elements
   , sendKeys
   , sendRawKeys
   , clearInput
   -- ** Element information
-  , attr
-  , cssProp
-  , elemRect
-  , isSelected
-  , isEnabled
   , isDisplayed
-  , tagName
-  , activeElem
   , elemInfo
   -- ** Element equality
   , (<==>)
@@ -190,6 +193,8 @@ import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.CommandContexts
 import Test.WebDriver.Commands.Common (noObject)
+import Test.WebDriver.Commands.ElementRetrieval
+import Test.WebDriver.Commands.ElementState
 import Test.WebDriver.Commands.Internal
 import Test.WebDriver.Commands.LoggingTypes
 import Test.WebDriver.Commands.Navigation
@@ -349,45 +354,6 @@ deleteVisibleCookies = noReturn $ doSessCommand methodDelete "/cookie" Null
 getSource :: (HasCallStack, WebDriver wd) => wd Text
 getSource = doSessCommand methodGet "/source" Null
 
--- | Specifies element(s) within a DOM tree using various selection methods.
-data Selector = ByTag Text
-              | ByLinkText Text
-              | ByPartialLinkText Text
-              | ByCSS Text
-              | ByXPath Text
-              deriving (Eq, Show, Ord)
-
-instance ToJSON Selector where
-  toJSON s = case s of
-    ByTag t             -> selector "tag name" t
-    ByLinkText t        -> selector "link text" t
-    ByPartialLinkText t -> selector "partial link text" t
-    ByCSS t             -> selector "css selector" t
-    ByXPath t           -> selector "xpath" t
-    where
-      selector :: Text -> Text -> Value
-      selector sn t = object ["using" .= sn, "value" .= t]
-
--- | Find an element on the page using the given element selector.
-findElem :: (HasCallStack, WebDriver wd) => Selector -> wd Element
-findElem = doSessCommand methodPost "/element"
-
--- | Find all elements on the page matching the given selector.
-findElems :: (HasCallStack, WebDriver wd) => Selector -> wd [Element]
-findElems = doSessCommand methodPost "/elements"
-
--- | Return the element that currently has focus.
-activeElem :: (HasCallStack, WebDriver wd) => wd Element
-activeElem = doSessCommand methodPost "/element/active" Null
-
--- | Search for an element using the given element as root.
-findElemFrom :: (HasCallStack, WebDriver wd) => Element -> Selector -> wd Element
-findElemFrom e = doElemCommand methodPost e "/element"
-
--- | Find all elements matching a selector, using the given element as root.
-findElemsFrom :: (HasCallStack, WebDriver wd) => Element -> Selector -> wd [Element]
-findElemsFrom e = doElemCommand methodPost e "/elements"
-
 -- | Describe the element. Returns a JSON object whose meaning is currently
 -- undefined by the WebDriver protocol.
 elemInfo :: (HasCallStack, WebDriver wd) => Element -> wd Value
@@ -403,10 +369,6 @@ click e = noReturn $ doElemCommand methodPost e "/click" noObject
 submit :: (HasCallStack, WebDriver wd) => Element -> wd ()
 submit e = noReturn $ doElemCommand methodPost e "/submit" Null
 
--- | Get all visible text within this element.
-getText :: (HasCallStack, WebDriver wd) => Element -> wd Text
-getText e = doElemCommand methodGet e "/text" Null
-
 -- | Send a sequence of keystrokes to an element. All modifier keys are released
 -- at the end of the function. Named constants for special modifier keys can be found
 -- in "Test.WebDriver.Common.Keys"
@@ -418,37 +380,13 @@ sendKeys t e = noReturn . doElemCommand methodPost e "/value" . single "text" $ 
 sendRawKeys :: (HasCallStack, WebDriver wd) => Text -> wd ()
 sendRawKeys t = noReturn . doSessCommand methodPost "/keys" . single "text" $ t
 
--- | Return the tag name of the given element.
-tagName :: (HasCallStack, WebDriver wd) => Element -> wd Text
-tagName e = doElemCommand methodGet e "/name" Null
-
 -- | Clear a textarea or text input element's value.
 clearInput :: (HasCallStack, WebDriver wd) => Element -> wd ()
 clearInput e = noReturn $ doElemCommand methodPost e "/clear" noObject
 
--- | Determine if the element is selected.
-isSelected :: (HasCallStack, WebDriver wd) => Element -> wd Bool
-isSelected e = doElemCommand methodGet e "/selected" Null
-
--- | Determine if the element is enabled.
-isEnabled :: (HasCallStack, WebDriver wd) => Element -> wd Bool
-isEnabled e = doElemCommand methodGet e "/enabled" Null
-
 -- | Determine if the element is displayed.
 isDisplayed :: (HasCallStack, WebDriver wd) => Element -> wd Bool
 isDisplayed e = doElemCommand methodGet e "/displayed" Null
-
--- | Retrieve the value of an element's attribute
-attr :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Text)
-attr e t = doElemCommand methodGet e ("/attribute/" `append` urlEncode t) Null
-
--- | Retrieve the value of an element's computed CSS property
-cssProp :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Text)
-cssProp e t = doElemCommand methodGet e ("/css/" `append` urlEncode t) Null
-
--- | Retrieve an element's current position.
-elemRect :: (HasCallStack, WebDriver wd) => Element -> wd Rect
-elemRect e = doElemCommand methodGet e "/rect" Null
 
 infix 4 <==>
 -- | Determines if two element identifiers refer to the same element.
