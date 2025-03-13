@@ -1,10 +1,7 @@
 
 module Spec.ElementRetrieval where
 
-import Data.String.Interpolate
 import Test.Sandwich
-import Test.Sandwich.Waits
-import Test.WebDriver.Commands
 import TestLib.Contexts.Session
 import TestLib.Contexts.StaticServer
 import TestLib.Types
@@ -12,8 +9,12 @@ import TestLib.Types
 
 tests :: SessionSpec
 tests = introduceSession $ describe "Element retrieval" $ before "Open test page" openSimpleTestPage $ do
-  it "findElem" $ do
-    pending
+  describe "findElem" $ do
+    it "ByCSS" $ pending
+    it "ByLinkText" $ pending
+    it "ByPartialLinkText" $ pending
+    it "ByTag" $ pending
+    it "ByXPath" $ pending
 
   it "findElems" $ do
     pending
@@ -22,7 +23,4 @@ tests = introduceSession $ describe "Element retrieval" $ before "Open test page
     pending
 
   it "findElemsFrom" $ do
-    pending
-
-  it "activeElem" $ do
     pending

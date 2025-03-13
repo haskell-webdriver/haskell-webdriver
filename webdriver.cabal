@@ -74,6 +74,7 @@ library
       Test.WebDriver.Capabilities.UserPromptHandler
       Test.WebDriver.Commands.CommandContexts
       Test.WebDriver.Commands.Common
+      Test.WebDriver.Commands.ElementInteraction
       Test.WebDriver.Commands.ElementRetrieval
       Test.WebDriver.Commands.ElementState
       Test.WebDriver.Commands.LoggingTypes

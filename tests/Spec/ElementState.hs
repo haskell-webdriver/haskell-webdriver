@@ -1,10 +1,7 @@
 
 module Spec.ElementState where
 
-import Data.String.Interpolate
 import Test.Sandwich
-import Test.Sandwich.Waits
-import Test.WebDriver.Commands
 import TestLib.Contexts.Session
 import TestLib.Contexts.StaticServer
 import TestLib.Types

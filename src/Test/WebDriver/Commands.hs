@@ -49,6 +49,11 @@ module Test.WebDriver.Commands (
   -- See https://www.w3.org/TR/webdriver1/#element-state.
   , module Test.WebDriver.Commands.ElementState
 
+  -- * Element Interaction
+  --
+  -- See https://www.w3.org/TR/webdriver1/#element-interaction.
+  , module Test.WebDriver.Commands.ElementInteraction
+
   -- * Timeouts
   , setImplicitWait
   , setScriptTimeout
@@ -58,12 +63,8 @@ module Test.WebDriver.Commands (
   , Element(..)
   , Selector(..)
   -- ** Interacting with elements
-  , click
   , submit
   -- *** Sending key inputs to elements
-  , sendKeys
-  , sendRawKeys
-  , clearInput
   -- ** Element information
   , isDisplayed
   , elemInfo
@@ -193,6 +194,7 @@ import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.CommandContexts
 import Test.WebDriver.Commands.Common (noObject)
+import Test.WebDriver.Commands.ElementInteraction
 import Test.WebDriver.Commands.ElementRetrieval
 import Test.WebDriver.Commands.ElementState
 import Test.WebDriver.Commands.Internal
@@ -360,29 +362,10 @@ elemInfo :: (HasCallStack, WebDriver wd) => Element -> wd Value
 elemInfo e = doElemCommand methodGet e "" Null
 {-# DEPRECATED elemInfo "This command does not work with Marionette (Firefox) driver, and is likely to be completely removed in Selenium 4" #-}
 
--- | Click on an element.
-click :: (HasCallStack, WebDriver wd) => Element -> wd ()
-click e = noReturn $ doElemCommand methodPost e "/click" noObject
-
 -- | Submit a form element. This may be applied to descendents of a form element
 -- as well.
 submit :: (HasCallStack, WebDriver wd) => Element -> wd ()
 submit e = noReturn $ doElemCommand methodPost e "/submit" Null
-
--- | Send a sequence of keystrokes to an element. All modifier keys are released
--- at the end of the function. Named constants for special modifier keys can be found
--- in "Test.WebDriver.Common.Keys"
-sendKeys :: (HasCallStack, WebDriver wd) => Text -> Element -> wd ()
-sendKeys t e = noReturn . doElemCommand methodPost e "/value" . single "text" $ t
-
--- | Similar to sendKeys, but doesn't implicitly release modifier keys
--- afterwards. This allows you to combine modifiers with mouse clicks.
-sendRawKeys :: (HasCallStack, WebDriver wd) => Text -> wd ()
-sendRawKeys t = noReturn . doSessCommand methodPost "/keys" . single "text" $ t
-
--- | Clear a textarea or text input element's value.
-clearInput :: (HasCallStack, WebDriver wd) => Element -> wd ()
-clearInput e = noReturn $ doElemCommand methodPost e "/clear" noObject
 
 -- | Determine if the element is displayed.
 isDisplayed :: (HasCallStack, WebDriver wd) => Element -> wd Bool
