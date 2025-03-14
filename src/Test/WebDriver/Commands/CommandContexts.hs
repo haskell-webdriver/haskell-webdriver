@@ -56,7 +56,7 @@ focusFrame s = noReturn $ doSessCommand methodPost "/frame" . single "id" $ s
 
 -- | Switch focus to the frame specified by the FrameSelector.
 focusParentFrame :: (HasCallStack, WebDriver wd) => wd ()
-focusParentFrame = ignoreReturn $ doSessCommand methodPost "/frame/parent" Null
+focusParentFrame = ignoreReturn $ doSessCommand methodPost "/frame/parent" (A.object [])
 
 -- | Get the dimensions of the current window.
 getWindowRect :: (HasCallStack, WebDriver wd) => wd Rect
@@ -86,8 +86,7 @@ data FrameSelector =
   | WithName Text
   -- | Focus on a frame 'Element'
   | WithElement Element
-  -- | Focus on the first frame, or the main document
-  -- if iframes are used.
+  -- | Focus on the first frame, or the main document if iframes are used.
   | DefaultFrame
   deriving (Eq, Show, Read)
 
@@ -98,13 +97,12 @@ instance ToJSON FrameSelector where
     WithElement e -> toJSON e
     DefaultFrame -> Null
 
-data Rect = Rect
-  { rectX :: Float
+data Rect = Rect {
+  rectX :: Float
   , rectY :: Float
   , rectWidth :: Float
   , rectHeight :: Float
-  }
-  deriving (Eq, Ord, Show)
+  } deriving (Eq, Ord, Show)
 
 instance FromJSON Rect where
   parseJSON (Object o) = Rect <$> o .: "x"

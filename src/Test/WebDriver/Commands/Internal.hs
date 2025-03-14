@@ -59,7 +59,7 @@ instance FromJSON Element where
   parseJSON v = typeMismatch "Element" v
 
 instance ToJSON Element where
-  toJSON (Element e) = object ["ELEMENT" .= e]
+  toJSON (Element e) = object ["element-6066-11e4-a52e-4f735466cecf" .= e]
 
 
 -- | An opaque identifier for a browser window

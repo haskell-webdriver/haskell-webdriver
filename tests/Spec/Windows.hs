@@ -24,10 +24,14 @@ tests = introduceSession $ describe "Windows" $ before "Open test page" openSimp
     info [i|windows: #{ws}|]
 
   it "focusFrame" $ do
-    pending
+    (length <$> findElems (ByCSS ".input-box")) >>= (`shouldBe` 3)
+
+    findElem (ByCSS "#frame1") >>= focusFrame . WithElement
+    (length <$> findElems (ByCSS ".input-box")) >>= (`shouldBe` 1)
 
   it "focusParentFrame" $ do
-    pending
+    focusParentFrame
+    (length <$> findElems (ByCSS ".input-box")) >>= (`shouldBe` 3)
 
   it "maximize" $ do
     maximize
