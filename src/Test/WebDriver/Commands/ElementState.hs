@@ -31,7 +31,7 @@ attr :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Text)
 attr e t = doElemCommand methodGet e ("/attribute/" `append` urlEncode t) Null
 
 -- | Retrieve the value of an element's property
-prop :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Text)
+prop :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Value)
 prop e t = doElemCommand methodGet e ("/property/" `append` urlEncode t) Null
 
 -- | Retrieve the value of an element's computed CSS property
