@@ -30,7 +30,7 @@ isSelected e = doElemCommand methodGet e "/selected" Null
 attr :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Text)
 attr e t = doElemCommand methodGet e ("/attribute/" `append` urlEncode t) Null
 
--- | Retrieve the value of an element's attribute
+-- | Retrieve the value of an element's property
 prop :: (HasCallStack, WebDriver wd) => Element -> Text -> wd (Maybe Text)
 prop e t = doElemCommand methodGet e ("/property/" `append` urlEncode t) Null
 

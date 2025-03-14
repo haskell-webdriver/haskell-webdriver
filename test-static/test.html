@@ -6,6 +6,13 @@
     <title>
       Test page
     </title>
+
+    <style>
+     input[type="text"] {
+         display: block;
+         margin: 1em 0;
+     }
+    </style>
   </head>
 
   <body>
@@ -37,7 +44,16 @@
     </script>
 
     <h1>Input boxes</h1>
-    <input type="text" id="input1" />
-    <input type="text" id="input2" />
+    <div class="input-boxes">
+      <input class="input-box" type="text" id="input1" />
+      <input class="input-box" type="text" id="input2" />
+    </div>
+
+    <input class="input-box" type="text" id="input-disabled" disabled />
+
+    <input type="text" id="input-red" style="color: red;" />
+
+    <h1>Links</h1>
+    <a id="click-here-link" href="#foo">Click here</a>
   </body>
 </html>
