@@ -74,6 +74,8 @@ library
       Test.WebDriver.Capabilities.UserPromptHandler
       Test.WebDriver.Commands.CommandContexts
       Test.WebDriver.Commands.Common
+      Test.WebDriver.Commands.Cookies
+      Test.WebDriver.Commands.DocumentHandling
       Test.WebDriver.Commands.ElementInteraction
       Test.WebDriver.Commands.ElementRetrieval
       Test.WebDriver.Commands.ElementState
@@ -126,6 +128,8 @@ test-suite tests
   other-modules:
       Spec
       Spec.Clicking
+      Spec.Cookies
+      Spec.DocumentHandling
       Spec.ElementRetrieval
       Spec.ElementState
       Spec.Navigation

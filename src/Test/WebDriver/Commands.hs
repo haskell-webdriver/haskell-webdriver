@@ -1,4 +1,3 @@
-{-# LANGUAGE ExistentialQuantification #-}
 
 -- | This module exports basic WD actions that can be used to interact with a
 -- browser session.
@@ -54,6 +53,16 @@ module Test.WebDriver.Commands (
   -- See https://www.w3.org/TR/webdriver1/#element-interaction.
   , module Test.WebDriver.Commands.ElementInteraction
 
+  -- * Document handling
+  --
+  -- See https://www.w3.org/TR/webdriver1/#document-handling.
+  , module Test.WebDriver.Commands.DocumentHandling
+
+  -- * Cookies
+  --
+  -- See https://www.w3.org/TR/webdriver1/#cookies.
+  , module Test.WebDriver.Commands.Cookies
+
   -- * Timeouts
   , setImplicitWait
   , setScriptTimeout
@@ -67,16 +76,9 @@ module Test.WebDriver.Commands (
   -- *** Sending key inputs to elements
   -- ** Element information
   , isDisplayed
-  , elemInfo
   -- ** Element equality
   , (<==>)
   , (</=>)
-
-  -- * Document handling
-  , getSource
-  , executeJS
-  , asyncJS
-  , JSArg(..)
 
   -- ** Types
   , WindowHandle(..)
@@ -84,15 +86,6 @@ module Test.WebDriver.Commands (
 
   -- * Focusing on frames
   , FrameSelector(..)
-
-  -- * Cookies
-  , mkCookie
-  , cookies
-  , setCookie
-  , deleteCookie
-  , deleteVisibleCookies
-  , deleteCookieByName
-  , Cookie(..)
 
   -- * Alerts
   , getAlertText
@@ -175,7 +168,6 @@ module Test.WebDriver.Commands (
 import Codec.Archive.Zip
 import Control.Applicative
 import Control.Exception (SomeException)
-import Control.Exception.Safe (throwIO, handle)
 import qualified Control.Exception.Safe as L
 import Control.Monad
 import Control.Monad.IO.Class
@@ -184,8 +176,6 @@ import Data.Aeson.Types
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString, writeFile)
 import Data.CallStack
-import qualified Data.Foldable as F
-import Data.Maybe
 import Data.String (fromString)
 import Data.Text (Text, append, toUpper, toLower)
 import qualified Data.Text as T
@@ -194,6 +184,8 @@ import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.CommandContexts
 import Test.WebDriver.Commands.Common (noObject)
+import Test.WebDriver.Commands.Cookies
+import Test.WebDriver.Commands.DocumentHandling
 import Test.WebDriver.Commands.ElementInteraction
 import Test.WebDriver.Commands.ElementRetrieval
 import Test.WebDriver.Commands.ElementState
@@ -201,8 +193,6 @@ import Test.WebDriver.Commands.Internal
 import Test.WebDriver.Commands.LoggingTypes
 import Test.WebDriver.Commands.Navigation
 import Test.WebDriver.Commands.Sessions
-import Test.WebDriver.Cookies
-import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
 import Test.WebDriver.Utils (urlEncode)
 
@@ -232,77 +222,6 @@ setPageLoadTimeout ms = ignoreReturn $ doSessCommand methodPost "/timeouts" para
   where params = object ["type" .= ("page load" :: String)
                         ,"ms"   .= ms ]
 
--- | An existential wrapper for any 'ToJSON' instance. This allows us to pass
--- parameters of many different types to Javascript code.
-data JSArg = forall a. ToJSON a => JSArg a
-
-instance ToJSON JSArg where
-  toJSON (JSArg a) = toJSON a
-
-{- | Inject a snippet of Javascript into the page for execution in the
-context of the currently selected frame. The executed script is
-assumed to be synchronous and the result of evaluating the script is
-returned and converted to an instance of FromJSON.
-
-The first parameter defines a sequence of arguments to pass to the javascript
-function. Arguments of type Element will be converted to the
-corresponding DOM element. Likewise, any elements in the script result
-will be returned to the client as Elements.
-
-The second parameter defines the script itself in the form of a
-function body. The value returned by that function will be returned to
-the client. The function will be invoked with the provided argument
-list and the values may be accessed via the arguments object in the
-order specified.
-
-When using 'executeJS', GHC might complain about an ambiguous type in
-situations where the result of the executeJS call is ignored/discard.
-Consider the following example:
-
-@
-	jsExample = do
-		e <- findElem (ByCSS "#foo")
-		executeJS [] "someAction()"
-		return e
-@
-
-Because the result of the 'executeJS' is discarded, GHC cannot resolve
-which instance of the 'fromJSON' class to use when parsing the
-Selenium server response. In such cases, we can use the 'ignoreReturn'
-helper function located in "Test.WebDriver.JSON". 'ignoreReturn' has
-no runtime effect; it simply helps the type system by expicitly providing
-a `fromJSON` instance to use.
-
-@
-	import Test.WebDriver.JSON (ignoreReturn)
-	jsExample = do
-		e <- findElem (ByCSS "#foo")
-		ignoreReturn $ executeJS [] "someAction()"
-		return e
-@
--}
-executeJS :: (HasCallStack, F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd a
-executeJS a s = do
-  (doSessCommand methodPost "/execute/sync" . pair ("args", "script") $ (F.toList a,s))
-    >>= fromJSON'
-
--- | Executes a snippet of Javascript code asynchronously. This function works
--- similarly to 'executeJS', except that the Javascript is passed a callback
--- function as its final argument. The script should call this function
--- to signal that it has finished executing, passing to it a value that will be
--- returned as the result of asyncJS. A result of Nothing indicates that the
--- Javascript function timed out (see 'setScriptTimeout')
-asyncJS :: (HasCallStack, F.Foldable f, FromJSON a, WebDriver wd) => f JSArg -> Text -> wd (Maybe a)
-asyncJS a s = handle timeout $ do
-  Just <$> (fromJSON' =<< getResult "/execute/async")
-
-  where
-    getResult endpoint = doSessCommand methodPost endpoint . pair ("args", "script") $ (F.toList a,s)
-
-    timeout (FailedCommand Timeout _)       = return Nothing
-    timeout (FailedCommand ScriptTimeout _) = return Nothing
-    timeout err = throwIO err
-
 -- | Save a screenshot to a particular location
 saveScreenshot :: (HasCallStack, WebDriver wd) => FilePath -> wd ()
 saveScreenshot path = screenshot >>= liftIO . LBS.writeFile path
@@ -329,38 +248,6 @@ activateIME = noReturn . doSessCommand methodPost "/ime/activate" . single "engi
 
 deactivateIME :: (HasCallStack, WebDriver wd) => wd ()
 deactivateIME = noReturn $ doSessCommand methodPost "/ime/deactivate" Null
-
--- | Retrieve all cookies visible to the current page.
-cookies :: (HasCallStack, WebDriver wd) => wd [Cookie]
-cookies = doSessCommand methodGet "/cookie" Null
-
--- | Set a cookie. If the cookie path is not specified, it will default to \"/\".
--- Likewise, if the domain is omitted, it will default to the current page's
--- domain
-setCookie :: (HasCallStack, WebDriver wd) => Cookie -> wd ()
-setCookie = noReturn . doSessCommand methodPost "/cookie" . single "cookie"
-
--- | Delete a cookie. This will do nothing is the cookie isn't visible to the
--- current page.
-deleteCookie :: (HasCallStack, WebDriver wd) => Cookie -> wd ()
-deleteCookie c = noReturn $ doSessCommand methodDelete ("/cookie/" `append` urlEncode (cookName c)) Null
-
-deleteCookieByName :: (HasCallStack, WebDriver wd) => Text -> wd ()
-deleteCookieByName n = noReturn $ doSessCommand methodDelete ("/cookie/" `append` n) Null
-
--- | Delete all visible cookies on the current page.
-deleteVisibleCookies :: (HasCallStack, WebDriver wd) => wd ()
-deleteVisibleCookies = noReturn $ doSessCommand methodDelete "/cookie" Null
-
--- | Get the current page source
-getSource :: (HasCallStack, WebDriver wd) => wd Text
-getSource = doSessCommand methodGet "/source" Null
-
--- | Describe the element. Returns a JSON object whose meaning is currently
--- undefined by the WebDriver protocol.
-elemInfo :: (HasCallStack, WebDriver wd) => Element -> wd Value
-elemInfo e = doElemCommand methodGet e "" Null
-{-# DEPRECATED elemInfo "This command does not work with Marionette (Firefox) driver, and is likely to be completely removed in Selenium 4" #-}
 
 -- | Submit a form element. This may be applied to descendents of a form element
 -- as well.

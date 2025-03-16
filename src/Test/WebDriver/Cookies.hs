@@ -34,13 +34,17 @@ aesonOptionsCookie = defaultOptions {
   , fieldLabelModifier = map C.toLower . drop 4
   }
 
--- |Creates a Cookie with only a name and value specified. All other
+-- | Creates a Cookie with only a name and value specified. All other
 -- fields are set to Nothing, which tells the server to use default values.
 mkCookie :: Text -> Text -> Cookie
-mkCookie name value = Cookie { cookName = name, cookValue = value,
-                               cookPath = Nothing, cookDomain = Nothing,
-                               cookSecure = Nothing, cookExpiry = Nothing
-                             }
+mkCookie name value = Cookie {
+  cookName = name
+  , cookValue = value
+  , cookPath = Nothing
+  , cookDomain = Nothing
+  , cookSecure = Nothing
+  , cookExpiry = Nothing
+  }
 
 instance ToJSON Cookie where
   toJSON = genericToJSON aesonOptionsCookie

@@ -1,5 +1,9 @@
 # Change Log
 
+## 0.13.0.0
+* Deprecated function `elemInfo` removed
+* `deleteVisibleCookies` renamed to `deleteCookies`.
+
 ## 0.12.0.1
 * Switch from `data-default-class` to `data-default` to address https://github.com/commercialhaskell/stackage/issues/7545. This is weirdly complicated: it looks like versions of `data-default` from `0.5.2` to `0.8.0.0` may pull in unnecessary (to us) `data-default-instances-*` dependencies. However, what we've done here should build with all versions, so we won't worry about it. At the next breaking change I'd like to remove `data-default` entirely.
 
