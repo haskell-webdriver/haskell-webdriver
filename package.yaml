@@ -84,7 +84,6 @@ library:
   - Test.WebDriver.Common.Keys
   - Test.WebDriver.Common.Profile
   - Test.WebDriver.Config
-  - Test.WebDriver.Cookies
   - Test.WebDriver.Exceptions
   - Test.WebDriver.Exceptions.Internal
   - Test.WebDriver.Firefox.Profile
