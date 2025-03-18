@@ -4,9 +4,8 @@ module Test.WebDriver.Commands.Cookies (
   cookies
   , cookie
   , setCookie
-  , deleteCookies
   , deleteCookie
-  , deleteCookieByName
+  , deleteCookies
 
   -- * Types
   , mkCookie
@@ -31,7 +30,7 @@ cookies :: (HasCallStack, WebDriver wd) => wd [Cookie]
 cookies = doSessCommand methodGet "/cookie" Null
 
 -- | Retrieve a specific cookie by name.
-cookie :: (HasCallStack, WebDriver wd) => Text -> wd [Cookie]
+cookie :: (HasCallStack, WebDriver wd) => Text -> wd Cookie
 cookie n = doSessCommand methodGet ("/cookie/" <> n) Null
 
 -- | Set a cookie. If the cookie path is not specified, it will default to \"/\".
@@ -39,12 +38,9 @@ cookie n = doSessCommand methodGet ("/cookie/" <> n) Null
 setCookie :: (HasCallStack, WebDriver wd) => Cookie -> wd ()
 setCookie = noReturn . doSessCommand methodPost "/cookie" . single "cookie"
 
--- | Delete a cookie.
-deleteCookie :: (HasCallStack, WebDriver wd) => Cookie -> wd ()
-deleteCookie c = noReturn $ doSessCommand methodDelete ("/cookie/" <> urlEncode (cookName c)) Null
-
-deleteCookieByName :: (HasCallStack, WebDriver wd) => Text -> wd ()
-deleteCookieByName n = noReturn $ doSessCommand methodDelete ("/cookie/" <> n) Null
+-- | Delete a cookie by name.
+deleteCookie :: (HasCallStack, WebDriver wd) => Text -> wd ()
+deleteCookie n = noReturn $ doSessCommand methodDelete ("/cookie/" <> urlEncode n) Null
 
 -- | Delete all visible cookies on the current page.
 deleteCookies :: (HasCallStack, WebDriver wd) => wd ()
