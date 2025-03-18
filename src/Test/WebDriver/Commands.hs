@@ -63,6 +63,16 @@ module Test.WebDriver.Commands (
   -- See https://www.w3.org/TR/webdriver1/#cookies.
   , module Test.WebDriver.Commands.Cookies
 
+  -- * Actions
+  --
+  -- See https://www.w3.org/TR/webdriver1/#actions.
+  , module Test.WebDriver.Commands.Actions
+
+  -- * User Prompts
+  --
+  -- See https://www.w3.org/TR/webdriver1/#user-prompts.
+  , module Test.WebDriver.Commands.UserPrompts
+
   -- * Timeouts
   , setImplicitWait
   , setScriptTimeout
@@ -83,26 +93,6 @@ module Test.WebDriver.Commands (
   -- ** Types
   , WindowHandle(..)
   , Rect(..)
-
-  -- * Focusing on frames
-  , FrameSelector(..)
-
-  -- * Alerts
-  , getAlertText
-  , replyToAlert
-  , acceptAlert
-  , dismissAlert
-
-  -- * Mouse gestures
-  , moveTo
-  , moveToCenter
-  , moveToFrom
-  , clickWith
-  , mouseDown
-  , mouseUp
-  , withMouseDown
-  , doubleClick
-  , MouseButton(..)
 
   -- * HTML 5 Web Storage
   , storageSize
@@ -182,8 +172,8 @@ import qualified Data.Text as T
 import qualified Data.Text.Lazy.Encoding as TL
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
+import Test.WebDriver.Commands.Actions
 import Test.WebDriver.Commands.CommandContexts
-import Test.WebDriver.Commands.Common (noObject)
 import Test.WebDriver.Commands.Cookies
 import Test.WebDriver.Commands.DocumentHandling
 import Test.WebDriver.Commands.ElementInteraction
@@ -193,6 +183,7 @@ import Test.WebDriver.Commands.Internal
 import Test.WebDriver.Commands.LoggingTypes
 import Test.WebDriver.Commands.Navigation
 import Test.WebDriver.Commands.Sessions
+import Test.WebDriver.Commands.UserPrompts
 import Test.WebDriver.JSON
 import Test.WebDriver.Utils (urlEncode)
 
@@ -289,75 +280,6 @@ getOrientation = doSessCommand methodGet "/orientation" Null
 -- | Set the current screen orientation for rotatable display devices.
 setOrientation :: (HasCallStack, WebDriver wd) => Orientation -> wd ()
 setOrientation = noReturn . doSessCommand methodPost "/orientation" . single "orientation"
-
--- | Get the text of an alert dialog.
-getAlertText :: (HasCallStack, WebDriver wd) => wd Text
-getAlertText = doSessCommand methodGet "/alert/text" Null
-
--- | Sends keystrokes to Javascript prompt() dialog.
-replyToAlert :: (HasCallStack, WebDriver wd) => Text -> wd ()
-replyToAlert = noReturn . doSessCommand methodPost "/alert/text" . single "text"
-
--- | Accepts the currently displayed alert dialog.
-acceptAlert :: (HasCallStack, WebDriver wd) => wd ()
-acceptAlert = noReturn $ doSessCommand methodPost "/alert/accept" noObject
-
--- | Dismisses the currently displayed alert dialog.
-dismissAlert :: (HasCallStack, WebDriver wd) => wd ()
-dismissAlert = noReturn $ doSessCommand methodPost "/alert/dismiss" noObject
-
--- | Moves the mouse to the given position relative to the active element.
-moveTo :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
-moveTo = noReturn . doSessCommand methodPost "/moveto" . pair ("xoffset","yoffset")
-
--- | Moves the mouse to the center of a given element.
-moveToCenter :: (HasCallStack, WebDriver wd) => Element -> wd ()
-moveToCenter (Element e) =
-  noReturn . doSessCommand methodPost "/moveto" . single "element" $ e
-
--- | Moves the mouse to the given position relative to the given element.
-moveToFrom :: (HasCallStack, WebDriver wd) => (Int, Int) -> Element -> wd ()
-moveToFrom (x,y) (Element e) =
-  noReturn . doSessCommand methodPost "/moveto"
-  . triple ("element","xoffset","yoffset") $ (e,x,y)
-
--- | A mouse button
-data MouseButton = LeftButton | MiddleButton | RightButton
-                 deriving (Eq, Show, Ord, Bounded, Enum)
-
-instance ToJSON MouseButton where
-  toJSON = toJSON . fromEnum
-
-instance FromJSON MouseButton where
-  parseJSON v = do
-    n <- parseJSON v
-    case n :: Integer of
-      0 -> return LeftButton
-      1 -> return MiddleButton
-      2 -> return RightButton
-      err -> fail $ "Invalid JSON for MouseButton: " ++ show err
-
--- | Click at the current mouse position with the given mouse button.
-clickWith :: (HasCallStack, WebDriver wd) => MouseButton -> wd ()
-clickWith = noReturn . doSessCommand methodPost "/click" . single "button"
-
--- | Perform the given action with the left mouse button held down. The mouse
--- is automatically released afterwards.
-withMouseDown :: (HasCallStack, WebDriver wd) => wd a -> wd a
-withMouseDown wd = mouseDown >> wd <* mouseUp
-
--- | Press and hold the left mouse button down. Note that undefined behavior
--- occurs if the next mouse command is not mouseUp.
-mouseDown :: (HasCallStack, WebDriver wd) => wd ()
-mouseDown = noReturn $ doSessCommand methodPost "/buttondown" noObject
-
--- | Release the left mouse button.
-mouseUp :: (HasCallStack, WebDriver wd) => wd ()
-mouseUp = noReturn $ doSessCommand methodPost "/buttonup" noObject
-
--- | Double click at the current mouse location.
-doubleClick :: (HasCallStack, WebDriver wd) => wd ()
-doubleClick = noReturn $ doSessCommand methodPost "/doubleclick" noObject
 
 -- | Single tap on the touch screen at the given element's location.
 touchClick :: (HasCallStack, WebDriver wd) => Element -> wd ()

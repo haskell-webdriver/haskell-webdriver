@@ -71,6 +71,7 @@ library
       Test.WebDriver.Capabilities.Proxy
       Test.WebDriver.Capabilities.Timeouts
       Test.WebDriver.Capabilities.UserPromptHandler
+      Test.WebDriver.Commands.Actions
       Test.WebDriver.Commands.CommandContexts
       Test.WebDriver.Commands.Common
       Test.WebDriver.Commands.Cookies
@@ -81,6 +82,7 @@ library
       Test.WebDriver.Commands.LoggingTypes
       Test.WebDriver.Commands.Navigation
       Test.WebDriver.Commands.Sessions
+      Test.WebDriver.Commands.UserPrompts
       Paths_webdriver
   hs-source-dirs:
       src
@@ -126,6 +128,7 @@ test-suite tests
   main-is: Main.hs
   other-modules:
       Spec
+      Spec.Actions
       Spec.Clicking
       Spec.Cookies
       Spec.DocumentHandling
@@ -136,6 +139,7 @@ test-suite tests
       Spec.Scripts
       Spec.SeleniumFileUploads
       Spec.Sessions
+      Spec.UserPrompts
       Spec.Windows
       TestLib.Contexts.BrowserDependencies
       TestLib.Contexts.Selenium4
