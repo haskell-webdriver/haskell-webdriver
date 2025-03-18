@@ -73,14 +73,17 @@ module Test.WebDriver.Commands (
   -- See https://www.w3.org/TR/webdriver1/#user-prompts.
   , module Test.WebDriver.Commands.UserPrompts
 
+  -- * Screen capture
+  --
+  -- See https://www.w3.org/TR/webdriver1/#screen-capture.
+  , module Test.WebDriver.Commands.ScreenCapture
+
   -- * Timeouts
   , setImplicitWait
   , setScriptTimeout
   , setPageLoadTimeout
 
   -- * Web elements
-  , Element(..)
-  , Selector(..)
   -- ** Interacting with elements
   , submit
   -- *** Sending key inputs to elements
@@ -89,10 +92,6 @@ module Test.WebDriver.Commands (
   -- ** Element equality
   , (<==>)
   , (</=>)
-
-  -- ** Types
-  , WindowHandle(..)
-  , Rect(..)
 
   -- * HTML 5 Web Storage
   , storageSize
@@ -134,11 +133,6 @@ module Test.WebDriver.Commands (
   , activateIME
   , deactivateIME
 
-  -- * Screen capture
-  , saveScreenshot
-  , screenshot
-  , screenshotBase64
-
   -- * Uploading files to remote server
   -- | These functions allow you to upload a file to a remote server.
   -- Note that this operation isn't supported by all WebDriver servers,
@@ -164,7 +158,7 @@ import Control.Monad.IO.Class
 import Data.Aeson as A
 import Data.Aeson.Types
 import Data.ByteString.Base64.Lazy as B64
-import Data.ByteString.Lazy as LBS (ByteString, writeFile)
+import Data.ByteString.Lazy as LBS (ByteString)
 import Data.CallStack
 import Data.String (fromString)
 import Data.Text (Text, append, toUpper, toLower)
@@ -182,6 +176,7 @@ import Test.WebDriver.Commands.ElementState
 import Test.WebDriver.Commands.Internal
 import Test.WebDriver.Commands.LoggingTypes
 import Test.WebDriver.Commands.Navigation
+import Test.WebDriver.Commands.ScreenCapture
 import Test.WebDriver.Commands.Sessions
 import Test.WebDriver.Commands.UserPrompts
 import Test.WebDriver.JSON
@@ -212,18 +207,6 @@ setPageLoadTimeout :: (HasCallStack, WebDriver wd) => Integer -> wd ()
 setPageLoadTimeout ms = ignoreReturn $ doSessCommand methodPost "/timeouts" params
   where params = object ["type" .= ("page load" :: String)
                         ,"ms"   .= ms ]
-
--- | Save a screenshot to a particular location
-saveScreenshot :: (HasCallStack, WebDriver wd) => FilePath -> wd ()
-saveScreenshot path = screenshot >>= liftIO . LBS.writeFile path
-
--- | Grab a screenshot of the current page as a PNG image
-screenshot :: (HasCallStack, WebDriver wd) => wd LBS.ByteString
-screenshot = B64.decodeLenient <$> screenshotBase64
-
--- | Grab a screenshot as a base-64 encoded PNG image. This is the protocol-defined format.
-screenshotBase64 :: (HasCallStack, WebDriver wd) => wd LBS.ByteString
-screenshotBase64 = TL.encodeUtf8 <$> doSessCommand methodGet "/screenshot" Null
 
 availableIMEEngines :: (HasCallStack, WebDriver wd) => wd [Text]
 availableIMEEngines = doSessCommand methodGet "/ime/available_engines" Null

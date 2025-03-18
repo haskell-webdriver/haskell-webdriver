@@ -17,6 +17,7 @@ module Test.WebDriver.Commands.CommandContexts (
   -- * Types
   , FrameSelector(..)
   , Rect(..)
+  , WindowHandle(..)
   ) where
 
 import Control.Applicative

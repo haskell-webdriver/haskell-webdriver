@@ -81,6 +81,7 @@ library
       Test.WebDriver.Commands.ElementState
       Test.WebDriver.Commands.LoggingTypes
       Test.WebDriver.Commands.Navigation
+      Test.WebDriver.Commands.ScreenCapture
       Test.WebDriver.Commands.Sessions
       Test.WebDriver.Commands.UserPrompts
       Paths_webdriver
@@ -135,6 +136,7 @@ test-suite tests
       Spec.ElementRetrieval
       Spec.ElementState
       Spec.Navigation
+      Spec.ScreenCapture
       Spec.Screenshots
       Spec.Scripts
       Spec.SeleniumFileUploads
