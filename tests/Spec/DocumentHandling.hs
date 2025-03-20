@@ -28,6 +28,10 @@ tests = introduceSession $ describe "Document handling" $ before "Open test page
       executeJS [] [i|return document.querySelector("\#input1").value;|]
         >>= (`shouldBe` ("asdf" :: Text))
 
+    executeJS [] [i|return document.title;|] >>= (`shouldBe` ("Test page" :: String))
+
   it "asyncJS" $ do
     asyncJS [] [i|setTimeout(() => arguments[0](42), 5);|]
       >>= (`shouldBe` (Just (42 :: Int)))
+
+    asyncJS [] [i|arguments[0](document.title);|] >>= (`shouldBe` (Just ("Test page" :: String)))
