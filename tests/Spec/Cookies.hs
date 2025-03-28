@@ -1,6 +1,8 @@
 
 module Spec.Cookies where
 
+import qualified Data.List as L
+import Data.Ord (comparing)
 import Data.Text
 import Test.Sandwich
 import Test.WebDriver.Commands
@@ -42,6 +44,6 @@ tests = introduceSession $ describe "Cookies" $ before "Open test page" openSimp
 
 
 getCookieBasics :: [Cookie] -> [(Text, Text)]
-getCookieBasics = fmap go
+getCookieBasics = L.sortBy (comparing fst) . fmap go
   where
     go (Cookie {..}) = (cookName, cookValue)

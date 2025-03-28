@@ -35,7 +35,8 @@ tests = introduceSession $ describe "Element state" $ before "Open test page" op
 
   it "cssProp" $ do
     Just color <- findElem (ByCSS "#input-red") >>= (`cssProp` "color")
-    (T.filter (/= ' ') color) `shouldBe` "rgb(255,0,0)"
+    -- Depending on browser, this can produce a couple different values
+    ["rgb(255,0,0)", "rgba(255,0,0,1)"] `shouldContain` [T.filter (/= ' ') color]
 
   it "getText" $ do
     findElem (ByCSS "#click-here-link") >>= getText >>= (`shouldBe` "Click here")
