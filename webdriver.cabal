@@ -82,6 +82,11 @@ library
       Test.WebDriver.Commands.LoggingTypes
       Test.WebDriver.Commands.Navigation
       Test.WebDriver.Commands.ScreenCapture
+      Test.WebDriver.Commands.SeleniumSpecific.HTML5
+      Test.WebDriver.Commands.SeleniumSpecific.IME
+      Test.WebDriver.Commands.SeleniumSpecific.Misc
+      Test.WebDriver.Commands.SeleniumSpecific.Mobile
+      Test.WebDriver.Commands.SeleniumSpecific.Uploads
       Test.WebDriver.Commands.Sessions
       Test.WebDriver.Commands.UserPrompts
       Paths_webdriver
