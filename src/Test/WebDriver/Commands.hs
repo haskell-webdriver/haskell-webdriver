@@ -78,11 +78,6 @@ module Test.WebDriver.Commands (
   -- See https://www.w3.org/TR/webdriver1/#screen-capture.
   , module Test.WebDriver.Commands.ScreenCapture
 
-  -- * Timeouts
-  , setImplicitWait
-  , setScriptTimeout
-  , setPageLoadTimeout
-
   -- * Web elements
   -- ** Interacting with elements
   , submit
@@ -151,8 +146,6 @@ module Test.WebDriver.Commands (
 
 import Codec.Archive.Zip
 import Control.Applicative
-import Control.Exception (SomeException)
-import qualified Control.Exception.Safe as L
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.Aeson as A
@@ -182,31 +175,6 @@ import Test.WebDriver.Commands.UserPrompts
 import Test.WebDriver.JSON
 import Test.WebDriver.Utils (urlEncode)
 
-
--- | Sets the amount of time (ms) we implicitly wait when searching for elements.
-setImplicitWait :: (HasCallStack, WebDriver wd) => Integer -> wd ()
-setImplicitWait ms =
-  ignoreReturn $ doSessCommand methodPost "/timeouts/implicit_wait" (object msField)
-    `L.catch` \(_ :: SomeException) ->
-      doSessCommand methodPost "/timeouts" (object allFields)
-  where msField   = ["ms" .= ms]
-        allFields = ["type" .= ("implicit" :: String)] ++ msField
-
--- | Sets the amount of time (ms) we wait for an asynchronous script to return a
--- result.
-setScriptTimeout :: (HasCallStack, WebDriver wd) => Integer -> wd ()
-setScriptTimeout ms =
-  ignoreReturn $ doSessCommand methodPost "/timeouts/async_script" (object msField)
-    `L.catch` \( _ :: SomeException) ->
-      doSessCommand methodPost "/timeouts" (object allFields)
-  where msField   = ["ms" .= ms]
-        allFields = ["type" .= ("script" :: String)] ++ msField
-
--- | Sets the amount of time (ms) to wait for a page to finish loading before throwing a 'Timeout' exception.
-setPageLoadTimeout :: (HasCallStack, WebDriver wd) => Integer -> wd ()
-setPageLoadTimeout ms = ignoreReturn $ doSessCommand methodPost "/timeouts" params
-  where params = object ["type" .= ("page load" :: String)
-                        ,"ms"   .= ms ]
 
 availableIMEEngines :: (HasCallStack, WebDriver wd) => wd [Text]
 availableIMEEngines = doSessCommand methodGet "/ime/available_engines" Null
