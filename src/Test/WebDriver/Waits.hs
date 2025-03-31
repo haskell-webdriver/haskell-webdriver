@@ -1,16 +1,22 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 
-module Test.WebDriver.Commands.Wait (
+module Test.WebDriver.Waits (
   -- * Wait on expected conditions
-  waitUntil, waitUntil'
-  , waitWhile, waitWhile'
+  waitUntil
+  , waitUntil'
+  , waitWhile
+  , waitWhile'
 
   -- * Expected conditions
-  , ExpectFailed (..), expect, unexpected
-  , expectAny, expectAll
-  , expectNotStale, expectAlertOpen
+  , ExpectFailed (..)
+  , expect
+  , unexpected
+  , expectAny
+  , expectAll
+  , expectNotStale
+  , expectAlertOpen
   , catchFailedCommand
 
   -- ** Convenience functions

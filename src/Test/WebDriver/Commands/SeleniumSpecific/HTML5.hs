@@ -14,14 +14,12 @@ module Test.WebDriver.Commands.SeleniumSpecific.HTML5 (
   , getApplicationCacheStatus
   ) where
 
-import Control.Monad
 import Data.Aeson as A
 import Data.CallStack
 import Data.Text (Text)
 import qualified Data.Text as T
-import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
 import Test.WebDriver.Utils (urlEncode)
 

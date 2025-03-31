@@ -1,6 +1,6 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE PatternGuards #-}
-{-# LANGUAGE CPP #-}
 
 -- | The HTTP/JSON plumbing used to implement the 'WD' monad.
 --

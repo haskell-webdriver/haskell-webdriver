@@ -192,8 +192,9 @@ instance FromJSON StackFrame where
 
 
 callStackItemToStackFrame :: (String, SrcLoc) -> StackFrame
-callStackItemToStackFrame (functionName, SrcLoc {..}) = StackFrame { sfFileName = srcLocFile
-                                                                   , sfClassName = srcLocModule
-                                                                   , sfMethodName = functionName
-                                                                   , sfLineNumber = srcLocStartLine
-                                                                   }
+callStackItemToStackFrame (functionName, SrcLoc {..}) = StackFrame {
+  sfFileName = srcLocFile
+  , sfClassName = srcLocModule
+  , sfMethodName = functionName
+  , sfLineNumber = srcLocStartLine
+  }

@@ -14,7 +14,7 @@ import Data.ByteString.Lazy as LBS (ByteString, writeFile)
 import Data.CallStack
 import qualified Data.Text.Lazy.Encoding as TL
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 
 
 -- | Grab a screenshot of the current page as a PNG image

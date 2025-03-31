@@ -79,8 +79,6 @@ library:
   - Test.WebDriver.Chrome.Extension
   - Test.WebDriver.Class
   - Test.WebDriver.Commands
-  - Test.WebDriver.Commands.Internal
-  - Test.WebDriver.Commands.Wait
   - Test.WebDriver.Common.Keys
   - Test.WebDriver.Common.Profile
   - Test.WebDriver.Config
@@ -94,6 +92,7 @@ library:
   - Test.WebDriver.Session.History
   - Test.WebDriver.Types
   - Test.WebDriver.Utils
+  - Test.WebDriver.Waits
 
 tests:
   tests:

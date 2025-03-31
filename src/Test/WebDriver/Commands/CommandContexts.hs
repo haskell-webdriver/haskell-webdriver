@@ -20,16 +20,15 @@ module Test.WebDriver.Commands.CommandContexts (
   , WindowHandle(..)
   ) where
 
-import Control.Applicative
 import Control.Monad
 import Data.Aeson as A
 import Data.Aeson.Types
 import Data.CallStack
 import Data.Text (Text)
-import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
+
 
 -- | Returns a handle to the currently focused window
 getCurrentWindow :: (HasCallStack, WebDriver wd) => wd WindowHandle

@@ -101,7 +101,6 @@ import Test.WebDriver.Commands.DocumentHandling
 import Test.WebDriver.Commands.ElementInteraction
 import Test.WebDriver.Commands.ElementRetrieval
 import Test.WebDriver.Commands.ElementState
-import Test.WebDriver.Commands.LoggingTypes
 import Test.WebDriver.Commands.Navigation
 import Test.WebDriver.Commands.ScreenCapture
 import Test.WebDriver.Commands.SeleniumSpecific.HTML5

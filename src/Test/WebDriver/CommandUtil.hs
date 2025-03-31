@@ -6,7 +6,7 @@
 -- | Internal functions used to implement the functions exported by
 -- "Test.WebDriver.Commands". These may be useful for implementing non-standard
 -- webdriver commands.
-module Test.WebDriver.Commands.Internal (
+module Test.WebDriver.CommandUtil (
   -- * Low-level webdriver functions
   doCommand
   -- ** Commands with :sessionId URL parameter

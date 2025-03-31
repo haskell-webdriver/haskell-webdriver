@@ -48,8 +48,6 @@ library
       Test.WebDriver.Chrome.Extension
       Test.WebDriver.Class
       Test.WebDriver.Commands
-      Test.WebDriver.Commands.Internal
-      Test.WebDriver.Commands.Wait
       Test.WebDriver.Common.Keys
       Test.WebDriver.Common.Profile
       Test.WebDriver.Config
@@ -63,6 +61,7 @@ library
       Test.WebDriver.Session.History
       Test.WebDriver.Types
       Test.WebDriver.Utils
+      Test.WebDriver.Waits
   other-modules:
       Test.WebDriver.Capabilities.Aeson
       Test.WebDriver.Capabilities.ChromeOptions
@@ -78,7 +77,6 @@ library
       Test.WebDriver.Commands.ElementInteraction
       Test.WebDriver.Commands.ElementRetrieval
       Test.WebDriver.Commands.ElementState
-      Test.WebDriver.Commands.LoggingTypes
       Test.WebDriver.Commands.Navigation
       Test.WebDriver.Commands.ScreenCapture
       Test.WebDriver.Commands.SeleniumSpecific.HTML5
@@ -88,6 +86,7 @@ library
       Test.WebDriver.Commands.SeleniumSpecific.Uploads
       Test.WebDriver.Commands.Sessions
       Test.WebDriver.Commands.UserPrompts
+      Test.WebDriver.CommandUtil
       Paths_webdriver
   hs-source-dirs:
       src

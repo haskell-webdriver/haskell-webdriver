@@ -20,6 +20,6 @@ module Test.WebDriver.Exceptions (
   , failedCommand
   ) where
 
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON

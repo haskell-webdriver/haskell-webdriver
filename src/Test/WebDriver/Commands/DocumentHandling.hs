@@ -7,17 +7,13 @@ module Test.WebDriver.Commands.DocumentHandling (
   , JSArg(..)
   ) where
 
-import Control.Applicative
 import Control.Exception.Safe (throwIO, handle)
-import Control.Monad
 import Data.Aeson as A
 import Data.CallStack
 import qualified Data.Foldable as F
-import Data.Maybe
 import Data.Text (Text)
-import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
 

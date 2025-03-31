@@ -20,15 +20,13 @@ module Test.WebDriver.Commands.SeleniumSpecific.Mobile (
   , touchFlickFrom
   ) where
 
-import Control.Monad
 import Data.Aeson as A
 import Data.Aeson.Types
 import Data.CallStack
 import Data.String (fromString)
 import Data.Text (toUpper, toLower)
-import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
 
 

@@ -13,9 +13,8 @@ module Test.WebDriver.Commands.ElementRetrieval (
 import Data.Aeson as A
 import Data.CallStack
 import Data.Text (Text)
-import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 
 
 -- | Find an element on the page using the given element selector.

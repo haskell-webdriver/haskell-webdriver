@@ -12,13 +12,11 @@ module Test.WebDriver.Commands.ElementState (
 
 import Data.Aeson as A
 import Data.CallStack
-import Data.Maybe
 import Data.Text (Text, append)
-import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.CommandContexts
 import Test.WebDriver.Commands.ElementRetrieval
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.Utils (urlEncode)
 
 

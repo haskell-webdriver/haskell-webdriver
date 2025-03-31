@@ -6,16 +6,14 @@ module Test.WebDriver.Commands.SeleniumSpecific.Uploads (
   ) where
 
 import Codec.Archive.Zip
-import Control.Monad
 import Control.Monad.IO.Class
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString)
 import Data.CallStack
 import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TL
-import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
 
 

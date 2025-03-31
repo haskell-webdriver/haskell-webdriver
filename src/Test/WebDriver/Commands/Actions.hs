@@ -17,7 +17,7 @@ import Data.Aeson as A
 import Data.CallStack
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.ElementRetrieval
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
 
 

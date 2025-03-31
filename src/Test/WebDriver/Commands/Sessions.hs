@@ -27,12 +27,10 @@ module Test.WebDriver.Commands.Sessions (
 import Data.Aeson as A
 import Data.Aeson.TH as A
 import Data.CallStack
-import Data.Maybe
-import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Capabilities (Capabilities)
 import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
 import Test.WebDriver.Session
 

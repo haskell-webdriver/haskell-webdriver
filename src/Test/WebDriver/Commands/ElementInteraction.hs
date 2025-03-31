@@ -8,10 +8,9 @@ module Test.WebDriver.Commands.ElementInteraction (
 
 import Data.CallStack
 import Data.Text (Text)
-import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
 import Test.WebDriver.Commands.ElementRetrieval
-import Test.WebDriver.Commands.Internal
+import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON (noObject, noReturn, single)
 
 
