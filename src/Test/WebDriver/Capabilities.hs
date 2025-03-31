@@ -4,6 +4,17 @@
 
 module Test.WebDriver.Capabilities (
   Capabilities(..)
+  , capabilitiesBrowserName
+  , capabilitiesBrowserVersion
+  , capabilitiesPlatformName
+  , capabilitiesAcceptInsecureCerts
+  , capabilitiesPageLoadStrategy
+  , capabilitiesProxy
+  , capabilitiesSetWindowRect
+  , capabilitiesTimeouts
+  , capabilitiesUnhandledPromptBehavior
+  , capabilitiesGoogChromeOptions
+  , capabilitiesMozFirefoxOptions
   , defaultCaps
 
   , module Test.WebDriver.Capabilities.ChromeOptions
@@ -13,6 +24,7 @@ module Test.WebDriver.Capabilities (
   ) where
 
 import Data.Aeson.TH
+import Lens.Micro.TH
 import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Capabilities.ChromeOptions
 import Test.WebDriver.Capabilities.FirefoxOptions
@@ -36,33 +48,33 @@ import Test.WebDriver.Capabilities.UserPromptHandler
 -- a lack of support for the desired capability.
 data Capabilities = Capabilities {
   -- | Identifies the user agent.
-  capabilitiesBrowserName :: Maybe String
+  _capabilitiesBrowserName :: Maybe String
   -- | Identifies the version of the user agent.
-  , capabilitiesBrowserVersion :: Maybe String
+  , _capabilitiesBrowserVersion :: Maybe String
   -- | Identifies the operating system of the endpoint node.
-  , capabilitiesPlatformName :: Maybe Platform
+  , _capabilitiesPlatformName :: Maybe Platform
   -- | Indicates whether untrusted and self-signed TLS certificates are implicitly trusted on navigation for the
   -- duration of the session.
-  , capabilitiesAcceptInsecureCerts :: Maybe Bool
+  , _capabilitiesAcceptInsecureCerts :: Maybe Bool
   -- | Defines the current session’s page load strategy.
-  , capabilitiesPageLoadStrategy :: Maybe String
+  , _capabilitiesPageLoadStrategy :: Maybe String
   -- | Defines the current session’s proxy configuration.
-  , capabilitiesProxy :: Maybe Proxy
+  , _capabilitiesProxy :: Maybe Proxy
   -- | Indicates whether the remote end supports all of the commands in Resizing and Positioning Windows.
-  , capabilitiesSetWindowRect :: Maybe Bool
+  , _capabilitiesSetWindowRect :: Maybe Bool
   -- | Describes the timeouts imposed on certain session operations.
-  , capabilitiesTimeouts :: Maybe Timeouts
+  , _capabilitiesTimeouts :: Maybe Timeouts
   -- | Describes the current session’s user prompt handler.
-  , capabilitiesUnhandledPromptBehavior :: Maybe UserPromptHandler
+  , _capabilitiesUnhandledPromptBehavior :: Maybe UserPromptHandler
 
   -- * Vendor-specific stuff
   -- | Chrome options
-  , capabilitiesGoogChromeOptions :: Maybe ChromeOptions
+  , _capabilitiesGoogChromeOptions :: Maybe ChromeOptions
   -- | Firefox options
-  , capabilitiesMozFirefoxOptions :: Maybe FirefoxOptions
+  , _capabilitiesMozFirefoxOptions :: Maybe FirefoxOptions
   } deriving (Eq, Show)
-
 deriveJSON capabilitiesOptions ''Capabilities
+makeLenses ''Capabilities
 
 -- | Default capabilities. This is the same as the 'Default' instance, but with
 -- less polymorphism. By default, we use 'firefox' of an unspecified 'version'
@@ -70,23 +82,23 @@ deriveJSON capabilitiesOptions ''Capabilities
 -- . All 'Maybe' capabilities are set to 'Nothing' (no preference).
 defaultCaps :: Capabilities
 defaultCaps = Capabilities {
-  capabilitiesBrowserName = Nothing
-  , capabilitiesBrowserVersion = Nothing
+  _capabilitiesBrowserName = Nothing
+  , _capabilitiesBrowserVersion = Nothing
 
-  , capabilitiesPlatformName = Nothing
+  , _capabilitiesPlatformName = Nothing
 
-  , capabilitiesAcceptInsecureCerts = Nothing
+  , _capabilitiesAcceptInsecureCerts = Nothing
 
-  , capabilitiesPageLoadStrategy = Nothing
+  , _capabilitiesPageLoadStrategy = Nothing
 
-  , capabilitiesProxy = Nothing
+  , _capabilitiesProxy = Nothing
 
-  , capabilitiesSetWindowRect = Nothing
+  , _capabilitiesSetWindowRect = Nothing
 
-  , capabilitiesTimeouts = Nothing
+  , _capabilitiesTimeouts = Nothing
 
-  , capabilitiesUnhandledPromptBehavior = Nothing
+  , _capabilitiesUnhandledPromptBehavior = Nothing
 
-  , capabilitiesGoogChromeOptions = Nothing
-  , capabilitiesMozFirefoxOptions = Nothing
+  , _capabilitiesGoogChromeOptions = Nothing
+  , _capabilitiesMozFirefoxOptions = Nothing
   }

@@ -41,39 +41,54 @@ data ChromeClientHints = ChromeClientHints {
   -- OS", "Chromium OS", "Fuchsia", "Linux", "macOS", "Windows"), that exactly
   -- matches the value returned by Chrome running on the given platform, or it
   -- can be a user defined value. This value is mandatory.
-  chromeClientHintsPlatform :: String
+  _chromeClientHintsPlatform :: String
   -- | Whether the browser should request a mobile or desktop resource version.
   -- Usually Chrome running on a mobile phone with Android sets this value to
   -- true. Chrome on a tablet Android device sets this value to false. Chrome on
   -- a desktop device also sets this value to false. You can use this
   -- information to specify a realistic emulation. This value is mandatory.
-  , chromeClientHintsMobile :: Bool
+  , _chromeClientHintsMobile :: Bool
   -- | List of brand / major version pairs. If omitted the browser uses its own
   -- values.
-  , chromeClientHintsBrands :: Maybe [BrandAndVersion]
+  , _chromeClientHintsBrands :: Maybe [BrandAndVersion]
   -- | List of brand / version pairs. It omitted the browser uses its own
   -- values.
-  , chromeClientHintsFullVersionList :: Maybe [BrandAndVersion]
+  , _chromeClientHintsFullVersionList :: Maybe [BrandAndVersion]
   -- | OS version. Defaults to empty string.
-  , chromeClientHintsPlatformVersion :: Maybe String
+  , _chromeClientHintsPlatformVersion :: Maybe String
   -- | Device model. Defaults to empty string.
-  , chromeClientHintsModel :: Maybe String
+  , _chromeClientHintsModel :: Maybe String
   -- | CPU architecture. Known values are "x86" and "arm". The user is free to
   -- provide any string value. Defaults to empty string.
-  , chromeClientHintsArchitecture :: Maybe String
+  , _chromeClientHintsArchitecture :: Maybe String
   -- | Platform bitness. Known values are "32" and "64". The user is free to
   -- provide any string value. Defaults to empty string.
-  , chromeClientHintsBitness :: Maybe String
+  , _chromeClientHintsBitness :: Maybe String
   -- | Emulation of windows 32 on windows 64. A boolean value that defaults to
   -- false.
-  , chromeClientHintsWow64 :: Maybe Bool
+  , _chromeClientHintsWow64 :: Maybe Bool
   } deriving (Show, Eq)
 deriveJSON toCamel3 ''ChromeClientHints
 makeLenses ''ChromeClientHints
+mkChromeClientHints :: String -> Bool -> ChromeClientHints
+mkChromeClientHints platform mobile = ChromeClientHints {
+  _chromeClientHintsPlatform = platform
+  , _chromeClientHintsMobile = mobile
+  , _chromeClientHintsBrands = Nothing
+  , _chromeClientHintsFullVersionList = Nothing
+  , _chromeClientHintsPlatformVersion = Nothing
+  , _chromeClientHintsModel = Nothing
+  , _chromeClientHintsArchitecture = Nothing
+  , _chromeClientHintsBitness = Nothing
+  , _chromeClientHintsWow64 = Nothing
+  }
 
 -- | See https://developer.chrome.com/docs/chromedriver/mobile-emulation
 data ChromeMobileEmulation =
-  -- | Specify a known device.
+  -- | Specify a known device. To enable device emulation with a specific
+  -- device, the "mobileEmulation" dictionary must contain a "deviceName." Use a
+  -- valid device name from the DevTools Emulated Devices settings as the value
+  -- for "deviceName."
   ChromeMobileEmulationSpecificDevice {
     _chromeMobileEmulationDeviceName :: String
   }
@@ -125,7 +140,7 @@ data ChromeOptions = ChromeOptions {
   , _chromeOptionsMinidumpPath :: Maybe FilePath
   -- | A dictionary with either a value for "deviceName," or values for "deviceMetrics", and "userAgent." Refer to Mobile
   -- Emulation for more information.
-  , _chromeOptionsMobileEmulation :: Maybe A.Object
+  , _chromeOptionsMobileEmulation :: Maybe ChromeMobileEmulation
   -- | An optional dictionary that specifies performance logging preferences.
   , _chromeOptionsPerfLoggingPrefs :: Maybe A.Object
   -- | A list of window types that appear in the list of window handles. For access to webview elements, include "webview"

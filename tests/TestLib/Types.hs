@@ -157,24 +157,24 @@ getWDConfig' (WebDriverContext {..}) browserDeps = do
   caps <- getCapabilities (fromMaybe False optHeadlessTests) browserDeps
   debug [i|Using browser capabilities: #{caps}|]
   pure $ defaultConfig {
-    wdHost = webDriverHostname
-    , wdPort = fromIntegral webDriverPort
-    , wdCapabilities = caps
-    , wdSeleniumVersion = webDriverSeleniumVersion
+    _wdHost = webDriverHostname
+    , _wdPort = fromIntegral webDriverPort
+    , _wdCapabilities = caps
+    , _wdSeleniumVersion = webDriverSeleniumVersion
     }
 
 getCapabilities :: MonadIO m => Bool -> BrowserDependencies -> m Capabilities
 getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
-  capabilitiesBrowserName = Just "chrome"
-  , capabilitiesGoogChromeOptions = Just $
+  _capabilitiesBrowserName = Just "chrome"
+  , _capabilitiesGoogChromeOptions = Just $
     defaultChromeOptions
       & over (chromeOptionsArgs . non []) (if headless then ("--headless" :) else id)
       & over (chromeOptionsArgs . non []) (if browserDependenciesChromeNoSandbox == Just True then ("--no-sandbox" :) else id)
       & set chromeOptionsBinary (Just browserDependenciesChromeChrome)
   }
 getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps {
-  capabilitiesBrowserName = Just "firefox"
-  , capabilitiesMozFirefoxOptions = Just $
+  _capabilitiesBrowserName = Just "firefox"
+  , _capabilitiesMozFirefoxOptions = Just $
     defaultFirefoxOptions
       & set firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
       & over (firefoxOptionsArgs . non []) (if headless then ("-headless" :) else id)
