@@ -106,7 +106,7 @@ data ChromeMobileEmulation =
       , _chromeMobileEmulationUserAgent :: Maybe String
       }
   deriving (Show, Eq)
-deriveJSON toCamel3 ''ChromeMobileEmulation
+deriveJSON (toCamel3 { sumEncoding = UntaggedValue }) ''ChromeMobileEmulation
 makeLenses ''ChromeMobileEmulation
 
 -- | See https://developer.chrome.com/docs/chromedriver/capabilities#chromeoptions_object
