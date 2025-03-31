@@ -10,6 +10,7 @@ import Control.Monad.IO.Class
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString)
 import Data.CallStack
+import Data.Function ((&))
 import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TL
 import Test.WebDriver.Class
@@ -38,5 +39,10 @@ uploadRawFile path t str = uploadZipEntry (toEntry path t str)
 -- the zip entry sent across network.
 -- Returns the remote filepath of the extracted file
 uploadZipEntry :: (HasCallStack, WebDriver wd) => Entry -> wd Text
-uploadZipEntry = doSessCommand methodPost "/se/file" . single "file"
-                 . TL.decodeUtf8 . B64.encode . fromArchive . (`addEntryToArchive` emptyArchive)
+uploadZipEntry entry = doSessCommand methodPost "/se/file" $ single "file" file
+  where
+    file = entry
+         & (`addEntryToArchive` emptyArchive)
+         & fromArchive
+         & B64.encode
+         & TL.decodeUtf8
