@@ -6,11 +6,13 @@
 --
 -- These functions can be used to create your own 'WebDriver' instances, providing extra functionality for your application if desired. All exports
 -- of this module are subject to change at any point.
-module Test.WebDriver.Internal
-       ( mkRequest, sendHTTPRequest
-       , getJSONResult, handleJSONErr, handleRespSessionId
-       , WDResponse(..)
-       ) where
+module Test.WebDriver.Internal (
+  mkRequest, sendHTTPRequest
+  , getJSONResult
+  , handleJSONErr
+  , handleRespSessionId
+  , WDResponse(..)
+  ) where
 
 import Control.Applicative
 import Control.Exception.Safe (Exception, SomeException(..), toException, fromException, throwIO, try)
@@ -44,13 +46,13 @@ import Text.Pretty.Simple
 import Data.Default (def)
 #endif
 
---This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
+-- | This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
 fromStrict :: BS.ByteString -> LBS.ByteString
 fromStrict bs | BS.null bs = LBS.Empty
               | otherwise = LBS.Chunk bs LBS.Empty
 
 
---Compatability function to support http-client < 0.4.30
+-- | Compatibility function to support http-client < 0.4.30
 defaultRequest :: Request
 #if MIN_VERSION_http_client(0,4,30)
 defaultRequest = HTTPClient.defaultRequest
@@ -65,15 +67,15 @@ printInDebugEnv s = do
     Just x | fmap toLower x == "true" -> pPrint s
     _ -> pure ()
 
--- |Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
+-- | Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
 mkRequest :: (WDSessionState s, ToJSON a) => Method -> Text -> a -> s Request
 mkRequest meth wdPath args = do
   WDSession {..} <- getSession
   let body = case toJSON args of
         Null  -> ""   --passing Null as the argument indicates no request body
         other -> encode other
-      req = defaultRequest
-        { host = wdSessHost
+  let req = defaultRequest {
+        host = wdSessHost
         , port = wdSessPort
         , path = wdSessBasePath `BS.append`  TE.encodeUtf8 wdPath
         , requestBody = RequestBodyLBS body
@@ -88,7 +90,7 @@ mkRequest meth wdPath args = do
   liftIO $ printInDebugEnv req
   return req
 
--- |Sends an HTTP request to the remote WebDriver server
+-- | Sends an HTTP request to the remote WebDriver server
 sendHTTPRequest :: (WDSessionStateIO s) => Request -> s (Either SomeException (Response ByteString))
 sendHTTPRequest req = do
   s@WDSession{..} <- getSession
@@ -118,7 +120,7 @@ retryOnTimeout maxRetry go = retry' 0
           -> retry' (succ nRetries)
         other -> return (nRetries, other)
 
--- |Parses a 'WDResponse' object from a given HTTP response.
+-- | Parses a 'WDResponse' object from a given HTTP response.
 getJSONResult :: (HasCallStack, WDSessionStateControl s, FromJSON a) => Response ByteString -> s (Either SomeException a)
 getJSONResult r
   --malformed request errors
@@ -160,12 +162,12 @@ getJSONResult r
   -- other status codes: return error
   | otherwise = returnHTTPErr (HTTPStatusUnknown code)
   where
-    --helper functions
+    -- helper functions
     returnErr :: (Exception e, Monad m) => e -> m (Either SomeException a)
     returnErr = return . Left . toException
     returnHTTPErr errType = returnErr . errType $ reason
     returnNull = Right <$> fromJSON' Null
-    --HTTP response variables
+    -- HTTP response variables
     code = statusCode status
     reason = BS.unpack $ statusMessage status
     status = responseStatus r
@@ -244,13 +246,12 @@ instance FromJSON WDResponse where
 
 parseJSONSelenium :: Object -> Parser WDResponse
 parseJSONSelenium o = WDResponse <$> o .: "sessionId"
-                            <*> o .:?? "status" .!= 0
-                            <*> o .:?? "value" .!= Null
+                                 <*> o .:?? "status" .!= 0
+                                 <*> o .:?? "value" .!= Null
 
 parseJSONWebDriver :: Value -> Parser WDResponse
 parseJSONWebDriver (Object o) = do
   sessionId <- o .:?? "sessionId" .!= Nothing
   status <- o .:?? "status" .!= 0
   pure $ WDResponse sessionId status (Object o)
-
 parseJSONWebDriver v = pure $ WDResponse Nothing 0 v

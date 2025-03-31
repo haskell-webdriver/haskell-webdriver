@@ -7,31 +7,37 @@
 -- | A type for profile preferences. These preference values are used by both
 -- Firefox and Opera profiles.
 module Test.WebDriver.Common.Profile (
-  -- *Profiles and profile preferences
+  -- * Profiles and profile preferences
   Profile(..)
   , PreparedProfile(..)
   , ProfilePref(..)
   , ToPref(..)
+
   -- * Preferences
   , getPref
   , addPref
   , deletePref
+
   -- * Extensions
   , addExtension
   , deleteExtension
   , hasExtension
+
   -- * Other files and directories
   , addFile
   , deleteFile
   , hasFile
+
   -- * Miscellaneous profile operations
   , unionProfiles
   , onProfileFiles
   , onProfilePrefs
+
   -- * Preparing zipped profiles
   , prepareZippedProfile
   , prepareZipArchive
   , prepareRawZip
+
   -- * Profile errors
   , ProfileParseError(..)
   ) where
@@ -67,22 +73,22 @@ import Data.Attoparsec.Number (Number(..))
 -- deferring execution of IO operations until the profile is \"prepared\". This
 -- type is shared by both Firefox and Opera profiles; when a distinction
 -- must be made, the phantom type parameter is used to differentiate.
-data Profile b = Profile
-                 { -- |A mapping from relative destination filepaths to source
-                   -- filepaths found on the filesystem. When the profile is
-                   -- prepared, these source filepaths will be moved to their
-                   -- destinations within the profile directory.
-                   --
-                   -- Using the destination path as the key ensures that
-                   -- there is one unique source path going to each
-                   -- destination path.
-                   profileFiles   :: HM.HashMap FilePath FilePath
-                   -- |A map of profile preferences. These are the settings
-                   -- found in the profile's prefs.js, and entries found in
-                   -- about:config
-                 , profilePrefs  :: HM.HashMap Text ProfilePref
-                 }
-               deriving (Eq, Show)
+data Profile b = Profile {
+  -- | A mapping from relative destination filepaths to source
+  -- filepaths found on the filesystem. When the profile is
+  -- prepared, these source filepaths will be moved to their
+  -- destinations within the profile directory.
+  --
+  -- Using the destination path as the key ensures that
+  -- there is one unique source path going to each
+  -- destination path.
+  profileFiles   :: HM.HashMap FilePath FilePath
+  -- | A map of profile preferences. These are the settings
+  -- found in the profile's prefs.js, and entries found in
+  -- about:config
+  , profilePrefs  :: HM.HashMap Text ProfilePref
+  }
+  deriving (Eq, Show)
 
 -- | Represents a profile that has been prepared for
 -- network transmission. The profile cannot be modified in this form.
@@ -127,7 +133,7 @@ instance Exception ProfileParseError
 newtype ProfileParseError = ProfileParseError String
   deriving  (Eq, Show, Read, Typeable)
 
--- |A typeclass to convert types to profile preference values
+-- | A typeclass to convert types to profile preference values
 class ToPref a where
   toPref :: a -> ProfilePref
 
@@ -228,17 +234,17 @@ unionProfiles (Profile f1 p1) (Profile f2 p2)
   = Profile (f1 `HM.union` f2) (p1 `HM.union` p2)
 
 -- | Modifies the 'profilePrefs' field of a profile.
-onProfilePrefs :: Profile b
-                  -> (HM.HashMap Text ProfilePref
-                      -> HM.HashMap Text ProfilePref)
-                  -> Profile b
+onProfilePrefs ::
+  Profile b
+  -> (HM.HashMap Text ProfilePref -> HM.HashMap Text ProfilePref)
+  -> Profile b
 onProfilePrefs (Profile hs hm) f = Profile hs (f hm)
 
 -- | Modifies the 'profileFiles' field of a profile
-onProfileFiles :: Profile b
-                  -> (HM.HashMap FilePath FilePath
-                      -> HM.HashMap FilePath FilePath)
-                  -> Profile b
+onProfileFiles ::
+  Profile b
+  -> (HM.HashMap FilePath FilePath -> HM.HashMap FilePath FilePath)
+  -> Profile b
 onProfileFiles (Profile ls hm) f = Profile (f ls) hm
 
 -- | Prepare a zip file of a profile on disk for network transmission.

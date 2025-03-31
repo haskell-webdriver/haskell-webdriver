@@ -58,7 +58,6 @@ library
       Test.WebDriver.JSON
       Test.WebDriver.Monad
       Test.WebDriver.Session
-      Test.WebDriver.Session.History
       Test.WebDriver.Types
       Test.WebDriver.Utils
       Test.WebDriver.Waits

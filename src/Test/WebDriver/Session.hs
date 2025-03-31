@@ -30,30 +30,29 @@ module Test.WebDriver.Session (
   , withAuthHeaders
   ) where
 
-import Test.WebDriver.Session.History
-
-import Data.Aeson
-import Data.ByteString as BS(ByteString)
-import Data.Text (Text)
-import Data.Maybe (listToMaybe)
-import Data.Monoid
-import Data.String.Interpolate
 import Control.Applicative
+import Control.Exception.Safe (SomeException, try, throwIO)
 import Control.Monad.Catch (MonadCatch, MonadThrow)
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Class
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.Reader
 import Control.Monad.Trans.Except
-import Control.Monad.Trans.Writer.Strict as SW
-import Control.Monad.Trans.Writer.Lazy as LW
-import Control.Monad.Trans.State.Strict as SS
-import Control.Monad.Trans.State.Lazy as LS
-import Control.Monad.Trans.RWS.Strict as SRWS
+import Control.Monad.Trans.Identity
+import Control.Monad.Trans.Maybe
 import Control.Monad.Trans.RWS.Lazy as LRWS
-import Control.Exception.Safe (SomeException, try, throwIO)
-import Network.HTTP.Client (Manager, Request)
+import Control.Monad.Trans.RWS.Strict as SRWS
+import Control.Monad.Trans.Reader
+import Control.Monad.Trans.State.Lazy as LS
+import Control.Monad.Trans.State.Strict as SS
+import Control.Monad.Trans.Writer.Lazy as LW
+import Control.Monad.Trans.Writer.Strict as SW
+import Data.Aeson
+import Data.ByteString as BS (ByteString)
+import qualified Data.ByteString.Lazy as BL
+import Data.Maybe (listToMaybe)
+import Data.Monoid
+import Data.String.Interpolate
+import Data.Text (Text)
+import Network.HTTP.Client (Manager, Request, Response)
 import Network.HTTP.Types (RequestHeaders)
 import Prelude -- hides some "redundant import" warnings
 
@@ -104,6 +103,12 @@ data WDSession = WDSession {
 
 instance Show WDSession where
   show (WDSession {..}) = [i|WDSession<[#{wdSessId}] at #{wdSessHost}:#{wdSessPort}#{wdSessBasePath}>|]
+
+data SessionHistory = SessionHistory {
+  histRequest :: Request
+  , histResponse :: Either SomeException (Response BL.ByteString)
+  , histRetryCount :: Int
+  } deriving (Show)
 
 -- | A function used by 'wdHistoryConfig' to append new entries to session history.
 type SessionHistoryConfig = SessionHistory -> [SessionHistory] -> [SessionHistory]
