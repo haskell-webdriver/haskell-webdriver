@@ -14,4 +14,4 @@ if [[ -z "$NO_REBUILD" ]]; then
     find . -name "*.hie" | xargs rm -rf
     stack build
 fi
-nix run .#weeder | sort | grep -v '$sel' > weeds.txt
+nix run .#weeder -- --hie-directory ./.hie | sort | grep -v '$sel' > weeds.txt
