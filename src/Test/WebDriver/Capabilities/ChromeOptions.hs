@@ -9,6 +9,91 @@ import Lens.Micro.TH
 import Test.WebDriver.Capabilities.Aeson
 
 
+-- | See https://developer.chrome.com/docs/chromedriver/mobile-emulation
+data ChromeDeviceMetrics = ChromeDeviceMetrics {
+  -- | The width in pixels of the device's screen.
+  _chromeDeviceMetricsWidth :: Maybe Int
+  -- | The height in pixels of the device's screen.
+  , _chromeDeviceMetricsHeight :: Maybe Int
+  -- | The device's pixel ratio.
+  , _chromeDeviceMetricsPixelRatio :: Maybe Double
+  -- | Whether to emulate touch events. The value defaults to true and usually
+  -- can be omitted.
+  , _chromeDeviceMetricsTouch :: Maybe Bool
+  -- | Whether the browser must behave as a mobile user agent (overlay
+  -- scrollbars, emit orientation events, shrink the content to fit the
+  -- viewport, etc.). The value defaults to true and usually can be omitted.
+  , _chromeDeviceMetricsMobile :: Maybe Bool
+  } deriving (Show, Eq)
+deriveJSON toCamel3 ''ChromeDeviceMetrics
+makeLenses ''ChromeDeviceMetrics
+
+data BrandAndVersion = BrandAndVersion {
+  brandAndVersionBrand :: String
+  , brandAndVersionVersion :: String
+  } deriving (Show, Eq)
+deriveJSON toCamel3 ''BrandAndVersion
+makeLenses ''BrandAndVersion
+
+-- | See https://developer.chrome.com/docs/chromedriver/mobile-emulation
+data ChromeClientHints = ChromeClientHints {
+  -- | The operating system. It can be either a known value ("Android", "Chrome
+  -- OS", "Chromium OS", "Fuchsia", "Linux", "macOS", "Windows"), that exactly
+  -- matches the value returned by Chrome running on the given platform, or it
+  -- can be a user defined value. This value is mandatory.
+  chromeClientHintsPlatform :: String
+  -- | Whether the browser should request a mobile or desktop resource version.
+  -- Usually Chrome running on a mobile phone with Android sets this value to
+  -- true. Chrome on a tablet Android device sets this value to false. Chrome on
+  -- a desktop device also sets this value to false. You can use this
+  -- information to specify a realistic emulation. This value is mandatory.
+  , chromeClientHintsMobile :: Bool
+  -- | List of brand / major version pairs. If omitted the browser uses its own
+  -- values.
+  , chromeClientHintsBrands :: Maybe [BrandAndVersion]
+  -- | List of brand / version pairs. It omitted the browser uses its own
+  -- values.
+  , chromeClientHintsFullVersionList :: Maybe [BrandAndVersion]
+  -- | OS version. Defaults to empty string.
+  , chromeClientHintsPlatformVersion :: Maybe String
+  -- | Device model. Defaults to empty string.
+  , chromeClientHintsModel :: Maybe String
+  -- | CPU architecture. Known values are "x86" and "arm". The user is free to
+  -- provide any string value. Defaults to empty string.
+  , chromeClientHintsArchitecture :: Maybe String
+  -- | Platform bitness. Known values are "32" and "64". The user is free to
+  -- provide any string value. Defaults to empty string.
+  , chromeClientHintsBitness :: Maybe String
+  -- | Emulation of windows 32 on windows 64. A boolean value that defaults to
+  -- false.
+  , chromeClientHintsWow64 :: Maybe Bool
+  } deriving (Show, Eq)
+deriveJSON toCamel3 ''ChromeClientHints
+makeLenses ''ChromeClientHints
+
+-- | See https://developer.chrome.com/docs/chromedriver/mobile-emulation
+data ChromeMobileEmulation =
+  -- | Specify a known device.
+  ChromeMobileEmulationSpecificDevice {
+    _chromeMobileEmulationDeviceName :: String
+  }
+  -- | Specify individual device attributes.
+  | ChromeMobileEmulationIndividualAttributes {
+      _chromeMobileEmulationDeviceMetrics :: Maybe ChromeDeviceMetrics
+      , _chromeMobileEmulationClientHints :: Maybe ChromeClientHints
+      -- | ChromeDriver is capable to infer "userAgent" value from "clientHints" on
+      -- the following platforms: "Android", "Chrome OS", "Chromium OS", "Fuchsia",
+      -- "Linux", "macOS", "Windows". Therefore this value can be omitted.
+      --
+      -- If "clientHints" dictionary is omitted (legacy mode) ChromeDriver does its
+      -- best to infer the "clientHints" from "userAgent". This feature is not
+      -- reliable, due to internal ambiguities of "userAgent" value format.
+      , _chromeMobileEmulationUserAgent :: Maybe String
+      }
+  deriving (Show, Eq)
+deriveJSON toCamel3 ''ChromeMobileEmulation
+makeLenses ''ChromeMobileEmulation
+
 -- | See https://developer.chrome.com/docs/chromedriver/capabilities#chromeoptions_object
 data ChromeOptions = ChromeOptions {
   -- | List of command-line arguments to use when starting Chrome. Arguments with an associated value should be separated
@@ -41,7 +126,7 @@ data ChromeOptions = ChromeOptions {
   -- | A dictionary with either a value for "deviceName," or values for "deviceMetrics", and "userAgent." Refer to Mobile
   -- Emulation for more information.
   , _chromeOptionsMobileEmulation :: Maybe A.Object
-  -- | An optional dictionary that specifies performance logging preferences. See below for more information.
+  -- | An optional dictionary that specifies performance logging preferences.
   , _chromeOptionsPerfLoggingPrefs :: Maybe A.Object
   -- | A list of window types that appear in the list of window handles. For access to webview elements, include "webview"
   -- in this list.
