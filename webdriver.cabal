@@ -140,6 +140,7 @@ test-suite tests
       Spec.ElementState
       Spec.Navigation
       Spec.ScreenCapture
+      Spec.SeleniumSpecific.Mobile
       Spec.SeleniumSpecific.Uploads
       Spec.Sessions
       Spec.UserPrompts
