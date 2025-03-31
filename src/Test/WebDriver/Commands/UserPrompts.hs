@@ -11,7 +11,6 @@ import Data.CallStack
 import Data.Text (Text)
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Common (noObject)
 import Test.WebDriver.Commands.Internal
 import Test.WebDriver.JSON
 

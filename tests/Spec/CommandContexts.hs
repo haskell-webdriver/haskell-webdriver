@@ -1,5 +1,5 @@
 
-module Spec.Windows where
+module Spec.CommandContexts where
 
 import Data.String.Interpolate
 import Test.Sandwich
@@ -11,7 +11,7 @@ import TestLib.Types
 
 
 tests :: SessionSpec
-tests = introduceSession $ describe "Windows" $ before "Open test page" openSimpleTestPage $ do
+tests = introduceSession $ describe "Command contexts" $ before "Open test page" openSimpleTestPage $ do
   it "getCurrentWindow / focusWindow" $ do
     h <- getCurrentWindow
     info [i|Got current window: #{h}|]

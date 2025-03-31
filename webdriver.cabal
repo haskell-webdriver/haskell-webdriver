@@ -73,7 +73,6 @@ library
       Test.WebDriver.Capabilities.UserPromptHandler
       Test.WebDriver.Commands.Actions
       Test.WebDriver.Commands.CommandContexts
-      Test.WebDriver.Commands.Common
       Test.WebDriver.Commands.Cookies
       Test.WebDriver.Commands.DocumentHandling
       Test.WebDriver.Commands.ElementInteraction
@@ -135,17 +134,17 @@ test-suite tests
   other-modules:
       Spec
       Spec.Actions
-      Spec.Clicking
+      Spec.CommandContexts
       Spec.Cookies
       Spec.DocumentHandling
+      Spec.ElementInteraction
       Spec.ElementRetrieval
       Spec.ElementState
       Spec.Navigation
       Spec.ScreenCapture
-      Spec.SeleniumFileUploads
+      Spec.SeleniumSpecific.Uploads
       Spec.Sessions
       Spec.UserPrompts
-      Spec.Windows
       TestLib.Contexts.BrowserDependencies
       TestLib.Contexts.Selenium4
       TestLib.Contexts.Session

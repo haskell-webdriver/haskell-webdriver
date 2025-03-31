@@ -9,27 +9,43 @@
 -- be useful for implementing non-standard commands.
 module Test.WebDriver.JSON (
   -- * Access a JSON object key
-  (!:), (.:??)
+  (!:)
+  , (.:??)
+
   -- * Conversion from JSON within WD
   -- | Apostrophes are used to disambiguate these functions
   -- from their "Data.Aeson" counterparts.
-  , parseJSON', fromJSON'
+  , parseJSON'
+  , fromJSON'
+
   -- * Tuple functions
   -- | Convenience functions for working with tuples.
    -- ** JSON object constructors
-  , single, pair, triple
+  , single
+  , pair
+  , triple
   -- ** Extracting JSON objects into tuples
-  , parsePair, parseTriple
+  , parsePair
+  , parseTriple
+
   -- * Conversion from parser results to WD
   -- | These functions are used to implement the other functions
   -- in this module, and could be used to implement other JSON
   -- convenience functions
-  , apResultToWD, aesonResultToWD
+  , apResultToWD
+  , aesonResultToWD
+
   -- * Parse exception
   , BadJSON(..)
+
   -- * parsing commands with no return value
-  , NoReturn(..), noReturn, ignoreReturn
+  , noReturn
+  , ignoreReturn
   , fromText
+  , NoReturn(..)
+
+  -- * JSON helpers
+  , noObject
   ) where
 
 import Control.Applicative
@@ -161,3 +177,7 @@ aesonResultToWD :: (MonadThrow wd) => Aeson.Result a -> wd a
 aesonResultToWD r = case r of
   Success val -> return val
   Error err -> throwIO $ BadJSON err
+
+-- Selenium 3.x doesn't seem to like receiving Null for click parameter
+noObject :: Value
+noObject = Object mempty

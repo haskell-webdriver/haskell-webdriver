@@ -9,7 +9,7 @@ import Lens.Micro.TH
 import Test.WebDriver.Capabilities.Aeson
 
 
--- https://developer.chrome.com/docs/chromedriver/capabilities
+-- | See https://developer.chrome.com/docs/chromedriver/capabilities#chromeoptions_object
 data ChromeOptions = ChromeOptions {
   -- | List of command-line arguments to use when starting Chrome. Arguments with an associated value should be separated
   -- by a '=' sign (such as, ['start-maximized', 'user-data-dir=/tmp/temp_profile']). See a list of Chrome arguments:

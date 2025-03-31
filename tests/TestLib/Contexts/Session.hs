@@ -2,7 +2,10 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 
-module TestLib.Contexts.Session where
+module TestLib.Contexts.Session (
+  introduceSession
+  , introduceSession'
+  ) where
 
 import Control.Exception.Safe
 import Control.Monad.IO.Unlift
@@ -20,12 +23,18 @@ introduceSession :: forall m context. (
   MonadUnliftIO m, MonadCatch m
   , HasBrowserDependencies context, HasWebDriverContext context, HasCommandLineOptions context UserOptions
   ) => SpecFree (LabelValue "wdSession" (IORef WDSession) :> context) m () -> SpecFree context m ()
-introduceSession = introduce "Introduce session" wdSession alloc cleanup
+introduceSession = introduceSession' return
+
+introduceSession' :: forall m context. (
+  MonadUnliftIO m, MonadCatch m
+  , HasBrowserDependencies context, HasWebDriverContext context, HasCommandLineOptions context UserOptions
+  ) => (WDConfig -> ExampleT context m WDConfig) -> SpecFree (LabelValue "wdSession" (IORef WDSession) :> context) m () -> SpecFree context m ()
+introduceSession' modifyConfig = introduce "Introduce session" wdSession alloc cleanup
   where
     alloc = do
       browserDeps <- getContext browserDependencies
 
-      wdConfig <- getWDConfig browserDeps
+      wdConfig <- getWDConfig browserDeps >>= modifyConfig
       baseSessionVar <- mkSession wdConfig >>= newIORef
 
       session' <- pushContext wdSession baseSessionVar $

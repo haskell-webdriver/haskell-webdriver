@@ -16,7 +16,6 @@ module Test.WebDriver.Commands.Actions (
 import Data.Aeson as A
 import Data.CallStack
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Common (noObject)
 import Test.WebDriver.Commands.ElementRetrieval
 import Test.WebDriver.Commands.Internal
 import Test.WebDriver.JSON

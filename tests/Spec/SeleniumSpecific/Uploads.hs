@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings  #-}
 
-module Spec.SeleniumFileUploads where
+module Spec.SeleniumSpecific.Uploads where
 
 import Test.Sandwich
 import Test.WebDriver
@@ -11,7 +11,7 @@ import TestLib.Types
 
 tests :: SessionSpec
 tests = introduceSession $
-  describe "SeleniumFileUploads" $
+  describe "Uploads" $
     before "Open test page" (openStaticServerUrl "/test_file_upload.html") $ do
       it "Upload file and type its path to the input" $ do
         filePath <- uploadRawFile "/shopping.txt" 0 "Eggs, Ham, Cheese"

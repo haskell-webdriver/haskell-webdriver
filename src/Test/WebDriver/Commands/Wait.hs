@@ -108,11 +108,15 @@ waitWhile' =
               (\retry _ -> retry "waitWhile: action did not fail")
 
 
--- |Internal function used to implement explicit wait commands using success and failure continuations
-waitEither :: (WDSessionStateControl m, HasCallStack) =>
-               ((String -> m b) -> String -> m b)
-            -> ((String -> m b) -> a -> m b)
-            -> Int -> Double -> m a -> m b
+-- | Internal function used to implement explicit wait commands using success and failure continuations
+waitEither :: (
+  WDSessionStateControl m, HasCallStack
+  )
+  => ((String -> m b) -> String -> m b) -> ((String -> m b) -> a -> m b)
+  -> Int
+  -> Double
+  -> m a
+  -> m b
 waitEither failure success = wait' handler
  where
   handler retry wd = do

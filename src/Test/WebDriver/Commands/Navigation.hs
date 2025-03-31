@@ -15,7 +15,6 @@ import Data.Text (Text)
 import Network.URI hiding (path)  -- suppresses warnings
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Common (noObject)
 import Test.WebDriver.Commands.Internal
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON

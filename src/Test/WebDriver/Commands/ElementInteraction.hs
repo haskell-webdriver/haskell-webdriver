@@ -10,10 +10,9 @@ import Data.CallStack
 import Data.Text (Text)
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.Common (noObject)
 import Test.WebDriver.Commands.ElementRetrieval
 import Test.WebDriver.Commands.Internal
-import Test.WebDriver.JSON (noReturn, single)
+import Test.WebDriver.JSON (noObject, noReturn, single)
 
 
 -- | Click on an element.
