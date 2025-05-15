@@ -195,10 +195,12 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   errInfo <- fromJSON' val
   let screen = B64.decodeLenient <$> errScreen errInfo
       seleniumStack = errStack errInfo
-      errInfo' = errInfo { errSess = Just sess
-                         -- Append the Haskell stack frames to the ones returned from Selenium
-                         , errScreen = screen
-                         , errStack = seleniumStack ++ (fmap callStackItemToStackFrame externalCallStack) }
+      errInfo' = errInfo {
+        errSess = Just sess
+        -- Append the Haskell stack frames to the ones returned from Selenium
+        , errScreen = screen
+        , errStack = seleniumStack ++ (fmap callStackItemToStackFrame externalCallStack)
+        }
       e errType = toException $ FailedCommand errType errInfo'
   return . Just $ case status of
     7   -> e NoSuchElement

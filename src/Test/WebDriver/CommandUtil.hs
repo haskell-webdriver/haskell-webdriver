@@ -20,6 +20,9 @@ module Test.WebDriver.CommandUtil (
 
   -- * Exceptions
   , NoSessionId(..)
+
+  -- * Helpers
+  , urlEncode
   ) where
 
 import Control.Applicative
@@ -29,11 +32,12 @@ import Data.Aeson.Types
 import Data.CallStack
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding as TE
+import qualified Network.HTTP.Types.URI as HTTP
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Class
 import Test.WebDriver.JSON
 import Test.WebDriver.Session
-import Test.WebDriver.Utils (urlEncode)
 
 #if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.Key as A
@@ -105,3 +109,6 @@ doElemCommand :: (
   ) => Method -> Element -> Text -> a -> wd b
 doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
+
+urlEncode :: Text -> Text
+urlEncode = TE.decodeUtf8 . HTTP.urlEncode False . TE.encodeUtf8

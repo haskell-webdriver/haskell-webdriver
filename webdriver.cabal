@@ -45,21 +45,17 @@ library
   exposed-modules:
       Test.WebDriver
       Test.WebDriver.Capabilities
-      Test.WebDriver.Chrome.Extension
       Test.WebDriver.Class
       Test.WebDriver.Commands
-      Test.WebDriver.Common.Keys
-      Test.WebDriver.Common.Profile
       Test.WebDriver.Config
       Test.WebDriver.Exceptions
-      Test.WebDriver.Exceptions.Internal
-      Test.WebDriver.Firefox.Profile
       Test.WebDriver.Internal
       Test.WebDriver.JSON
+      Test.WebDriver.Keys
       Test.WebDriver.Monad
+      Test.WebDriver.Profile
       Test.WebDriver.Session
       Test.WebDriver.Types
-      Test.WebDriver.Utils
       Test.WebDriver.Waits
   other-modules:
       Test.WebDriver.Capabilities.Aeson
@@ -86,6 +82,7 @@ library
       Test.WebDriver.Commands.Sessions
       Test.WebDriver.Commands.UserPrompts
       Test.WebDriver.CommandUtil
+      Test.WebDriver.Exceptions.Internal
       Paths_webdriver
   hs-source-dirs:
       src

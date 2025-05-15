@@ -2,12 +2,20 @@
 {-# LANGUAGE ConstraintKinds #-}
 
 module Test.WebDriver.Exceptions.Internal (
-  InvalidURL(..), HTTPStatusUnknown(..), HTTPConnError(..)
-  , UnknownCommand(..), ServerError(..)
+  InvalidURL(..)
+  , HTTPStatusUnknown(..)
+  , HTTPConnError(..)
+  , UnknownCommand(..)
+  , ServerError(..)
 
-  , FailedCommand(..), failedCommand, mkFailedCommandInfo
-  , FailedCommandType(..), FailedCommandInfo(..), StackFrame(..)
-  , externalCallStack, callStackItemToStackFrame
+  , FailedCommand(..)
+  , failedCommand
+  , mkFailedCommandInfo
+  , FailedCommandType(..)
+  , FailedCommandInfo(..)
+  , StackFrame(..)
+  , externalCallStack
+  , callStackItemToStackFrame
   ) where
 
 import Control.Applicative
@@ -28,37 +36,37 @@ import Test.WebDriver.Session
 
 
 instance Exception InvalidURL
--- |An invalid URL was given
+-- | An invalid URL was given
 newtype InvalidURL = InvalidURL String
                 deriving (Eq, Show, Typeable)
 
 instance Exception HTTPStatusUnknown
--- |An unexpected HTTP status was sent by the server.
+-- | An unexpected HTTP status was sent by the server.
 data HTTPStatusUnknown = HTTPStatusUnknown Int String
                        deriving (Eq, Show, Typeable)
 
 instance Exception HTTPConnError
--- |HTTP connection errors.
+-- | HTTP connection errors.
 data HTTPConnError = HTTPConnError String Int
                    deriving (Eq, Show, Typeable)
 
 instance Exception UnknownCommand
--- |A command was sent to the WebDriver server that it didn't recognize.
+-- | A command was sent to the WebDriver server that it didn't recognize.
 newtype UnknownCommand = UnknownCommand String
                     deriving (Eq, Show, Typeable)
 
 instance Exception ServerError
--- |A server-side exception occured
+-- | A server-side exception occured
 newtype ServerError = ServerError String
                       deriving (Eq, Show, Typeable)
 
 instance Exception FailedCommand
--- |This exception encapsulates a broad variety of exceptions that can
+-- | This exception encapsulates a broad variety of exceptions that can
 -- occur when a command fails.
 data FailedCommand = FailedCommand FailedCommandType FailedCommandInfo
                    deriving (Show, Typeable)
 
--- |The type of failed command exception that occured.
+-- | The type of failed command exception that occured.
 data FailedCommandType = NoSuchElement
                        | NoSuchFrame
                        | UnknownFrame
@@ -86,25 +94,25 @@ data FailedCommandType = NoSuchElement
                        | InvalidXPathSelectorReturnType
                        deriving (Eq, Ord, Enum, Bounded, Show)
 
--- |Detailed information about the failed command provided by the server.
+-- | Detailed information about the failed command provided by the server.
 data FailedCommandInfo =
-  FailedCommandInfo { -- |The error message.
+  FailedCommandInfo { -- | The error message.
                       errMsg    :: String
-                      -- |The session associated with
+                      -- | The session associated with
                       -- the exception.
                     , errSess :: Maybe WDSession
-                      -- |A screen shot of the focused window
+                      -- | A screen shot of the focused window
                       -- when the exception occured,
                       -- if provided.
                     , errScreen :: Maybe ByteString
-                      -- |The "class" in which the exception
+                      -- | The "class" in which the exception
                       -- was raised, if provided.
                     , errClass  :: Maybe String
-                      -- |A stack trace of the exception.
+                      -- | A stack trace of the exception.
                     , errStack  :: [StackFrame]
                     }
 
--- |Provides a readable printout of the error information, useful for
+-- | Provides a readable printout of the error information, useful for
 -- logging.
 instance Show FailedCommandInfo where
   show i = showChar '\n'
@@ -125,7 +133,7 @@ instance Show FailedCommandInfo where
                 . shows wdSessHost . showChar ':' . shows wdSessPort
 
 
--- |Constructs a FailedCommandInfo from only an error message.
+-- | Constructs a FailedCommandInfo from only an error message.
 mkFailedCommandInfo :: (WDSessionState s) => String -> CallStack -> s FailedCommandInfo
 mkFailedCommandInfo m cs = do
   sess <- getSession
@@ -135,7 +143,7 @@ mkFailedCommandInfo m cs = do
                              , errClass = Nothing
                              , errStack = fmap callStackItemToStackFrame cs }
 
--- |Use GHC's CallStack capabilities to return a callstack to help debug a FailedCommand.
+-- | Use GHC's 'CallStack' capabilities to return a callstack to help debug a 'FailedCommand'.
 -- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
 -- should be where the user called into Test.WebDriver
 externalCallStack :: (HasCallStack) => CallStack
@@ -143,19 +151,20 @@ externalCallStack = dropWhile isWebDriverFrame callStack
   where isWebDriverFrame :: ([Char], SrcLoc) -> Bool
         isWebDriverFrame (_, SrcLoc {srcLocModule}) = "Test.WebDriver" `L.isPrefixOf` srcLocModule
 
--- |Convenience function to throw a 'FailedCommand' locally with no server-side
+-- | Convenience function to throw a 'FailedCommand' locally with no server-side
 -- info present.
 failedCommand :: (HasCallStack, WDSessionStateIO s) => FailedCommandType -> String -> s a
 failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m externalCallStack
 
--- |An individual stack frame from the stack trace provided by the server
+-- | An individual stack frame from the stack trace provided by the server
 -- during a FailedCommand.
-data StackFrame = StackFrame { sfFileName   :: String
-                             , sfClassName  :: String
-                             , sfMethodName :: String
-                             , sfLineNumber :: Int
-                             }
-                deriving (Eq)
+data StackFrame = StackFrame {
+  sfFileName   :: String
+  , sfClassName  :: String
+  , sfMethodName :: String
+  , sfLineNumber :: Int
+  }
+  deriving (Eq)
 
 
 instance Show StackFrame where

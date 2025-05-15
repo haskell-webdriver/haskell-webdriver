@@ -21,7 +21,6 @@ import qualified Data.Text as T
 import Test.WebDriver.Class
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
-import Test.WebDriver.Utils (urlEncode)
 
 
 -- | Get the current number of keys in a web storage area.

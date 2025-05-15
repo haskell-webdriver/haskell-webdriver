@@ -1,7 +1,7 @@
 
 -- | This module contains named constants corresponding to the special characters recognized by 'sendKeys'.
--- https://www.w3.org/TR/webdriver1/#keyboard-actions
-module Test.WebDriver.Common.Keys where
+-- https://www.w3.org/TR/webdriver2/#keyboard-actions
+module Test.WebDriver.Keys where
 
 import Data.Text (Text)
 

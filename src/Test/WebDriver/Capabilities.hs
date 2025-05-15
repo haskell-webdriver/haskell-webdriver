@@ -3,7 +3,11 @@
 {-# LANGUAGE TemplateHaskell #-}
 
 module Test.WebDriver.Capabilities (
+  -- * Capabilities
   Capabilities(..)
+  , defaultCaps
+
+  -- ** Lenses
   , capabilitiesBrowserName
   , capabilitiesBrowserVersion
   , capabilitiesPlatformName
@@ -15,12 +19,78 @@ module Test.WebDriver.Capabilities (
   , capabilitiesUnhandledPromptBehavior
   , capabilitiesGoogChromeOptions
   , capabilitiesMozFirefoxOptions
-  , defaultCaps
 
-  , module Test.WebDriver.Capabilities.ChromeOptions
-  , module Test.WebDriver.Capabilities.FirefoxOptions
-
+  -- ** Types
+  , Timeouts(..)
+  , UserPromptHandler(..)
   , Platform(..)
+
+  -- * Chrome
+  , ChromeOptions(..)
+  , defaultChromeOptions
+  -- *** Lenses
+  , chromeOptionsWindowTypes
+  , chromeOptionsPrefs
+  , chromeOptionsPerfLoggingPrefs
+  , chromeOptionsMobileEmulation
+  , chromeOptionsMinidumpPath
+  , chromeOptionsLocalState
+  , chromeOptionsExtensions
+  , chromeOptionsExcludeSwitches
+  , chromeOptionsDetach
+  , chromeOptionsDebuggerAddress
+  , chromeOptionsBinary
+  , chromeOptionsArgs
+
+  -- ** Client hints
+  , ChromeClientHints(..)
+  , mkChromeClientHints
+  , chromeClientHintsWow64
+  , chromeClientHintsPlatformVersion
+  , chromeClientHintsPlatform
+  , chromeClientHintsModel
+  , chromeClientHintsMobile
+  , chromeClientHintsFullVersionList
+  , chromeClientHintsBrands
+  , chromeClientHintsBitness
+  , chromeClientHintsArchitecture
+  , BrandAndVersion(..)
+
+  -- ** Device metrics
+  , ChromeDeviceMetrics(..)
+  , chromeDeviceMetricsWidth
+  , chromeDeviceMetricsTouch
+  , chromeDeviceMetricsPixelRatio
+  , chromeDeviceMetricsMobile
+  , chromeDeviceMetricsHeight
+
+  -- ** Extensions
+  , ChromeExtension
+  , loadExtension
+  , loadRawExtension
+
+  -- ** Mobile emulation
+  , ChromeMobileEmulation(..)
+  , chromeMobileEmulationUserAgent
+  , chromeMobileEmulationDeviceName
+  , chromeMobileEmulationDeviceMetrics
+  , chromeMobileEmulationClientHints
+
+  -- * Firefox
+  , FirefoxOptions(..)
+  , emptyFirefoxOptions
+  , defaultFirefoxOptions
+
+  -- ** Lenses
+  , firefoxOptionsProfile
+  , firefoxOptionsPref
+  , firefoxOptionsLog
+  , firefoxOptionsBinary
+  , firefoxOptionsArgs
+
+  -- ** Log level
+  , FirefoxLogLevel(..)
+  , FirefoxLogLevelType(..)
   ) where
 
 import Data.Aeson.TH

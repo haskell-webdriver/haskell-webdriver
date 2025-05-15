@@ -1,10 +1,16 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Test.WebDriver.Capabilities.ChromeOptions where
 
+import Control.Monad.IO.Class
+import Data.Aeson
 import Data.Aeson as A
 import Data.Aeson.TH
-import Data.Text
+import Data.ByteString.Base64.Lazy as B64
+import Data.ByteString.Lazy as LBS
+import qualified Data.Text.Lazy as TL
+import Data.Text.Lazy.Encoding (decodeLatin1)
 import Lens.Micro.TH
 import Test.WebDriver.Capabilities.Aeson
 
@@ -109,6 +115,18 @@ data ChromeMobileEmulation =
 deriveJSON (toCamel3 { sumEncoding = UntaggedValue }) ''ChromeMobileEmulation
 makeLenses ''ChromeMobileEmulation
 
+-- | A packed Google Chrome extension (.crx), as base64-encoded 'Text'.
+newtype ChromeExtension = ChromeExtension TL.Text
+  deriving (Eq, Show, Read, ToJSON, FromJSON)
+
+-- | Load a .crx file as a 'ChromeExtension'.
+loadExtension :: MonadIO m => FilePath -> m ChromeExtension
+loadExtension path = liftIO $ loadRawExtension <$> LBS.readFile path
+
+-- | Load raw .crx data as a 'ChromeExtension'.
+loadRawExtension :: ByteString -> ChromeExtension
+loadRawExtension = ChromeExtension . decodeLatin1 . B64.encode
+
 -- | See https://developer.chrome.com/docs/chromedriver/capabilities#chromeoptions_object
 data ChromeOptions = ChromeOptions {
   -- | List of command-line arguments to use when starting Chrome. Arguments with an associated value should be separated
@@ -120,7 +138,7 @@ data ChromeOptions = ChromeOptions {
   , _chromeOptionsBinary :: Maybe FilePath
   -- | A list of Chrome extensions to install on startup. Each item in the list should be a base-64 encoded packed Chrome
   -- extension (.crx)
-  , _chromeOptionsExtensions :: Maybe [Text]
+  , _chromeOptionsExtensions :: Maybe [ChromeExtension]
   -- | A dictionary with each entry consisting of the name of the preference and its value. These preferences are applied
   -- to the Local State file in the user data folder.
   , _chromeOptionsLocalState :: Maybe A.Object

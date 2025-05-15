@@ -21,7 +21,6 @@ import GHC.Generics
 import Test.WebDriver.Class
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
-import Test.WebDriver.Utils (urlEncode)
 
 
 -- | Retrieve all cookies.

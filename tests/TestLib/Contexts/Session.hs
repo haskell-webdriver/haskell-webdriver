@@ -66,4 +66,4 @@ introduceMobileSession = introduceSession' modifyConfig
 
     modifyChromeOptions :: ChromeOptions -> ChromeOptions
     modifyChromeOptions x = x
-                          & set chromeOptionsMobileEmulation (Just (ChromeMobileEmulationSpecificDevice "Nexus 5"))
+                          & set chromeOptionsMobileEmulation (Just (ChromeMobileEmulationSpecificDevice "Pixel 7"))

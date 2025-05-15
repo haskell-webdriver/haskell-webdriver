@@ -14,10 +14,8 @@ import Data.Aeson as A
 import Data.CallStack
 import Data.Text (Text, append)
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.CommandContexts
-import Test.WebDriver.Commands.ElementRetrieval
 import Test.WebDriver.CommandUtil
-import Test.WebDriver.Utils (urlEncode)
+import Test.WebDriver.Commands.CommandContexts
 
 
 -- | Determine if the element is selected.

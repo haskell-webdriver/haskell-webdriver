@@ -24,7 +24,6 @@ import Data.Text
 import Test.WebDriver.Class
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
-import Test.WebDriver.Utils (urlEncode)
 
 
 -- | Submit a form element. This may be applied to descendents of a form element
