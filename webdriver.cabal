@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -26,13 +26,12 @@ license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
 tested-with:
-    GHC == 8.6.5
-  , GHC == 8.8.4
-  , GHC == 8.10.7
-  , GHC == 9.0.2
+    GHC == 9.0.2
   , GHC == 9.2.8
   , GHC == 9.4.8
-  , GHC == 9.6.4
+  , GHC == 9.6.7
+  , GHC == 9.8.4
+  , GHC == 9.10.2
 extra-source-files:
     README.md
     CHANGELOG.md
