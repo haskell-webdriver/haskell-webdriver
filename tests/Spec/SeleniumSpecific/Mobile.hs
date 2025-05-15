@@ -14,5 +14,5 @@ import UnliftIO.Concurrent
 tests :: SessionSpec
 tests = introduceMobileSession $ describe "Mobile" $ before "Open test page" openSimpleTestPage $ do
   it "Pauses" $ do
-    threadDelay 999_999_000_000
+    -- threadDelay 999_999_000_000
     pending
