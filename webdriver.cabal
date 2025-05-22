@@ -77,7 +77,6 @@ library
       Test.WebDriver.Commands.Sessions
       Test.WebDriver.Commands.UserPrompts
       Test.WebDriver.CommandUtil
-      Test.WebDriver.Common.Keys
       Test.WebDriver.Config
       Test.WebDriver.Exceptions.Internal
       Test.WebDriver.JSON

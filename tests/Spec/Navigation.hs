@@ -5,8 +5,8 @@ import Data.String.Interpolate
 import Data.Text as T
 import Network.URI
 import Test.Sandwich
-import Test.WebDriver.Class
 import Test.WebDriver.Commands
+import Test.WebDriver.Types
 import TestLib.Contexts.Session
 import TestLib.Contexts.StaticServer
 import TestLib.Types

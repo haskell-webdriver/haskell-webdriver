@@ -16,8 +16,7 @@ import Lens.Micro
 import Test.Sandwich
 import Test.WebDriver
 import Test.WebDriver.Capabilities
-import Test.WebDriver.Config
-import Test.WebDriver.Session
+import Test.WebDriver.Types
 import TestLib.Types
 import TestLib.Types.Cli
 import UnliftIO.IORef

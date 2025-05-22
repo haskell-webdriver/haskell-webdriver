@@ -26,8 +26,8 @@ import Network.Wai.Handler.Warp
 import System.FilePath
 import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Util.Ports
-import Test.WebDriver.Class
 import Test.WebDriver.Commands
+import Test.WebDriver.Types
 import TestLib.Types
 import UnliftIO.Async
 import UnliftIO.Directory

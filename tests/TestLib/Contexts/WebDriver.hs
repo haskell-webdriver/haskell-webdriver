@@ -31,8 +31,7 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Util.Ports
 import Test.Sandwich.Waits
 import Test.WebDriver.Commands
-import Test.WebDriver.Config
-import Test.WebDriver.Session (SeleniumVersion(..))
+import Test.WebDriver.Types
 import TestLib.Types
 import TestLib.Types.Cli
 import TestLib.Waits

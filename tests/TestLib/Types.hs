@@ -48,9 +48,8 @@ import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.WebDriver
 import Test.WebDriver.Capabilities
-import Test.WebDriver.Class
 import Test.WebDriver.Internal
-import Test.WebDriver.Session
+import Test.WebDriver.Types
 import TestLib.Types.Cli
 import UnliftIO.IORef
 
