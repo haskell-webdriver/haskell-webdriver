@@ -1,5 +1,5 @@
 
-resolver: lts-22.43
+resolver: nightly-2025-05-22
 
 ghc-options:
   "$locals": >-
@@ -24,5 +24,3 @@ extra-deps:
   subdirs:
   - sandwich
   - sandwich-contexts
-
-- vty-windows-0.2.0.3

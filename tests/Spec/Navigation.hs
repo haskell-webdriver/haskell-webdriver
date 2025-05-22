@@ -2,7 +2,8 @@
 module Spec.Navigation where
 
 import Data.String.Interpolate
-import Data.Text as T
+import Data.Text (Text)
+import qualified Data.Text as T
 import Network.URI
 import Test.Sandwich
 import Test.WebDriver.Commands
