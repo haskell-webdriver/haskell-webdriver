@@ -15,12 +15,6 @@ module Test.WebDriver.Config (
   , wdSeleniumVersion
   , defaultConfig
 
-  -- * SessionHistoryConfig options
-  , SessionHistoryConfig
-  , noHistory
-  , unlimitedHistory
-  , onlyMostRecentHistory
-
   -- * Overloadable configuration
   , WebDriverConfig(..)
   ) where

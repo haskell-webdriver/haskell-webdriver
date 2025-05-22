@@ -54,10 +54,10 @@ module Test.WebDriver (
   , dumpSessionHistory
   ) where
 
+import Test.WebDriver.Capabilities
 import Test.WebDriver.Capabilities.Proxy
 import Test.WebDriver.Commands
 import Test.WebDriver.Config
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Monad
 import Test.WebDriver.Session
-import Test.WebDriver.Types

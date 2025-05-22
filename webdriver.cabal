@@ -44,16 +44,11 @@ library
   exposed-modules:
       Test.WebDriver
       Test.WebDriver.Capabilities
-      Test.WebDriver.Class
       Test.WebDriver.Commands
-      Test.WebDriver.Config
       Test.WebDriver.Exceptions
       Test.WebDriver.Internal
-      Test.WebDriver.JSON
       Test.WebDriver.Keys
-      Test.WebDriver.Monad
       Test.WebDriver.Profile
-      Test.WebDriver.Session
       Test.WebDriver.Types
       Test.WebDriver.Waits
   other-modules:
@@ -64,6 +59,7 @@ library
       Test.WebDriver.Capabilities.Proxy
       Test.WebDriver.Capabilities.Timeouts
       Test.WebDriver.Capabilities.UserPromptHandler
+      Test.WebDriver.Class
       Test.WebDriver.Commands.Actions
       Test.WebDriver.Commands.CommandContexts
       Test.WebDriver.Commands.Cookies
@@ -81,7 +77,12 @@ library
       Test.WebDriver.Commands.Sessions
       Test.WebDriver.Commands.UserPrompts
       Test.WebDriver.CommandUtil
+      Test.WebDriver.Common.Keys
+      Test.WebDriver.Config
       Test.WebDriver.Exceptions.Internal
+      Test.WebDriver.JSON
+      Test.WebDriver.Monad
+      Test.WebDriver.Session
       Paths_webdriver
   hs-source-dirs:
       src

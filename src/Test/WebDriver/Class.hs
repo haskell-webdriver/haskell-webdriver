@@ -3,7 +3,11 @@
 
 module Test.WebDriver.Class (
   -- * WebDriver class
-  WebDriver(..), Method, methodDelete, methodGet, methodPost,
+  WebDriver(..)
+  , Method
+  , methodDelete
+  , methodGet
+  , methodPost
   ) where
 import Test.WebDriver.Session
 
@@ -28,10 +32,9 @@ import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't wo
 #endif
 
 
--- |A class for monads that can handle wire protocol requests. This is the
+-- | A class for monads that can handle wire protocol requests. This is the
 -- operation underlying all of the high-level commands exported in
--- "Test.WebDriver.Commands". For more information on the wire protocol see
--- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol>
+-- "Test.WebDriver.Commands".
 class (WDSessionStateControl wd) => WebDriver wd where
   doCommand :: (
     HasCallStack, ToJSON a, FromJSON b, ToJSON b

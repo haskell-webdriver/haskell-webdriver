@@ -6,6 +6,7 @@
 {-# LANGUAGE ConstraintKinds #-}
 
 module Test.WebDriver.Monad (
+  -- * WebDriver monad
   WD(..)
   , runWD
   , runWD'

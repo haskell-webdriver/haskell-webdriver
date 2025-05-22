@@ -75,16 +75,11 @@ library:
   exposed-modules:
   - Test.WebDriver
   - Test.WebDriver.Capabilities
-  - Test.WebDriver.Class
   - Test.WebDriver.Commands
-  - Test.WebDriver.Config
   - Test.WebDriver.Exceptions
   - Test.WebDriver.Internal
-  - Test.WebDriver.JSON
   - Test.WebDriver.Keys
-  - Test.WebDriver.Monad
   - Test.WebDriver.Profile
-  - Test.WebDriver.Session
   - Test.WebDriver.Types
   - Test.WebDriver.Waits
 

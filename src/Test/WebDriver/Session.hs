@@ -68,7 +68,7 @@ data SeleniumVersion =
   deriving (Show, Eq)
 
 -- | The local state of a WebDriver session. This structure is passed
--- implicitly through all 'WD' computations
+-- implicitly through all 'WD' computations.
 data WDSession = WDSession {
   -- server hostname
   wdSessHost :: BS.ByteString

@@ -57,6 +57,7 @@ module Test.WebDriver.Commands (
   --
   -- See https://www.w3.org/TR/webdriver1/#document-handling.
   , module Test.WebDriver.Commands.DocumentHandling
+  , ignoreReturn
 
   -- * Cookies
   --
@@ -110,3 +111,5 @@ import Test.WebDriver.Commands.SeleniumSpecific.Mobile
 import Test.WebDriver.Commands.SeleniumSpecific.Uploads
 import Test.WebDriver.Commands.Sessions
 import Test.WebDriver.Commands.UserPrompts
+
+import Test.WebDriver.JSON (ignoreReturn)

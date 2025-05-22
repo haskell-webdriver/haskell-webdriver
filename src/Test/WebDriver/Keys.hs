@@ -1,9 +1,11 @@
 
 -- | This module contains named constants corresponding to the special characters recognized by 'sendKeys'.
--- https://www.w3.org/TR/webdriver2/#keyboard-actions
+-- See https://www.w3.org/TR/webdriver2/#keyboard-actions.
 module Test.WebDriver.Keys where
 
 import Data.Text (Text)
+import Test.WebDriver.Commands (sendKeys)
+
 
 add :: Text
 add = "\xe025"
