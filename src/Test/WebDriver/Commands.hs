@@ -1,5 +1,5 @@
 
--- | This module exports basic WD actions that can be used to interact with a
+-- | This module exports all the actions that can be used to interact with a
 -- browser session.
 module Test.WebDriver.Commands (
   -- * Sessions

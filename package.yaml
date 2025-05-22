@@ -76,7 +76,6 @@ library:
   - Test.WebDriver
   - Test.WebDriver.Capabilities
   - Test.WebDriver.Commands
-  - Test.WebDriver.Exceptions
   - Test.WebDriver.Internal
   - Test.WebDriver.Keys
   - Test.WebDriver.Profile

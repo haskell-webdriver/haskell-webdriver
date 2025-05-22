@@ -2,6 +2,16 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell #-}
 
+{-|
+
+This module contains the types for working with WebDriver Capabilities. Capabilities are used to configure and communicate the features supported by a session.
+
+Some settings, like '_capabilitiesTimeouts', are browser-agnostic. But the Capabilities object is also where browser-specific settings can be added, under '_capabilitiesGoogChromeOptions', '_capabilitiesMozFirefoxOptions', etc.
+
+This module provides lenses for all of the fields it defines, to make it easier to manipulate nested values.
+
+-}
+
 module Test.WebDriver.Capabilities (
   -- * Capabilities
   Capabilities(..)
