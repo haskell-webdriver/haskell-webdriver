@@ -28,17 +28,17 @@ data FirefoxLogLevel = FirefoxLogLevel {
 deriveJSON toCamel3 ''FirefoxLogLevel
 makeLenses ''FirefoxLogLevel
 
--- https://developer.mozilla.org/en-US/docs/Web/WebDriver/Capabilities/firefoxOptions
+-- | See https://developer.mozilla.org/en-US/docs/Web/WebDriver/Capabilities/firefoxOptions
 data FirefoxOptions = FirefoxOptions {
   -- | Absolute path to the custom Firefox binary to use.
-  -- On macOS you may either give the path to the application bundle, i.e. @/Applications/Firefox.app@, or the absolute
+  -- On macOS you may either give the path to the application bundle, i.e. @\/Applications\/Firefox.app@, or the absolute
   -- path to the executable binary inside this bundle, for example
-  -- @/Applications/Firefox.app/Contents/MacOS/firefox-bin@. geckodriver will attempt to deduce the default location of
-  -- Firefox on the current system if left undefined. The default locations of Firefox are:
+  -- @\/Applications\/Firefox.app\/Contents\/MacOS\/firefox-bin@. geckodriver will attempt to deduce the default location of
+  -- Firefox on the current system if left undefined.
   _firefoxOptionsBinary :: Maybe String
   -- | Command line arguments to pass to the Firefox binary.
   -- These must include the leading dash (-) where required, e.g. ["-headless"].
-  -- To have geckodriver pick up an existing profile on the local filesystem, you may pass ["-profile", -- "/path/to/profile"].
+  -- To have geckodriver pick up an existing profile on the local filesystem, you may pass @["-profile", -- "\/path\/to\/profile"]@.
   -- But if a profile has to be transferred to a target machine it is recommended to use the profile entry.
   , _firefoxOptionsArgs :: Maybe [String]
   -- | Base64-encoded ZIP of a profile directory to use for the Firefox instance. This may be used to e.g. install
@@ -48,7 +48,7 @@ data FirefoxOptions = FirefoxOptions {
   -- {"log": {"level": "trace"}} to include all trace-level logs and above.
   , _firefoxOptionsLog :: Maybe FirefoxLogLevel
   -- | Map of preference name to preference value, which can be a string, a boolean or an integer.
-  , _firefoxOptionsPref :: Maybe A.Object
+  , _firefoxOptionsPrefs :: Maybe A.Object
 
   -- TODO: Android options
   }
@@ -62,7 +62,7 @@ emptyFirefoxOptions = FirefoxOptions {
   , _firefoxOptionsArgs = Nothing
   , _firefoxOptionsProfile = Nothing
   , _firefoxOptionsLog = Nothing
-  , _firefoxOptionsPref = Nothing
+  , _firefoxOptionsPrefs = Nothing
   }
 
 defaultFirefoxOptions :: FirefoxOptions

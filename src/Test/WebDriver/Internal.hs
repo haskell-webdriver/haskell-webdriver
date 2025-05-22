@@ -6,6 +6,7 @@
 --
 -- These functions can be used to create your own 'WebDriver' instances, providing extra functionality for your application if desired. All exports
 -- of this module are subject to change at any point.
+--
 module Test.WebDriver.Internal (
   mkRequest, sendHTTPRequest
   , getJSONResult
@@ -67,7 +68,7 @@ printInDebugEnv s = do
     Just x | fmap toLower x == "true" -> pPrint s
     _ -> pure ()
 
--- | Constructs an HTTP 'Request' value when given a list of headers, HTTP request method, and URL fragment
+-- | Construct an HTTP 'Request' value when given a list of headers, method, and URL fragment.
 mkRequest :: (WDSessionState s, ToJSON a) => Method -> Text -> a -> s Request
 mkRequest meth wdPath args = do
   WDSession {..} <- getSession
@@ -90,7 +91,7 @@ mkRequest meth wdPath args = do
   liftIO $ printInDebugEnv req
   return req
 
--- | Sends an HTTP request to the remote WebDriver server
+-- | Send an HTTP request to the remote WebDriver server.
 sendHTTPRequest :: (WDSessionStateIO s) => Request -> s (Either SomeException (Response ByteString))
 sendHTTPRequest req = do
   s@WDSession{..} <- getSession
@@ -120,7 +121,7 @@ retryOnTimeout maxRetry go = retry' 0
           -> retry' (succ nRetries)
         other -> return (nRetries, other)
 
--- | Parses a 'WDResponse' object from a given HTTP response.
+-- | Parse a 'WDResponse' object from a given HTTP response.
 getJSONResult :: (HasCallStack, WDSessionStateControl s, FromJSON a) => Response ByteString -> s (Either SomeException a)
 getJSONResult r
   --malformed request errors
@@ -174,6 +175,8 @@ getJSONResult r
     body = responseBody r
     headers = responseHeaders r
 
+-- | Handle a 'WDResponse', storing the returned session ID from the server if not present.
+-- Also checks that the session ID doesn't change.
 handleRespSessionId :: (HasCallStack, WDSessionStateIO s) => WDResponse -> s ()
 handleRespSessionId WDResponse{rspSessId = sessId'} = do
   sess@WDSession { wdSessId = sessId} <- getSession
@@ -188,6 +191,8 @@ handleRespSessionId WDResponse{rspSessId = sessId'} = do
 
     _ ->  return ()
 
+-- | Determine if a 'WDResponse' is errored, and return a suitable 'Exception' if so.
+-- This will be a 'FailedCommand'.
 handleJSONErr :: (HasCallStack, WDSessionStateControl s) => WDResponse -> s (Maybe SomeException)
 handleJSONErr WDResponse{rspStatus = 0} = return Nothing
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
@@ -231,13 +236,12 @@ handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
     _   -> e UnknownError
 
 
--- | Internal type representing the JSON response object
+-- | Internal type representing the JSON response object.
 data WDResponse = WDResponse {
   rspSessId :: Maybe SessionId
   , rspStatus :: Word8
   , rspVal    :: Value
-  }
-  deriving (Eq, Show)
+  } deriving (Eq, Show)
 
 instance FromJSON WDResponse where
   -- We try both options as the wire format changes depending on

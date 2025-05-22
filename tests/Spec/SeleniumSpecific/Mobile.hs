@@ -8,7 +8,7 @@ import Test.Sandwich
 import TestLib.Contexts.Session
 import TestLib.Contexts.StaticServer
 import TestLib.Types
-import UnliftIO.Concurrent
+-- import UnliftIO.Concurrent
 
 
 tests :: SessionSpec

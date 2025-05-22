@@ -20,7 +20,7 @@ import Data.Aeson as A
 import Data.Aeson.Types (typeMismatch)
 import Data.CallStack
 import Data.Maybe
-import Data.Text
+import Data.Text (Text)
 import Test.WebDriver.Class
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
@@ -41,7 +41,7 @@ isDisplayed e = doElemCommand methodGet e "/displayed" Null
 infix 4 <==>
 -- | Determines if two element identifiers refer to the same element.
 (<==>) :: (HasCallStack, WebDriver wd) => Element -> Element -> wd Bool
-e1 <==> (Element e2) = doElemCommand methodGet e1 ("/equals/" `append` urlEncode e2) Null
+e1 <==> (Element e2) = doElemCommand methodGet e1 ("/equals/" <> urlEncode e2) Null
 
 -- | Determines if two element identifiers refer to different elements.
 infix 4 </=>

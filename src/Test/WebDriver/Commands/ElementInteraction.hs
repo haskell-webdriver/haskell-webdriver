@@ -9,7 +9,6 @@ module Test.WebDriver.Commands.ElementInteraction (
 import Data.CallStack
 import Data.Text (Text)
 import Test.WebDriver.Class
-import Test.WebDriver.Commands.ElementRetrieval
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON (noObject, noReturn, single)
 
@@ -24,7 +23,7 @@ clearInput e = noReturn $ doElemCommand methodPost e "/clear" noObject
 
 -- | Send a sequence of keystrokes to an element. All modifier keys are released
 -- at the end of the function. Named constants for special modifier keys can be found
--- in "Test.WebDriver.Common.Keys"
+-- in "Test.WebDriver.Keys"
 sendKeys :: (HasCallStack, WebDriver wd) => Text -> Element -> wd ()
 sendKeys t e = noReturn . doElemCommand methodPost e "/value" . single "text" $ t
 

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-unused-imports #-}
 
 -- | This module contains named constants corresponding to the special characters recognized by 'sendKeys'.
 -- See https://www.w3.org/TR/webdriver2/#keyboard-actions.

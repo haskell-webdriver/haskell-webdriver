@@ -93,7 +93,7 @@ module Test.WebDriver.Capabilities (
 
   -- ** Lenses
   , firefoxOptionsProfile
-  , firefoxOptionsPref
+  , firefoxOptionsPrefs
   , firefoxOptionsLog
   , firefoxOptionsBinary
   , firefoxOptionsArgs
