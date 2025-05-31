@@ -17,7 +17,11 @@
 
           devShells = {
             default = pkgs.mkShell {
-
+              buildInputs = with pkgs; [
+                gmp
+                ncurses
+                zlib
+              ];
             };
           };
         }
