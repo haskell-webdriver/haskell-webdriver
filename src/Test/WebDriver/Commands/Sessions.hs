@@ -84,9 +84,11 @@ deriveJSON toCamel1 ''Timeouts
 emptyTimeouts :: Timeouts
 emptyTimeouts = Timeouts Nothing Nothing Nothing
 
+-- | Get all the 'Timeouts' simultaneously.
 getTimeouts :: (HasCallStack, WebDriver wd) => wd Timeouts
 getTimeouts = doSessCommand methodGet "/timeouts" Null
 
+-- | Set all the 'Timeouts' simultaneously.
 setTimeouts :: (HasCallStack, WebDriver wd) => Timeouts -> wd ()
 setTimeouts timeouts = doSessCommand methodPost "/timeouts" (A.toJSON timeouts)
 
