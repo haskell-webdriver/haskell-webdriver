@@ -12,11 +12,7 @@ description:    A Selenium WebDriver client for Haskell.
                 for testing, system administration, etc.
                 .
                 For more information about Selenium itself, see
-                <http://seleniumhq.org/>
-                .
-                To find out what's been changed in this version and others,
-                see the change log at
-                <https://github.com/haskell-webdriver/haskell-webdriver/blob/main/CHANGELOG.md>
+                <https://www.selenium.dev/>
 category:       Web, Browser, Testing, WebDriver, Selenium
 homepage:       https://github.com/haskell-webdriver/haskell-webdriver#readme
 bug-reports:    https://github.com/haskell-webdriver/haskell-webdriver/issues
