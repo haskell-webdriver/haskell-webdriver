@@ -20,6 +20,7 @@
               buildInputs = with pkgs; [
                 gmp
                 ncurses
+                pkg-config
                 zlib
               ];
             };
