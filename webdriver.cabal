@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.37.0.
+-- This file has been generated from package.yaml by hpack version 0.38.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -141,6 +141,7 @@ test-suite tests
       TestLib.Contexts.Session
       TestLib.Contexts.StaticServer
       TestLib.Contexts.WebDriver
+      TestLib.Mouse
       TestLib.Types
       TestLib.Types.Cli
       TestLib.Waits

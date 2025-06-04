@@ -22,6 +22,7 @@ module TestLib.Types (
 
   , WDSession(..)
   , wdSession
+  , HasWDSession
 
   , SessionSpec
   , SpecWithWebDriver

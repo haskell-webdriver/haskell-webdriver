@@ -3,10 +3,17 @@ module Test.WebDriver.Commands.Actions (
   , moveToCenter
   , moveToFrom
   , clickWith
-  , mouseDown
-  , mouseUp
-  , withMouseDown
   , doubleClick
+  , clickCenter
+
+  -- * Lower-level actions API
+  , performActions
+  , releaseActions
+  , Action(..)
+  , ActionSource(..)
+  , PointerAction(..)
+  , KeyAction(..)
+  , PointerOrigin(..)
 
   -- * Types
   , MouseButton(..)
@@ -26,110 +33,154 @@ instance ToJSON MouseButton where
   toJSON = toJSON . fromEnum
 
 instance FromJSON MouseButton where
-  parseJSON v = do
-    n <- parseJSON v
-    case n :: Integer of
-      0 -> return LeftButton
-      1 -> return MiddleButton
-      2 -> return RightButton
-      err -> fail $ "Invalid JSON for MouseButton: " ++ show err
+  parseJSON v = parseJSON v >>= \case
+    (0 :: Int) -> return LeftButton
+    1 -> return MiddleButton
+    2 -> return RightButton
+    err -> fail $ "Invalid JSON for MouseButton: " ++ show err
 
--- | Execute actions and release them
-executeActions :: (HasCallStack, WebDriver wd) => A.Value -> wd ()
-executeActions actions = do
-  noReturn $ doSessCommand methodPost "/actions" actions
-  -- Release all actions to reset state
-  noReturn $ doSessCommand methodDelete "/actions" noObject
+-- -----------------------------------------------------------------------------
+-- Legacy API (Wire Protocol)
+-- -----------------------------------------------------------------------------
+
+movementTimeMs :: Int
+movementTimeMs = 50
 
 -- | Moves the mouse to the given position relative to the current pointer position.
 moveTo :: (HasCallStack, WebDriver wd) => (Int, Int) -> wd ()
-moveTo (x, y) = executeActions $ createPointerAction "mouse1"
-  [pointerMoveAction (Just "pointer") Nothing x y 250]
+moveTo (x, y) = performActions [PointerSource "mouse1" [ActionPointer $ PointerMove PointerCurrent x y movementTimeMs]]
 
 -- | Moves the mouse to the center of a given element.
 moveToCenter :: (HasCallStack, WebDriver wd) => Element -> wd ()
-moveToCenter (Element e) = executeActions $ createPointerAction "mouse1"
-  [pointerMoveAction Nothing (Just elementRef) 0 0 250]
-  where
-    elementRef = A.object ["element-6066-11e4-a52e-4f735466cecf" A..= e]
+moveToCenter el = performActions [PointerSource "mouse1" [ActionPointer $ PointerMove (PointerElement el) 0 0 movementTimeMs]]
 
 -- | Moves the mouse to the given position relative to the given element.
 moveToFrom :: (HasCallStack, WebDriver wd) => (Int, Int) -> Element -> wd ()
-moveToFrom (x, y) (Element e) = executeActions $ createPointerAction "mouse1"
-  [pointerMoveAction Nothing (Just elementRef) x y 250]
-  where
-    elementRef = A.object ["element-6066-11e4-a52e-4f735466cecf" A..= e]
+moveToFrom (x, y) el = performActions [PointerSource "mouse1" [ActionPointer $ PointerMove (PointerElement el) x y movementTimeMs]]
 
 -- | Click at the current mouse position with the given mouse button.
 clickWith :: (HasCallStack, WebDriver wd) => MouseButton -> wd ()
-clickWith button = executeActions $ createPointerAction "mouse1" [
-  pointerDownAction button
-  , pointerUpAction button
-  ]
+clickWith = noReturn . doSessCommand methodPost "/click" . single "button"
 
--- | Press and hold the left mouse button down. Note that undefined behavior
--- occurs if the next mouse command is not mouseUp.
-mouseDown :: (HasCallStack, WebDriver wd) => wd ()
-mouseDown = executeActions $ createPointerAction "mouse1"
-  [pointerDownAction LeftButton]
-
--- | Release the left mouse button.
-mouseUp :: (HasCallStack, WebDriver wd) => wd ()
-mouseUp = executeActions $ createPointerAction "mouse1" [pointerUpAction LeftButton]
-
--- | Perform the given action with the left mouse button held down. The mouse
--- is automatically released afterwards.
-withMouseDown :: (HasCallStack, WebDriver wd) => wd a -> wd a
-withMouseDown wd = mouseDown >> wd <* mouseUp
+-- | Helper to click the center of an element.
+clickCenter :: (HasCallStack, WebDriver wd) => Element -> wd ()
+clickCenter el = performActions [PointerSource "mouse1" [
+  ActionPointer $ PointerMove (PointerElement el) 0 0 movementTimeMs
+  , ActionPointer $ PointerDown LeftButton
+  , ActionPointer $ PointerUp LeftButton
+  ]]
 
 -- | Double click at the current mouse location.
 doubleClick :: (HasCallStack, WebDriver wd) => wd ()
-doubleClick = executeActions $ createPointerAction "mouse1" [
-  pointerDownAction LeftButton
-  , pointerUpAction LeftButton
-  , pauseAction 100
-  , pointerDownAction LeftButton
-  , pointerUpAction LeftButton
+doubleClick = performActions [PointerSource "mouse1" [
+  ActionPointer $ PointerDown LeftButton
+  , ActionPointer $ PointerUp LeftButton
+  , ActionPause 100
+  , ActionPointer $ PointerDown LeftButton
+  , ActionPointer $ PointerUp LeftButton
+  ]]
+
+-- -----------------------------------------------------------------------------
+-- Modern Actions API
+-- -----------------------------------------------------------------------------
+
+-- | Origin for pointer actions
+data PointerOrigin
+  = PointerViewport
+  | PointerCurrent
+  | PointerElement Element
+  deriving (Eq, Show)
+
+-- | Individual pointer actions
+data PointerAction
+  = PointerMove { moveOrigin :: PointerOrigin, moveX :: Int, moveY :: Int, moveDuration :: Int }
+  | PointerDown { downButton :: MouseButton }
+  | PointerUp { upButton :: MouseButton }
+  | PointerCancel
+  deriving (Eq, Show)
+
+-- | Individual key actions
+data KeyAction
+  = KeyDown { keyValue :: String }
+  | KeyUp { keyValue :: String }
+  deriving (Eq, Show)
+
+-- | Generic action that can be pause, pointer, or key
+data Action
+  = ActionPause { pauseDuration :: Int }
+  | ActionPointer { pointerAction :: PointerAction }
+  | ActionKey { keyAction :: KeyAction }
+  deriving (Eq, Show)
+
+-- | Action source (input device)
+data ActionSource
+  = PointerSource { sourceId :: String, actions :: [Action] }
+  | KeySource { sourceId :: String, actions :: [Action] }
+  deriving (Eq, Show)
+
+-- | Perform a sequence of actions from multiple input sources
+performActions :: (HasCallStack, WebDriver wd) => [ActionSource] -> wd ()
+performActions sources = noReturn $ doSessCommand methodPost "/actions"
+  (A.object ["actions" A..= map sourceToJSON sources])
+
+-- | Release all currently pressed keys and buttons
+releaseActions :: (HasCallStack, WebDriver wd) => wd ()
+releaseActions = noReturn $ doSessCommand methodDelete "/actions" noObject
+
+-- -----------------------------------------------------------------------------
+-- Internal helpers
+-- -----------------------------------------------------------------------------
+
+sourceToJSON :: ActionSource -> A.Value
+sourceToJSON (PointerSource sid acts) = A.object [
+  "type" A..= ("pointer" :: String)
+  , "id" A..= sid
+  , "actions" A..= map actionToJSON acts
+  ]
+sourceToJSON (KeySource sid acts) = A.object [
+  "type" A..= ("key" :: String)
+  , "id" A..= sid
+  , "actions" A..= map actionToJSON acts
   ]
 
--- * Internal helpers
+actionToJSON :: Action -> A.Value
+actionToJSON (ActionPause dur) = A.object [
+  "type" A..= ("pause" :: String)
+  , "duration" A..= dur
+  ]
+actionToJSON (ActionPointer pact) = pointerActionToJSON pact
+actionToJSON (ActionKey kact) = keyActionToJSON kact
 
-createPointerAction :: String -> [A.Value] -> A.Value
-createPointerAction actionId actions = A.object ["actions" A..= [action]]
-  where
-    action = A.object [
-      "type" A..= ("pointer" :: String)
-      , "id" A..= actionId
-      , "actions" A..= actions
-      ]
-
-pointerMoveAction :: Maybe String -> Maybe A.Value -> Int -> Int -> Int -> A.Value
-pointerMoveAction origin element x y duration = A.object $ [
+pointerActionToJSON :: PointerAction -> A.Value
+pointerActionToJSON (PointerMove orig x y dur) = A.object ([
   "type" A..= ("pointerMove" :: String)
-  , "duration" A..= duration
+  , "duration" A..= dur
   , "x" A..= x
   , "y" A..= y
-  ] ++ originField
+  ] <> originToJSON orig)
   where
-    originField = case (origin, element) of
-      (Just o, Nothing) -> ["origin" A..= o]
-      (Nothing, Just e) -> ["origin" A..= e]
-      _ -> []
-
-pointerDownAction :: MouseButton -> A.Value
-pointerDownAction button = A.object [
+    originToJSON :: PointerOrigin -> [(Key, A.Value)]
+    originToJSON PointerViewport = [("origin", A.String "viewport")]
+    originToJSON PointerCurrent = [("origin", A.String "pointer")]
+    originToJSON (PointerElement (Element e)) = [("origin", A.object ["element-6066-11e4-a52e-4f735466cecf" A..= e])]
+pointerActionToJSON (PointerDown btn) = A.object [
   "type" A..= ("pointerDown" :: String)
-  , "button" A..= button
+  , "button" A..= btn
   ]
-
-pointerUpAction :: MouseButton -> A.Value
-pointerUpAction button = A.object [
+pointerActionToJSON (PointerUp btn) = A.object [
   "type" A..= ("pointerUp" :: String)
-  , "button" A..= button
+  , "button" A..= btn
+  ]
+pointerActionToJSON PointerCancel = A.object [
+  "type" A..= ("pointerCancel" :: String)
   ]
 
-pauseAction :: Int -> A.Value
-pauseAction duration = A.object [
-  "type" A..= ("pause" :: String)
-  , "duration" A..= duration
+keyActionToJSON :: KeyAction -> A.Value
+keyActionToJSON (KeyDown val) = A.object [
+  "type" A..= ("keyDown" :: String)
+  , "value" A..= val
+  ]
+keyActionToJSON (KeyUp val) = A.object [
+  "type" A..= ("keyUp" :: String)
+  , "value" A..= val
   ]

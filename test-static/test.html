@@ -65,16 +65,8 @@
     <h1>Clickable box</h1>
 
     <div>
-      <span>Last click:</span>
-      <div id="last-click"
-           style="display: inline; padding-top: 5px; padding-bottom: 5px;">
-        {}
-      </div>
-    </div>
-
-    <div>
-      <span>Last double click:</span>
-      <div id="last-dblclick"
+      <span>Last mouse event:</span>
+      <div id="last-mouse-event"
            style="display: inline; padding-top: 5px; padding-bottom: 5px;">
         {}
       </div>
@@ -85,27 +77,22 @@
 
     </div>
     <script>
-     let lastClickBox = document.getElementById("last-click");
-     document.getElementById("clickable-box").addEventListener("click", function(event) {
-       console.log("Click event", event);
-       lastClickBox.innerText = JSON.stringify({
-         screenX: event.screenX,
-         screenY: event.screenY,
-         clientX: event.clientX,
-         clientY: event.clientY,
+     let infoBox = document.getElementById("last-mouse-event");
+     for (let eventType of ["click", "dblclick", "contextmenu"]) {
+       document.getElementById("clickable-box").addEventListener(eventType, function(event) {
+         console.log("Mouse event", eventType, event);
+         infoBox.innerText = JSON.stringify({
+           eventType: eventType,
+           screenX: event.screenX,
+           screenY: event.screenY,
+           clientX: event.clientX,
+           clientY: event.clientY,
+           pageX: event.pageX,
+           pageY: event.pageY,
+           button: event.button,
+         });
        });
-     });
-
-     let lastDoubleClickBox = document.getElementById("last-dblclick");
-     document.getElementById("clickable-box").addEventListener("dblclick", function(event) {
-       console.log("Double click event", event);
-       lastDoubleClickBox.innerText = JSON.stringify({
-         screenX: event.screenX,
-         screenY: event.screenY,
-         clientX: event.clientX,
-         clientY: event.clientY,
-       });
-     });
+     }
     </script>
   </body>
 </html>
