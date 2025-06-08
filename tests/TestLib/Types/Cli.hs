@@ -30,7 +30,7 @@ userOptions :: Parser UserOptions
 userOptions = UserOptions
   <$> optional (strOption (long "webdriver-chrome" <> help "Path to Chrome binary"))
   <*> optional (strOption (long "webdriver-chromedriver" <> help "Path to chromedriver"))
-  <*> optional (flag False True (long "webdriver-chrome-no-sandbox" <> help "Pass the --no-sandbox flag to Chrome (useful in GitHub Actions when installing Chrome via Nia)"))
+  <*> optional (flag False True (long "webdriver-chrome-no-sandbox" <> help "Pass the --no-sandbox flag to Chrome (useful in GitHub Actions when installing Chrome via Nix)"))
 
   <*> optional (strOption (long "webdriver-firefox" <> help "Path to Firefox binary"))
   <*> optional (strOption (long "webdriver-geckodriver" <> help "Path to geckodriver"))
