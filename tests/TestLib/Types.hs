@@ -16,6 +16,10 @@ module TestLib.Types (
   , browserDependencies
   , HasBrowserDependencies
 
+  , DriverType(..)
+  , driverType
+  , HasDriverType
+
   , WebDriverContext(..)
   , webdriver
   , HasWebDriverContext
@@ -23,6 +27,8 @@ module TestLib.Types (
   , WDSession(..)
   , wdSession
   , HasWDSession
+
+  , SeleniumVersion(..)
 
   , SessionSpec
   , SpecWithWebDriver
@@ -45,7 +51,6 @@ import qualified Network.HTTP.Client as HC
 import Network.HTTP.Types.Status as N
 import Network.Socket (PortNumber)
 import Test.Sandwich
-import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
 import Test.WebDriver
 import Test.WebDriver.Capabilities
@@ -87,8 +92,20 @@ type HasBrowserDependencies context = HasLabel context "browserDependencies" Bro
 
 -- * WebDriver
 
+data DriverType =
+  DriverTypeSeleniumJar FilePath FilePath
+  | DriverTypeGeckodriver FilePath
+  | DriverTypeChromedriver FilePath
+
+driverType :: Label "driverType" DriverType
+driverType = Label
+
+type HasDriverType context = HasLabel context "driverType" DriverType
+
+-- * WebDriver
+
 data WebDriverContext = WebDriverContext {
-  webDriverSeleniumVersion :: SeleniumVersion
+  webDriverDriverType :: DriverType
   , webDriverHostname :: String
   , webDriverPort :: PortNumber
   }
@@ -104,6 +121,13 @@ wdSession :: Label "wdSession" (IORef WDSession)
 wdSession = Label
 
 type HasWDSession context = HasLabel context "wdSession" (IORef WDSession)
+
+-- * SeleniumVersion
+
+data SeleniumVersion =
+  Selenium3
+  | Selenium4
+  deriving (Show, Eq)
 
 -- * Instances
 
@@ -160,7 +184,9 @@ getWDConfig' (WebDriverContext {..}) browserDeps = do
     _wdHost = webDriverHostname
     , _wdPort = fromIntegral webDriverPort
     , _wdCapabilities = caps
-    , _wdSeleniumVersion = webDriverSeleniumVersion
+    , _wdBasePath = case webDriverDriverType of
+        DriverTypeSeleniumJar {} -> "/wd/hub"
+        _ -> ""
     }
 
 getCapabilities :: MonadIO m => Bool -> BrowserDependencies -> m Capabilities
@@ -188,7 +214,6 @@ type SpecWithWebDriver = forall context. (
   , HasBrowserDependencies context
   , HasWebDriverContext context
   , HasStaticServerContext context
-  , HasFile context "google-chrome-stable"
   , HasNixContext context
   ) => SpecFree context IO ()
 

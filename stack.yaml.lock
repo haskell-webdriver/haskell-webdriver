@@ -3,36 +3,10 @@
 # For more information, please see the documentation at:
 #   https://docs.haskellstack.org/en/stable/topics/lock_files
 
-packages:
-- completed:
-    commit: ade66e123f6beab5f340193c61c3791c0cc2d8f7
-    git: https://github.com/codedownio/sandwich
-    name: sandwich
-    pantry-tree:
-      sha256: 8bdd8b9768a1258394da2e67912287b6b9c59a5caa83f6f3e707dedcf1541d09
-      size: 6245
-    subdir: sandwich
-    version: 0.3.0.0
-  original:
-    commit: ade66e123f6beab5f340193c61c3791c0cc2d8f7
-    git: https://github.com/codedownio/sandwich
-    subdir: sandwich
-- completed:
-    commit: ade66e123f6beab5f340193c61c3791c0cc2d8f7
-    git: https://github.com/codedownio/sandwich
-    name: sandwich-contexts
-    pantry-tree:
-      sha256: 399e345860232ebfa5dfeeca87bc180978184c4e3e808c45dc55188af993ab77
-      size: 1721
-    subdir: sandwich-contexts
-    version: 0.3.0.0
-  original:
-    commit: ade66e123f6beab5f340193c61c3791c0cc2d8f7
-    git: https://github.com/codedownio/sandwich
-    subdir: sandwich-contexts
+packages: []
 snapshots:
 - completed:
-    sha256: 8d0233aacc476c3813f584e1d774314be9a7c912bb14cbfe89179a9abf8e37df
-    size: 712234
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/5/22.yaml
-  original: nightly-2025-05-22
+    sha256: 269ec6841008055696ca79a3b20fd9ad8d929a1f27a086029adc002b00090439
+    size: 712228
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/nightly/2025/6/29.yaml
+  original: nightly-2025-06-29

@@ -15,6 +15,8 @@ import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
+import Control.Monad.Logger
+import Control.Monad.Reader
 import Control.Retry
 import Data.Function
 import qualified Data.List as L
@@ -27,7 +29,6 @@ import System.FilePath
 import System.IO (hGetLine)
 import System.IO.Temp
 import Test.Sandwich hiding (BrowserToUse(..))
-import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Util.Ports
 import Test.Sandwich.Waits
 import Test.WebDriver.Commands
@@ -39,6 +40,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.IORef
 import UnliftIO.Process
+import UnliftIO.Timeout
 
 
 type BaseMonad m = (HasCallStack, MonadUnliftIO m)
@@ -46,9 +48,8 @@ type BaseMonadContext m context = (BaseMonad m, HasBaseContext context)
 
 introduceWebDriver :: forall context m. (
   BaseMonadContext m context, MonadMask m
-  , HasFile context "selenium.jar"
-  , HasFile context "java"
   , HasBrowserDependencies context
+  , HasDriverType context
   , HasCommandLineOptions context UserOptions
   )
   => SpecFree (LabelValue "webdriver" WebDriverContext :> context) m () -> SpecFree context m ()
@@ -58,39 +59,14 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
       Just dir <- getCurrentFolder
       webdriverDir <- liftIO $ createTempDirectory dir "webdriver"
 
-      javaArgs :: [String] <- getContext browserDependencies >>= \case
-        BrowserDependenciesChrome {..} -> do
-          let chromedriverLog = webdriverDir </> "chromedriver.log"
-          return ([
-            "-Dwebdriver.chrome.logfile=" <> chromedriverLog
-            , "-Dwebdriver.chrome.verboseLogging=true"
-            , "-Dwebdriver.chrome.driver=" <> browserDependenciesChromeChromedriver
-            ])
-        BrowserDependenciesFirefox {..} -> do
-          return ([
-            "-Dwebdriver.gecko.driver=" <> browserDependenciesFirefoxGeckodriver
-            ])
-
-      java <- askFile @"java"
-      seleniumJar <- askFile @"selenium.jar"
-
       port <- findFreePortOrException
 
-      let maybeSeleniumVersion = autodetectSeleniumVersionByFileName seleniumJar
-      info [i|Detected Selenium version: #{maybeSeleniumVersion}|]
-      let extraArgs = case maybeSeleniumVersion of
-            Just Selenium3 -> ["-port", show port]
-            Just Selenium4 -> ["standalone", "--port", show port, "--host", "localhost"]
-            Nothing -> ["-port", show port]
-
-      let fullArgs = javaArgs
-                   <> ["-jar", seleniumJar]
-                   <> extraArgs
-      debug [i|#{java} #{T.unwords $ fmap T.pack fullArgs}|]
+      (programName, args) <- getContext driverType >>= getArguments port webdriverDir
+      debug [i|#{programName} #{T.unwords $ fmap T.pack args}|]
 
       (hRead, hWrite) <- createPipe
 
-      let cp = (proc java fullArgs) {
+      let cp = (proc programName args) {
             create_group = True
             , std_out = UseHandle hWrite
             , std_err = UseHandle hWrite
@@ -100,15 +76,17 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
         let hostname = "localhost"
 
         -- Read from the (combined) output stream until we see the up and running message
-        fix $ \loop -> do
+        dt <- getContext driverType
+        maybeReady <- timeout 30_000_00 $ fix $ \loop -> do
           line <- fmap T.pack $ liftIO $ hGetLine hRead
           debug line
-
-          case "Selenium Server is up and running" `T.isInfixOf` line || "Started Selenium Standalone" `T.isInfixOf` line of
+          case any (\x -> x `T.isInfixOf` line) (needles dt) of
             True -> return ()
             False -> loop
+        when (maybeReady == Nothing) $
+          expectationFailure [i|Didn't see ready message within 30s|]
 
-        let webDriverContext = WebDriverContext (fromMaybe Selenium3 maybeSeleniumVersion) hostname port
+        let webDriverContext = WebDriverContext dt hostname port
 
         withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ -> do
           -- Wait for a successful connectino to the server socket
@@ -159,3 +137,41 @@ autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodet
 
 -- autodetectSeleniumVersion :: FilePath -> FilePath -> m SeleniumVersion
 -- autodetectSeleniumVersion _java _seleniumJar = undefined
+
+getArguments :: (
+  HasBrowserDependencies context, MonadReader context m, MonadLogger m
+  ) => PortNumber -> FilePath -> DriverType -> m (FilePath, [String])
+getArguments port webdriverDir (DriverTypeSeleniumJar java seleniumJar) = do
+  javaArgs :: [String] <- getContext browserDependencies >>= \case
+    BrowserDependenciesChrome {..} -> do
+      let chromedriverLog = webdriverDir </> "chromedriver.log"
+      return ([
+        "-Dwebdriver.chrome.logfile=" <> chromedriverLog
+        , "-Dwebdriver.chrome.verboseLogging=true"
+        , "-Dwebdriver.chrome.driver=" <> browserDependenciesChromeChromedriver
+        ])
+    BrowserDependenciesFirefox {..} -> do
+      return ([
+        "-Dwebdriver.gecko.driver=" <> browserDependenciesFirefoxGeckodriver
+        ])
+
+  let maybeSeleniumVersion = autodetectSeleniumVersionByFileName seleniumJar
+  info [i|Detected Selenium version: #{maybeSeleniumVersion}|]
+  let extraArgs = case maybeSeleniumVersion of
+        Just Selenium3 -> ["-port", show port]
+        Just Selenium4 -> ["standalone", "--port", show port, "--host", "localhost"]
+        Nothing -> ["-port", show port]
+
+  let fullArgs = javaArgs
+               <> ["-jar", seleniumJar]
+               <> extraArgs
+  return (java, fullArgs)
+getArguments port _webdriverDir (DriverTypeChromedriver chromedriver) = do
+  return (chromedriver, ["--port=" <> show port])
+getArguments port _webdriverDir (DriverTypeGeckodriver geckodriver) = do
+  return (geckodriver, ["--port", show port])
+
+needles :: DriverType -> [T.Text]
+needles (DriverTypeSeleniumJar {}) = ["Selenium Server is up and running", "Started Selenium Standalone"]
+needles (DriverTypeChromedriver {}) = ["ChromeDriver was started successfully"]
+needles (DriverTypeGeckodriver {}) = ["Listening on"]

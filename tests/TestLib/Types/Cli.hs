@@ -6,7 +6,7 @@ import Options.Applicative
 
 
 data BrowserToUse = UseChrome | UseFirefox
-  deriving (Show)
+  deriving (Show, Eq)
 
 browserToUse :: (forall f a. Mod f a) -> Parser BrowserToUse
 browserToUse maybeInternal =

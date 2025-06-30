@@ -1,5 +1,5 @@
 
-resolver: nightly-2025-05-22
+resolver: nightly-2025-06-29
 
 ghc-options:
   "$locals": >-
@@ -17,10 +17,3 @@ nix:
   packages:
   - pkg-config
   - zlib
-
-extra-deps:
-- git: https://github.com/codedownio/sandwich
-  commit: ade66e123f6beab5f340193c61c3791c0cc2d8f7
-  subdirs:
-  - sandwich
-  - sandwich-contexts

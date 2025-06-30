@@ -12,7 +12,6 @@ module Test.WebDriver.Config (
   , wdBasePath
   , wdHTTPManager
   , wdHTTPRetryCount
-  , wdSeleniumVersion
   , defaultConfig
 
   -- * Overloadable configuration
@@ -53,8 +52,6 @@ data WDConfig = WDConfig {
   , _wdHTTPManager :: Maybe Manager
   -- | Number of times to retry a HTTP request if it times out (default 0).
   , _wdHTTPRetryCount :: Int
-  -- | Selenium version to target.
-  , _wdSeleniumVersion :: SeleniumVersion
   }
 makeLenses ''WDConfig
 
@@ -69,10 +66,9 @@ instance Default WDConfig where
     , _wdAuthHeaders = []
     , _wdCapabilities = defaultCaps
     , _wdHistoryConfig = unlimitedHistory
-    , _wdBasePath = "/wd/hub"
+    , _wdBasePath = ""
     , _wdHTTPManager = Nothing
     , _wdHTTPRetryCount = 0
-    , _wdSeleniumVersion = Selenium3
     }
 
 -- | A default session config connects to localhost on port 4444, and hasn't been
@@ -105,7 +101,6 @@ instance WebDriverConfig WDConfig where
       , wdSessHistUpdate = _wdHistoryConfig
       , wdSessHTTPManager = manager
       , wdSessHTTPRetryCount = _wdHTTPRetryCount
-      , wdSessSeleniumVersion = _wdSeleniumVersion
       }
     where
       createManager = liftIO $ newManager defaultManagerSettings
