@@ -65,7 +65,6 @@ library
       Test.WebDriver.Commands.Navigation
       Test.WebDriver.Commands.ScreenCapture
       Test.WebDriver.Commands.SeleniumSpecific.HTML5
-      Test.WebDriver.Commands.SeleniumSpecific.IME
       Test.WebDriver.Commands.SeleniumSpecific.Misc
       Test.WebDriver.Commands.SeleniumSpecific.Mobile
       Test.WebDriver.Commands.SeleniumSpecific.Uploads

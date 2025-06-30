@@ -80,8 +80,6 @@ module Test.WebDriver.Commands (
   , module Test.WebDriver.Commands.ScreenCapture
 
   -- * Selenium-specific
-  -- ** IME
-  , module Test.WebDriver.Commands.SeleniumSpecific.IME
   -- ** Mobile device support
   , module Test.WebDriver.Commands.SeleniumSpecific.Mobile
   -- ** Uploading files to remote server
@@ -105,7 +103,6 @@ import Test.WebDriver.Commands.ElementState
 import Test.WebDriver.Commands.Navigation
 import Test.WebDriver.Commands.ScreenCapture
 import Test.WebDriver.Commands.SeleniumSpecific.HTML5
-import Test.WebDriver.Commands.SeleniumSpecific.IME
 import Test.WebDriver.Commands.SeleniumSpecific.Misc
 import Test.WebDriver.Commands.SeleniumSpecific.Mobile
 import Test.WebDriver.Commands.SeleniumSpecific.Uploads
