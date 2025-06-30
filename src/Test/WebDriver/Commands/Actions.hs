@@ -2,7 +2,6 @@ module Test.WebDriver.Commands.Actions (
   moveTo
   , moveToCenter
   , moveToFrom
-  , clickWith
   , clickCenter
   , doubleClickCenter
 
@@ -57,10 +56,6 @@ moveToCenter el = performActions [PointerSource "mouse1" [ActionPointer $ Pointe
 -- | Moves the mouse to the given position relative to the given element.
 moveToFrom :: (HasCallStack, WebDriver wd) => (Int, Int) -> Element -> wd ()
 moveToFrom (x, y) el = performActions [PointerSource "mouse1" [ActionPointer $ PointerMove (PointerElement el) x y movementTimeMs]]
-
--- | Click at the current mouse position with the given mouse button.
-clickWith :: (HasCallStack, WebDriver wd) => MouseButton -> wd ()
-clickWith = noReturn . doSessCommand methodPost "/click" . single "button"
 
 -- | Helper to click the center of an element.
 clickCenter :: (HasCallStack, WebDriver wd) => Element -> wd ()

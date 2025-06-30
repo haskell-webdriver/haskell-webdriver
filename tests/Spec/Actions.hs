@@ -30,11 +30,13 @@ tests = introduceSession $ describe "Actions" $ setUp $ do
     Just dir <- getCurrentFolder
     saveScreenshot (dir </> "before.png")
 
-    box <- findElem (ByCSS "#clickable-box")
-    moveToCenter box
-    clickWith LeftButton
-    getBoundingClientRect "#clickable-box" >>= \bcr -> info [i|bcr: #{bcr}|]
-    getLastMouseEvent >>= \lme -> info [i|lme: #{lme}|]
+    -- TODO: how to test this? Might need to detect mouseover events
+    pending
+
+    -- box <- findElem (ByCSS "#clickable-box")
+    -- clickCenter box
+    -- getBoundingClientRect "#clickable-box" >>= \bcr -> info [i|bcr: #{bcr}|]
+    -- getLastMouseEvent >>= \lme -> info [i|lme: #{lme}|]
 
   it "clickCenter" $ do
     findElem (ByCSS "#clickable-box") >>= clickCenter
