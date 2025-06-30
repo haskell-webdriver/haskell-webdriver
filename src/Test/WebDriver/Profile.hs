@@ -271,7 +271,7 @@ prepareZippedProfile path = prepareRawZip <$> liftIO (LBS.readFile path)
 prepareZipArchive :: Archive -> PreparedProfile a
 prepareZipArchive = prepareRawZip . fromArchive
 
--- | Prepare a ByteString of raw zip data for network transmission
+-- | Prepare a 'ByteString' of raw zip data for network transmission.
 prepareRawZip :: ByteString -> PreparedProfile a
 prepareRawZip = PreparedProfile . B64.encode
 
@@ -375,13 +375,13 @@ loadFirefoxProfile path = do
       where parsePrefs s = either (throwIO . ProfileParseError) return
                            $ AP.parseOnly prefsParser s
 
--- | Prepare a firefox profile for network transmission.
+-- | Prepare a Firefox profile for network transmission.
 -- Internally, this function constructs a Firefox profile as a zip archive,
 -- then base64 encodes the zipped data.
 prepareFirefoxProfile :: forall m. (MonadIO m) => Profile Firefox -> m (PreparedProfile Firefox)
 prepareFirefoxProfile ffProfile = prepareZipArchive <$> prepareFirefoxProfileArchive ffProfile
 
--- | Prepare a firefox profile for network transmission.
+-- | Prepare a Firefox profile for network transmission.
 -- Internally, this function constructs a Firefox profile as a zip archive,
 -- then base64 encodes the zipped data.
 prepareFirefoxProfileArchive :: forall m. (MonadIO m) => Profile Firefox -> m Archive
@@ -427,7 +427,7 @@ prepareLoadedFirefoxProfile :: (
   -> m (PreparedProfile Firefox)
 prepareLoadedFirefoxProfile path f = liftM f (loadFirefoxProfile path) >>= prepareFirefoxProfile
 
--- firefox prefs.js parser
+-- Firefox prefs.js parser
 
 prefsParser :: AP.Parser [(Text, ProfilePref)]
 prefsParser = AP.many1 $ do
