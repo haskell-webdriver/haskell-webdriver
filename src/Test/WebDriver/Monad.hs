@@ -31,7 +31,8 @@ import Test.WebDriver.Internal
 import Test.WebDriver.Session
 
 
-{- | A state monad for WebDriver commands. -}
+-- | A state monad for WebDriver commands. This is a basic monad that has an
+-- implementation of 'WebDriver'.
 newtype WD a = WD (StateT WDSession IO a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix, MonadMask)
 
