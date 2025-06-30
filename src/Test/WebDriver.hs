@@ -5,7 +5,7 @@ providing most of the functionality you're likely to want.
 
 module Test.WebDriver (
   -- * WebDriver monad
-  WebDriver
+  WebDriver(..)
   , WD(..)
 
   -- * Running WebDriver commands
@@ -57,7 +57,7 @@ module Test.WebDriver (
 
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Capabilities.Proxy
-import Test.WebDriver.Class (WebDriver)
+import Test.WebDriver.Class (WebDriver(..))
 import Test.WebDriver.Commands
 import Test.WebDriver.Config
 import Test.WebDriver.Exceptions
