@@ -81,6 +81,12 @@
      for (let eventType of ["click", "dblclick", "contextmenu"]) {
        document.getElementById("clickable-box").addEventListener(eventType, function(event) {
          console.log("Mouse event", eventType, event);
+
+         // const x = event.pageX;
+         // const y = event.pageY;
+         // console.log("x, y", x, y);
+         // document.body.insertAdjacentHTML("afterbegin", `<div class='magic' style='position: absolute; background-color: orange; width: 5px; height: 5px; left: ${x}px; top: ${y}px; z-index: 100000'></div>`);
+
          infoBox.innerText = JSON.stringify({
            eventType: eventType,
            screenX: event.screenX,
