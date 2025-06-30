@@ -194,7 +194,7 @@ getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
   _capabilitiesBrowserName = Just "chrome"
   , _capabilitiesGoogChromeOptions = Just $
     defaultChromeOptions
-      & over (chromeOptionsArgs . non []) (if headless then ("--headless" :) else id)
+      & over (chromeOptionsArgs . non []) (if headless then (\xs -> "--headless" : [i|--window-size=1920,1080|] : xs) else id)
       & over (chromeOptionsArgs . non []) (if browserDependenciesChromeNoSandbox == Just True then ("--no-sandbox" :) else id)
       & set chromeOptionsBinary (Just browserDependenciesChromeChrome)
   }
