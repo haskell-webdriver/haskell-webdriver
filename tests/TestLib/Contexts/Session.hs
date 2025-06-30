@@ -8,10 +8,13 @@ module TestLib.Contexts.Session (
   , introduceSession'
 
   , introduceMobileSession
+
+  , pendingOnNonSelenium
   ) where
 
 import Control.Exception.Safe
 import Control.Monad.IO.Unlift
+import Control.Monad.Reader
 import Data.Maybe
 import Data.String.Interpolate
 import Lens.Micro
@@ -83,3 +86,10 @@ introduceMobileSession = introduceSession' modifyConfig
 
                            & over firefoxOptionsArgs (Just . fromMaybe [])
                            & over (firefoxOptionsArgs . _Just) (\xs -> "--width=375" : "--height=667" : xs)
+
+pendingOnNonSelenium :: (MonadReader ctx m, HasWebDriverContext ctx, MonadIO m) => m ()
+pendingOnNonSelenium = do
+  WebDriverContext {..} <- getContext webdriver
+  case webDriverDriverType of
+    DriverTypeSeleniumJar {} -> return ()
+    _ -> pending

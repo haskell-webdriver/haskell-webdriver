@@ -2,6 +2,9 @@
 
 module Spec.SeleniumSpecific.Uploads where
 
+import Control.Monad.IO.Class
+import qualified Data.Text as T
+import System.FilePath
 import Test.Sandwich
 import Test.WebDriver
 import TestLib.Contexts.Session
@@ -11,9 +14,15 @@ import TestLib.Types
 
 tests :: SessionSpec
 tests = introduceSession $ describe "Uploads" $ before "Open test page" (openStaticServerUrl "/test_file_upload.html") $ do
-  it "Upload file and type its path to the input" $ do
-    filePath <- uploadRawFile "/shopping.txt" 0 "Eggs, Ham, Cheese"
-    findElem (ByCSS "input") >>= sendKeys filePath
+  it "Upload file with sendKeys" $ do
+    Just dir <- getCurrentFolder
+    let fp = dir </> "test-file.txt"
+    liftIO $ writeFile fp "file contents"
+    findElem (ByCSS "input") >>= sendKeys (T.pack fp)
+    findElem (ByCSS "#contents") >>= getText >>= (`shouldBe` "test-file.txt 13")
 
-  it "Page should display its name and size" $ do
+  it "Selenium specific: upload file to grid and use sendKeys to upload to browser" $ do
+    pendingOnNonSelenium
+    filePath <- seleniumUploadRawFile "/shopping.txt" 0 "Eggs, Ham, Cheese"
+    findElem (ByCSS "input") >>= sendKeys filePath
     findElem (ByCSS "#contents") >>= getText >>= (`shouldBe` "shopping.txt 17")

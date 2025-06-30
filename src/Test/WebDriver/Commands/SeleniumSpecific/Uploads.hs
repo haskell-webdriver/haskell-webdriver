@@ -1,8 +1,8 @@
 
 module Test.WebDriver.Commands.SeleniumSpecific.Uploads (
-  uploadFile
-  , uploadRawFile
-  , uploadZipEntry
+  seleniumUploadFile
+  , seleniumUploadRawFile
+  , seleniumUploadZipEntry
   ) where
 
 import Codec.Archive.Zip
@@ -18,28 +18,30 @@ import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
 
 
--- | Uploads a file from the local filesystem by its file path.
--- Returns the remote filepath of the file
-uploadFile :: (HasCallStack, WebDriver wd) => FilePath -> wd Text
-uploadFile path = uploadZipEntry =<< liftIO (readEntry [] path)
+-- | Selenium grid specific: uploads a file from the local filesystem by its
+-- file path. Returns the remote filepath of the file.
+seleniumUploadFile :: (HasCallStack, WebDriver wd) => FilePath -> wd Text
+seleniumUploadFile path = seleniumUploadZipEntry =<< liftIO (readEntry [] path)
 
--- | Uploads a raw bytestring with associated file info.
--- Returns the remote filepath of the file
-uploadRawFile :: (HasCallStack, WebDriver wd) =>
-                 FilePath          -- ^File path to use with this bytestring.
-                 -> Integer        -- ^Modification time
-                                   -- (in seconds since Unix epoch).
-                 -> LBS.ByteString -- ^ The file contents as a lazy ByteString
-                 -> wd Text
-uploadRawFile path t str = uploadZipEntry (toEntry path t str)
+-- | Selenium grid specific: uploads a raw 'LBS.ByteString' with associated file
+-- info. Returns the remote filepath of the file.
+seleniumUploadRawFile :: (
+  HasCallStack, WebDriver wd
+  )
+  -- | File path to use with this bytestring.
+  => FilePath
+  -- | Modification time (in seconds since Unix epoch).
+  -> Integer
+  -- | The file contents as a lazy ByteString.
+  -> LBS.ByteString
+  -> wd Text
+seleniumUploadRawFile path t str = seleniumUploadZipEntry (toEntry path t str)
 
-
--- | Lowest level interface to the file uploading mechanism.
--- This allows you to specify the exact details of
--- the zip entry sent across network.
--- Returns the remote filepath of the extracted file
-uploadZipEntry :: (HasCallStack, WebDriver wd) => Entry -> wd Text
-uploadZipEntry entry = doSessCommand methodPost "/se/file" $ single "file" file
+-- | Selenium grid specific: lowest level interface to the file uploading
+-- mechanism. This allows you to specify the exact details of the zip entry sent
+-- across network. Returns the remote filepath of the extracted file
+seleniumUploadZipEntry :: (HasCallStack, WebDriver wd) => Entry -> wd Text
+seleniumUploadZipEntry entry = doSessCommand methodPost "/se/file" $ single "file" file
   where
     file = entry
          & (`addEntryToArchive` emptyArchive)
