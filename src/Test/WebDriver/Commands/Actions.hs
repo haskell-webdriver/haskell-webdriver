@@ -3,8 +3,8 @@ module Test.WebDriver.Commands.Actions (
   , moveToCenter
   , moveToFrom
   , clickWith
-  , doubleClick
   , clickCenter
+  , doubleClickCenter
 
   -- * Lower-level actions API
   , performActions
@@ -70,10 +70,11 @@ clickCenter el = performActions [PointerSource "mouse1" [
   , ActionPointer $ PointerUp LeftButton
   ]]
 
--- | Double click at the current mouse location.
-doubleClick :: (HasCallStack, WebDriver wd) => wd ()
-doubleClick = performActions [PointerSource "mouse1" [
-  ActionPointer $ PointerDown LeftButton
+-- | Helper to double click the center of an element.
+doubleClickCenter :: (HasCallStack, WebDriver wd) => Element -> wd ()
+doubleClickCenter el = performActions [PointerSource "mouse1" [
+  ActionPointer $ PointerMove (PointerElement el) 0 0 movementTimeMs
+  , ActionPointer $ PointerDown LeftButton
   , ActionPointer $ PointerUp LeftButton
   , ActionPause 100
   , ActionPointer $ PointerDown LeftButton

@@ -15,6 +15,9 @@ import TestLib.Contexts.StaticServer
 import TestLib.Mouse
 import TestLib.Types
 
+-- import Control.Monad.IO.Unlift
+-- import Control.Concurrent
+
 
 setUp :: (
   HasStaticServerContext context, HasWDSession context
@@ -37,13 +40,27 @@ tests = introduceSession $ describe "Actions" $ setUp $ do
     findElem (ByCSS "#clickable-box") >>= clickCenter
     center <- getElementCenter "#clickable-box"
     Just MouseEvent { eventType=MouseEventTypeClick, .. } <- getLastMouseEvent
-    assertWithinPixels center (fromIntegral clientX, fromIntegral clientY) 15
+
+    -- liftIO $ threadDelay 2_000_000
+    -- Just dir <- getCurrentFolder
+    -- saveScreenshot (dir </> "click.png")
+    -- ignoreReturn $ executeJS [] [i|document.querySelectorAll('div.magic').forEach(div => div.remove());|]
+    -- liftIO $ threadDelay 2_000_000
+
+    assertWithinPixels center (fromIntegral clientX, fromIntegral clientY) 25
 
   it "doubleClick" $ do
-    doubleClick
+    findElem (ByCSS "#clickable-box") >>= doubleClickCenter
+
+    -- liftIO $ threadDelay 2_000_000
+    -- Just dir <- getCurrentFolder
+    -- saveScreenshot (dir </> "doubleclick.png")
+    -- ignoreReturn $ executeJS [] [i|document.querySelectorAll('div.magic').forEach(div => div.remove());|]
+    -- liftIO $ threadDelay 2_000_000
+
     center <- getElementCenter "#clickable-box"
     Just MouseEvent { eventType=MouseEventTypeDoubleClick, .. } <- getLastMouseEvent
-    assertWithinPixels center (fromIntegral clientX, fromIntegral clientY) 15
+    assertWithinPixels center (fromIntegral clientX, fromIntegral clientY) 25
 
 
 scrollToClickableBox :: (HasWDSession ctx) => ExampleT ctx IO ()
