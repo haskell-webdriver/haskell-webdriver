@@ -36,3 +36,10 @@ tests = introduceSession $ describe "Element retrieval" $ before "Open test page
   it "findElemsFrom" $ do
     container <- findElem (ByCSS ".input-boxes")
     (length <$> findElemsFrom container (ByCSS ".input-box")) >>= (`shouldBe` 2)
+
+  it "activeElem" $ do
+    container <- findElem (ByCSS "#input1")
+    click container
+
+    el <- activeElem
+    el `shouldBe` container

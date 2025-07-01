@@ -35,7 +35,7 @@ findElemsFrom e = doElemCommand methodPost e "/elements"
 
 -- | Return the element that currently has focus.
 activeElem :: (HasCallStack, WebDriver wd) => wd Element
-activeElem = doSessCommand methodPost "/element/active" Null
+activeElem = doSessCommand methodGet "/element/active" Null
 
 -- | Specifies element(s) within a DOM tree using various selection methods.
 data Selector =
