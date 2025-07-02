@@ -48,8 +48,10 @@ import Data.ByteString as BS (ByteString)
 import qualified Data.ByteString.Lazy as BL
 import Data.Maybe (listToMaybe)
 import Data.Monoid
+import Data.String
 import Data.String.Interpolate
 import Data.Text (Text)
+import qualified Data.Text as T
 import Network.HTTP.Client (Manager, Request, Response)
 import Network.HTTP.Types (RequestHeaders)
 import Prelude -- hides some "redundant import" warnings
@@ -59,6 +61,8 @@ import Prelude -- hides some "redundant import" warnings
 -- the server on session creation, and act to identify a session in progress.
 newtype SessionId = SessionId Text
   deriving (Eq, Ord, Show, Read, FromJSON, ToJSON)
+instance IsString SessionId where
+  fromString s = SessionId (T.pack s)
 
 -- | The local state of a WebDriver session. This structure is passed
 -- implicitly through all 'WD' computations.
