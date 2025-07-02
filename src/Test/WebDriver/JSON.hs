@@ -112,13 +112,13 @@ single a x = object [(fromText a) .= x]
 
 -- | Construct a 2-element JSON 'object' from a pair of keys and a pair of
 -- values.
-pair :: (ToJSON a, ToJSON b) => (Text,Text) -> (a,b) -> Value
-pair (a,b) (x,y) = object [fromText a .= x, fromText b .= y]
+pair :: (ToJSON a, ToJSON b) => (Text, Text) -> (a, b) -> Value
+pair (a, b) (x,y) = object [fromText a .= x, fromText b .= y]
 
 -- | Construct a 3-element JSON 'object' from a triple of keys and a triple of
 -- values.
-triple :: (ToJSON a, ToJSON b, ToJSON c) => (Text,Text,Text) -> (a,b,c) -> Value
-triple (a,b,c) (x,y,z) = object [fromText a .= x, fromText b.= y, fromText c .= z]
+triple :: (ToJSON a, ToJSON b, ToJSON c) => (Text, Text, Text) -> (a, b, c) -> Value
+triple (a, b, c) (x, y, z) = object [fromText a .= x, fromText b.= y, fromText c .= z]
 
 -- | Parse a lazy 'ByteString' as a top-level JSON 'Value', then convert it to an
 -- instance of 'FromJSON'..
