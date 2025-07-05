@@ -8,7 +8,6 @@ module Test.WebDriver.Config (
   , wdRequestHeaders
   , wdAuthHeaders
   , wdCapabilities
-  , wdHistoryConfig
   , wdBasePath
   , wdHTTPManager
   , wdHTTPRetryCount
@@ -26,6 +25,7 @@ import Lens.Micro.TH
 import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import Network.HTTP.Types (RequestHeaders)
 import Test.WebDriver.Capabilities
+import Test.WebDriver.Monad
 import Test.WebDriver.Session
 
 
@@ -44,9 +44,6 @@ data WDConfig = WDConfig {
   -- | Custom request headers to add *only* to session creation requests. This
   --  is usually done when a WebDriver server requires HTTP auth.
   , _wdAuthHeaders :: RequestHeaders
-  -- | Specifies behavior of HTTP request/response history. By default we use
-  -- 'unlimitedHistory'.
-  , _wdHistoryConfig :: SessionHistoryConfig
   -- | Use the given http-client 'Manager' instead of automatically creating
   -- one.
   , _wdHTTPManager :: Maybe Manager
@@ -65,7 +62,6 @@ instance Default WDConfig where
     , _wdRequestHeaders = []
     , _wdAuthHeaders = []
     , _wdCapabilities = defaultCaps
-    , _wdHistoryConfig = unlimitedHistory
     , _wdBasePath = ""
     , _wdHTTPManager = Nothing
     , _wdHTTPRetryCount = 0
@@ -83,12 +79,12 @@ class WebDriverConfig c where
   mkCaps :: MonadIO m => c -> m Capabilities
 
   -- | Produces a 'WDSession' from the given configuration.
-  mkSession :: MonadIO m => c -> m WDSession
+  mkSession :: MonadIO m => c -> SessionId -> m WDSession
 
 instance WebDriverConfig WDConfig where
   mkCaps (WDConfig {..}) = return _wdCapabilities
 
-  mkSession (WDConfig {..}) = do
+  mkSession (WDConfig {..}) sessId = do
     manager <- maybe createManager return _wdHTTPManager
     return WDSession {
       wdSessHost = fromString $ _wdHost
@@ -96,9 +92,7 @@ instance WebDriverConfig WDConfig where
       , wdSessRequestHeaders = _wdRequestHeaders
       , wdSessAuthHeaders = _wdAuthHeaders
       , wdSessBasePath = fromString $ _wdBasePath
-      , wdSessId = Nothing
-      , wdSessHist = []
-      , wdSessHistUpdate = _wdHistoryConfig
+      , wdSessId = sessId
       , wdSessHTTPManager = manager
       , wdSessHTTPRetryCount = _wdHTTPRetryCount
       }

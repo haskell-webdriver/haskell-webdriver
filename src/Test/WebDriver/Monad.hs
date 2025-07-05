@@ -6,84 +6,127 @@
 {-# LANGUAGE ConstraintKinds #-}
 
 module Test.WebDriver.Monad (
-  -- * WebDriver monad
-  WD(..)
-  , runWD
-  , runWD'
-  , runSession
-  , finallyClose
-  , closeOnException
-  , getSessionHistory
-  , dumpSessionHistory
+  -- * WDSessionState class
+  WDSessionState(..)
+  , WDSessionStatePut(..)
+  , WDSessionStateUnliftIO
+
+  -- ** WebDriver sessions
+  , SessionId(..)
+  , WDSession(..)
+
+  -- * WebDriver class
+  , WebDriver(..)
+  , WebDriverBase(..)
+  , Method
+  , methodDelete
+  , methodGet
+  , methodPost
   ) where
 
 import Control.Applicative
 import Control.Exception.Safe
 import Control.Monad.Fix
 import Control.Monad.IO.Class
-import Control.Monad.Trans.State.Strict (StateT, evalStateT, get, put, runStateT)
+import Control.Monad.IO.Unlift
+import Control.Monad.Reader
+import Data.Aeson
+import Data.ByteString as BS (ByteString)
 import Data.CallStack
+import Data.String
+import Data.String.Interpolate
+import Data.Text (Text)
+import qualified Data.Text as T
+import Lens.Micro
+import Network.HTTP.Client (Manager, Request, Response)
+import Network.HTTP.Types (RequestHeaders)
+import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
 import Prelude -- hides some "unused import" warnings
-import Test.WebDriver.Class
-import Test.WebDriver.Commands
-import Test.WebDriver.Config
-import Test.WebDriver.Internal
-import Test.WebDriver.Session
+
+#if !MIN_VERSION_base(4,8,0)
+import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't work with "import Data.Monoid"
+#endif
 
 
--- | A state monad for WebDriver commands. This is a basic monad that has an
--- implementation of 'WebDriver'.
-newtype WD a = WD (StateT WDSession IO a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix, MonadMask)
+-- | An opaque identifier for a WebDriver session. These handles are produced by
+-- the server on session creation, and act to identify a session in progress.
+newtype SessionId = SessionId Text
+  deriving (Eq, Ord, Show, Read, FromJSON, ToJSON)
+instance IsString SessionId where
+  fromString s = SessionId (T.pack s)
 
-instance WDSessionState WD where
-  getSession = WD get
-  putSession = WD . put
+-- | The local state of a WebDriver session. This structure is passed
+-- implicitly through all 'WD' computations.
+data WDSession = WDSession {
+  -- server hostname
+  wdSessHost :: BS.ByteString
+  -- server port
+  , wdSessPort :: Int
+  -- Base path for API requests
+  , wdSessBasePath :: BS.ByteString
+  -- | An opaque reference identifying the session to use with 'WD' commands.
+  , wdSessId   :: SessionId
+  -- | HTTP 'Manager' used for connection pooling by the http-client library.
+  , wdSessHTTPManager :: Manager
+  -- | Number of times to retry a HTTP request if it times out
+  , wdSessHTTPRetryCount :: Int
+  -- | Custom request headers to add to every HTTP request.
+  , wdSessRequestHeaders :: RequestHeaders
+  -- | Custom request headers to add *only* to session creation requests. This is
+  -- usually done when a WebDriver server requires HTTP auth.
+  , wdSessAuthHeaders :: RequestHeaders
+  }
 
-instance WebDriver WD where
-  doCommand method path args =
-    mkRequest method path args
-    >>= sendHTTPRequest
-    >>= either throwIO return
-    >>= getJSONResult
-    >>= either throwIO return
+instance Show WDSession where
+  show (WDSession {..}) = [i|WDSession<[#{wdSessId}] at #{wdSessHost}:#{wdSessPort}#{wdSessBasePath}>|]
 
--- | Executes a 'WD' computation within the 'IO' monad, using the given
--- 'WDSession' as state for WebDriver requests.
-runWD :: WDSession -> WD a -> IO a
-runWD sess (WD wd) = evalStateT wd sess
+class HasLens ctx a where
+  getLens :: Lens' ctx a
 
--- | Same as 'runWD', but also returns the final 'WDSession'.
-runWD' :: WDSession -> WD a -> IO (a, WDSession)
-runWD' sess (WD wd) = runStateT wd sess
+class WDSessionState m where
+  getSession :: m WDSession
 
--- | Executes a 'WD' computation within the 'IO' monad, automatically creating a new session beforehand.
---
--- NOTE: session is not automatically closed when complete. If you want this behavior, use 'finallyClose'.
--- Example:
---
--- >    runSessionThenClose action = runSession myConfig . finallyClose $ action
-runSession :: HasCallStack => WebDriverConfig conf => conf -> WD a -> IO a
-runSession conf wd = do
-  sess <- mkSession conf
-  caps <- mkCaps conf
-  runWD sess $ createSession caps >> wd
+class (WDSessionState m) => WDSessionStatePut m where
+  withSession :: WDSession -> m a -> m a
+  withModifiedSession :: (WDSession -> WDSession) -> m a -> m a
 
--- | A finalizer ensuring that the session is always closed at the end of
--- the given 'WD' action, regardless of any exceptions.
-finallyClose :: (HasCallStack, WebDriver wd, MonadMask wd) => wd a -> wd a
-finallyClose wd = closeOnException wd <* closeSession
+-- type WDSessionState ctx m = (MonadReader ctx m, HasLens ctx WDSession)
 
--- | Exception handler that closes the session when an
--- asynchronous exception is thrown, but otherwise leaves the session open
--- if the action was successful.
-closeOnException :: (HasCallStack, MonadMask wd) => WebDriver wd => wd a -> wd a
-closeOnException wd = wd `onException` closeSession
+-- | Constraint synonym the common pairing of 'WDSessionState' and 'MonadUnliftIO'.
+type WDSessionStateUnliftIO m = (WDSessionState m, MonadUnliftIO m)
 
--- | Gets the command history for the current session.
-getSessionHistory :: (WDSessionState wd) => wd [SessionHistory]
-getSessionHistory = fmap wdSessHist getSession
+-- | A class for monads that can handle wire protocol requests. This is the
+-- operation underlying all of the high-level commands exported in
+-- "Test.WebDriver.Commands".
+class (WDSessionState m, MonadUnliftIO m) => WebDriver m where
+  doCommand :: (
+    HasCallStack, ToJSON a, FromJSON b, ToJSON b
+    )
+    -- | HTTP request method
+    => Method
+    -- | URL of request
+    -> Text
+    -- | JSON parameters passed in the body of the request. Note that, as a
+    -- special case, anything that converts to Data.Aeson.Null will result in an
+    -- empty request body.
+    -> a
+    -- | The JSON result of the HTTP request.
+    -> m b
 
--- | Prints a history of API requests to stdout after computing the given action.
-dumpSessionHistory :: (HasCallStack, WDSessionStateControl wd, MonadMask wd) => wd a -> wd a
-dumpSessionHistory = (`finally` (getSession >>= liftIO . print . wdSessHist))
+-- | A class for monads that can handle wire protocol requests. This is the
+-- operation underlying all of the high-level commands exported in
+-- "Test.WebDriver.Commands".
+class (MonadUnliftIO m) => WebDriverBase m where
+  doCommandBase :: (
+    HasCallStack, ToJSON a, FromJSON b, ToJSON b
+    )
+    -- | HTTP request method
+    => Method
+    -- | URL of request
+    -> Text
+    -- | JSON parameters passed in the body of the request. Note that, as a
+    -- special case, anything that converts to Data.Aeson.Null will result in an
+    -- empty request body.
+    -> a
+    -- | The JSON result of the HTTP request.
+    -> m b

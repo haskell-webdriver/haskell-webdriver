@@ -7,15 +7,15 @@ module Test.WebDriver.Commands.DocumentHandling (
   , JSArg(..)
   ) where
 
-import Control.Exception.Safe (throwIO, handle)
 import Data.Aeson as A
 import Data.CallStack
 import qualified Data.Foldable as F
 import Data.Text (Text)
-import Test.WebDriver.Class
+import Test.WebDriver.Monad
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
+import UnliftIO.Exception (handle, throwIO)
 
 
 -- | Get the current page source

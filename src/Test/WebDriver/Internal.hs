@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE PatternGuards #-}
 
 -- | The HTTP/JSON plumbing used to implement the 'WD' monad.
@@ -11,13 +12,19 @@ module Test.WebDriver.Internal (
   mkRequest, sendHTTPRequest
   , getJSONResult
   , handleJSONErr
-  , handleRespSessionId
   , WDResponse(..)
+
+  , WD(..)
+  , runWD
+
   ) where
 
 import Control.Applicative
-import Control.Exception.Safe (Exception, SomeException(..), toException, fromException, throwIO, try)
+import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
+import Control.Monad.Fix
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
+import Control.Monad.Reader
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 import qualified Data.ByteString.Base64.Lazy as B64
@@ -27,6 +34,7 @@ import Data.ByteString.Lazy.Char8 as LBS (unpack, null)
 import qualified Data.ByteString.Lazy.Internal as LBS (ByteString(..))
 import Data.CallStack
 import Data.Char
+import Data.Functor
 import Data.String (fromString)
 import Data.Text as T (Text, splitOn, null)
 import qualified Data.Text.Encoding as TE
@@ -37,15 +45,37 @@ import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Prelude -- hides some "unused import" warnings
 import System.Environment
-import Test.WebDriver.Class
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
+import Test.WebDriver.Monad
 import Test.WebDriver.Session
 import Text.Pretty.Simple
+import UnliftIO.Exception (Exception, SomeException(..), toException, fromException, throwIO, try)
 
 #if !MIN_VERSION_http_client(0,4,30)
 import Data.Default (def)
 #endif
+
+-- | A state monad for WebDriver commands. This is a basic monad that has an
+-- implementation of 'WebDriver'.
+newtype WD a = WD (ReaderT WDSession IO a)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix, MonadMask, MonadUnliftIO)
+
+instance WDSessionState WD where
+  getSession = WD ask
+
+instance WebDriver WD where
+  doCommand method path args =
+    mkRequest method path args
+    >>= sendHTTPRequest
+    >>= either throwIO return
+    >>= getJSONResult
+    >>= either throwIO return
+
+-- | Executes a 'WD' computation within the 'IO' monad, using the given
+-- 'WDSession' as state for WebDriver requests.
+runWD :: WDSession -> WD a -> IO a
+runWD sess (WD wd) = runReaderT wd sess
 
 -- | This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
 fromStrict :: BS.ByteString -> LBS.ByteString
@@ -61,15 +91,8 @@ defaultRequest = HTTPClient.defaultRequest
 defaultRequest = def
 #endif
 
-printInDebugEnv :: Show a => a -> IO ()
-printInDebugEnv s = do
-  mDebug <- lookupEnv "WEBDRIVER_DEBUG"
-  case mDebug of
-    Just x | fmap toLower x == "true" -> pPrint s
-    _ -> pure ()
-
 -- | Construct an HTTP 'Request' value when given a list of headers, method, and URL fragment.
-mkRequest :: (WDSessionState s, ToJSON a) => Method -> Text -> a -> s Request
+mkRequest :: (Monad m, WDSessionState m, ToJSON a) => Method -> Text -> a -> m Request
 mkRequest meth wdPath args = do
   WDSession {..} <- getSession
   let body = case toJSON args of
@@ -88,21 +111,13 @@ mkRequest meth wdPath args = do
         , checkStatus = \_ _ _ -> Nothing
 #endif
         }
-  liftIO $ printInDebugEnv req
   return req
 
 -- | Send an HTTP request to the remote WebDriver server.
-sendHTTPRequest :: (WDSessionStateIO s) => Request -> s (Either SomeException (Response ByteString))
+sendHTTPRequest :: (MonadIO m, WDSessionState m) => Request -> m (Either SomeException (Response ByteString))
 sendHTTPRequest req = do
   s@WDSession{..} <- getSession
   (nRetries, tryRes) <- liftIO . retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
-  let h = SessionHistory {
-        histRequest = req
-        , histResponse = tryRes
-        , histRetryCount = nRetries
-        }
-  putSession s { wdSessHist = wdSessHistUpdate h wdSessHist }
-  liftIO $ printInDebugEnv tryRes
   return tryRes
 
 retryOnTimeout :: Int -> IO a -> IO (Int, (Either SomeException a))
@@ -122,11 +137,11 @@ retryOnTimeout maxRetry go = retry' 0
         other -> return (nRetries, other)
 
 -- | Parse a 'WDResponse' object from a given HTTP response.
-getJSONResult :: (HasCallStack, WDSessionStateControl s, FromJSON a) => Response ByteString -> s (Either SomeException a)
+getJSONResult :: (HasCallStack, WDSessionStateUnliftIO s, FromJSON a) => Response ByteString -> s (Either SomeException a)
 getJSONResult r
   --malformed request errors
   | code >= 400 && code < 500 = do
-    lastReq <- mostRecentHTTPRequest <$> getSession
+    let lastReq :: Maybe String = undefined
     returnErr . UnknownCommand . maybe reason show $ lastReq
   --server-side errors
   | code >= 500 && code < 600 =
@@ -141,14 +156,6 @@ getJSONResult r
           returnHTTPErr ServerError
       Nothing ->
         returnHTTPErr (ServerError . ("HTTP response missing content type. Server reason was: "++))
-  --redirect case (used as a response to createSession requests)
-  | code == 302 || code == 303 =
-    case lookup hLocation headers of
-      Nothing ->  returnErr . HTTPStatusUnknown code $ LBS.unpack body
-      Just loc -> do
-        let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ BS.unpack loc
-        modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
-        returnNull
   -- No Content response
   | code == 204 = returnNull
   -- HTTP Success
@@ -158,7 +165,7 @@ getJSONResult r
       else do
         rsp@WDResponse {rspVal = val} <- parseJSON' body
         handleJSONErr rsp >>= maybe
-          (handleRespSessionId rsp >> Right <$> fromJSON' val)
+          (Right <$> fromJSON' val)
           returnErr
   -- other status codes: return error
   | otherwise = returnHTTPErr (HTTPStatusUnknown code)
@@ -175,25 +182,10 @@ getJSONResult r
     body = responseBody r
     headers = responseHeaders r
 
--- | Handle a 'WDResponse', storing the returned session ID from the server if not present.
--- Also checks that the session ID doesn't change.
-handleRespSessionId :: (HasCallStack, WDSessionStateIO s) => WDResponse -> s ()
-handleRespSessionId WDResponse{rspSessId = sessId'} = do
-  sess@WDSession { wdSessId = sessId} <- getSession
-  case (sessId, (==) <$> sessId <*> sessId') of
-    -- If our monad has an uninitialized session ID, initialize it from the response object
-    (Nothing, _) -> do
-      putSession (sess { wdSessId = sessId' })
-
-    -- If the response ID doesn't match our local ID, throw an error.
-    (_, Just False) ->
-      throwIO . ServerError $ "Server response session ID (" ++ show sessId' ++ ") does not match local session ID (" ++ show sessId ++ ")"
-
-    _ ->  return ()
 
 -- | Determine if a 'WDResponse' is errored, and return a suitable 'Exception' if so.
 -- This will be a 'FailedCommand'.
-handleJSONErr :: (HasCallStack, WDSessionStateControl s) => WDResponse -> s (Maybe SomeException)
+handleJSONErr :: (HasCallStack, WDSessionStateUnliftIO s) => WDResponse -> s (Maybe SomeException)
 handleJSONErr WDResponse{rspStatus = 0} = return Nothing
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
   sess <- getSession

@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE ConstraintKinds #-}
+{-# OPTIONS_GHC -fno-warn-deriving-typeable #-}
 
 module Test.WebDriver.Exceptions.Internal (
   InvalidURL(..)
@@ -20,7 +21,7 @@ module Test.WebDriver.Exceptions.Internal (
 
 import Control.Applicative
 import Control.Exception (Exception)
-import Control.Exception.Safe (throwIO)
+import Control.Monad.IO.Class
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 import Data.ByteString.Lazy.Char8 (ByteString)
@@ -32,7 +33,9 @@ import qualified Data.Text.Lazy.Encoding as TLE
 import Data.Typeable (Typeable)
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.JSON
+import Test.WebDriver.Monad
 import Test.WebDriver.Session
+import UnliftIO.Exception (throwIO)
 
 
 instance Exception InvalidURL
@@ -127,21 +130,23 @@ instance Show FailedCommandInfo where
 
       sess = case errSess i of
         Nothing -> showString "None"
-        Just WDSession{..} ->
-            let sessId = maybe "<no session id>" show wdSessId
+        Just (WDSession {..}) ->
+            let sessId = show wdSessId
             in showString sessId . showString " at "
                 . shows wdSessHost . showChar ':' . shows wdSessPort
 
 
 -- | Constructs a FailedCommandInfo from only an error message.
-mkFailedCommandInfo :: (WDSessionState s) => String -> CallStack -> s FailedCommandInfo
+mkFailedCommandInfo :: (Monad m, WDSessionState m) => String -> CallStack -> m FailedCommandInfo
 mkFailedCommandInfo m cs = do
   sess <- getSession
-  return $ FailedCommandInfo { errMsg = m
-                             , errSess = Just sess
-                             , errScreen = Nothing
-                             , errClass = Nothing
-                             , errStack = fmap callStackItemToStackFrame cs }
+  return $ FailedCommandInfo {
+    errMsg = m
+    , errSess = Just sess
+    , errScreen = Nothing
+    , errClass = Nothing
+    , errStack = fmap callStackItemToStackFrame cs
+    }
 
 -- | Use GHC's 'CallStack' capabilities to return a callstack to help debug a 'FailedCommand'.
 -- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
@@ -153,7 +158,7 @@ externalCallStack = dropWhile isWebDriverFrame callStack
 
 -- | Convenience function to throw a 'FailedCommand' locally with no server-side
 -- info present.
-failedCommand :: (HasCallStack, WDSessionStateIO s) => FailedCommandType -> String -> s a
+failedCommand :: (HasCallStack, WDSessionState m, MonadIO m) => FailedCommandType -> String -> m a
 failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m externalCallStack
 
 -- | An individual stack frame from the stack trace provided by the server

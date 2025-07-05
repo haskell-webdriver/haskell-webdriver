@@ -29,30 +29,41 @@ import Data.Aeson.TH as A
 import Data.CallStack
 import Test.WebDriver.Capabilities (Capabilities)
 import Test.WebDriver.Capabilities.Aeson
-import Test.WebDriver.Class
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
+import Test.WebDriver.Monad
 import Test.WebDriver.Session
 
 
 -- | Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action.
 --
 -- Note: if you're using 'runSession' to run your WebDriver commands, you don't need to call this explicitly.
-createSession :: (HasCallStack, WebDriver wd) => Capabilities -> wd WDSession
+createSession :: (HasCallStack, WebDriverBase wd) => Capabilities -> wd SessionId
 createSession caps = do
   -- This is what the old JSON wire protocol session creation looks like:
   -- ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "desiredCapabilities" $ caps
 
-  -- It seems Selenium 3 actually goes into W3C protocol mode if it sees capabilities that look like the following
-  ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "capabilities" $ single "alwaysMatch" caps
-  getSession
+  --   --redirect case (used as a response to createSession requests)
+  -- | code == 302 || code == 303 =
+  --   case lookup hLocation headers of
+  --     Nothing ->  returnErr . HTTPStatusUnknown code $ LBS.unpack body
+  --     Just loc -> do
+  --       let sessId = last . filter (not . T.null) . splitOn "/" . fromString $ BS.unpack loc
+  --       modifySession $ \sess -> sess {wdSessId = Just (SessionId sessId)}
+  --       returnNull
+
+  undefined
+  -- -- It seems Selenium 3 actually goes into W3C protocol mode if it sees capabilities that look like the following
+  -- ignoreReturn . withAuthHeaders . doCommand methodPost "/session" . single "capabilities" $ single "alwaysMatch" caps
+  -- getSession
 
 -- | Close the current session and the browser associated with it.
 closeSession :: (HasCallStack, WebDriver wd) => wd ()
 closeSession = do
-  s@WDSession {} <- getSession
-  noReturn $ doSessCommand methodDelete "" Null
-  putSession s { wdSessId = Nothing }
+  undefined
+  -- s@WDSession {} <- getSession
+  -- noReturn $ doSessCommand methodDelete "" Null
+  -- putSession s { wdSessId = Nothing }
 
 -- | Get information from the server as a JSON 'Object'. For more information
 -- about this object see

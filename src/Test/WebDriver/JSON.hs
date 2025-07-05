@@ -49,8 +49,8 @@ module Test.WebDriver.JSON (
   ) where
 
 import Control.Applicative
-import Control.Exception.Safe
 import Control.Monad (join, void)
+import Control.Monad.IO.Class
 import Data.Aeson as Aeson
 import Data.Aeson.Types
 import Data.Attoparsec.ByteString.Lazy (Result(..))
@@ -59,7 +59,8 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.String
 import Data.Text (Text)
 import Prelude -- hides some "unused import" warnings
-import Test.WebDriver.Class (WebDriver)
+import Test.WebDriver.Monad (WebDriver)
+import UnliftIO.Exception
 
 #if MIN_VERSION_aeson(2,2,0)
 -- This comes from the attoparsec-aeson package
@@ -122,15 +123,15 @@ triple (a, b, c) (x, y, z) = object [fromText a .= x, fromText b.= y, fromText c
 
 -- | Parse a lazy 'ByteString' as a top-level JSON 'Value', then convert it to an
 -- instance of 'FromJSON'..
-parseJSON' :: MonadThrow wd => FromJSON a => ByteString -> wd a
+parseJSON' :: MonadIO m => FromJSON a => ByteString -> m a
 parseJSON' = apResultToWD . AP.parse json
 
 -- | Convert a JSON 'Value' to an instance of 'FromJSON'.
-fromJSON' :: MonadThrow wd => FromJSON a => Value -> wd a
+fromJSON' :: MonadIO m => FromJSON a => Value -> m a
 fromJSON' = aesonResultToWD . fromJSON
 
 -- | This operator is a wrapper over Aeson's '.:' operator.
-(!:) :: (MonadThrow wd, FromJSON a) => Object -> Text -> wd a
+(!:) :: (MonadIO wd, FromJSON a) => Object -> Text -> wd a
 o !: k = aesonResultToWD $ parse (.: fromText k) o
 
 -- | Due to a breaking change in the '.:?' operator of aeson 0.10 (see <https://github.com/bos/aeson/issues/287>) that was subsequently reverted, this operator
@@ -142,7 +143,7 @@ o .:?? k = fmap join (o .:? fromText k)
 -- keys to extract from the object. The third string is the name of the
 -- calling function, for better error reporting.
 parsePair :: (
-  MonadThrow wd, FromJSON a, FromJSON b
+  MonadIO wd, FromJSON a, FromJSON b
   ) => String -> String -> String -> Value -> wd (a, b)
 parsePair a b funcName v =
   case v of
@@ -155,7 +156,7 @@ parsePair a b funcName v =
 -- specify the keys to extract from the object. The fourth string is the name
 -- of the calling function, for better error reporting.
 parseTriple :: (
-  MonadThrow wd, FromJSON a, FromJSON b, FromJSON c
+  MonadIO wd, FromJSON a, FromJSON b, FromJSON c
   ) => String -> String -> String ->  String -> Value -> wd (a, b, c)
 parseTriple a b c funcName v =
   case v of
@@ -167,13 +168,13 @@ parseTriple a b c funcName v =
                 ++ ", " ++ b ++ ", " ++ c ++ ") pair"
 
 -- | Convert an attoparsec parser result to 'WD'.
-apResultToWD :: (MonadThrow wd, FromJSON a) => AP.Result Value -> wd a
+apResultToWD :: (MonadIO wd, FromJSON a) => AP.Result Value -> wd a
 apResultToWD p = case p of
   Done _ res -> fromJSON' res
   Fail _ _ err -> throwIO $ BadJSON err
 
 -- |  Convert an Aeson parser result to 'WD'.
-aesonResultToWD :: (MonadThrow wd) => Aeson.Result a -> wd a
+aesonResultToWD :: (MonadIO wd) => Aeson.Result a -> wd a
 aesonResultToWD r = case r of
   Success val -> return val
   Error err -> throwIO $ BadJSON err

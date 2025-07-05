@@ -8,16 +8,16 @@ module Test.WebDriver.Commands.Navigation (
   , getTitle
   ) where
 
-import Control.Exception.Safe (throwIO)
 import Data.Aeson as A
 import Data.CallStack
 import Data.Text (Text)
 import Network.URI hiding (path)  -- suppresses warnings
 import Prelude -- hides some "unused import" warnings
-import Test.WebDriver.Class
+import Test.WebDriver.Monad
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
+import UnliftIO.Exception (throwIO)
 
 
 -- | Opens a new page by the given URL.

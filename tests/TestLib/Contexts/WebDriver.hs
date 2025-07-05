@@ -99,7 +99,8 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
             browserDeps <- getContext browserDependencies
 
             wdConfig <- getWDConfig' webDriverContext browserDeps
-            baseSessionVar <- mkSession wdConfig >>= newIORef
+            sessId <- undefined
+            baseSessionVar <- mkSession wdConfig sessId >>= newIORef
 
             pushContext wdSession baseSessionVar $ do
               status <- serverStatus

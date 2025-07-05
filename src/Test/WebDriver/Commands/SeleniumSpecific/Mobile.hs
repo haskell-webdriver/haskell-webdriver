@@ -25,7 +25,7 @@ import Data.Aeson.Types
 import Data.CallStack
 import Data.String (fromString)
 import Data.Text (toUpper, toLower)
-import Test.WebDriver.Class
+import Test.WebDriver.Monad
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
 

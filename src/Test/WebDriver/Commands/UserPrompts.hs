@@ -9,7 +9,7 @@ module Test.WebDriver.Commands.UserPrompts (
 import Data.Aeson as A
 import Data.CallStack
 import Data.Text (Text)
-import Test.WebDriver.Class
+import Test.WebDriver.Monad
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
 

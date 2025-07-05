@@ -9,19 +9,13 @@ module Test.WebDriver (
   , WD(..)
 
   -- * Running WebDriver commands
-  , runSession
+  -- , runSession
   , withSession
   , runWD
 
   -- * WebDriver configuration
   , WDConfig(..)
   , defaultConfig
-
-  -- ** Session history configuration
-  , SessionHistoryConfig
-  , noHistory
-  , unlimitedHistory
-  , onlyMostRecentHistory
 
   -- ** HTTP request header utilities
   , withRequestHeaders
@@ -44,22 +38,17 @@ module Test.WebDriver (
   -- , firefox, chrome, ie, opera, iPhone, iPad, android
 
   -- * Exception handling
-  , finallyClose
-  , closeOnException
+  -- , finallyClose
+  -- , closeOnException
 
   , module Test.WebDriver.Exceptions
-
-  -- * Accessing session history
-  , SessionHistory(..)
-  , getSessionHistory
-  , dumpSessionHistory
   ) where
 
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Capabilities.Proxy
-import Test.WebDriver.Class (WebDriver(..))
 import Test.WebDriver.Commands
 import Test.WebDriver.Config
 import Test.WebDriver.Exceptions
+import Test.WebDriver.Internal
 import Test.WebDriver.Monad
 import Test.WebDriver.Session

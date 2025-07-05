@@ -26,7 +26,6 @@ module Test.WebDriver.CommandUtil (
   ) where
 
 import Control.Applicative
-import Control.Exception.Safe
 import Data.Aeson
 import Data.Aeson.Types
 import Data.CallStack
@@ -35,9 +34,10 @@ import qualified Data.Text as T
 import Data.Text.Encoding as TE
 import qualified Network.HTTP.Types.URI as HTTP
 import Prelude -- hides some "unused import" warnings
-import Test.WebDriver.Class
 import Test.WebDriver.JSON
+import Test.WebDriver.Monad
 import Test.WebDriver.Session
+import UnliftIO.Exception
 
 #if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.Key as A
@@ -85,20 +85,15 @@ doSessCommand :: (
   HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
   ) => Method -> Text -> a -> wd b
 doSessCommand method path args = do
-  WDSession { wdSessId = mSessId } <- getSession
-  case mSessId of
-    Nothing -> throwIO $ NoSessionId msg callStack
-      where
-        msg = "doSessCommand: No session ID found for relative URL " ++ show path
-    Just (SessionId sId) ->
-      -- Catch BadJSON exceptions here, since most commands go through this function.
-      -- Then, re-throw them with "error", which automatically appends a callstack
-      -- to the message in modern GHCs.
-      -- This callstack makes it easy to see which command caused the BadJSON exception,
-      -- without exposing too many internals.
-      catch
-        (doCommand method (T.concat ["/session/", urlEncode sId, path]) args)
-        (\(e :: BadJSON) -> error $ show e)
+  WDSession { wdSessId = SessionId sId } <- getSession
+  -- Catch BadJSON exceptions here, since most commands go through this function.
+  -- Then, re-throw them with "error", which automatically appends a callstack
+  -- to the message in modern GHCs.
+  -- This callstack makes it easy to see which command caused the BadJSON exception,
+  -- without exposing too many internals.
+  catch
+    (doCommand method (T.concat ["/session/", urlEncode sId, path]) args)
+    (\(e :: BadJSON) -> error $ show e)
 
 -- | A wrapper around 'doSessCommand' to create element URLs.
 -- For example, passing a URL of "/active" will expand to

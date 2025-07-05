@@ -13,7 +13,7 @@ import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString, writeFile)
 import Data.CallStack
 import qualified Data.Text.Lazy.Encoding as TL
-import Test.WebDriver.Class
+import Test.WebDriver.Monad
 import Test.WebDriver.CommandUtil
 
 

@@ -49,16 +49,9 @@ introduceSession' modifyConfig = introduce "Introduce session" wdSession alloc c
       browserDeps <- getContext browserDependencies
 
       wdConfig <- getWDConfig browserDeps >>= modifyConfig
-      baseSessionVar <- mkSession wdConfig >>= newIORef
-
-      session' <- pushContext wdSession baseSessionVar $
-        createSession (_wdCapabilities wdConfig)
-
-      info [i|Created session: #{session'}|]
-
-      writeIORef baseSessionVar session'
-
-      pure baseSessionVar
+      sessId <- createSession (_wdCapabilities wdConfig)
+      info [i|Created session ID: #{sessId}|]
+      mkSession wdConfig sessId >>= newIORef
 
     cleanup var = pushContext wdSession var closeSession
 

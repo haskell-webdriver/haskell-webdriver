@@ -13,9 +13,9 @@ import Data.CallStack
 import Data.Function ((&))
 import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TL
-import Test.WebDriver.Class
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
+import Test.WebDriver.Monad
 
 
 -- | Uploads a file from the local filesystem by its file path. Returns the

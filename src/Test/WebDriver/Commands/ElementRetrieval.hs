@@ -13,8 +13,8 @@ module Test.WebDriver.Commands.ElementRetrieval (
 import Data.Aeson as A
 import Data.CallStack
 import Data.Text (Text)
-import Test.WebDriver.Class
 import Test.WebDriver.CommandUtil
+import Test.WebDriver.Monad
 
 
 -- | Find an element on the page using the given element selector.

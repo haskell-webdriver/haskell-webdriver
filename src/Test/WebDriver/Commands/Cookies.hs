@@ -18,7 +18,7 @@ import Data.CallStack
 import qualified Data.Char as C
 import Data.Text (Text)
 import GHC.Generics
-import Test.WebDriver.Class
+import Test.WebDriver.Monad
 import Test.WebDriver.CommandUtil
 import Test.WebDriver.JSON
 
