@@ -36,7 +36,6 @@ import qualified Network.HTTP.Types.URI as HTTP
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.JSON
 import Test.WebDriver.Monad
-import Test.WebDriver.Session
 import UnliftIO.Exception
 
 #if MIN_VERSION_aeson(2,0,0)

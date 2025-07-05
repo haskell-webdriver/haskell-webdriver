@@ -30,9 +30,7 @@ import Data.CallStack
 import Test.WebDriver.Capabilities (Capabilities)
 import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.CommandUtil
-import Test.WebDriver.JSON
 import Test.WebDriver.Monad
-import Test.WebDriver.Session
 
 
 -- | Create a new session with the given 'Capabilities'. The returned session becomes the \"current session\" for this action.

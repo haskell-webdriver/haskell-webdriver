@@ -7,36 +7,9 @@ module Test.WebDriver.Session (
   , withAuthHeaders
   ) where
 
-import Control.Applicative
-import Control.Monad.Catch (MonadMask)
-import Control.Monad.IO.Class
-import Control.Monad.IO.Unlift
-import Control.Monad.Trans.Class
-import Control.Monad.Trans.Except
-import Control.Monad.Trans.Identity
-import Control.Monad.Trans.Maybe
-import Control.Monad.Trans.RWS.Lazy as LRWS
-import Control.Monad.Trans.RWS.Strict as SRWS
-import Control.Monad.Trans.Reader
-import Control.Monad.Trans.State.Lazy as LS
-import Control.Monad.Trans.State.Strict as SS
-import Control.Monad.Trans.Writer.Lazy as LW
-import Control.Monad.Trans.Writer.Strict as SW
-import Data.Aeson
-import Data.ByteString as BS (ByteString)
-import qualified Data.ByteString.Lazy as BL
-import Data.Maybe (listToMaybe)
-import Data.Monoid
-import Data.String
-import Data.String.Interpolate
-import Data.Text (Text)
-import qualified Data.Text as T
-import GHC.Stack
-import Network.HTTP.Client (Manager, Request, Response)
 import Network.HTTP.Types (RequestHeaders)
 import Prelude -- hides some "redundant import" warnings
 import Test.WebDriver.Monad
-import UnliftIO.Exception (SomeException, onException, try, throwIO)
 
 
 -- | Set a temporary list of custom 'RequestHeaders' to use within the given action.

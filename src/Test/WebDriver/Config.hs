@@ -26,7 +26,6 @@ import Network.HTTP.Client (Manager, newManager, defaultManagerSettings)
 import Network.HTTP.Types (RequestHeaders)
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Monad
-import Test.WebDriver.Session
 
 
 -- | WebDriver session configuration

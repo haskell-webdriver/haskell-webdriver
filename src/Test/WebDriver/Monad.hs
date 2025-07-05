@@ -24,12 +24,7 @@ module Test.WebDriver.Monad (
   , methodPost
   ) where
 
-import Control.Applicative
-import Control.Exception.Safe
-import Control.Monad.Fix
-import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
-import Control.Monad.Reader
 import Data.Aeson
 import Data.ByteString as BS (ByteString)
 import Data.CallStack
@@ -38,7 +33,7 @@ import Data.String.Interpolate
 import Data.Text (Text)
 import qualified Data.Text as T
 import Lens.Micro
-import Network.HTTP.Client (Manager, Request, Response)
+import Network.HTTP.Client (Manager)
 import Network.HTTP.Types (RequestHeaders)
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
 import Prelude -- hides some "unused import" warnings
@@ -80,8 +75,8 @@ data WDSession = WDSession {
 instance Show WDSession where
   show (WDSession {..}) = [i|WDSession<[#{wdSessId}] at #{wdSessHost}:#{wdSessPort}#{wdSessBasePath}>|]
 
-class HasLens ctx a where
-  getLens :: Lens' ctx a
+-- class HasLens ctx a where
+--   getLens :: Lens' ctx a
 
 class WDSessionState m where
   getSession :: m WDSession

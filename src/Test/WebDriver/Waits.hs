@@ -33,7 +33,6 @@ import Data.Time.Clock
 import Test.WebDriver.Commands
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Monad
-import Test.WebDriver.Session
 import UnliftIO.Exception
 
 #if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706

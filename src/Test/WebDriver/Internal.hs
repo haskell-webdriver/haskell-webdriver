@@ -30,13 +30,11 @@ import Data.Aeson.Types (Parser, typeMismatch)
 import qualified Data.ByteString.Base64.Lazy as B64
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.ByteString.Lazy.Char8 as LBS (unpack, null)
+import Data.ByteString.Lazy.Char8 as LBS (null)
 import qualified Data.ByteString.Lazy.Internal as LBS (ByteString(..))
 import Data.CallStack
-import Data.Char
 import Data.Functor
-import Data.String (fromString)
-import Data.Text as T (Text, splitOn, null)
+import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
 import Data.Word (Word8)
 import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..))
@@ -44,12 +42,9 @@ import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Prelude -- hides some "unused import" warnings
-import System.Environment
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
 import Test.WebDriver.Monad
-import Test.WebDriver.Session
-import Text.Pretty.Simple
 import UnliftIO.Exception (Exception, SomeException(..), toException, fromException, throwIO, try)
 
 #if !MIN_VERSION_http_client(0,4,30)
@@ -116,8 +111,8 @@ mkRequest meth wdPath args = do
 -- | Send an HTTP request to the remote WebDriver server.
 sendHTTPRequest :: (MonadIO m, WDSessionState m) => Request -> m (Either SomeException (Response ByteString))
 sendHTTPRequest req = do
-  s@WDSession{..} <- getSession
-  (nRetries, tryRes) <- liftIO . retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
+  WDSession {..} <- getSession
+  (_nRetries, tryRes) <- liftIO . retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
   return tryRes
 
 retryOnTimeout :: Int -> IO a -> IO (Int, (Either SomeException a))

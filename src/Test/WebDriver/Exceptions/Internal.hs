@@ -34,7 +34,6 @@ import Data.Typeable (Typeable)
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.JSON
 import Test.WebDriver.Monad
-import Test.WebDriver.Session
 import UnliftIO.Exception (throwIO)
 
 
