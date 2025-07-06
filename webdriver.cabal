@@ -104,7 +104,6 @@ library
     , filepath >1.0
     , http-client >=0.3
     , http-types >=0.8
-    , microlens
     , microlens-th >=0.4.0.0
     , monad-logger
     , mtl
@@ -184,7 +183,6 @@ test-suite tests
     , sandwich
     , sandwich-contexts
     , string-interpolate
-    , temporary
     , text
     , unliftio
     , unliftio-core

@@ -58,7 +58,6 @@ library:
   - http-client >= 0.3
   - http-types >= 0.8
   - network
-  - microlens
   - microlens-th >= 0.4.0.0
   - monad-logger
   - mtl
@@ -113,7 +112,6 @@ tests:
     - sandwich
     - sandwich-contexts
     - string-interpolate
-    - temporary
     - text
     - unliftio-core
     - unliftio

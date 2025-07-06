@@ -116,7 +116,7 @@ getJSONResult :: (HasCallStack, MonadIO m, FromJSON a) => Response ByteString ->
 getJSONResult r
   -- Malformed request errors
   | code >= 400 && code < 500 = do
-    let lastReq :: Maybe String = undefined
+    let lastReq :: Maybe String = Nothing
     returnErr . UnknownCommand . maybe reason show $ lastReq
   -- Server-side errors
   | code >= 500 && code < 600 =
@@ -164,19 +164,19 @@ getJSONResult r
 -- | Determine if a 'WDResponse' is errored, and return a suitable 'Exception' if so.
 -- This will be a 'FailedCommand'.
 handleJSONErr :: (HasCallStack, MonadIO m) => WDResponse -> m (Maybe SomeException)
-handleJSONErr WDResponse{rspStatus = 0} = return Nothing
-handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
+handleJSONErr (WDResponse {rspStatus = 0}) = return Nothing
+handleJSONErr (WDResponse {rspVal = val, rspStatus = status}) = do
   errInfo <- fromJSON' val
   let screen = B64.decodeLenient <$> errScreen errInfo
-      seleniumStack = errStack errInfo
-      errInfo' = errInfo {
+  let seleniumStack = errStack errInfo
+  let errInfo' = errInfo {
         errSess = Nothing
         -- Append the Haskell stack frames to the ones returned from Selenium
         , errScreen = screen
         , errStack = seleniumStack ++ fmap callStackItemToStackFrame externalCallStack
         }
-      e errType = toException $ FailedCommand errType errInfo'
-  return . Just $ case status of
+  let e errType = toException $ FailedCommand errType errInfo'
+  return $ Just $ case status of
     7   -> e NoSuchElement
     8   -> e NoSuchFrame
     9   -> toException . UnknownCommand . errMsg $ errInfo
@@ -215,14 +215,14 @@ data WDResponse = WDResponse {
 instance FromJSON WDResponse where
   -- We try both options as the wire format changes depending on
   -- whether selenium is running as a hub or standalone
-  parseJSON (Object o) = parseJSONSelenium o
-                         <|> (o .: "value" >>= parseJSONWebDriver)
+  parseJSON (Object o) = parseJSONSelenium o <|> (o .: "value" >>= parseJSONWebDriver)
   parseJSON v = typeMismatch "WDResponse" v
 
 parseJSONSelenium :: Object -> Parser WDResponse
-parseJSONSelenium o = WDResponse <$> o .: "sessionId"
-                                 <*> o .:?? "status" .!= 0
-                                 <*> o .:?? "value" .!= Null
+parseJSONSelenium o = WDResponse
+  <$> o .: "sessionId"
+  <*> o .:?? "status" .!= 0
+  <*> o .:?? "value" .!= Null
 
 parseJSONWebDriver :: Value -> Parser WDResponse
 parseJSONWebDriver (Object o) = do
