@@ -1,7 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE PatternGuards #-}
 
 -- | The HTTP/JSON plumbing used to implement the 'WD' monad.
 --
@@ -44,7 +43,6 @@ import Network.HTTP.Types.Status (Status(..))
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
-import Test.WebDriver.LaunchDriver
 import Test.WebDriver.Types
 import UnliftIO.Exception (Exception, SomeException(..), toException, throwIO, tryAny)
 

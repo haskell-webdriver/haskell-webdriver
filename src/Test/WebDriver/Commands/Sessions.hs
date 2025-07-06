@@ -24,7 +24,6 @@ module Test.WebDriver.Commands.Sessions (
 import Data.Aeson as A
 import Data.Aeson.TH as A
 import Data.CallStack
-import Test.WebDriver.Capabilities (Capabilities)
 import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands

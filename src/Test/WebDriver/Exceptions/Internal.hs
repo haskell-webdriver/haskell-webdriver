@@ -33,7 +33,6 @@ import qualified Data.Text.Lazy.Encoding as TLE
 import Data.Typeable (Typeable)
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.JSON
-import Test.WebDriver.LaunchDriver
 import Test.WebDriver.Types
 import UnliftIO.Exception (throwIO)
 
@@ -130,7 +129,7 @@ instance Show FailedCommandInfo where
 
       sess = case errSess i of
         Nothing -> showString "None"
-        Just sess -> \x -> show sess <> ": " <> x
+        Just s -> \x -> show s <> ": " <> x
 
 -- | Constructs a FailedCommandInfo from only an error message.
 mkFailedCommandInfo :: (Monad m, SessionState m) => String -> CallStack -> m FailedCommandInfo

@@ -52,9 +52,6 @@ data WebDriverContext = WebDriverContext {
   , _webDriverGeckodrivers :: MVar (Map String Driver)
   }
 
-class HasWebDriverContext ctx where
-  getWebDriverContexts :: ctx -> WebDriverContext
-
 mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
 mkEmptyWebDriverContext = WebDriverContext
   <$> newMVar mempty

@@ -8,6 +8,7 @@
 module Main where
 
 import Control.Monad
+import Control.Monad.Reader
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Spec as Spec
@@ -32,31 +33,33 @@ main = do
 
   clo <- parseCommandLineArgs userOptions (return ())
 
-  let introduceSelenium3 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
+  let introduceSelenium3 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx, HasBrowserDependencies ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
       introduceSelenium3 = introduce "Introduce Selenium 3" driverConfig alloc (const $ return ())
         where
           alloc = do
             Just dir <- getCurrentFolder
             java <- getBinaryViaNixPackage @"java" "jre"
             seleniumJar <- getFileViaNixPackage "selenium-server-standalone" tryFindSeleniumJar
+            subDrivers <- getSubDrivers dir
             return $ DriverConfigSeleniumJar {
               driverConfigJava = java
               , driverConfigSeleniumJar = seleniumJar
-              , driverConfigSubDrivers = []
+              , driverConfigSubDrivers = subDrivers
               , driverConfigLogDir = dir
               }
 
-  let introduceSelenium4 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
+  let introduceSelenium4 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx, HasBrowserDependencies ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
       introduceSelenium4 = introduce "Introduce Selenium 4" driverConfig alloc (const $ return ())
         where
           alloc = do
             Just dir <- getCurrentFolder
             java <- getBinaryViaNixPackage @"java" "jre"
             seleniumJar <- getFileViaNixDerivation selenium4Derivation tryFindSeleniumJar
+            subDrivers <- getSubDrivers dir
             return $ DriverConfigSeleniumJar {
               driverConfigJava = java
               , driverConfigSeleniumJar = seleniumJar
-              , driverConfigSubDrivers = []
+              , driverConfigSubDrivers = subDrivers
               , driverConfigLogDir = dir
               }
 
@@ -118,6 +121,21 @@ nixpkgsRelease = NixpkgsDerivationFetchFromGitHub {
   , nixpkgsDerivationSha256 = "sha256-HXDDEjEBMycmwkOiU045bL3yuhOK1+nZZd3zsBh6zsA="
   , nixpkgsDerivationAllowUnfree = True
   }
+
+getSubDrivers :: (MonadReader ctx m, HasBrowserDependencies ctx) => FilePath -> m [DriverConfig]
+getSubDrivers dir = getContext browserDependencies >>= \case
+  BrowserDependenciesChrome {..} -> return [
+    DriverConfigChromedriver {
+        driverConfigChromedriver = browserDependenciesChromeChromedriver
+        , driverConfigChrome = browserDependenciesChromeChrome
+        , driverConfigLogDir = dir
+        }]
+  BrowserDependenciesFirefox {..} -> return [
+    DriverConfigGeckodriver {
+        driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
+        , driverConfigFirefox = browserDependenciesFirefoxFirefox
+        , driverConfigLogDir = dir
+        }]
 
 
 tryFindSeleniumJar :: FilePath -> IO FilePath

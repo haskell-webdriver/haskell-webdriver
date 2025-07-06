@@ -7,13 +7,6 @@
 
 module Test.WebDriver.LaunchDriver (
   launchDriver
-
-  , DriverConfig(..)
-  , Driver(..)
-
-  , Session(..)
-  , SessionId(..)
-
   , mkDriverRequest
   ) where
 
@@ -27,13 +20,12 @@ import qualified Data.ByteString.Char8 as BS
 import Data.Function
 import qualified Data.List as L
 import Data.Maybe
-import Data.String
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as T
 import Network.HTTP.Client
-import Network.HTTP.Types (RequestHeaders, Method, hAccept, hContentType, methodGet, statusCode)
+import Network.HTTP.Types (hAccept, hContentType, statusCode)
 import Network.Socket
 import System.FilePath
 import System.IO
@@ -52,8 +44,6 @@ launchDriver driverConfig = do
   manager <- liftIO $ newManager defaultManagerSettings
   let requestHeaders = mempty
   let authHeaders = mempty
-
-  -- webdriverDir <- liftIO $ createTempDirectory (driverConfigLogDir driverConfig) "webdriver"
 
   port <- findFreePortOrException
 
@@ -92,6 +82,8 @@ launchDriver driverConfig = do
 
   waitForSocket policy addr
 
+  logDebugN [i|Finished wait for driver socket|]
+
   let basePath = case driverConfig of
         DriverConfigSeleniumJar {} -> "/wd/hub"
         _ -> ""
@@ -118,6 +110,8 @@ launchDriver driverConfig = do
            logWarnN [i|(#{retryStatus}) Invalid response from /status: #{resp}|]
            throwIO DriverStatusEndpointNotReady
 
+  logInfoN [i|Finished wait for driver /status endpoint. Driver is running on #{hostname}:#{port}|]
+
   return driver
 
 autodetectSeleniumVersionByFileName :: FilePath -> Maybe SeleniumVersion
@@ -138,7 +132,7 @@ autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodet
                     & fmap T.unpack
                     & fmap readMaybe
 
-          case any (== Nothing) parts of
+          case any isNothing parts of
             True -> Nothing
             False -> case catMaybes parts of
               [x, _, _, _] -> Just x

@@ -67,12 +67,10 @@ import Test.WebDriver.Types
 import qualified Data.ByteString.Char8 as BS
 import Data.Map as M
 import Control.Monad.Catch (MonadMask)
-import qualified Data.ByteString.Lazy as LBS
 import Control.Monad.Logger
 import qualified Data.List as L
 import Data.String
 import Data.Text as T
-import Control.Monad.Reader
 import Network.HTTP.Client
 import Network.HTTP.Types (RequestHeaders, hLocation, statusCode)
 import UnliftIO.Concurrent
@@ -98,7 +96,7 @@ startSession' wdc dc@(DriverConfigChromedriver {}) caps sessionName = do
 startSession' wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
   driver <- modifyMVar (_webDriverGeckodrivers wdc) $ \geckodrivers -> do
     case M.lookup sessionName geckodrivers of
-      Just sess -> throwIO SessionNameAlreadyExists
+      Just _sess -> throwIO SessionNameAlreadyExists
       Nothing -> do
         driver <- launchDriver dc
         return (M.insert sessionName driver geckodrivers, driver)
@@ -107,7 +105,7 @@ startSession' wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
 
 
 launchSessionInDriver :: (WebDriverBase m) => WebDriverContext -> Driver -> Capabilities -> String -> m Session
-launchSessionInDriver wdc driver@(Driver {..}) caps sessionName = do
+launchSessionInDriver wdc driver caps sessionName = do
   response <- doCommandBase driver methodPost "/session" $ single "desiredCapabilities" caps
 
   let code = statusCode (responseStatus response)
@@ -135,14 +133,14 @@ closeSession' wdc sess = do
 -- | Set a temporary list of custom 'RequestHeaders' to use within the given action.
 -- All previous custom headers are temporarily removed, and then restored at the end.
 withRequestHeaders :: (SessionStatePut m) => RequestHeaders -> m a -> m a
-withRequestHeaders h action = undefined -- do
+withRequestHeaders _h _action = undefined -- do
   -- withModifiedSession (\s -> s { wdSessRequestHeaders = h }) action
 
 -- | Makes all webdriver HTTP requests in the given action use the session\'s auth headers, typically
 -- configured by setting the 'wdAuthHeaders' config. This is useful if you want to temporarily use
 -- the same auth headers you used for session creation with other HTTP requests.
 withAuthHeaders :: (Monad m, SessionStatePut m) => m a -> m a
-withAuthHeaders wd = undefined -- do
+withAuthHeaders _wd = undefined -- do
   -- authHeaders <- fmap wdSessAuthHeaders getSession
   -- withRequestHeaders authHeaders wd
 

@@ -15,9 +15,12 @@ module TestLib.Contexts.Session (
 import Control.Exception.Safe
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
+import Data.Function
 import Data.Maybe
+import Lens.Micro
 import Test.Sandwich
 import Test.WebDriver
+import Test.WebDriver.Capabilities
 import TestLib.Types
 import TestLib.Types.Cli
 
@@ -60,26 +63,25 @@ introduceMobileSession :: forall m context. (
   MonadUnliftIO m, MonadMask m
   , HasBrowserDependencies context, HasWebDriverContext context, HasDriverConfig context, HasCommandLineOptions context UserOptions
   ) => SpecFree (LabelValue "session" Session :> context) m () -> SpecFree context m ()
-introduceMobileSession = introduceSession' modifyConfig
+introduceMobileSession = introduceSession' modifyCaps
   where
-    modifyConfig = undefined
-    -- modifyConfig :: WDConfig -> ExampleT context m WDConfig
-    -- modifyConfig x = x
-    --                & over (wdCapabilities . capabilitiesGoogChromeOptions . _Just) modifyChromeOptions
-    --                & over (wdCapabilities . capabilitiesMozFirefoxOptions . _Just) modifyFirefoxOptions
-    --                & return
+    modifyCaps :: Capabilities -> ExampleT context m Capabilities
+    modifyCaps x = x
+                   & over (capabilitiesGoogChromeOptions . _Just) modifyChromeOptions
+                   & over (capabilitiesMozFirefoxOptions . _Just) modifyFirefoxOptions
+                   & return
 
-    -- modifyChromeOptions :: ChromeOptions -> ChromeOptions
-    -- modifyChromeOptions x = x
-    --                       & set chromeOptionsMobileEmulation (Just (ChromeMobileEmulationSpecificDevice "Pixel 7"))
+    modifyChromeOptions :: ChromeOptions -> ChromeOptions
+    modifyChromeOptions x = x
+                          & set chromeOptionsMobileEmulation (Just (ChromeMobileEmulationSpecificDevice "Pixel 7"))
 
-    -- modifyFirefoxOptions :: FirefoxOptions -> FirefoxOptions
-    -- modifyFirefoxOptions x = x
-    --                        & over firefoxOptionsPrefs (Just . fromMaybe mempty)
-    --                        & over (firefoxOptionsPrefs . _Just) (KM.insert "general.useragent.override" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)")
+    modifyFirefoxOptions :: FirefoxOptions -> FirefoxOptions
+    modifyFirefoxOptions x = x
+                           & over firefoxOptionsPrefs (Just . fromMaybe mempty)
+                           & over (firefoxOptionsPrefs . _Just) (KM.insert "general.useragent.override" "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)")
 
-    --                        & over firefoxOptionsArgs (Just . fromMaybe [])
-    --                        & over (firefoxOptionsArgs . _Just) (\xs -> "--width=375" : "--height=667" : xs)
+                           & over firefoxOptionsArgs (Just . fromMaybe [])
+                           & over (firefoxOptionsArgs . _Just) (\xs -> "--width=375" : "--height=667" : xs)
 
 pendingOnNonSelenium :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
 pendingOnNonSelenium = do
