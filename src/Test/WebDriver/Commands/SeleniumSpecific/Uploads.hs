@@ -13,7 +13,7 @@ import Data.CallStack
 import Data.Function ((&))
 import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TL
-import Test.WebDriver.CommandUtil
+import Test.WebDriver.Util.Commands
 import Test.WebDriver.JSON
 import Test.WebDriver.Monad
 

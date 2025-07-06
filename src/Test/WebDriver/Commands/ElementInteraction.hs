@@ -9,7 +9,7 @@ module Test.WebDriver.Commands.ElementInteraction (
 import Data.CallStack
 import Data.Text (Text)
 import Test.WebDriver.Monad
-import Test.WebDriver.CommandUtil
+import Test.WebDriver.Util.Commands
 import Test.WebDriver.JSON (noObject, noReturn, single)
 
 

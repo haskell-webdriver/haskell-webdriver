@@ -25,7 +25,6 @@ module Test.WebDriver.JSON (
   , pair
   , triple
   -- ** Extracting JSON objects into tuples
-  , parsePair
   , parseTriple
 
   -- * Conversion from parser results to WD
@@ -109,7 +108,7 @@ ignoreReturn = void
 
 -- | Construct a singleton JSON 'object' from a key and value.
 single :: ToJSON a => Text -> a -> Value
-single a x = object [(fromText a) .= x]
+single a x = object [fromText a .= x]
 
 -- | Construct a 2-element JSON 'object' from a pair of keys and a pair of
 -- values.
@@ -138,19 +137,6 @@ o !: k = aesonResultToWD $ parse (.: fromText k) o
 -- was added to provide consistent behavior compatible with all aeson versions. If the field is either missing or `Null`, this operator should return a `Nothing` result.
 (.:??) :: FromJSON a => Object -> Text -> Parser (Maybe a)
 o .:?? k = fmap join (o .:? fromText k)
-
--- | Parse a JSON 'Object' as a pair. The first two string arguments specify the
--- keys to extract from the object. The third string is the name of the
--- calling function, for better error reporting.
-parsePair :: (
-  MonadIO wd, FromJSON a, FromJSON b
-  ) => String -> String -> String -> Value -> wd (a, b)
-parsePair a b funcName v =
-  case v of
-    Object o -> (,) <$> o !: fromString a <*> o !: fromString b
-    _        -> throwIO . BadJSON $ funcName ++
-                ": cannot parse non-object JSON response as a (" ++ a
-                ++ ", " ++ b ++ ") pair" ++ ")"
 
 -- | Parse a JSON Object as a triple. The first three string arguments
 -- specify the keys to extract from the object. The fourth string is the name

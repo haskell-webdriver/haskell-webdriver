@@ -13,7 +13,7 @@ module Test.WebDriver.Commands.ElementRetrieval (
 import Data.Aeson as A
 import Data.CallStack
 import Data.Text (Text)
-import Test.WebDriver.CommandUtil
+import Test.WebDriver.Util.Commands
 import Test.WebDriver.Monad
 
 

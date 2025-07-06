@@ -12,7 +12,7 @@ import Data.CallStack
 import qualified Data.Foldable as F
 import Data.Text (Text)
 import Test.WebDriver.Monad
-import Test.WebDriver.CommandUtil
+import Test.WebDriver.Util.Commands
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
 import UnliftIO.Exception (handle, throwIO)

@@ -35,13 +35,13 @@ import qualified Data.HashMap.Strict        as KM
 
 introduceSession :: forall m context. (
   MonadUnliftIO m, MonadCatch m
-  , HasBrowserDependencies context, HasWebDriverContext context, HasCommandLineOptions context UserOptions
+  , HasBrowserDependencies context, HasTestWebDriverContext context, HasCommandLineOptions context UserOptions
   ) => SpecFree (LabelValue "wdSession" (IORef WDSession) :> context) m () -> SpecFree context m ()
 introduceSession = introduceSession' return
 
 introduceSession' :: forall m context. (
   MonadUnliftIO m, MonadCatch m
-  , HasBrowserDependencies context, HasWebDriverContext context, HasCommandLineOptions context UserOptions
+  , HasBrowserDependencies context, HasTestWebDriverContext context, HasCommandLineOptions context UserOptions
   ) => (WDConfig -> ExampleT context m WDConfig) -> SpecFree (LabelValue "wdSession" (IORef WDSession) :> context) m () -> SpecFree context m ()
 introduceSession' modifyConfig = introduce "Introduce session" wdSession alloc cleanup
   where
@@ -58,7 +58,7 @@ introduceSession' modifyConfig = introduce "Introduce session" wdSession alloc c
 
 introduceMobileSession :: forall m context. (
   MonadUnliftIO m, MonadCatch m
-  , HasBrowserDependencies context, HasWebDriverContext context, HasCommandLineOptions context UserOptions
+  , HasBrowserDependencies context, HasTestWebDriverContext context, HasCommandLineOptions context UserOptions
   ) => SpecFree (LabelValue "wdSession" (IORef WDSession) :> context) m () -> SpecFree context m ()
 introduceMobileSession = introduceSession' modifyConfig
   where
@@ -80,9 +80,9 @@ introduceMobileSession = introduceSession' modifyConfig
                            & over firefoxOptionsArgs (Just . fromMaybe [])
                            & over (firefoxOptionsArgs . _Just) (\xs -> "--width=375" : "--height=667" : xs)
 
-pendingOnNonSelenium :: (MonadReader ctx m, HasWebDriverContext ctx, MonadIO m) => m ()
+pendingOnNonSelenium :: (MonadReader ctx m, HasTestWebDriverContext ctx, MonadIO m) => m ()
 pendingOnNonSelenium = do
-  WebDriverContext {..} <- getContext webdriver
+  TestWebDriverContext {..} <- getContext webdriver
   case webDriverDriverType of
     DriverTypeSeleniumJar {} -> return ()
     _ -> pending

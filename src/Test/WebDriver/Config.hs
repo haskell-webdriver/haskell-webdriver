@@ -10,7 +10,6 @@ module Test.WebDriver.Config (
   , wdCapabilities
   , wdBasePath
   , wdHTTPManager
-  , wdHTTPRetryCount
   , defaultConfig
 
   -- * Overloadable configuration
@@ -18,7 +17,6 @@ module Test.WebDriver.Config (
   ) where
 
 import Control.Monad.IO.Class
-import Data.Default (Default, def)
 import Data.String (fromString)
 import Data.String.Interpolate
 import Lens.Micro.TH
@@ -36,7 +34,7 @@ data WDConfig = WDConfig {
   , _wdPort :: Int
   -- | Capabilities to use for this session.
   , _wdCapabilities :: Capabilities
-  -- | Base path for all API requests (default "\/wd\/hub").
+  -- | Base path for all API requests (use "\/wd\/hub" for Selenium).
   , _wdBasePath :: String
   -- | Custom request headers to add to every HTTP request.
   , _wdRequestHeaders :: RequestHeaders
@@ -46,31 +44,25 @@ data WDConfig = WDConfig {
   -- | Use the given http-client 'Manager' instead of automatically creating
   -- one.
   , _wdHTTPManager :: Maybe Manager
-  -- | Number of times to retry a HTTP request if it times out (default 0).
-  , _wdHTTPRetryCount :: Int
   }
 makeLenses ''WDConfig
 
 instance Show WDConfig where
   show (WDConfig {..}) = [i|WDConfig<#{_wdHost}:#{_wdPort}#{_wdBasePath}>|]
 
-instance Default WDConfig where
-  def = WDConfig {
-    _wdHost = "127.0.0.1"
-    , _wdPort = 4444
-    , _wdRequestHeaders = []
-    , _wdAuthHeaders = []
-    , _wdCapabilities = defaultCaps
-    , _wdBasePath = ""
-    , _wdHTTPManager = Nothing
-    , _wdHTTPRetryCount = 0
-    }
-
 -- | A default session config connects to localhost on port 4444, and hasn't been
 -- initialized server-side. This value is the same as 'def' but with a less
 -- polymorphic type.
 defaultConfig :: WDConfig
-defaultConfig = def
+defaultConfig = WDConfig {
+  _wdHost = "127.0.0.1"
+  , _wdPort = 4444
+  , _wdRequestHeaders = []
+  , _wdAuthHeaders = []
+  , _wdCapabilities = defaultCaps
+  , _wdBasePath = ""
+  , _wdHTTPManager = Nothing
+  }
 
 -- | Class of types that can configure a WebDriver session.
 class WebDriverConfig c where
@@ -93,7 +85,6 @@ instance WebDriverConfig WDConfig where
       , wdSessBasePath = fromString $ _wdBasePath
       , wdSessId = sessId
       , wdSessHTTPManager = manager
-      , wdSessHTTPRetryCount = _wdHTTPRetryCount
       }
     where
       createManager = liftIO $ newManager defaultManagerSettings

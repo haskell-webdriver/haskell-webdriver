@@ -29,7 +29,7 @@ import Data.Aeson.TH as A
 import Data.CallStack
 import Test.WebDriver.Capabilities (Capabilities)
 import Test.WebDriver.Capabilities.Aeson
-import Test.WebDriver.CommandUtil
+import Test.WebDriver.Util.Commands
 import Test.WebDriver.Monad
 
 
@@ -68,13 +68,6 @@ closeSession = do
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol#status>
 serverStatus :: (HasCallStack, WebDriver wd) => wd Value   -- todo: make this a record type
 serverStatus = doCommand methodGet "/status" Null
-
--- -- | Retrieve a list of active sessions and their 'Capabilities'.
--- -- TODO: remove, seems not to exist in the W3C spec
--- sessions :: (HasCallStack, WebDriver wd) => wd [(SessionId, Capabilities)]
--- sessions = do
---   objs <- doCommand methodGet "/sessions" Null
---   mapM (parsePair "id" "capabilities" "sessions") objs
 
 -- -- | Get the actual server-side 'Capabilities' of the current session.
 -- -- TODO: remove, seems not to exist in the W3C spec

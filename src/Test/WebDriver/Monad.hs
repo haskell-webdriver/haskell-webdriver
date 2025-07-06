@@ -27,16 +27,17 @@ module Test.WebDriver.Monad (
 import Control.Monad.IO.Unlift
 import Data.Aeson
 import Data.ByteString as BS (ByteString)
+import qualified Data.ByteString.Lazy as LBS
 import Data.CallStack
 import Data.String
 import Data.String.Interpolate
 import Data.Text (Text)
 import qualified Data.Text as T
-import Lens.Micro
-import Network.HTTP.Client (Manager)
+import Network.HTTP.Client (Manager, Response)
 import Network.HTTP.Types (RequestHeaders)
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
 import Prelude -- hides some "unused import" warnings
+import Test.WebDriver.LaunchDriver
 
 #if !MIN_VERSION_base(4,8,0)
 import Data.Monoid (Monoid) -- for some reason "import Prelude" trick doesn't work with "import Data.Monoid"
@@ -63,8 +64,6 @@ data WDSession = WDSession {
   , wdSessId   :: SessionId
   -- | HTTP 'Manager' used for connection pooling by the http-client library.
   , wdSessHTTPManager :: Manager
-  -- | Number of times to retry a HTTP request if it times out
-  , wdSessHTTPRetryCount :: Int
   -- | Custom request headers to add to every HTTP request.
   , wdSessRequestHeaders :: RequestHeaders
   -- | Custom request headers to add *only* to session creation requests. This is
@@ -113,15 +112,16 @@ class (WDSessionState m, MonadUnliftIO m) => WebDriver m where
 -- "Test.WebDriver.Commands".
 class (MonadUnliftIO m) => WebDriverBase m where
   doCommandBase :: (
-    HasCallStack, ToJSON a, FromJSON b, ToJSON b
+    HasCallStack, ToJSON a
     )
+    => Driver
     -- | HTTP request method
-    => Method
+    -> Method
     -- | URL of request
     -> Text
     -- | JSON parameters passed in the body of the request. Note that, as a
     -- special case, anything that converts to Data.Aeson.Null will result in an
     -- empty request body.
     -> a
-    -- | The JSON result of the HTTP request.
-    -> m b
+    -- | The response of the HTTP request.
+    -> m (Response LBS.ByteString)

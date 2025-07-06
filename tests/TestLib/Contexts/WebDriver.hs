@@ -52,7 +52,7 @@ introduceWebDriver :: forall context m. (
   , HasDriverType context
   , HasCommandLineOptions context UserOptions
   )
-  => SpecFree (LabelValue "webdriver" WebDriverContext :> context) m () -> SpecFree context m ()
+  => SpecFree (LabelValue "webdriver" TestWebDriverContext :> context) m () -> SpecFree context m ()
 introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
   where
     withAlloc action = do
@@ -86,10 +86,10 @@ introduceWebDriver = introduceWith "Introduce WebDriver" webdriver withAlloc
         when (maybeReady == Nothing) $
           expectationFailure [i|Didn't see ready message within 30s|]
 
-        let webDriverContext = WebDriverContext dt hostname port
+        let webDriverContext = TestWebDriverContext dt hostname port
 
         withAsync (forever $ liftIO (hGetLine hRead) >>= (debug . T.pack)) $ \_ -> do
-          -- Wait for a successful connectino to the server socket
+          -- Wait for a successful connection to the server socket
           addr:_ <- liftIO $ getAddrInfo (Just defaultHints) (Just "127.0.0.1") (Just (show port))
           let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 5_000_000 $ exponentialBackoff 1000
           waitForSocket policy addr

@@ -20,9 +20,9 @@ module TestLib.Types (
   , driverType
   , HasDriverType
 
-  , WebDriverContext(..)
+  , TestWebDriverContext(..)
   , webdriver
-  , HasWebDriverContext
+  , HasTestWebDriverContext
 
   , WDSession(..)
   , wdSession
@@ -104,16 +104,16 @@ type HasDriverType context = HasLabel context "driverType" DriverType
 
 -- * WebDriver
 
-data WebDriverContext = WebDriverContext {
+data TestWebDriverContext = TestWebDriverContext {
   webDriverDriverType :: DriverType
   , webDriverHostname :: String
   , webDriverPort :: PortNumber
   }
 
-webdriver :: Label "webdriver" WebDriverContext
+webdriver :: Label "webdriver" TestWebDriverContext
 webdriver = Label
 
-type HasWebDriverContext context = HasLabel context "webdriver" WebDriverContext
+type HasTestWebDriverContext context = HasLabel context "webdriver" TestWebDriverContext
 
 -- * Session
 
@@ -141,34 +141,29 @@ instance (HasWDSession context, MonadIO m) => WDSessionState (ExampleT context m
   --   writeIORef sessVar sess
 
 instance (MonadUnliftIO m, MonadCatch m) => WebDriverBase (ExampleT context m) where
-  doCommandBase method path args = do
-    undefined
-    -- req <- mkRequest method path args
-    -- -- debug [i|--> Full request: #{req} (#{showRequestBody (HC.requestBody req)})|]
-    -- debug [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req} (#{showRequestBody (HC.requestBody req)})|]
-    -- response <- sendHTTPRequest req >>= either throwIO return
-    -- let (N.Status code _) = HC.responseStatus response
-    -- -- debug [i|<-- #{code} Full response: #{response}|]
-    -- getJSONResult response >>= \case
-    --   Left e -> do
-    --     warn [i|<-- #{code} Exception: #{e}|]
-    --     throwIO e
-    --   Right result -> do
-    --     debug [i|<-- #{code} #{A.encode result}|]
-    --     return result
+  doCommandBase driver method path args = do
+    let req = mkDriverRequest driver method path args
+    -- debug [i|--> Full request: #{req} (#{showRequestBody (HC.requestBody req)})|]
+    debug [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req} (#{showRequestBody (HC.requestBody req)})|]
+    response <- tryAny (liftIO $ HC.httpLbs req (_driverManager driver)) >>= either throwIO return
+    let (N.Status code _) = HC.responseStatus response
+    warn [i|<-- #{code} #{response}|]
+    return response
 
-    -- where
-    --   showRequestBody :: HC.RequestBody -> ByteString
-    --   showRequestBody (HC.RequestBodyLBS bytes) = BL.toStrict bytes
-    --   showRequestBody (HC.RequestBodyBS bytes) = bytes
-    --   showRequestBody _ = "<request body>"
+    where
+      showRequestBody :: HC.RequestBody -> ByteString
+      showRequestBody (HC.RequestBodyLBS bytes) = BL.toStrict bytes
+      showRequestBody (HC.RequestBodyBS bytes) = bytes
+      showRequestBody _ = "<request body>"
 
 instance (HasWDSession context, MonadUnliftIO m, MonadCatch m) => WebDriver (ExampleT context m) where
   doCommand method path args = do
+    let driver = undefined
+
     req <- mkRequest method path args
     -- debug [i|--> Full request: #{req} (#{showRequestBody (HC.requestBody req)})|]
     debug [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req} (#{showRequestBody (HC.requestBody req)})|]
-    response <- sendHTTPRequest req >>= either throwIO return
+    response <- tryAny (liftIO $ HC.httpLbs req (_driverManager driver)) >>= either throwIO return
     let (N.Status code _) = HC.responseStatus response
     -- debug [i|<-- #{code} Full response: #{response}|]
     getJSONResult response >>= \case
@@ -189,7 +184,7 @@ instance (HasWDSession context, MonadUnliftIO m, MonadCatch m) => WebDriver (Exa
 
 getWDConfig :: (
   MonadIO m, MonadReader context m, MonadLogger m
-  , HasWebDriverContext context, HasCommandLineOptions context UserOptions
+  , HasTestWebDriverContext context, HasCommandLineOptions context UserOptions
   ) => BrowserDependencies -> m WDConfig
 getWDConfig browserDeps = do
   wdc <- getContext webdriver
@@ -198,8 +193,8 @@ getWDConfig browserDeps = do
 getWDConfig' :: (
   MonadIO m, MonadReader context m, MonadLogger m
   , HasCommandLineOptions context UserOptions
-  ) => WebDriverContext -> BrowserDependencies -> m WDConfig
-getWDConfig' (WebDriverContext {..}) browserDeps = do
+  ) => TestWebDriverContext -> BrowserDependencies -> m WDConfig
+getWDConfig' (TestWebDriverContext {..}) browserDeps = do
   UserOptions {..} <- getUserCommandLineOptions
   caps <- getCapabilities (fromMaybe False optHeadlessTests) browserDeps
   debug [i|Using browser capabilities: #{caps}|]
@@ -235,7 +230,7 @@ type SpecWithWebDriver = forall context. (
   HasBaseContext context
   , HasCommandLineOptions context UserOptions
   , HasBrowserDependencies context
-  , HasWebDriverContext context
+  , HasTestWebDriverContext context
   , HasStaticServerContext context
   , HasNixContext context
   ) => SpecFree context IO ()
@@ -244,6 +239,6 @@ type SessionSpec = forall context. (
   HasBaseContext context
   , HasCommandLineOptions context UserOptions
   , HasBrowserDependencies context
-  , HasWebDriverContext context
+  , HasTestWebDriverContext context
   , HasStaticServerContext context
   ) => SpecFree context IO ()

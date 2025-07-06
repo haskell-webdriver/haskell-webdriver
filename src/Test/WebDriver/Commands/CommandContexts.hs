@@ -26,7 +26,7 @@ import Data.Aeson.Types
 import Data.CallStack
 import Data.Text (Text)
 import Test.WebDriver.Monad
-import Test.WebDriver.CommandUtil
+import Test.WebDriver.Util.Commands
 import Test.WebDriver.JSON
 
 

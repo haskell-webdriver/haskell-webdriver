@@ -9,7 +9,7 @@
 -- of this module are subject to change at any point.
 --
 module Test.WebDriver.Internal (
-  mkRequest, sendHTTPRequest
+  mkRequest
   , getJSONResult
   , handleJSONErr
   , WDResponse(..)
@@ -37,7 +37,7 @@ import Data.Functor
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
 import Data.Word (Word8)
-import Network.HTTP.Client (httpLbs, Request(..), RequestBody(..), Response(..))
+import Network.HTTP.Client (Manager, Request(..), RequestBody(..), Response(..), httpLbs)
 import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
@@ -45,7 +45,7 @@ import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
 import Test.WebDriver.Monad
-import UnliftIO.Exception (Exception, SomeException(..), toException, fromException, throwIO, try)
+import UnliftIO.Exception (Exception, SomeException(..), toException, throwIO, tryAny)
 
 #if !MIN_VERSION_http_client(0,4,30)
 import Data.Default (def)
@@ -62,10 +62,12 @@ instance WDSessionState WD where
 instance WebDriver WD where
   doCommand method path args =
     mkRequest method path args
-    >>= sendHTTPRequest
+    >>= (\req -> tryAny $ liftIO $ httpLbs req manager)
     >>= either throwIO return
     >>= getJSONResult
     >>= either throwIO return
+    where
+      manager = undefined
 
 -- | Executes a 'WD' computation within the 'IO' monad, using the given
 -- 'WDSession' as state for WebDriver requests.
@@ -89,56 +91,32 @@ defaultRequest = def
 -- | Construct an HTTP 'Request' value when given a list of headers, method, and URL fragment.
 mkRequest :: (Monad m, WDSessionState m, ToJSON a) => Method -> Text -> a -> m Request
 mkRequest meth wdPath args = do
-  WDSession {..} <- getSession
+  WDSession {wdSessHost, wdSessPort, wdSessBasePath, wdSessRequestHeaders} <- getSession
   let body = case toJSON args of
         Null  -> ""   --passing Null as the argument indicates no request body
         other -> encode other
-  let req = defaultRequest {
-        host = wdSessHost
-        , port = wdSessPort
-        , path = wdSessBasePath `BS.append`  TE.encodeUtf8 wdPath
-        , requestBody = RequestBodyLBS body
-        , requestHeaders = wdSessRequestHeaders
-                           ++ [ (hAccept, "application/json;charset=UTF-8")
-                              , (hContentType, "application/json;charset=UTF-8") ]
-        , method = meth
+  return $ defaultRequest {
+    host = wdSessHost
+    , port = wdSessPort
+    , path = wdSessBasePath `BS.append`  TE.encodeUtf8 wdPath
+    , requestBody = RequestBodyLBS body
+    , requestHeaders = wdSessRequestHeaders
+                       ++ [ (hAccept, "application/json;charset=UTF-8")
+                          , (hContentType, "application/json;charset=UTF-8") ]
+    , method = meth
 #if !MIN_VERSION_http_client(0,5,0)
-        , checkStatus = \_ _ _ -> Nothing
+    , checkStatus = \_ _ _ -> Nothing
 #endif
-        }
-  return req
-
--- | Send an HTTP request to the remote WebDriver server.
-sendHTTPRequest :: (MonadIO m, WDSessionState m) => Request -> m (Either SomeException (Response ByteString))
-sendHTTPRequest req = do
-  WDSession {..} <- getSession
-  (_nRetries, tryRes) <- liftIO . retryOnTimeout wdSessHTTPRetryCount $ httpLbs req wdSessHTTPManager
-  return tryRes
-
-retryOnTimeout :: Int -> IO a -> IO (Int, (Either SomeException a))
-retryOnTimeout maxRetry go = retry' 0
-  where
-    retry' nRetries = do
-      eitherV <- try go
-      case eitherV of
-        (Left e)
-#if MIN_VERSION_http_client(0,5,0)
-          | Just (HTTPClient.HttpExceptionRequest _ HTTPClient.ResponseTimeout) <- fromException e
-#else
-          | Just HTTPClient.ResponseTimeout <- fromException e
-#endif
-          , maxRetry > nRetries
-          -> retry' (succ nRetries)
-        other -> return (nRetries, other)
+    }
 
 -- | Parse a 'WDResponse' object from a given HTTP response.
-getJSONResult :: (HasCallStack, WDSessionStateUnliftIO s, FromJSON a) => Response ByteString -> s (Either SomeException a)
+getJSONResult :: (HasCallStack, MonadIO m, FromJSON a) => Response ByteString -> m (Either SomeException a)
 getJSONResult r
-  --malformed request errors
+  -- Malformed request errors
   | code >= 400 && code < 500 = do
     let lastReq :: Maybe String = undefined
     returnErr . UnknownCommand . maybe reason show $ lastReq
-  --server-side errors
+  -- Server-side errors
   | code >= 500 && code < 600 =
     case lookup hContentType headers of
       Just ct
@@ -165,11 +143,14 @@ getJSONResult r
   -- other status codes: return error
   | otherwise = returnHTTPErr (HTTPStatusUnknown code)
   where
-    -- helper functions
+    -- Helper functions
     returnErr :: (Exception e, Monad m) => e -> m (Either SomeException a)
     returnErr = return . Left . toException
+
     returnHTTPErr errType = returnErr . errType $ reason
+
     returnNull = Right <$> fromJSON' Null
+
     -- HTTP response variables
     code = statusCode status
     reason = BS.unpack $ statusMessage status
@@ -180,18 +161,17 @@ getJSONResult r
 
 -- | Determine if a 'WDResponse' is errored, and return a suitable 'Exception' if so.
 -- This will be a 'FailedCommand'.
-handleJSONErr :: (HasCallStack, WDSessionStateUnliftIO s) => WDResponse -> s (Maybe SomeException)
+handleJSONErr :: (HasCallStack, MonadIO m) => WDResponse -> m (Maybe SomeException)
 handleJSONErr WDResponse{rspStatus = 0} = return Nothing
 handleJSONErr WDResponse{rspVal = val, rspStatus = status} = do
-  sess <- getSession
   errInfo <- fromJSON' val
   let screen = B64.decodeLenient <$> errScreen errInfo
       seleniumStack = errStack errInfo
       errInfo' = errInfo {
-        errSess = Just sess
+        errSess = Nothing
         -- Append the Haskell stack frames to the ones returned from Selenium
         , errScreen = screen
-        , errStack = seleniumStack ++ (fmap callStackItemToStackFrame externalCallStack)
+        , errStack = seleniumStack ++ fmap callStackItemToStackFrame externalCallStack
         }
       e errType = toException $ FailedCommand errType errInfo'
   return . Just $ case status of

@@ -25,9 +25,9 @@ import Data.Aeson.Types
 import Data.CallStack
 import Data.String (fromString)
 import Data.Text (toUpper, toLower)
-import Test.WebDriver.Monad
-import Test.WebDriver.CommandUtil
+import Test.WebDriver.Util.Commands
 import Test.WebDriver.JSON
+import Test.WebDriver.Monad
 
 
 -- | A screen orientation
@@ -123,7 +123,7 @@ touchFlickFrom s (x,y) (Element e) =
 -- | Get the current geographical location of the device.
 getLocation :: (HasCallStack, WebDriver wd) => wd (Int, Int, Int)
 getLocation = doSessCommand methodGet "/location" Null
-              >>= parseTriple "latitude" "longitude" "altitude" "getLocation"
+  >>= parseTriple "latitude" "longitude" "altitude" "getLocation"
 
 -- | Set the current geographical location of the device.
 setLocation :: (HasCallStack, WebDriver wd) => (Int, Int, Int) -> wd ()
