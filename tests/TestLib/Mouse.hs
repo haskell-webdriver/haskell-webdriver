@@ -62,11 +62,11 @@ assertWithinPixels (x1, y1) (x2, y2) tolerance =
   where
     d = sqrt ((x2 - x1)**2 + (y2 - y1)**2)
 
-getBoundingClientRect :: (HasWDSession ctx) => T.Text -> ExampleT ctx IO ClientRect
+getBoundingClientRect :: (HasSession ctx) => T.Text -> ExampleT ctx IO ClientRect
 getBoundingClientRect cssSelector =
   executeJS [JSArg cssSelector] [i|return document.querySelector(arguments[0]).getBoundingClientRect()|]
 
-getElementCenter :: (HasWDSession ctx) => T.Text -> ExampleT ctx IO (Double, Double)
+getElementCenter :: (HasSession ctx) => T.Text -> ExampleT ctx IO (Double, Double)
 getElementCenter cssSelector = do
   ClientRect {..} <- getBoundingClientRect cssSelector
   return (left + (width / 2.0), top + (height / 2.0))

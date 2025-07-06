@@ -33,7 +33,8 @@ import qualified Data.Text.Lazy.Encoding as TLE
 import Data.Typeable (Typeable)
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.JSON
-import Test.WebDriver.Monad
+import Test.WebDriver.LaunchDriver
+import Test.WebDriver.Types
 import UnliftIO.Exception (throwIO)
 
 
@@ -97,22 +98,22 @@ data FailedCommandType = NoSuchElement
                        deriving (Eq, Ord, Enum, Bounded, Show)
 
 -- | Detailed information about the failed command provided by the server.
-data FailedCommandInfo =
-  FailedCommandInfo { -- | The error message.
-                      errMsg    :: String
-                      -- | The session associated with
-                      -- the exception.
-                    , errSess :: Maybe WDSession
-                      -- | A screen shot of the focused window
-                      -- when the exception occured,
-                      -- if provided.
-                    , errScreen :: Maybe ByteString
-                      -- | The "class" in which the exception
-                      -- was raised, if provided.
-                    , errClass  :: Maybe String
-                      -- | A stack trace of the exception.
-                    , errStack  :: [StackFrame]
-                    }
+data FailedCommandInfo = FailedCommandInfo {
+  -- | The error message.
+  errMsg :: String
+  -- | The session associated with
+  -- the exception.
+  , errSess :: Maybe Session
+  -- | A screen shot of the focused window
+  -- when the exception occured,
+  -- if provided.
+  , errScreen :: Maybe ByteString
+  -- | The "class" in which the exception
+  -- was raised, if provided.
+  , errClass  :: Maybe String
+  -- | A stack trace of the exception.
+  , errStack  :: [StackFrame]
+  }
 
 -- | Provides a readable printout of the error information, useful for
 -- logging.
@@ -129,14 +130,10 @@ instance Show FailedCommandInfo where
 
       sess = case errSess i of
         Nothing -> showString "None"
-        Just (WDSession {..}) ->
-            let sessId = show wdSessId
-            in showString sessId . showString " at "
-                . shows wdSessHost . showChar ':' . shows wdSessPort
-
+        Just sess -> \x -> show sess <> ": " <> x
 
 -- | Constructs a FailedCommandInfo from only an error message.
-mkFailedCommandInfo :: (Monad m, WDSessionState m) => String -> CallStack -> m FailedCommandInfo
+mkFailedCommandInfo :: (Monad m, SessionState m) => String -> CallStack -> m FailedCommandInfo
 mkFailedCommandInfo m cs = do
   sess <- getSession
   return $ FailedCommandInfo {
@@ -157,7 +154,7 @@ externalCallStack = dropWhile isWebDriverFrame callStack
 
 -- | Convenience function to throw a 'FailedCommand' locally with no server-side
 -- info present.
-failedCommand :: (HasCallStack, WDSessionState m, MonadIO m) => FailedCommandType -> String -> m a
+failedCommand :: (HasCallStack, SessionState m, MonadIO m) => FailedCommandType -> String -> m a
 failedCommand t m = throwIO . FailedCommand t =<< mkFailedCommandInfo m externalCallStack
 
 -- | An individual stack frame from the stack trace provided by the server

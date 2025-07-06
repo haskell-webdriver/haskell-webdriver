@@ -37,14 +37,15 @@ import Data.Functor
 import Data.Text (Text)
 import qualified Data.Text.Encoding as TE
 import Data.Word (Word8)
-import Network.HTTP.Client (Manager, Request(..), RequestBody(..), Response(..), httpLbs)
+import Network.HTTP.Client (Request(..), RequestBody(..), Response(..), httpLbs)
 import qualified Network.HTTP.Client as HTTPClient
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
-import Test.WebDriver.Monad
+import Test.WebDriver.LaunchDriver
+import Test.WebDriver.Types
 import UnliftIO.Exception (Exception, SomeException(..), toException, throwIO, tryAny)
 
 #if !MIN_VERSION_http_client(0,4,30)
@@ -53,10 +54,10 @@ import Data.Default (def)
 
 -- | A state monad for WebDriver commands. This is a basic monad that has an
 -- implementation of 'WebDriver'.
-newtype WD a = WD (ReaderT WDSession IO a)
+newtype WD a = WD (ReaderT Session IO a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix, MonadMask, MonadUnliftIO)
 
-instance WDSessionState WD where
+instance SessionState WD where
   getSession = WD ask
 
 instance WebDriver WD where
@@ -71,7 +72,7 @@ instance WebDriver WD where
 
 -- | Executes a 'WD' computation within the 'IO' monad, using the given
 -- 'WDSession' as state for WebDriver requests.
-runWD :: WDSession -> WD a -> IO a
+runWD :: Session -> WD a -> IO a
 runWD sess (WD wd) = runReaderT wd sess
 
 -- | This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
@@ -89,25 +90,28 @@ defaultRequest = def
 #endif
 
 -- | Construct an HTTP 'Request' value when given a list of headers, method, and URL fragment.
-mkRequest :: (Monad m, WDSessionState m, ToJSON a) => Method -> Text -> a -> m Request
+mkRequest :: (Monad m, SessionState m, ToJSON a) => Method -> Text -> a -> m Request
 mkRequest meth wdPath args = do
-  WDSession {wdSessHost, wdSessPort, wdSessBasePath, wdSessRequestHeaders} <- getSession
+  Session {sessionDriver=(Driver {..})} <- getSession
   let body = case toJSON args of
         Null  -> ""   --passing Null as the argument indicates no request body
         other -> encode other
   return $ defaultRequest {
-    host = wdSessHost
-    , port = wdSessPort
-    , path = wdSessBasePath `BS.append`  TE.encodeUtf8 wdPath
+    host = BS.pack _driverHostname
+    , port = _driverPort
+    , path = BS.pack _driverBasePath `BS.append`  TE.encodeUtf8 wdPath
     , requestBody = RequestBodyLBS body
-    , requestHeaders = wdSessRequestHeaders
-                       ++ [ (hAccept, "application/json;charset=UTF-8")
-                          , (hContentType, "application/json;charset=UTF-8") ]
+    , requestHeaders = _driverRequestHeaders ++ extraHeaders
     , method = meth
 #if !MIN_VERSION_http_client(0,5,0)
     , checkStatus = \_ _ _ -> Nothing
 #endif
     }
+  where
+    extraHeaders = [
+      (hAccept, "application/json;charset=UTF-8")
+      , (hContentType, "application/json;charset=UTF-8")
+      ]
 
 -- | Parse a 'WDResponse' object from a given HTTP response.
 getJSONResult :: (HasCallStack, MonadIO m, FromJSON a) => Response ByteString -> m (Either SomeException a)

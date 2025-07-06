@@ -1,6 +1,8 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NumericUnderscores #-}
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Test.WebDriver.LaunchDriver (
@@ -8,6 +10,9 @@ module Test.WebDriver.LaunchDriver (
 
   , DriverConfig(..)
   , Driver(..)
+
+  , Session(..)
+  , SessionId(..)
 
   , mkDriverRequest
   ) where
@@ -22,6 +27,7 @@ import qualified Data.ByteString.Char8 as BS
 import Data.Function
 import qualified Data.List as L
 import Data.Maybe
+import Data.String
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -31,6 +37,7 @@ import Network.HTTP.Types (RequestHeaders, Method, hAccept, hContentType, method
 import Network.Socket
 import System.FilePath
 import System.IO
+import Test.WebDriver.Types
 import Test.WebDriver.Util.Ports
 import Test.WebDriver.Util.Sockets
 import Text.Read (readMaybe)
@@ -38,37 +45,6 @@ import UnliftIO.Async
 import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Timeout
-
-
-data Driver = Driver {
-  _driverHostname :: String
-  , _driverPort :: Int
-  , _driverBasePath :: String
-  , _driverRequestHeaders :: RequestHeaders
-  , _driverAuthHeaders :: RequestHeaders
-  , _driverManager :: Manager
-  , _driverProcess :: ProcessHandle
-  , _driverConfig :: DriverConfig
-  , _driverLogAsync :: Async ()
-  }
-
-data DriverConfig =
-  DriverConfigSeleniumJar {
-    driverConfigJava :: FilePath
-    , driverConfigSeleniumJar :: FilePath
-    , driverConfigSubDrivers :: [DriverConfig]
-    , driverConfigLogDir :: FilePath
-    }
-  | DriverConfigGeckodriver {
-      driverConfigGeckodriver :: FilePath
-      , driverConfigFirefox :: FilePath
-      , driverConfigLogDir :: FilePath
-      }
-  | DriverConfigChromedriver {
-      driverConfigChromedriver :: FilePath
-      , driverConfigChrome :: FilePath
-      , driverConfigLogDir :: FilePath
-      }
 
 
 launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver

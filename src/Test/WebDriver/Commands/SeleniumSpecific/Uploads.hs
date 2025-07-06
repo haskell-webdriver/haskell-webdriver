@@ -15,7 +15,7 @@ import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TL
 import Test.WebDriver.Util.Commands
 import Test.WebDriver.JSON
-import Test.WebDriver.Monad
+import Test.WebDriver.Types
 
 
 -- | Uploads a file from the local filesystem by its file path. Returns the

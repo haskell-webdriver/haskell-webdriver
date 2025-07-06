@@ -69,12 +69,10 @@ library
       Test.WebDriver.Commands.SeleniumSpecific.Uploads
       Test.WebDriver.Commands.Sessions
       Test.WebDriver.Commands.UserPrompts
-      Test.WebDriver.Config
       Test.WebDriver.Exceptions
       Test.WebDriver.Exceptions.Internal
       Test.WebDriver.JSON
       Test.WebDriver.LaunchDriver
-      Test.WebDriver.Monad
       Test.WebDriver.Session
       Test.WebDriver.Util.Commands
       Test.WebDriver.Util.Ports
@@ -101,7 +99,6 @@ library
     , bytestring >=0.9
     , call-stack
     , containers
-    , data-default
     , directory >1.0
     , exceptions >=0.4
     , filepath >1.0
@@ -109,16 +106,17 @@ library
     , http-types >=0.8
     , microlens
     , microlens-th >=0.4.0.0
+    , monad-logger
     , mtl
+    , network
     , network-uri >=2.6
-    , pretty-simple
     , random
+    , retry
     , safe-exceptions
     , scientific >=0.2
     , string-interpolate
     , text >=0.11.3
     , time >1.0
-    , transformers >=0.4
     , unliftio
     , unliftio-core
     , unordered-containers >=0.1.3

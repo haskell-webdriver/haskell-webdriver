@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE RankNTypes #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 
 {-|
 Helper module for finding free ports, with various options for port ranges, retries, and excluded ports.

@@ -21,7 +21,7 @@ import Data.Aeson.Types (typeMismatch)
 import Data.CallStack
 import Data.Maybe
 import Data.Text (Text)
-import Test.WebDriver.Monad
+import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
 import Test.WebDriver.JSON
 

@@ -13,7 +13,7 @@ module Test.WebDriver.Commands.ElementState (
 import Data.Aeson as A
 import Data.CallStack
 import Data.Text (Text, append)
-import Test.WebDriver.Monad
+import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
 import Test.WebDriver.Commands.CommandContexts
 

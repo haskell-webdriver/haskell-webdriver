@@ -12,8 +12,9 @@ module Test.WebDriver (
   , mkDriverRequest
   , _driverManager
 
-  , startSession
+  -- , startSession
   , startSession'
+  , closeSession'
 
   -- * WebDriver monad
   , WebDriver(..)
@@ -26,10 +27,6 @@ module Test.WebDriver (
   -- , runSession
   , withSession
   , runWD
-
-  -- * WebDriver configuration
-  , WDConfig(..)
-  , defaultConfig
 
   -- ** HTTP request header utilities
   , withRequestHeaders
@@ -61,13 +58,12 @@ module Test.WebDriver (
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Capabilities.Proxy
 import Test.WebDriver.Commands
-import Test.WebDriver.Config
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Internal
 import Test.WebDriver.JSON
 import Test.WebDriver.LaunchDriver
-import Test.WebDriver.Monad
 import Test.WebDriver.Session
+import Test.WebDriver.Types
 
 import qualified Data.ByteString.Char8 as BS
 import Data.Map as M
@@ -84,30 +80,8 @@ import UnliftIO.Concurrent
 import UnliftIO.Exception
 
 
-data WebDriverContext = WebDriverContext {
-  _webDriverSessions :: MVar (Map String Session)
-  , _webDriverSelenium :: MVar (Maybe Driver)
-  , _webDriverChromedriver :: MVar (Maybe Driver)
-  , _webDriverGeckodrivers :: MVar (Map String Driver)
-  }
-
-class HasWebDriverContext ctx where
-  getWebDriverContexts :: ctx -> WebDriverContext
-
-mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
-mkEmptyWebDriverContext = WebDriverContext
-  <$> newMVar mempty
-  <*> newMVar Nothing
-  <*> newMVar Nothing
-  <*> newMVar mempty
-
-data Session = Session {
-  sessionDriver :: Driver
-  , sessionId   :: SessionId
-  }
-
-startSession :: (MonadReader ctx m, HasWebDriverContext ctx) => WebDriverContext -> DriverConfig -> String -> m Session
-startSession = undefined
+-- startSession :: (MonadReader ctx m, HasWebDriverContext ctx) => DriverConfig -> String -> m Session
+-- startSession = undefined
 
 startSession' :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> DriverConfig -> Capabilities -> String -> m Session
 startSession' wdc dc@(DriverConfigSeleniumJar {}) caps sessionName = do
@@ -150,12 +124,9 @@ launchSessionInDriver wdc driver@(Driver {..}) caps sessionName = do
 
   modifyMVar (_webDriverSessions wdc) $ \sessionMap ->
     case M.lookup sessionName sessionMap of
-      Just x -> throwIO SessionNameAlreadyExists
-      Nothing ->
-        return (M.insert sessionName sess sessionMap, sess)
+      Just _ -> throwIO SessionNameAlreadyExists
+      Nothing -> return (M.insert sessionName sess sessionMap, sess)
 
-data SessionException =
-  SessionNameAlreadyExists
-  | SessionCreationFailed (Response LBS.ByteString)
-  deriving (Show)
-instance Exception SessionException
+closeSession' :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> Session -> m ()
+closeSession' wdc sess = do
+  undefined

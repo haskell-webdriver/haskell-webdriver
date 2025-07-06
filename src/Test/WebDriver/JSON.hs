@@ -58,7 +58,7 @@ import Data.ByteString.Lazy.Char8 (ByteString)
 import Data.String
 import Data.Text (Text)
 import Prelude -- hides some "unused import" warnings
-import Test.WebDriver.Monad (WebDriver)
+import Test.WebDriver.Types (WebDriver)
 import UnliftIO.Exception
 
 #if MIN_VERSION_aeson(2,2,0)

@@ -32,7 +32,7 @@ import Data.Text (Text)
 import Data.Time.Clock
 import Test.WebDriver.Commands
 import Test.WebDriver.Exceptions
-import Test.WebDriver.Monad
+import Test.WebDriver.Types
 import UnliftIO.Exception
 
 #if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
@@ -93,22 +93,22 @@ catchFailedCommand t1 m = m `catch` handler
 -- 'FailedCommand' 'NoSuchElement' exceptions occur. If the timeout is reached,
 -- then a 'Timeout' exception will be raised. The timeout value
 -- is expressed in seconds.
-waitUntil :: (WDSessionStateUnliftIO m, HasCallStack) => Double -> m a -> m a
+waitUntil :: (MonadUnliftIO m, SessionState m, HasCallStack) => Double -> m a -> m a
 waitUntil = waitUntil' 500000
 
 -- |Similar to 'waitUntil' but allows you to also specify the poll frequency
 -- of the 'WD' action. The frequency is expressed as an integer in microseconds.
-waitUntil' :: (WDSessionStateUnliftIO m, HasCallStack) => Int -> Double -> m a -> m a
+waitUntil' :: (MonadUnliftIO m, SessionState m, HasCallStack) => Int -> Double -> m a -> m a
 waitUntil' = waitEither id (\_ -> return)
 
 -- |Like 'waitUntil', but retries the action until it fails or until the timeout
 -- is exceeded.
-waitWhile :: (WDSessionStateUnliftIO m, HasCallStack)  => Double -> m a -> m ()
+waitWhile :: (MonadUnliftIO m, SessionState m, HasCallStack)  => Double -> m a -> m ()
 waitWhile = waitWhile' 500000
 
 -- |Like 'waitUntil'', but retries the action until it either fails or
 -- until the timeout is exceeded.
-waitWhile' :: (WDSessionStateUnliftIO m, HasCallStack)  => Int -> Double -> m a -> m ()
+waitWhile' :: (MonadUnliftIO m, SessionState m, HasCallStack)  => Int -> Double -> m a -> m ()
 waitWhile' =
   waitEither  (\_ _ -> return ())
               (\retry _ -> retry "waitWhile: action did not fail")
@@ -116,7 +116,7 @@ waitWhile' =
 
 -- | Internal function used to implement explicit wait commands using success and failure continuations
 waitEither :: (
-  WDSessionStateUnliftIO m, HasCallStack
+  MonadUnliftIO m, SessionState m, HasCallStack
   )
   => ((String -> m b) -> String -> m b) -> ((String -> m b) -> a -> m b)
   -> Int
@@ -137,7 +137,7 @@ waitEither failure success = wait' handler
     handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
 
 wait' :: (
-  MonadIO m, WDSessionState m, HasCallStack
+  MonadIO m, SessionState m, HasCallStack
   ) => ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
 wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
   where

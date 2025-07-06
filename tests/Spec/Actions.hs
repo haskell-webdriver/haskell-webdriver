@@ -20,7 +20,7 @@ import TestLib.Types
 
 
 setUp :: (
-  HasStaticServerContext context, HasWDSession context
+  HasStaticServerContext context, HasSession context
   ) => SpecFree context IO () -> SpecFree context IO ()
 setUp x = before "Open test page" openSimpleTestPage $ before "scroll to clickable box" scrollToClickableBox x
 
@@ -65,12 +65,12 @@ tests = introduceSession $ describe "Actions" $ setUp $ do
     assertWithinPixels center (fromIntegral clientX, fromIntegral clientY) 25
 
 
-scrollToClickableBox :: (HasWDSession ctx) => ExampleT ctx IO ()
+scrollToClickableBox :: (HasSession ctx) => ExampleT ctx IO ()
 scrollToClickableBox = do
   -- { behavior: 'smooth', block: 'nearest', inline: 'nearest' }
   executeJS [] [i|document.querySelector("\#clickable-box").scrollIntoView()|]
 
-getLastMouseEvent :: (HasWDSession ctx) => ExampleT ctx IO (Maybe MouseEvent)
+getLastMouseEvent :: (HasSession ctx) => ExampleT ctx IO (Maybe MouseEvent)
 getLastMouseEvent = do
   executeJS [] [i|return document.querySelector("\#last-mouse-event").innerText|] >>= \case
     "{}" -> return Nothing

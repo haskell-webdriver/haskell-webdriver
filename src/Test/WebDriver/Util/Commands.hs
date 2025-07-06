@@ -35,7 +35,7 @@ import Data.Text.Encoding as TE
 import qualified Network.HTTP.Types.URI as HTTP
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.JSON
-import Test.WebDriver.Monad
+import Test.WebDriver.Types
 import UnliftIO.Exception
 
 #if MIN_VERSION_aeson(2,0,0)
@@ -84,7 +84,7 @@ doSessCommand :: (
   HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
   ) => Method -> Text -> a -> wd b
 doSessCommand method path args = do
-  WDSession { wdSessId = SessionId sId } <- getSession
+  Session { sessionId = SessionId sId } <- getSession
   -- Catch BadJSON exceptions here, since most commands go through this function.
   -- Then, re-throw them with "error", which automatically appends a callstack
   -- to the message in modern GHCs.

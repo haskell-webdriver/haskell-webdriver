@@ -16,35 +16,28 @@ module TestLib.Types (
   , browserDependencies
   , HasBrowserDependencies
 
-  , DriverType(..)
-  , driverType
-  , HasDriverType
+  , driverConfig
+  , HasDriverConfig
 
-  , TestWebDriverContext(..)
-  , webdriver
-  , HasTestWebDriverContext
+  , webdriverContext
+  , HasWebDriverContext
 
-  , WDSession(..)
-  , wdSession
-  , HasWDSession
+  , getCapabilities
+
+  , session
+  , HasSession
 
   , SeleniumVersion(..)
 
   , SessionSpec
   , SpecWithWebDriver
-
-  , getWDConfig
-  , getWDConfig'
   ) where
 
 import Control.Exception.Safe
 import Control.Monad.IO.Unlift
-import Control.Monad.Logger
-import Control.Monad.Reader
 import Data.Aeson as A
 import Data.ByteString
 import qualified Data.ByteString.Lazy as BL
-import Data.Maybe
 import Data.String.Interpolate
 import Lens.Micro
 import qualified Network.HTTP.Client as HC
@@ -57,7 +50,6 @@ import Test.WebDriver.Capabilities
 import Test.WebDriver.Internal
 import Test.WebDriver.Types
 import TestLib.Types.Cli
-import UnliftIO.IORef
 
 
 -- * StaticServer
@@ -92,35 +84,24 @@ type HasBrowserDependencies context = HasLabel context "browserDependencies" Bro
 
 -- * WebDriver
 
-data DriverType =
-  DriverTypeSeleniumJar FilePath FilePath
-  | DriverTypeGeckodriver FilePath
-  | DriverTypeChromedriver FilePath
+driverConfig :: Label "driverConfig" DriverConfig
+driverConfig = Label
 
-driverType :: Label "driverType" DriverType
-driverType = Label
-
-type HasDriverType context = HasLabel context "driverType" DriverType
+type HasDriverConfig context = HasLabel context "driverConfig" DriverConfig
 
 -- * WebDriver
 
-data TestWebDriverContext = TestWebDriverContext {
-  webDriverDriverType :: DriverType
-  , webDriverHostname :: String
-  , webDriverPort :: PortNumber
-  }
+webdriverContext :: Label "webdriver" WebDriverContext
+webdriverContext = Label
 
-webdriver :: Label "webdriver" TestWebDriverContext
-webdriver = Label
-
-type HasTestWebDriverContext context = HasLabel context "webdriver" TestWebDriverContext
+type HasWebDriverContext context = HasLabel context "webdriver" WebDriverContext
 
 -- * Session
 
-wdSession :: Label "wdSession" (IORef WDSession)
-wdSession = Label
+session :: Label "session" Session
+session = Label
 
-type HasWDSession context = HasLabel context "wdSession" (IORef WDSession)
+type HasSession context = HasLabel context "session" Session
 
 -- * SeleniumVersion
 
@@ -131,10 +112,8 @@ data SeleniumVersion =
 
 -- * Instances
 
-instance (HasWDSession context, MonadIO m) => WDSessionState (ExampleT context m) where
-  getSession = do
-    sessVar <- getContext wdSession
-    readIORef sessVar
+instance (HasSession context, MonadIO m) => SessionState (ExampleT context m) where
+  getSession = getContext session
 
   -- putSession sess = do
   --   sessVar <- getContext wdSession
@@ -156,7 +135,7 @@ instance (MonadUnliftIO m, MonadCatch m) => WebDriverBase (ExampleT context m) w
       showRequestBody (HC.RequestBodyBS bytes) = bytes
       showRequestBody _ = "<request body>"
 
-instance (HasWDSession context, MonadUnliftIO m, MonadCatch m) => WebDriver (ExampleT context m) where
+instance (HasSession context, MonadUnliftIO m, MonadCatch m) => WebDriver (ExampleT context m) where
   doCommand method path args = do
     let driver = undefined
 
@@ -182,31 +161,6 @@ instance (HasWDSession context, MonadUnliftIO m, MonadCatch m) => WebDriver (Exa
 
 -- * Config
 
-getWDConfig :: (
-  MonadIO m, MonadReader context m, MonadLogger m
-  , HasTestWebDriverContext context, HasCommandLineOptions context UserOptions
-  ) => BrowserDependencies -> m WDConfig
-getWDConfig browserDeps = do
-  wdc <- getContext webdriver
-  getWDConfig' wdc browserDeps
-
-getWDConfig' :: (
-  MonadIO m, MonadReader context m, MonadLogger m
-  , HasCommandLineOptions context UserOptions
-  ) => TestWebDriverContext -> BrowserDependencies -> m WDConfig
-getWDConfig' (TestWebDriverContext {..}) browserDeps = do
-  UserOptions {..} <- getUserCommandLineOptions
-  caps <- getCapabilities (fromMaybe False optHeadlessTests) browserDeps
-  debug [i|Using browser capabilities: #{caps}|]
-  pure $ defaultConfig {
-    _wdHost = webDriverHostname
-    , _wdPort = fromIntegral webDriverPort
-    , _wdCapabilities = caps
-    , _wdBasePath = case webDriverDriverType of
-        DriverTypeSeleniumJar {} -> "/wd/hub"
-        _ -> ""
-    }
-
 getCapabilities :: MonadIO m => Bool -> BrowserDependencies -> m Capabilities
 getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
   _capabilitiesBrowserName = Just "chrome"
@@ -230,7 +184,8 @@ type SpecWithWebDriver = forall context. (
   HasBaseContext context
   , HasCommandLineOptions context UserOptions
   , HasBrowserDependencies context
-  , HasTestWebDriverContext context
+  , HasDriverConfig context
+  , HasWebDriverContext context
   , HasStaticServerContext context
   , HasNixContext context
   ) => SpecFree context IO ()
@@ -239,6 +194,7 @@ type SessionSpec = forall context. (
   HasBaseContext context
   , HasCommandLineOptions context UserOptions
   , HasBrowserDependencies context
-  , HasTestWebDriverContext context
+  , HasDriverConfig context
+  , HasWebDriverContext context
   , HasStaticServerContext context
   ) => SpecFree context IO ()

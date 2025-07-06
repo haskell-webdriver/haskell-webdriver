@@ -27,7 +27,7 @@ import Data.String (fromString)
 import Data.Text (toUpper, toLower)
 import Test.WebDriver.Util.Commands
 import Test.WebDriver.JSON
-import Test.WebDriver.Monad
+import Test.WebDriver.Types
 
 
 -- | A screen orientation

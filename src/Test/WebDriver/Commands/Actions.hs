@@ -20,7 +20,7 @@ module Test.WebDriver.Commands.Actions (
 
 import Data.Aeson as A
 import Data.CallStack
-import Test.WebDriver.Monad
+import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
 import Test.WebDriver.JSON
 

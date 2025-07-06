@@ -11,7 +11,7 @@ import Data.Aeson as A
 import Data.CallStack
 import qualified Data.Foldable as F
 import Data.Text (Text)
-import Test.WebDriver.Monad
+import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON

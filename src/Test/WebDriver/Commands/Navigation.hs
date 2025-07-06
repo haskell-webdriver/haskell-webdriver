@@ -13,7 +13,7 @@ import Data.CallStack
 import Data.Text (Text)
 import Network.URI hiding (path)  -- suppresses warnings
 import Prelude -- hides some "unused import" warnings
-import Test.WebDriver.Monad
+import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON

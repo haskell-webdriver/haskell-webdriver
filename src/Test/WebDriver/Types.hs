@@ -1,17 +1,161 @@
-{-# OPTIONS_HADDOCK not-home #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Test.WebDriver.Types (
-  module Test.WebDriver.Session
+  WebDriverContext(..)
+  -- , HasWebDriverContext
+  , mkEmptyWebDriverContext
 
-  , module Test.WebDriver.Monad
+  , Driver(..)
+  , DriverConfig(..)
 
-  , module Test.WebDriver.Config
+  -- * SessionState class
+  , SessionState(..)
+  , SessionStatePut(..)
 
-  , module Test.WebDriver.Exceptions
+  -- ** WebDriver sessions
+  , SessionId(..)
+  , Session(..)
 
+  -- * Exceptions
+  , SessionException(..)
+
+  -- * WebDriver class
+  , WebDriver(..)
+  , WebDriverBase(..)
+  , Method
+  , methodDelete
+  , methodGet
+  , methodPost
   ) where
 
-import Test.WebDriver.Config
-import Test.WebDriver.Exceptions
-import Test.WebDriver.Monad
-import Test.WebDriver.Session
+import Control.Monad.IO.Unlift
+import Data.Aeson
+import qualified Data.ByteString.Lazy as LBS
+import Data.CallStack
+import Data.Map as M
+import Data.String
+import Data.String.Interpolate
+import Data.Text as T
+import Network.HTTP.Client
+import Network.HTTP.Types (RequestHeaders)
+import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
+import UnliftIO.Async
+import UnliftIO.Concurrent
+import UnliftIO.Exception
+import UnliftIO.Process
+
+
+data WebDriverContext = WebDriverContext {
+  _webDriverSessions :: MVar (Map String Session)
+  , _webDriverSelenium :: MVar (Maybe Driver)
+  , _webDriverChromedriver :: MVar (Maybe Driver)
+  , _webDriverGeckodrivers :: MVar (Map String Driver)
+  }
+
+class HasWebDriverContext ctx where
+  getWebDriverContexts :: ctx -> WebDriverContext
+
+mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
+mkEmptyWebDriverContext = WebDriverContext
+  <$> newMVar mempty
+  <*> newMVar Nothing
+  <*> newMVar Nothing
+  <*> newMVar mempty
+
+data Driver = Driver {
+  _driverHostname :: String
+  , _driverPort :: Int
+  , _driverBasePath :: String
+  , _driverRequestHeaders :: RequestHeaders
+  , _driverAuthHeaders :: RequestHeaders
+  , _driverManager :: Manager
+  , _driverProcess :: ProcessHandle
+  , _driverConfig :: DriverConfig
+  , _driverLogAsync :: Async ()
+  }
+
+data DriverConfig =
+  DriverConfigSeleniumJar {
+    driverConfigJava :: FilePath
+    , driverConfigSeleniumJar :: FilePath
+    , driverConfigSubDrivers :: [DriverConfig]
+    , driverConfigLogDir :: FilePath
+    }
+  | DriverConfigGeckodriver {
+      driverConfigGeckodriver :: FilePath
+      , driverConfigFirefox :: FilePath
+      , driverConfigLogDir :: FilePath
+      }
+  | DriverConfigChromedriver {
+      driverConfigChromedriver :: FilePath
+      , driverConfigChrome :: FilePath
+      , driverConfigLogDir :: FilePath
+      }
+
+-- | An opaque identifier for a WebDriver session. These handles are produced by
+-- the server on session creation, and act to identify a session in progress.
+newtype SessionId = SessionId T.Text
+  deriving (Eq, Ord, Show, Read, FromJSON, ToJSON)
+instance IsString SessionId where
+  fromString s = SessionId (T.pack s)
+
+data Session = Session {
+  sessionDriver :: Driver
+  , sessionId :: SessionId
+  }
+instance Show Session where
+  show (Session {sessionDriver=(Driver {..}), ..}) = [i|Session<[#{sessionId}] at #{_driverHostname}:#{_driverPort}#{_driverBasePath}>|]
+
+-- class HasLens ctx a where
+--   getLens :: Lens' ctx a
+
+data SessionException =
+  SessionNameAlreadyExists
+  | SessionCreationFailed (Response LBS.ByteString)
+  deriving (Show)
+instance Exception SessionException
+
+
+class SessionState m where
+  getSession :: m Session
+
+class (SessionState m) => SessionStatePut m where
+  withSession :: Session -> m a -> m a
+  withModifiedSession :: (Session -> Session) -> m a -> m a
+
+-- | A class for monads that can handle wire protocol requests. This is the
+-- operation underlying all of the high-level commands exported in
+-- "Test.WebDriver.Commands".
+class (SessionState m, MonadUnliftIO m) => WebDriver m where
+  doCommand :: (
+    HasCallStack, ToJSON a, FromJSON b, ToJSON b
+    )
+    -- | HTTP request method
+    => Method
+    -- | URL of request
+    -> Text
+    -- | JSON parameters passed in the body of the request. Note that, as a
+    -- special case, anything that converts to Data.Aeson.Null will result in an
+    -- empty request body.
+    -> a
+    -- | The JSON result of the HTTP request.
+    -> m b
+
+-- | A class for monads that can handle wire protocol requests. This is the
+-- operation underlying all of the high-level commands exported in
+-- "Test.WebDriver.Commands".
+class (MonadUnliftIO m) => WebDriverBase m where
+  doCommandBase :: (
+    HasCallStack, ToJSON a
+    )
+    => Driver
+    -- | HTTP request method
+    -> Method
+    -- | URL of request
+    -> Text
+    -- | JSON parameters passed in the body of the request. Note that, as a
+    -- special case, anything that converts to Data.Aeson.Null will result in an
+    -- empty request body.
+    -> a
+    -- | The response of the HTTP request.
+    -> m (Response LBS.ByteString)
