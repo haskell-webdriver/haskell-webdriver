@@ -4,6 +4,7 @@ providing most of the functionality you're likely to want.
 -}
 
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Test.WebDriver (
   WebDriverContext(..)
@@ -55,6 +56,7 @@ module Test.WebDriver (
   , module Test.WebDriver.Exceptions
   ) where
 
+import Data.Aeson as A
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Capabilities.Proxy
 import Test.WebDriver.Commands
@@ -64,15 +66,13 @@ import Test.WebDriver.JSON
 import Test.WebDriver.LaunchDriver
 import Test.WebDriver.Types
 
-import qualified Data.ByteString.Char8 as BS
 import Data.Map as M
 import Control.Monad.Catch (MonadMask)
+import Data.String.Interpolate
+import Test.WebDriver.Util.Aeson (aesonLookup)
 import Control.Monad.Logger
-import qualified Data.List as L
-import Data.String
-import Data.Text as T
 import Network.HTTP.Client
-import Network.HTTP.Types (RequestHeaders, hLocation, statusCode)
+import Network.HTTP.Types (RequestHeaders, statusCode)
 import UnliftIO.Concurrent
 import UnliftIO.Exception
 
@@ -104,19 +104,17 @@ startSession' wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
   launchSessionInDriver wdc driver caps sessionName
 
 
-launchSessionInDriver :: (WebDriverBase m) => WebDriverContext -> Driver -> Capabilities -> String -> m Session
+launchSessionInDriver :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Driver -> Capabilities -> String -> m Session
 launchSessionInDriver wdc driver caps sessionName = do
   response <- doCommandBase driver methodPost "/session" $ single "desiredCapabilities" caps
 
-  let code = statusCode (responseStatus response)
-
   sess <-
-    if | code == 302 || code == 303 -> do
-           case L.lookup hLocation (responseHeaders response) of
-             Nothing -> throwIO $ SessionCreationFailed response
-             Just loc -> do
-               let sessId = L.last . L.filter (not . T.null) . splitOn "/" . fromString $ BS.unpack loc
+    if | statusCode (responseStatus response) == 200 -> do
+           case A.eitherDecode (responseBody response) of
+             Right x@(A.Object (aesonLookup "sessionId" -> Just (A.String sessId))) -> do
+               logInfoN [i|Got capabilities from driver: #{x}|]
                return $ Session { sessionDriver = driver, sessionId = SessionId sessId }
+             _ -> throwIO $ SessionCreationResponseHadNoSessionId response
        | otherwise -> throwIO SessionNameAlreadyExists
 
   modifyMVar (_webDriverSessions wdc) $ \sessionMap ->
@@ -125,10 +123,9 @@ launchSessionInDriver wdc driver caps sessionName = do
       Nothing -> return (M.insert sessionName sess sessionMap, sess)
 
 closeSession' :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> Session -> m ()
-closeSession' wdc sess = do
-  undefined
-
-
+closeSession' _wdc (Session { sessionId=(SessionId sessId), .. }) = do
+  response <- doCommandBase sessionDriver methodDelete ("/session/" <> sessId) Null
+  logInfoN [i|Close result: #{response}|]
 
 -- | Set a temporary list of custom 'RequestHeaders' to use within the given action.
 -- All previous custom headers are temporarily removed, and then restored at the end.

@@ -109,6 +109,7 @@ instance Show Session where
 data SessionException =
   SessionNameAlreadyExists
   | SessionCreationFailed (Response LBS.ByteString)
+  | SessionCreationResponseHadNoSessionId (Response LBS.ByteString)
   deriving (Show)
 instance Exception SessionException
 

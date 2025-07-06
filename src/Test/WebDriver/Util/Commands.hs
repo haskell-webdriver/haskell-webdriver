@@ -36,20 +36,9 @@ import qualified Network.HTTP.Types.URI as HTTP
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.JSON
 import Test.WebDriver.Types
+import Test.WebDriver.Util.Aeson
 import UnliftIO.Exception
 
-#if MIN_VERSION_aeson(2,0,0)
-import qualified Data.Aeson.Key as A
-import qualified Data.Aeson.KeyMap as KM
-
-aesonToList :: KM.KeyMap v -> [(A.Key, v)]
-aesonToList = KM.toList
-#else
-import qualified Data.HashMap.Strict        as HM
-
-aesonToList :: HM.KeyMap v -> [(A.Key, v)]
-aesonToList = HM.toList
-#endif
 
 -- | An opaque identifier for a web page element
 newtype Element = Element Text
