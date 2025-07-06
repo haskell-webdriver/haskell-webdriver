@@ -63,57 +63,61 @@ launchDriver driverConfig = do
 
   let hostname = "localhost"
 
-  -- Read from the (combined) output stream until we see the up and running message
-  maybeReady <- timeout 30_000_00 $ fix $ \loop -> do
-    line <- fmap T.pack $ liftIO $ hGetLine hRead
-    -- debug line
-    unless (Prelude.any (\x -> x `T.isInfixOf` line) (needles driverConfig)) loop
-  when (isNothing maybeReady) $
-    throwIO DriverNoReadyMessage
+  (logFilePath, logFileHandle) <- liftIO $ openTempFile (driverConfigLogDir driverConfig) "driver.log"
+  logDebugN [i|Logging driver output to #{logFilePath}|]
 
-  logAsync <- async $ forever $ do
-    line <- liftIO (T.hGetLine hRead)
-    logDebugN line
+  flip onException (liftIO $ hClose logFileHandle) $ do
+    -- Read from the (combined) output stream until we see the up and running message
+    maybeReady <- timeout 30_000_00 $ fix $ \loop -> do
+      line <- fmap T.pack $ liftIO $ hGetLine hRead
+      liftIO $ T.hPutStrLn logFileHandle line
+      unless (Prelude.any (`T.isInfixOf` line) (needles driverConfig)) loop
+    when (isNothing maybeReady) $
+      throwIO DriverNoReadyMessage
 
-  -- Wait for a successful connection to the server socket
-  addr <- liftIO (getAddrInfo (Just defaultHints) (Just "127.0.0.1") (Just (show port))) >>= \case
-    addr:_ -> return addr
-    _ -> undefined -- exception
-  let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 1_000_000 $ exponentialBackoff 1000
+    logAsync <- async $ flip finally (liftIO $ hClose logFileHandle) $ forever $ do
+      line <- liftIO (T.hGetLine hRead)
+      liftIO $ T.hPutStrLn logFileHandle line
 
-  waitForSocket policy addr
+    -- Wait for a successful connection to the server socket
+    addr <- liftIO (getAddrInfo (Just defaultHints) (Just "127.0.0.1") (Just (show port))) >>= \case
+      addr:_ -> return addr
+      _ -> throwIO DriverGetAddrInfoFailed
+    let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 1_000_000 $ exponentialBackoff 1000
 
-  logDebugN [i|Finished wait for driver socket|]
+    waitForSocket policy addr
 
-  let basePath = case driverConfig of
-        DriverConfigSeleniumJar {} -> "/wd/hub"
-        _ -> ""
+    logDebugN [i|Finished wait for driver socket|]
 
-  let driver = Driver {
-        _driverHostname = hostname
-        , _driverPort = fromIntegral port
-        , _driverBasePath = basePath
-        , _driverRequestHeaders = requestHeaders
-        , _driverAuthHeaders = authHeaders
-        , _driverManager = manager
-        , _driverProcess = p
-        , _driverConfig = driverConfig
-        , _driverLogAsync = logAsync
-        }
+    let basePath = case driverConfig of
+          DriverConfigSeleniumJar {} -> "/wd/hub"
+          _ -> ""
 
-  -- Wait for a successful call to /status
-  recoverAll policy $ \retryStatus -> do
-    let req = mkDriverRequest driver methodGet "/status" Null
-    resp <- liftIO $ httpLbs req manager
-    let code = statusCode (responseStatus resp)
-    if | code >= 200 && code < 300 -> return ()
-       | otherwise -> do
-           logWarnN [i|(#{retryStatus}) Invalid response from /status: #{resp}|]
-           throwIO DriverStatusEndpointNotReady
+    let driver = Driver {
+          _driverHostname = hostname
+          , _driverPort = fromIntegral port
+          , _driverBasePath = basePath
+          , _driverRequestHeaders = requestHeaders
+          , _driverAuthHeaders = authHeaders
+          , _driverManager = manager
+          , _driverProcess = p
+          , _driverConfig = driverConfig
+          , _driverLogAsync = logAsync
+          }
 
-  logInfoN [i|Finished wait for driver /status endpoint. Driver is running on #{hostname}:#{port}|]
+    -- Wait for a successful call to /status
+    recoverAll policy $ \retryStatus -> do
+      let req = mkDriverRequest driver methodGet "/status" Null
+      resp <- liftIO $ httpLbs req manager
+      let code = statusCode (responseStatus resp)
+      if | code >= 200 && code < 300 -> return ()
+         | otherwise -> do
+             logWarnN [i|(#{retryStatus}) Invalid response from /status: #{resp}|]
+             throwIO DriverStatusEndpointNotReady
 
-  return driver
+    logInfoN [i|Finished wait for driver /status endpoint. Driver is running on #{hostname}:#{port}|]
+
+    return driver
 
 autodetectSeleniumVersionByFileName :: FilePath -> Maybe SeleniumVersion
 autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodetectSeleniumMajorVersionByFileName of
@@ -190,7 +194,8 @@ data SeleniumVersion =
   deriving (Show, Eq)
 
 data DriverException =
-  DriverNoReadyMessage
+  DriverGetAddrInfoFailed
+  | DriverNoReadyMessage
   | DriverStatusEndpointNotReady
   deriving (Show, Eq)
 
