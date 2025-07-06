@@ -102,12 +102,12 @@ startSession' wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
 
 launchSessionInDriver :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Driver -> Capabilities -> String -> m Session
 launchSessionInDriver wdc driver caps sessionName = do
-  response <- doCommandBase driver methodPost "/session" $ single "desiredCapabilities" caps
+  response <- doCommandBase driver methodPost "/session" $ single "capabilities" $ single "alwaysMatch" caps
 
   sess <-
     if | statusCode (responseStatus response) == 200 -> do
            case A.eitherDecode (responseBody response) of
-             Right x@(A.Object (aesonLookup "sessionId" -> Just (A.String sessId))) -> do
+             Right x@(A.Object (aesonLookup "value" -> Just (A.Object (aesonLookup "sessionId" -> Just (A.String sessId))))) -> do
                logInfoN [i|Got capabilities from driver: #{x}|]
                return $ Session { sessionDriver = driver, sessionId = SessionId sessId, sessionName = sessionName }
              _ -> throwIO $ SessionCreationResponseHadNoSessionId response
