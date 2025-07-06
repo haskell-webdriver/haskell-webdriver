@@ -147,7 +147,7 @@ autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodet
 
 getArguments :: (MonadIO m, MonadLogger m) => PortNumber -> DriverConfig -> m (FilePath, [String])
 getArguments port (DriverConfigSeleniumJar {..}) = do
-  javaArgs :: [String] <- fmap mconcat <$> mapM getSubDriverArgs driverConfigSubDrivers
+  javaArgs :: [String] <- mconcat <$> mapM getSubDriverArgs driverConfigSubDrivers
 
   let maybeSeleniumVersion = autodetectSeleniumVersionByFileName driverConfigSeleniumJar
   logInfoN [i|Detected Selenium version: #{maybeSeleniumVersion}|]
