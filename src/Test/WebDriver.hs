@@ -19,8 +19,7 @@ module Test.WebDriver (
   , closeSession'
 
   -- * WebDriver monad
-  , WebDriver(..)
-  , WD(..)
+  , WebDriver
 
   , DriverConfig(..)
   , Session
@@ -28,7 +27,6 @@ module Test.WebDriver (
   -- * Running WebDriver commands
   -- , runSession
   , withSession
-  , runWD
 
   -- ** HTTP request header utilities
   -- , withRequestHeaders
@@ -62,7 +60,6 @@ import Test.WebDriver.Capabilities
 import Test.WebDriver.Capabilities.Proxy
 import Test.WebDriver.Commands
 import Test.WebDriver.Exceptions
-import Test.WebDriver.Internal
 import Test.WebDriver.JSON
 import Test.WebDriver.LaunchDriver
 import Test.WebDriver.Types
@@ -74,7 +71,7 @@ import Data.String.Interpolate
 import Test.WebDriver.Util.Aeson (aesonLookup)
 import Control.Monad.Logger
 import Network.HTTP.Client
-import Network.HTTP.Types (RequestHeaders, statusCode)
+import Network.HTTP.Types (statusCode)
 import UnliftIO.Concurrent
 import UnliftIO.Exception
 
@@ -143,19 +140,19 @@ teardownWebDriverContext wdc@(WebDriverContext {..}) = do
     Nothing -> return Nothing
     Just driver -> teardownDriver driver >> return Nothing
 
--- | Set a temporary list of custom 'RequestHeaders' to use within the given action.
--- All previous custom headers are temporarily removed, and then restored at the end.
-withRequestHeaders :: (SessionStatePut m) => RequestHeaders -> m a -> m a
-withRequestHeaders _h _action = undefined -- do
-  -- withModifiedSession (\s -> s { wdSessRequestHeaders = h }) action
+-- -- | Set a temporary list of custom 'RequestHeaders' to use within the given action.
+-- -- All previous custom headers are temporarily removed, and then restored at the end.
+-- withRequestHeaders :: (SessionStatePut m) => RequestHeaders -> m a -> m a
+-- withRequestHeaders _h _action = undefined -- do
+--   -- withModifiedSession (\s -> s { wdSessRequestHeaders = h }) action
 
--- | Makes all webdriver HTTP requests in the given action use the session\'s auth headers, typically
--- configured by setting the 'wdAuthHeaders' config. This is useful if you want to temporarily use
--- the same auth headers you used for session creation with other HTTP requests.
-withAuthHeaders :: (Monad m, SessionStatePut m) => m a -> m a
-withAuthHeaders _wd = undefined -- do
-  -- authHeaders <- fmap wdSessAuthHeaders getSession
-  -- withRequestHeaders authHeaders wd
+-- -- | Makes all webdriver HTTP requests in the given action use the session\'s auth headers, typically
+-- -- configured by setting the 'wdAuthHeaders' config. This is useful if you want to temporarily use
+-- -- the same auth headers you used for session creation with other HTTP requests.
+-- withAuthHeaders :: (Monad m, SessionStatePut m) => m a -> m a
+-- withAuthHeaders _wd = undefined -- do
+--   -- authHeaders <- fmap wdSessAuthHeaders getSession
+--   -- withRequestHeaders authHeaders wd
 
 -- -- | A finalizer ensuring that the session is always closed at the end of
 -- -- the given 'WD' action, regardless of any exceptions.

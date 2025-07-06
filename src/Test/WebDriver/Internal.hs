@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- | The HTTP/JSON plumbing used to implement the 'WD' monad.
 --
@@ -12,17 +11,11 @@ module Test.WebDriver.Internal (
   , handleJSONErr
   , WDResponse(..)
 
-  , WD(..)
-  , runWD
-
+  , doCommand
   ) where
 
 import Control.Applicative
-import Control.Monad.Catch (MonadCatch, MonadMask, MonadThrow)
-import Control.Monad.Fix
 import Control.Monad.IO.Class
-import Control.Monad.IO.Unlift
-import Control.Monad.Reader
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 import qualified Data.ByteString.Base64.Lazy as B64
@@ -32,41 +25,41 @@ import Data.ByteString.Lazy.Char8 as LBS (null)
 import qualified Data.ByteString.Lazy.Internal as LBS (ByteString(..))
 import Data.CallStack
 import Data.Functor
+import Data.Text (Text)
 import Data.Word (Word8)
-import Network.HTTP.Client (Response(..), httpLbs)
+import Network.HTTP.Client (Response(..))
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
-import Test.WebDriver.LaunchDriver
 import Test.WebDriver.Types
-import UnliftIO.Exception (Exception, SomeException(..), toException, throwIO, tryAny)
+import UnliftIO.Exception (Exception, SomeException(..), toException, throwIO)
 
 
--- | A state monad for WebDriver commands. This is a basic monad that has an
--- implementation of 'WebDriver'.
-newtype WD a = WD (ReaderT Session IO a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix, MonadMask, MonadUnliftIO)
+-- -- | A state monad for WebDriver commands. This is a basic monad that has an
+-- -- implementation of 'WebDriver'.
+-- newtype WD a = WD (ReaderT Session IO a)
+--   deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadFix, MonadMask, MonadUnliftIO)
 
-instance SessionState WD where
-  getSession = WD ask
+-- instance SessionState WD where
+--   getSession = WD ask
 
-instance WebDriver WD where
-  doCommand method path args = do
-    Session {sessionDriver} <- getSession
+-- instance WebDriver WD where
+--   doCommand method path args = do
+--     Session {sessionDriver} <- getSession
 
-    let req = mkDriverRequest sessionDriver method path args
+--     let req = mkDriverRequest sessionDriver method path args
 
-    tryAny (liftIO $ httpLbs req (_driverManager sessionDriver))
-      >>= either throwIO return
-      >>= getJSONResult
-      >>= either throwIO return
+--     tryAny (liftIO $ httpLbs req (_driverManager sessionDriver))
+--       >>= either throwIO return
+--       >>= getJSONResult
+--       >>= either throwIO return
 
--- | Executes a 'WD' computation within the 'IO' monad, using the given
--- 'WDSession' as state for WebDriver requests.
-runWD :: Session -> WD a -> IO a
-runWD sess (WD wd) = runReaderT wd sess
+-- -- | Executes a 'WD' computation within the 'IO' monad, using the given
+-- -- 'WDSession' as state for WebDriver requests.
+-- runWD :: Session -> WD a -> IO a
+-- runWD sess (WD wd) = runReaderT wd sess
 
 -- | This is the defintion of fromStrict used by bytestring >= 0.10; we redefine it here to support bytestring < 0.10
 fromStrict :: BS.ByteString -> LBS.ByteString
@@ -192,3 +185,22 @@ parseJSONWebDriver (Object o) = do
   status <- o .:?? "status" .!= 0
   pure $ WDResponse sessionId status (Object o)
 parseJSONWebDriver v = pure $ WDResponse Nothing 0 v
+
+doCommand :: (
+  HasCallStack, WebDriver m, ToJSON a, FromJSON b
+  )
+  -- | HTTP request method
+  => Method
+  -- | URL of request
+  -> Text
+  -- | JSON parameters passed in the body of the request. Note that, as a
+  -- special case, anything that converts to Data.Aeson.Null will result in an
+  -- empty request body.
+  -> a
+  -- | The JSON result of the HTTP request.
+  -> m b
+doCommand method url params = do
+  Session {sessionDriver} <- getSession
+  doCommandBase sessionDriver method url params
+    >>= getJSONResult
+    >>= either throwIO return

@@ -5,7 +5,6 @@ module Test.WebDriver.Exceptions (
   , BadJSON(..)
 
   , HTTPStatusUnknown(..)
-  , HTTPConnError(..)
 
   , UnknownCommand(..)
   , ServerError(..)
@@ -20,6 +19,6 @@ module Test.WebDriver.Exceptions (
   , failedCommand
   ) where
 
-import Test.WebDriver.Util.Commands
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
+import Test.WebDriver.Util.Commands

@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Test.WebDriver.Types (
@@ -20,7 +21,7 @@ module Test.WebDriver.Types (
   , SessionException(..)
 
   -- * WebDriver class
-  , WebDriver(..)
+  , WebDriver
   , WebDriverBase(..)
   , Method
   , methodDelete
@@ -120,23 +121,8 @@ class (SessionState m) => SessionStatePut m where
   withSession :: Session -> m a -> m a
   withModifiedSession :: (Session -> Session) -> m a -> m a
 
--- | A class for monads that can handle wire protocol requests. This is the
--- operation underlying all of the high-level commands exported in
--- "Test.WebDriver.Commands".
-class (SessionState m, MonadUnliftIO m) => WebDriver m where
-  doCommand :: (
-    HasCallStack, ToJSON a, FromJSON b, ToJSON b
-    )
-    -- | HTTP request method
-    => Method
-    -- | URL of request
-    -> Text
-    -- | JSON parameters passed in the body of the request. Note that, as a
-    -- special case, anything that converts to Data.Aeson.Null will result in an
-    -- empty request body.
-    -> a
-    -- | The JSON result of the HTTP request.
-    -> m b
+
+type WebDriver m = (WebDriverBase m, SessionState m)
 
 -- | A class for monads that can handle wire protocol requests. This is the
 -- operation underlying all of the high-level commands exported in

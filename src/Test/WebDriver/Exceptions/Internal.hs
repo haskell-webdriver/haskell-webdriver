@@ -5,7 +5,6 @@
 module Test.WebDriver.Exceptions.Internal (
   InvalidURL(..)
   , HTTPStatusUnknown(..)
-  , HTTPConnError(..)
   , UnknownCommand(..)
   , ServerError(..)
 
@@ -46,11 +45,6 @@ instance Exception HTTPStatusUnknown
 -- | An unexpected HTTP status was sent by the server.
 data HTTPStatusUnknown = HTTPStatusUnknown Int String
                        deriving (Eq, Show, Typeable)
-
-instance Exception HTTPConnError
--- | HTTP connection errors.
-data HTTPConnError = HTTPConnError String Int
-                   deriving (Eq, Show, Typeable)
 
 instance Exception UnknownCommand
 -- | A command was sent to the WebDriver server that it didn't recognize.

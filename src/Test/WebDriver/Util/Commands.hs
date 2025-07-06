@@ -34,6 +34,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding as TE
 import qualified Network.HTTP.Types.URI as HTTP
 import Prelude -- hides some "unused import" warnings
+import Test.WebDriver.Internal
 import Test.WebDriver.JSON
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Aeson
@@ -70,7 +71,7 @@ data NoSessionId = NoSessionId String CallStack
 -- :sessionId is a URL parameter as described in
 -- <https://github.com/SeleniumHQ/selenium/wiki/JsonWireProtocol>
 doSessCommand :: (
-  HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
+  HasCallStack, WebDriver wd, ToJSON a, FromJSON b
   ) => Method -> Text -> a -> wd b
 doSessCommand method path args = do
   Session { sessionId = SessionId sId } <- getSession
@@ -88,7 +89,7 @@ doSessCommand method path args = do
 -- \"/session/:sessionId/element/:id/active\", where :sessionId and :id are URL
 -- parameters as described in the wire protocol.
 doElemCommand :: (
-  HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
+  HasCallStack, WebDriver wd, ToJSON a, FromJSON b
   ) => Method -> Element -> Text -> a -> wd b
 doElemCommand m (Element e) path a =
   doSessCommand m (T.concat ["/element/", urlEncode e, path]) a
