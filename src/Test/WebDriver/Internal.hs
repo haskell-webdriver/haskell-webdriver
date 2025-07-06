@@ -8,8 +8,7 @@
 -- of this module are subject to change at any point.
 --
 module Test.WebDriver.Internal (
-  mkRequest
-  , getJSONResult
+  getJSONResult
   , handleJSONErr
   , WDResponse(..)
 
@@ -33,22 +32,17 @@ import Data.ByteString.Lazy.Char8 as LBS (null)
 import qualified Data.ByteString.Lazy.Internal as LBS (ByteString(..))
 import Data.CallStack
 import Data.Functor
-import Data.Text (Text)
-import qualified Data.Text.Encoding as TE
 import Data.Word (Word8)
-import Network.HTTP.Client (Request(..), RequestBody(..), Response(..), httpLbs)
-import qualified Network.HTTP.Client as HTTPClient
+import Network.HTTP.Client (Response(..), httpLbs)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Exceptions.Internal
 import Test.WebDriver.JSON
+import Test.WebDriver.LaunchDriver
 import Test.WebDriver.Types
 import UnliftIO.Exception (Exception, SomeException(..), toException, throwIO, tryAny)
 
-#if !MIN_VERSION_http_client(0,4,30)
-import Data.Default (def)
-#endif
 
 -- | A state monad for WebDriver commands. This is a basic monad that has an
 -- implementation of 'WebDriver'.
@@ -59,14 +53,15 @@ instance SessionState WD where
   getSession = WD ask
 
 instance WebDriver WD where
-  doCommand method path args =
-    mkRequest method path args
-    >>= (\req -> tryAny $ liftIO $ httpLbs req manager)
-    >>= either throwIO return
-    >>= getJSONResult
-    >>= either throwIO return
-    where
-      manager = undefined
+  doCommand method path args = do
+    Session {sessionDriver} <- getSession
+
+    let req = mkDriverRequest sessionDriver method path args
+
+    tryAny (liftIO $ httpLbs req (_driverManager sessionDriver))
+      >>= either throwIO return
+      >>= getJSONResult
+      >>= either throwIO return
 
 -- | Executes a 'WD' computation within the 'IO' monad, using the given
 -- 'WDSession' as state for WebDriver requests.
@@ -77,39 +72,6 @@ runWD sess (WD wd) = runReaderT wd sess
 fromStrict :: BS.ByteString -> LBS.ByteString
 fromStrict bs | BS.null bs = LBS.Empty
               | otherwise = LBS.Chunk bs LBS.Empty
-
-
--- | Compatibility function to support http-client < 0.4.30
-defaultRequest :: Request
-#if MIN_VERSION_http_client(0,4,30)
-defaultRequest = HTTPClient.defaultRequest
-#else
-defaultRequest = def
-#endif
-
--- | Construct an HTTP 'Request' value when given a list of headers, method, and URL fragment.
-mkRequest :: (Monad m, SessionState m, ToJSON a) => Method -> Text -> a -> m Request
-mkRequest meth wdPath args = do
-  Session {sessionDriver=(Driver {..})} <- getSession
-  let body = case toJSON args of
-        Null  -> ""   --passing Null as the argument indicates no request body
-        other -> encode other
-  return $ defaultRequest {
-    host = BS.pack _driverHostname
-    , port = _driverPort
-    , path = BS.pack _driverBasePath `BS.append`  TE.encodeUtf8 wdPath
-    , requestBody = RequestBodyLBS body
-    , requestHeaders = _driverRequestHeaders ++ extraHeaders
-    , method = meth
-#if !MIN_VERSION_http_client(0,5,0)
-    , checkStatus = \_ _ _ -> Nothing
-#endif
-    }
-  where
-    extraHeaders = [
-      (hAccept, "application/json;charset=UTF-8")
-      , (hContentType, "application/json;charset=UTF-8")
-      ]
 
 -- | Parse a 'WDResponse' object from a given HTTP response.
 getJSONResult :: (HasCallStack, MonadIO m, FromJSON a) => Response ByteString -> m (Either SomeException a)

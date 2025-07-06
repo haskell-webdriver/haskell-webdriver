@@ -137,9 +137,9 @@ instance (MonadUnliftIO m, MonadCatch m) => WebDriverBase (ExampleT context m) w
 
 instance (HasSession context, MonadUnliftIO m, MonadCatch m) => WebDriver (ExampleT context m) where
   doCommand method path args = do
-    Session {..} <- getContext session
+    Session {sessionDriver} <- getContext session
 
-    req <- mkRequest method path args
+    let req = mkDriverRequest sessionDriver method path args
     -- debug [i|--> Full request: #{req} (#{showRequestBody (HC.requestBody req)})|]
     debug [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req} (#{showRequestBody (HC.requestBody req)})|]
     response <- tryAny (liftIO $ HC.httpLbs req (_driverManager sessionDriver)) >>= either throwIO return
