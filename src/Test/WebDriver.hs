@@ -9,6 +9,7 @@ providing most of the functionality you're likely to want.
 module Test.WebDriver (
   WebDriverContext(..)
   , mkEmptyWebDriverContext
+  , teardownWebDriverContext
 
   , mkDriverRequest
   , _driverManager
@@ -68,6 +69,7 @@ import Test.WebDriver.Types
 
 import Data.Map as M
 import Control.Monad.Catch (MonadMask)
+import Control.Monad
 import Data.String.Interpolate
 import Test.WebDriver.Util.Aeson (aesonLookup)
 import Control.Monad.Logger
@@ -94,15 +96,9 @@ startSession' wdc dc@(DriverConfigChromedriver {}) caps sessionName = do
 
   launchSessionInDriver wdc driver caps sessionName
 startSession' wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
-  driver <- modifyMVar (_webDriverGeckodrivers wdc) $ \geckodrivers -> do
-    case M.lookup sessionName geckodrivers of
-      Just _sess -> throwIO SessionNameAlreadyExists
-      Nothing -> do
-        driver <- launchDriver dc
-        return (M.insert sessionName driver geckodrivers, driver)
-
-  launchSessionInDriver wdc driver caps sessionName
-
+  driver <- launchDriver dc
+  onException (launchSessionInDriver wdc driver caps sessionName)
+              (teardownDriver driver)
 
 launchSessionInDriver :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Driver -> Capabilities -> String -> m Session
 launchSessionInDriver wdc driver caps sessionName = do
@@ -113,7 +109,7 @@ launchSessionInDriver wdc driver caps sessionName = do
            case A.eitherDecode (responseBody response) of
              Right x@(A.Object (aesonLookup "sessionId" -> Just (A.String sessId))) -> do
                logInfoN [i|Got capabilities from driver: #{x}|]
-               return $ Session { sessionDriver = driver, sessionId = SessionId sessId }
+               return $ Session { sessionDriver = driver, sessionId = SessionId sessId, sessionName = sessionName }
              _ -> throwIO $ SessionCreationResponseHadNoSessionId response
        | otherwise -> throwIO SessionNameAlreadyExists
 
@@ -122,10 +118,30 @@ launchSessionInDriver wdc driver caps sessionName = do
       Just _ -> throwIO SessionNameAlreadyExists
       Nothing -> return (M.insert sessionName sess sessionMap, sess)
 
-closeSession' :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> Session -> m ()
-closeSession' _wdc (Session { sessionId=(SessionId sessId), .. }) = do
+closeSession' :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Session -> m ()
+closeSession' wdc (Session { sessionId=(SessionId sessId), .. }) = do
   response <- doCommandBase sessionDriver methodDelete ("/session/" <> sessId) Null
   logInfoN [i|Close result: #{response}|]
+
+  modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
+
+  case _driverConfig sessionDriver of
+    DriverConfigGeckodriver {} -> teardownDriver sessionDriver
+    _ -> return ()
+
+teardownWebDriverContext :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> m ()
+teardownWebDriverContext wdc@(WebDriverContext {..}) = do
+  sessions <- readMVar _webDriverSessions
+  forM_ [sess | (_, sess) <- M.toList sessions] $ \sess ->
+    closeSession' wdc sess
+
+  modifyMVar_ _webDriverSelenium $ \case
+    Nothing -> return Nothing
+    Just driver -> teardownDriver driver >> return Nothing
+
+  modifyMVar_ _webDriverChromedriver $ \case
+    Nothing -> return Nothing
+    Just driver -> teardownDriver driver >> return Nothing
 
 -- | Set a temporary list of custom 'RequestHeaders' to use within the given action.
 -- All previous custom headers are temporarily removed, and then restored at the end.

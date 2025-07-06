@@ -49,7 +49,6 @@ data WebDriverContext = WebDriverContext {
   _webDriverSessions :: MVar (Map String Session)
   , _webDriverSelenium :: MVar (Maybe Driver)
   , _webDriverChromedriver :: MVar (Maybe Driver)
-  , _webDriverGeckodrivers :: MVar (Map String Driver)
   }
 
 mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
@@ -57,7 +56,6 @@ mkEmptyWebDriverContext = WebDriverContext
   <$> newMVar mempty
   <*> newMVar Nothing
   <*> newMVar Nothing
-  <*> newMVar mempty
 
 data Driver = Driver {
   _driverHostname :: String
@@ -99,6 +97,7 @@ instance IsString SessionId where
 data Session = Session {
   sessionDriver :: Driver
   , sessionId :: SessionId
+  , sessionName :: String
   }
 instance Show Session where
   show (Session {sessionDriver=(Driver {..}), ..}) = [i|Session<[#{sessionId}] at #{_driverHostname}:#{_driverPort}#{_driverBasePath}>|]

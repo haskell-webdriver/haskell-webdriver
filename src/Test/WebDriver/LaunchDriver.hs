@@ -7,6 +7,7 @@
 
 module Test.WebDriver.LaunchDriver (
   launchDriver
+  , teardownDriver
   , mkDriverRequest
   ) where
 
@@ -217,3 +218,9 @@ mkDriverRequest (Driver {..}) meth wdPath args =
       (hAccept, "application/json;charset=UTF-8")
       , (hContentType, "application/json;charset=UTF-8")
       ]
+
+
+teardownDriver :: (MonadUnliftIO m, MonadLogger m) => Driver -> m ()
+teardownDriver (Driver {..}) = do
+  terminateProcess _driverProcess
+  cancel _driverLogAsync
