@@ -73,7 +73,6 @@ library
       Test.WebDriver.Exceptions.Internal
       Test.WebDriver.JSON
       Test.WebDriver.LaunchDriver
-      Test.WebDriver.Session
       Test.WebDriver.Util.Commands
       Test.WebDriver.Util.Ports
       Test.WebDriver.Util.Sockets

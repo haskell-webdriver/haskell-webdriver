@@ -29,8 +29,8 @@ module Test.WebDriver (
   , runWD
 
   -- ** HTTP request header utilities
-  , withRequestHeaders
-  , withAuthHeaders
+  -- , withRequestHeaders
+  -- , withAuthHeaders
 
   -- * WebDriver commands
   , module Test.WebDriver.Commands
@@ -62,7 +62,6 @@ import Test.WebDriver.Exceptions
 import Test.WebDriver.Internal
 import Test.WebDriver.JSON
 import Test.WebDriver.LaunchDriver
-import Test.WebDriver.Session
 import Test.WebDriver.Types
 
 import qualified Data.ByteString.Char8 as BS
@@ -75,7 +74,7 @@ import Data.String
 import Data.Text as T
 import Control.Monad.Reader
 import Network.HTTP.Client
-import Network.HTTP.Types (hLocation, statusCode)
+import Network.HTTP.Types (RequestHeaders, hLocation, statusCode)
 import UnliftIO.Concurrent
 import UnliftIO.Exception
 
@@ -130,3 +129,30 @@ launchSessionInDriver wdc driver@(Driver {..}) caps sessionName = do
 closeSession' :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> Session -> m ()
 closeSession' wdc sess = do
   undefined
+
+
+
+-- | Set a temporary list of custom 'RequestHeaders' to use within the given action.
+-- All previous custom headers are temporarily removed, and then restored at the end.
+withRequestHeaders :: (SessionStatePut m) => RequestHeaders -> m a -> m a
+withRequestHeaders h action = undefined -- do
+  -- withModifiedSession (\s -> s { wdSessRequestHeaders = h }) action
+
+-- | Makes all webdriver HTTP requests in the given action use the session\'s auth headers, typically
+-- configured by setting the 'wdAuthHeaders' config. This is useful if you want to temporarily use
+-- the same auth headers you used for session creation with other HTTP requests.
+withAuthHeaders :: (Monad m, SessionStatePut m) => m a -> m a
+withAuthHeaders wd = undefined -- do
+  -- authHeaders <- fmap wdSessAuthHeaders getSession
+  -- withRequestHeaders authHeaders wd
+
+-- -- | A finalizer ensuring that the session is always closed at the end of
+-- -- the given 'WD' action, regardless of any exceptions.
+-- finallyClose :: (HasCallStack, WebDriver wd, MonadMask wd) => wd a -> wd a
+-- finallyClose wd = closeOnException wd <* closeSession
+
+-- -- | Exception handler that closes the session when an
+-- -- asynchronous exception is thrown, but otherwise leaves the session open
+-- -- if the action was successful.
+-- closeOnException :: (HasCallStack, MonadMask wd) => WebDriver wd => wd a -> wd a
+-- closeOnException wd = wd `onException` closeSession
