@@ -11,8 +11,8 @@ import Control.Monad.IO.Class
 import Data.Aeson as A
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString, writeFile)
-import Data.CallStack
 import qualified Data.Text.Lazy.Encoding as TL
+import GHC.Stack
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
 

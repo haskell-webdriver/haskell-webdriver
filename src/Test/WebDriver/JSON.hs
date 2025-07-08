@@ -95,11 +95,11 @@ instance ToJSON NoReturn where
   toJSON NoReturn = Aeson.String "<no return>"
 
 -- | Convenience function to handle webdriver commands with no return value.
-noReturn :: WebDriver wd => wd NoReturn -> wd ()
+noReturn :: WebDriver m => m NoReturn -> m ()
 noReturn = void
 
 -- | Convenience function to ignore result of a webdriver command.
-ignoreReturn :: WebDriver wd => wd Value -> wd ()
+ignoreReturn :: WebDriver m => m Value -> m ()
 ignoreReturn = void
 
 -- | Construct a singleton JSON 'object' from a key and value.
@@ -126,7 +126,7 @@ fromJSON' :: MonadIO m => FromJSON a => Value -> m a
 fromJSON' = aesonResultToWD . fromJSON
 
 -- | This operator is a wrapper over Aeson's '.:' operator.
-(!:) :: (MonadIO wd, FromJSON a) => Object -> Text -> wd a
+(!:) :: (MonadIO m, FromJSON a) => Object -> Text -> m a
 o !: k = aesonResultToWD $ parse (.: aesonKeyFromText k) o
 
 -- | Due to a breaking change in the '.:?' operator of aeson 0.10 (see <https://github.com/bos/aeson/issues/287>) that was subsequently reverted, this operator
@@ -138,8 +138,8 @@ o .:?? k = fmap join (o .:? aesonKeyFromText k)
 -- specify the keys to extract from the object. The fourth string is the name
 -- of the calling function, for better error reporting.
 parseTriple :: (
-  MonadIO wd, FromJSON a, FromJSON b, FromJSON c
-  ) => String -> String -> String ->  String -> Value -> wd (a, b, c)
+  MonadIO m, FromJSON a, FromJSON b, FromJSON c
+  ) => String -> String -> String ->  String -> Value -> m (a, b, c)
 parseTriple a b c funcName v =
   case v of
     Object o -> (,,) <$> o !: fromString a
@@ -150,13 +150,13 @@ parseTriple a b c funcName v =
                 ++ ", " ++ b ++ ", " ++ c ++ ") pair"
 
 -- | Convert an attoparsec parser result to 'WD'.
-apResultToWD :: (MonadIO wd, FromJSON a) => AP.Result Value -> wd a
+apResultToWD :: (MonadIO m, FromJSON a) => AP.Result Value -> m a
 apResultToWD p = case p of
   Done _ res -> fromJSON' res
   Fail _ _ err -> throwIO $ BadJSON err
 
 -- |  Convert an Aeson parser result to 'WD'.
-aesonResultToWD :: (MonadIO wd) => Aeson.Result a -> wd a
+aesonResultToWD :: (MonadIO m) => Aeson.Result a -> m a
 aesonResultToWD r = case r of
   Success val -> return val
   Error err -> throwIO $ BadJSON err

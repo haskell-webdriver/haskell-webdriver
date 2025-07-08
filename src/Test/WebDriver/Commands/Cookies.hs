@@ -14,10 +14,10 @@ module Test.WebDriver.Commands.Cookies (
 
 import Data.Aeson as A
 import Data.Aeson.Types
-import Data.CallStack
 import qualified Data.Char as C
 import Data.Text (Text)
 import GHC.Generics
+import GHC.Stack
 import Test.WebDriver.JSON
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands

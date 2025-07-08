@@ -27,18 +27,15 @@ module Test.WebDriver.Waits (
 import Control.Concurrent
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
-import Data.CallStack
 import qualified Data.Foldable as F
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock
+import GHC.Stack
 import Test.WebDriver.Commands
 import Test.WebDriver.Exceptions
 import Test.WebDriver.Types
 import UnliftIO.Exception
-
-#if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
-import Prelude hiding (catch)
-#endif
 
 
 instance Exception ExpectFailed
@@ -73,20 +70,20 @@ expectAll p xs = expect . F.and =<< mapM p (F.toList xs)
 
 -- | 'expect' the given 'Element' to not be stale and returns it
 expectNotStale :: (HasCallStack, WebDriver wd) => Element -> wd Element
-expectNotStale e = catchFailedCommand StaleElementReference $ do
+expectNotStale e = catchFailedCommand "stale element reference" $ do
     _ <- isEnabled e -- Any command will force a staleness check
     return e
 
 -- | 'expect' an alert to be present on the page, and returns its text.
 expectAlertOpen :: (HasCallStack, WebDriver wd) => wd Text
-expectAlertOpen = catchFailedCommand NoAlertOpen getAlertText
+expectAlertOpen = catchFailedCommand "no such alert" getAlertText
 
 -- | Catches any `FailedCommand` exceptions with the given `FailedCommandType` and rethrows as 'ExpectFailed'
-catchFailedCommand :: (MonadUnliftIO m) => FailedCommandType -> m a -> m a
-catchFailedCommand t1 m = m `catch` handler
+catchFailedCommand :: (MonadUnliftIO m) => Text -> m a -> m a
+catchFailedCommand needle m = m `catch` handler
   where
-    handler e@(FailedCommand t2 _)
-      | t1 == t2 = unexpected . show $ e
+    handler e@(FailedCommand {rspError})
+      | rspError == needle = unexpected . show $ e
     handler e = throwIO e
 
 -- | Wait until either the given action succeeds or the timeout is reached.
@@ -94,22 +91,22 @@ catchFailedCommand t1 m = m `catch` handler
 -- 'FailedCommand' 'NoSuchElement' exceptions occur. If the timeout is reached,
 -- then a 'Timeout' exception will be raised. The timeout value
 -- is expressed in seconds.
-waitUntil :: (MonadUnliftIO m, SessionState m, HasCallStack) => Double -> m a -> m a
+waitUntil :: (MonadUnliftIO m, HasCallStack) => Double -> m a -> m a
 waitUntil = waitUntil' 500000
 
 -- |Similar to 'waitUntil' but allows you to also specify the poll frequency
 -- of the 'WD' action. The frequency is expressed as an integer in microseconds.
-waitUntil' :: (MonadUnliftIO m, SessionState m, HasCallStack) => Int -> Double -> m a -> m a
+waitUntil' :: (MonadUnliftIO m, HasCallStack) => Int -> Double -> m a -> m a
 waitUntil' = waitEither id (\_ -> return)
 
 -- |Like 'waitUntil', but retries the action until it fails or until the timeout
 -- is exceeded.
-waitWhile :: (MonadUnliftIO m, SessionState m, HasCallStack)  => Double -> m a -> m ()
+waitWhile :: (MonadUnliftIO m, HasCallStack)  => Double -> m a -> m ()
 waitWhile = waitWhile' 500000
 
 -- |Like 'waitUntil'', but retries the action until it either fails or
 -- until the timeout is exceeded.
-waitWhile' :: (MonadUnliftIO m, SessionState m, HasCallStack)  => Int -> Double -> m a -> m ()
+waitWhile' :: (MonadUnliftIO m, HasCallStack)  => Int -> Double -> m a -> m ()
 waitWhile' =
   waitEither  (\_ _ -> return ())
               (\retry _ -> retry "waitWhile: action did not fail")
@@ -117,7 +114,7 @@ waitWhile' =
 
 -- | Internal function used to implement explicit wait commands using success and failure continuations
 waitEither :: (
-  MonadUnliftIO m, SessionState m, HasCallStack
+  HasCallStack, MonadUnliftIO m
   )
   => ((String -> m b) -> String -> m b) -> ((String -> m b) -> a -> m b)
   -> Int
@@ -128,17 +125,18 @@ waitEither failure success = wait' handler
  where
   handler retry wd = do
     e <- fmap Right wd  `catches` [Handler handleFailedCommand
-                                  ,Handler handleExpectFailed
+                                  , Handler handleExpectFailed
                                   ]
     either (failure retry) (success retry) e
    where
-    handleFailedCommand e@(FailedCommand NoSuchElement _) = return . Left . show $ e
+    handleFailedCommand e@(FailedCommand {rspError})
+      | rspError == "no such element" = return . Left . show $ e
     handleFailedCommand err = throwIO err
 
     handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
 
 wait' :: (
-  MonadIO m, SessionState m, HasCallStack
+  HasCallStack, MonadIO m
   ) => ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
 wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
   where
@@ -149,7 +147,12 @@ wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
           now <- liftIO getCurrentTime
           if diffUTCTime now startTime >= timeout
             then
-              failedCommand Timeout $ "wait': explicit wait timed out (" ++ why ++ ")."
+              throwIO $ FailedCommand {
+                rspError = "timeout"
+                , rspMessage = "wait': explicit wait timed out (" <> T.pack why <> ")."
+                , rspStacktrace = T.pack $ show (popCallStack callStack)
+                , rspData = Nothing
+                }
             else do
               liftIO . threadDelay $ waitAmnt
               waitLoop startTime
@@ -164,5 +167,6 @@ wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
 onTimeout :: (MonadUnliftIO m) => m a -> m a -> m a
 onTimeout m r = m `catch` handler
   where
-    handler (FailedCommand Timeout _) = r
+    handler (FailedCommand {rspError})
+      | "timeout" `T.isInfixOf` rspError = r
     handler other = throwIO other

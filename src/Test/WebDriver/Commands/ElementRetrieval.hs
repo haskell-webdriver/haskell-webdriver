@@ -11,10 +11,10 @@ module Test.WebDriver.Commands.ElementRetrieval (
   ) where
 
 import Data.Aeson as A
-import Data.CallStack
 import Data.Text (Text)
-import Test.WebDriver.Util.Commands
+import GHC.Stack
 import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
 
 
 -- | Find an element on the page using the given element selector.

@@ -22,12 +22,12 @@ module Test.WebDriver.Commands.SeleniumSpecific.Mobile (
 
 import Data.Aeson as A
 import Data.Aeson.Types
-import Data.CallStack
 import Data.String (fromString)
 import Data.Text (toUpper, toLower)
-import Test.WebDriver.Util.Commands
+import GHC.Stack
 import Test.WebDriver.JSON
 import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
 
 
 -- | A screen orientation

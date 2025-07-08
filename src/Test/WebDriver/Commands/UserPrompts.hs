@@ -7,11 +7,11 @@ module Test.WebDriver.Commands.UserPrompts (
   ) where
 
 import Data.Aeson as A
-import Data.CallStack
 import Data.Text (Text)
+import GHC.Stack
+import Test.WebDriver.JSON
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
-import Test.WebDriver.JSON
 
 
 -- | Dismisses the currently displayed alert dialog.

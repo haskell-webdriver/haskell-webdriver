@@ -9,8 +9,8 @@ module Test.WebDriver.Commands.Navigation (
   ) where
 
 import Data.Aeson as A
-import Data.CallStack
 import Data.Text (Text)
+import GHC.Stack
 import Network.URI hiding (path)  -- suppresses warnings
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Exceptions

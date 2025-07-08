@@ -11,11 +11,11 @@ module Test.WebDriver.Commands.ElementState (
   ) where
 
 import Data.Aeson as A
-import Data.CallStack
 import Data.Text (Text, append)
+import GHC.Stack
+import Test.WebDriver.Commands.CommandContexts
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
-import Test.WebDriver.Commands.CommandContexts
 
 
 -- | Determine if the element is selected.

@@ -19,10 +19,10 @@ module Test.WebDriver.Commands.Actions (
   ) where
 
 import Data.Aeson as A
-import Data.CallStack
+import GHC.Stack
+import Test.WebDriver.JSON
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
-import Test.WebDriver.JSON
 
 -- | A mouse button
 data MouseButton = LeftButton | MiddleButton | RightButton

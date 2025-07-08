@@ -23,7 +23,6 @@ module Test.WebDriver.Types (
   -- * Stack frames
   , StackFrame(..)
   , callStackItemToStackFrame
-  , externalCallStack
 
   -- * WebDriver class
   , WebDriver
@@ -38,12 +37,11 @@ import Control.Monad.IO.Unlift
 import Data.Aeson
 import Data.Aeson.Types (Parser, typeMismatch)
 import qualified Data.ByteString.Lazy as LBS
-import Data.CallStack
-import qualified Data.List as L
 import Data.Map as M
 import Data.String
 import Data.String.Interpolate
 import Data.Text as T
+import GHC.Stack
 import Network.HTTP.Client
 import Network.HTTP.Types (RequestHeaders)
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
@@ -148,17 +146,6 @@ class (MonadUnliftIO m) => WebDriverBase m where
     -> a
     -- | The response of the HTTP request.
     -> m (Response LBS.ByteString)
-
-
-
--- | Use GHC's 'CallStack' capabilities to return a callstack to help debug a 'FailedCommand'.
--- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
--- should be where the user called into Test.WebDriver
-externalCallStack :: (HasCallStack) => CallStack
-externalCallStack = L.dropWhile isWebDriverFrame callStack
-  where
-    isWebDriverFrame :: ([Char], SrcLoc) -> Bool
-    isWebDriverFrame (_, SrcLoc {srcLocModule}) = "Test.WebDriver" `L.isPrefixOf` srcLocModule
 
 -- | An individual stack frame from the stack trace provided by the server
 -- during a FailedCommand.

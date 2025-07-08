@@ -15,9 +15,9 @@ module Test.WebDriver.Commands.SeleniumSpecific.HTML5 (
   ) where
 
 import Data.Aeson as A
-import Data.CallStack
 import Data.Text (Text)
 import qualified Data.Text as T
+import GHC.Stack
 import Test.WebDriver.JSON
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands

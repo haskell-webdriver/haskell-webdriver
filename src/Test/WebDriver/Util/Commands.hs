@@ -26,10 +26,10 @@ module Test.WebDriver.Util.Commands (
 import Control.Applicative
 import Data.Aeson
 import Data.Aeson.Types
-import Data.CallStack
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding as TE
+import GHC.Stack
 import qualified Network.HTTP.Types.URI as HTTP
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Internal
