@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# OPTIONS_GHC -fno-warn-deriving-typeable #-}
 {-# OPTIONS_HADDOCK not-home #-}
 
 -- | A type for profile preferences. These preference values are used by both

@@ -7,7 +7,7 @@ providing most of the functionality you're likely to want.
 {-# LANGUAGE ViewPatterns #-}
 
 module Test.WebDriver (
-  WebDriverContext(..)
+  WebDriverContext
   , mkEmptyWebDriverContext
   , teardownWebDriverContext
 
@@ -20,46 +20,29 @@ module Test.WebDriver (
 
   -- * WebDriver monad
   , WebDriver
+  , WebDriverBase
 
   , DriverConfig(..)
   , Session
-
-  -- * Running WebDriver commands
-  -- , runSession
-  , withSession
-
-  -- ** HTTP request header utilities
-  -- , withRequestHeaders
-  -- , withAuthHeaders
 
   -- * WebDriver commands
   , module Test.WebDriver.Commands
 
   -- * Capabilities (advanced configuration)
-  , Capabilities(..)
   , defaultCaps
+  , defaultChromeOptions
+  , defaultFirefoxOptions
+  , Capabilities(..)
   , Platform(..)
   , ProxyType(..)
 
-  -- ** Browser-specific capabilities
-  -- , Browser(..)
   , Test.WebDriver.Commands.LogLevel(..)
-
-  -- *** Browser defaults
-  -- , firefox, chrome, ie, opera, iPhone, iPad, android
-
-  -- * Exception handling
-  -- , finallyClose
-  -- , closeOnException
-
-  , module Test.WebDriver.Exceptions
   ) where
 
 import Data.Aeson as A
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Capabilities.Proxy
 import Test.WebDriver.Commands
-import Test.WebDriver.Exceptions
 import Test.WebDriver.JSON
 import Test.WebDriver.LaunchDriver
 import Test.WebDriver.Types

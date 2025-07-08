@@ -124,7 +124,7 @@ instance (MonadUnliftIO m, MonadCatch m) => WebDriverBase (ExampleT context m) w
     debug [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req} (#{showRequestBody (HC.requestBody req)})|]
     response <- tryAny (liftIO $ HC.httpLbs req (_driverManager driver)) >>= either throwIO return
     let (N.Status code _) = HC.responseStatus response
-    warn [i|<-- #{code} #{response}|]
+    debug [i|<-- #{code} #{response}|]
     return response
 
     where

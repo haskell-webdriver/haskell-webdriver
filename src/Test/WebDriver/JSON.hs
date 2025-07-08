@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# OPTIONS_GHC -fno-warn-deriving-typeable #-}
 
 -- | A collection of convenience functions for using and parsing JSON values
 -- within 'WD'. All monadic parse errors are converted to asynchronous
@@ -78,11 +79,10 @@ fromText = id
 #endif
 
 
-instance Exception BadJSON
 -- | An error occured when parsing a JSON value.
 newtype BadJSON = BadJSON String
-             deriving (Eq, Show, Typeable)
-
+  deriving (Eq, Show, Typeable)
+instance Exception BadJSON
 
 -- | A type indicating that we expect no return value from the webdriver request.
 -- Its FromJSON instance parses successfully for any values that indicate lack of

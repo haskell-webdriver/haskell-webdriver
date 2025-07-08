@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -fno-warn-deriving-typeable #-}
 
 {-# OPTIONS_HADDOCK not-home #-}
 -- | Internal functions used to implement the functions exported by

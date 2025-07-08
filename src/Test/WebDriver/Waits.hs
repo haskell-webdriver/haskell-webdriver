@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# OPTIONS_GHC -fno-warn-deriving-typeable #-}
 
 module Test.WebDriver.Waits (
   -- * Wait on expected conditions

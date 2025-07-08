@@ -118,9 +118,7 @@ class SessionState m where
   getSession :: m Session
 
 class (SessionState m) => SessionStatePut m where
-  withSession :: Session -> m a -> m a
   withModifiedSession :: (Session -> Session) -> m a -> m a
-
 
 type WebDriver m = (WebDriverBase m, SessionState m)
 
