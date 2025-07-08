@@ -40,13 +40,12 @@ deriveFromJSON toCamel1 ''SuccessResponse
 -- | Parse a 'FailedCommand' object from a given HTTP response.
 getJSONResult :: (MonadIO m, FromJSON a) => Response ByteString -> m (Either SomeException a)
 getJSONResult r
-  -- | Errors
   | code >= 400 && code < 600 =
       case lookup hContentType headers of
         Just ct
           | "application/json" `BS.isInfixOf` ct -> do
-              failedCommand :: FailedCommand <- parseJSON' body
-              throwIO failedCommand
+              SuccessResponse {..} :: SuccessResponse FailedCommand <- parseJSON' body
+              throwIO successValue
           | otherwise ->
               return $ Left $ toException $ ServerError reason
         Nothing ->

@@ -59,7 +59,6 @@ library:
   - network
   - microlens-th >= 0.4.0.0
   - monad-logger
-  - mtl
   - network-uri >= 2.6
   - random
   - retry
