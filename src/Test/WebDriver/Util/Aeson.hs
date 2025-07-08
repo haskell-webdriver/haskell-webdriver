@@ -3,6 +3,7 @@
 module Test.WebDriver.Util.Aeson (
   aesonToList
   , aesonLookup
+  , aesonKeyFromText
   ) where
 
 import Data.Text (Text)
@@ -17,6 +18,9 @@ aesonToList = KM.toList
 
 aesonLookup :: Text -> KM.KeyMap v -> Maybe v
 aesonLookup = KM.lookup . A.fromText
+
+aesonKeyFromText :: Text -> A.Key
+aesonKeyFromText = A.fromText
 #else
 import qualified Data.HashMap.Strict        as HM
 
@@ -25,4 +29,7 @@ aesonToList = HM.toList
 
 aesonLookup :: (Eq k, Hashable k) => k -> HM.HashMap k v -> Maybe v
 aesonLookup = HM.lookup
+
+aesonKeyFromText :: Text -> Text
+aesonKeyFromText = id
 #endif

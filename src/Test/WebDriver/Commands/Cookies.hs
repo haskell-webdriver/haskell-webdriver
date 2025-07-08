@@ -18,9 +18,9 @@ import Data.CallStack
 import qualified Data.Char as C
 import Data.Text (Text)
 import GHC.Generics
+import Test.WebDriver.JSON
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
-import Test.WebDriver.JSON
 
 
 -- | Retrieve all cookies.
@@ -94,7 +94,7 @@ instance FromJSON Cookie where
                                 <*> opt "expiry" Nothing
     where
       req :: FromJSON a => Text -> Parser a
-      req = (o .:) . fromText
+      req = (o .:) . aesonKeyFromText
       opt :: FromJSON a => Text -> a -> Parser a
       opt k d = o .:?? k .!= d
   parseJSON v = typeMismatch "Cookie" v

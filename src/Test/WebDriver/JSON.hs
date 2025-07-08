@@ -41,7 +41,7 @@ module Test.WebDriver.JSON (
   -- * parsing commands with no return value
   , noReturn
   , ignoreReturn
-  , fromText
+  , aesonKeyFromText
   , NoReturn(..)
 
   -- * JSON helpers
@@ -60,6 +60,7 @@ import Data.String
 import Data.Text (Text)
 import Prelude -- hides some "unused import" warnings
 import Test.WebDriver.Types (WebDriver)
+import Test.WebDriver.Util.Aeson (aesonKeyFromText)
 import UnliftIO.Exception
 
 #if MIN_VERSION_aeson(2,2,0)
@@ -68,14 +69,9 @@ import Data.Aeson.Parser (json)
 #endif
 
 #if MIN_VERSION_aeson(2,0,0)
-import qualified Data.Aeson.Key             as A
 import qualified Data.Aeson.KeyMap          as HM
-fromText :: Text -> A.Key
-fromText = A.fromText
 #else
 import qualified Data.HashMap.Strict        as HM
-fromText :: Text -> Text
-fromText = id
 #endif
 
 
@@ -108,17 +104,17 @@ ignoreReturn = void
 
 -- | Construct a singleton JSON 'object' from a key and value.
 single :: ToJSON a => Text -> a -> Value
-single a x = object [fromText a .= x]
+single a x = object [aesonKeyFromText a .= x]
 
 -- | Construct a 2-element JSON 'object' from a pair of keys and a pair of
 -- values.
 pair :: (ToJSON a, ToJSON b) => (Text, Text) -> (a, b) -> Value
-pair (a, b) (x,y) = object [fromText a .= x, fromText b .= y]
+pair (a, b) (x,y) = object [aesonKeyFromText a .= x, aesonKeyFromText b .= y]
 
 -- | Construct a 3-element JSON 'object' from a triple of keys and a triple of
 -- values.
 triple :: (ToJSON a, ToJSON b, ToJSON c) => (Text, Text, Text) -> (a, b, c) -> Value
-triple (a, b, c) (x, y, z) = object [fromText a .= x, fromText b.= y, fromText c .= z]
+triple (a, b, c) (x, y, z) = object [aesonKeyFromText a .= x, aesonKeyFromText b.= y, aesonKeyFromText c .= z]
 
 -- | Parse a lazy 'ByteString' as a top-level JSON 'Value', then convert it to an
 -- instance of 'FromJSON'..
@@ -131,12 +127,12 @@ fromJSON' = aesonResultToWD . fromJSON
 
 -- | This operator is a wrapper over Aeson's '.:' operator.
 (!:) :: (MonadIO wd, FromJSON a) => Object -> Text -> wd a
-o !: k = aesonResultToWD $ parse (.: fromText k) o
+o !: k = aesonResultToWD $ parse (.: aesonKeyFromText k) o
 
 -- | Due to a breaking change in the '.:?' operator of aeson 0.10 (see <https://github.com/bos/aeson/issues/287>) that was subsequently reverted, this operator
 -- was added to provide consistent behavior compatible with all aeson versions. If the field is either missing or `Null`, this operator should return a `Nothing` result.
 (.:??) :: FromJSON a => Object -> Text -> Parser (Maybe a)
-o .:?? k = fmap join (o .:? fromText k)
+o .:?? k = fmap join (o .:? aesonKeyFromText k)
 
 -- | Parse a JSON Object as a triple. The first three string arguments
 -- specify the keys to extract from the object. The fourth string is the name

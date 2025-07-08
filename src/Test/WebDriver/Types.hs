@@ -20,6 +20,11 @@ module Test.WebDriver.Types (
   -- * Exceptions
   , SessionException(..)
 
+  -- * Stack frames
+  , StackFrame(..)
+  , callStackItemToStackFrame
+  , externalCallStack
+
   -- * WebDriver class
   , WebDriver
   , WebDriverBase(..)
@@ -31,8 +36,10 @@ module Test.WebDriver.Types (
 
 import Control.Monad.IO.Unlift
 import Data.Aeson
+import Data.Aeson.Types (Parser, typeMismatch)
 import qualified Data.ByteString.Lazy as LBS
 import Data.CallStack
+import qualified Data.List as L
 import Data.Map as M
 import Data.String
 import Data.String.Interpolate
@@ -40,6 +47,7 @@ import Data.Text as T
 import Network.HTTP.Client
 import Network.HTTP.Types (RequestHeaders)
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
+import Test.WebDriver.Util.Aeson (aesonKeyFromText)
 import UnliftIO.Async
 import UnliftIO.Concurrent
 import UnliftIO.Exception
@@ -140,3 +148,47 @@ class (MonadUnliftIO m) => WebDriverBase m where
     -> a
     -- | The response of the HTTP request.
     -> m (Response LBS.ByteString)
+
+
+
+-- | Use GHC's 'CallStack' capabilities to return a callstack to help debug a 'FailedCommand'.
+-- Drops all stack frames inside Test.WebDriver modules, so the first frame on the stack
+-- should be where the user called into Test.WebDriver
+externalCallStack :: (HasCallStack) => CallStack
+externalCallStack = L.dropWhile isWebDriverFrame callStack
+  where
+    isWebDriverFrame :: ([Char], SrcLoc) -> Bool
+    isWebDriverFrame (_, SrcLoc {srcLocModule}) = "Test.WebDriver" `L.isPrefixOf` srcLocModule
+
+-- | An individual stack frame from the stack trace provided by the server
+-- during a FailedCommand.
+data StackFrame = StackFrame {
+  sfFileName :: String
+  , sfClassName  :: String
+  , sfMethodName :: String
+  , sfLineNumber :: Int
+  } deriving (Eq)
+instance Show StackFrame where
+  show f = showString (sfClassName f) . showChar '.'
+           . showString (sfMethodName f) . showChar ' '
+           . showParen True ( showString (sfFileName f) . showChar ':'
+                              . shows (sfLineNumber f))
+           $ "\n"
+instance FromJSON StackFrame where
+  parseJSON (Object o) = StackFrame <$> reqStr "fileName"
+                                    <*> reqStr "className"
+                                    <*> reqStr "methodName"
+                                    <*> req    "lineNumber"
+    where req :: FromJSON a => Text -> Parser a
+          req = (o .:) . aesonKeyFromText -- all keys are required
+          reqStr :: Text -> Parser String
+          reqStr k = req k >>= maybe (return "") return
+  parseJSON v = typeMismatch "StackFrame" v
+
+callStackItemToStackFrame :: (String, SrcLoc) -> StackFrame
+callStackItemToStackFrame (functionName, SrcLoc {..}) = StackFrame {
+  sfFileName = srcLocFile
+  , sfClassName = srcLocModule
+  , sfMethodName = functionName
+  , sfLineNumber = srcLocStartLine
+  }

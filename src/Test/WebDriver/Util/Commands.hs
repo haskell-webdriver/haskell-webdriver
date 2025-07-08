@@ -19,9 +19,6 @@ module Test.WebDriver.Util.Commands (
   -- ** Commands with :windowHandle URL parameters
   , WindowHandle(..)
 
-  -- * Exceptions
-  , NoSessionId(..)
-
   -- * Helpers
   , urlEncode
   ) where
@@ -59,12 +56,6 @@ instance ToJSON Element where
 -- | An opaque identifier for a browser window
 newtype WindowHandle = WindowHandle Text
   deriving (Eq, Ord, Show, Read, FromJSON, ToJSON)
-
-instance Exception NoSessionId
--- | A command requiring a session ID was attempted when no session ID was
--- available.
-data NoSessionId = NoSessionId String CallStack
-  deriving (Eq, Show, Typeable)
 
 -- | This a convenient wrapper around 'doCommand' that automatically prepends
 -- the session URL parameter to the wire command URL. For example, passing

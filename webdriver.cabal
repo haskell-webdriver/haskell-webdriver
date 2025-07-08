@@ -70,7 +70,6 @@ library
       Test.WebDriver.Commands.Sessions
       Test.WebDriver.Commands.UserPrompts
       Test.WebDriver.Exceptions
-      Test.WebDriver.Exceptions.Internal
       Test.WebDriver.JSON
       Test.WebDriver.LaunchDriver
       Test.WebDriver.Util.Aeson

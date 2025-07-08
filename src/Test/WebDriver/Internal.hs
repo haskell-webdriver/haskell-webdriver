@@ -31,7 +31,7 @@ import Network.HTTP.Client (Response(..))
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import Prelude -- hides some "unused import" warnings
-import Test.WebDriver.Exceptions.Internal
+import Test.WebDriver.Exceptions
 import Test.WebDriver.JSON
 import Test.WebDriver.Types
 import UnliftIO.Exception (Exception, SomeException(..), toException, throwIO)

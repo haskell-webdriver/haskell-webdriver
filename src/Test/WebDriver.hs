@@ -28,6 +28,9 @@ module Test.WebDriver (
   -- * WebDriver commands
   , module Test.WebDriver.Commands
 
+  -- * WebDriver Exceptions
+  , module Test.WebDriver.Exceptions
+
   -- * Capabilities (advanced configuration)
   , defaultCaps
   , defaultChromeOptions
@@ -43,6 +46,7 @@ import Data.Aeson as A
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Capabilities.Proxy
 import Test.WebDriver.Commands
+import Test.WebDriver.Exceptions
 import Test.WebDriver.JSON
 import Test.WebDriver.LaunchDriver
 import Test.WebDriver.Types
