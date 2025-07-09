@@ -9,8 +9,8 @@ module Test.WebDriver.Commands.DocumentHandling (
 
 import Data.Aeson as A
 import qualified Data.Foldable as F
+import qualified Data.List as L
 import Data.Text (Text)
-import qualified Data.Text as T
 import GHC.Stack
 import Test.WebDriver.Exceptions
 import Test.WebDriver.JSON
@@ -84,8 +84,7 @@ asyncJS a s = handle timeout $ do
     getResult endpoint = doSessCommand methodPost endpoint . pair ("args", "script") $ (F.toList a,s)
 
     timeout (FailedCommand {rspError})
-      -- See https://www.w3.org/TR/webdriver1/#handling-errors
-      | "timeout" `T.isInfixOf` rspError = return Nothing
+      | rspError `L.elem` [Timeout, ScriptTimeout] = return Nothing
     timeout err = throwIO err
 
 -- | An existential wrapper for any 'ToJSON' instance. This allows us to pass

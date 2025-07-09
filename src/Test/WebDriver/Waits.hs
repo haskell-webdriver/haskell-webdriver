@@ -28,6 +28,7 @@ import Control.Concurrent
 import Control.Monad.IO.Class
 import Control.Monad.IO.Unlift
 import qualified Data.Foldable as F
+import qualified Data.List as L
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock
@@ -70,16 +71,16 @@ expectAll p xs = expect . F.and =<< mapM p (F.toList xs)
 
 -- | 'expect' the given 'Element' to not be stale and returns it
 expectNotStale :: (HasCallStack, WebDriver wd) => Element -> wd Element
-expectNotStale e = catchFailedCommand "stale element reference" $ do
+expectNotStale e = catchFailedCommand StaleElementReference $ do
     _ <- isEnabled e -- Any command will force a staleness check
     return e
 
 -- | 'expect' an alert to be present on the page, and returns its text.
 expectAlertOpen :: (HasCallStack, WebDriver wd) => wd Text
-expectAlertOpen = catchFailedCommand "no such alert" getAlertText
+expectAlertOpen = catchFailedCommand NoSuchAlert getAlertText
 
 -- | Catches any `FailedCommand` exceptions with the given `FailedCommandType` and rethrows as 'ExpectFailed'
-catchFailedCommand :: (MonadUnliftIO m) => Text -> m a -> m a
+catchFailedCommand :: (MonadUnliftIO m) => FailedCommandError -> m a -> m a
 catchFailedCommand needle m = m `catch` handler
   where
     handler e@(FailedCommand {rspError})
@@ -130,7 +131,7 @@ waitEither failure success = wait' handler
     either (failure retry) (success retry) e
    where
     handleFailedCommand e@(FailedCommand {rspError})
-      | rspError == "no such element" = return . Left . show $ e
+      | rspError == NoSuchElement = return . Left . show $ e
     handleFailedCommand err = throwIO err
 
     handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
@@ -148,7 +149,7 @@ wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
           if diffUTCTime now startTime >= timeout
             then
               throwIO $ FailedCommand {
-                rspError = "timeout"
+                rspError = Timeout
                 , rspMessage = "wait': explicit wait timed out (" <> T.pack why <> ")."
                 , rspStacktrace = T.pack $ show (popCallStack callStack)
                 , rspData = Nothing
@@ -168,5 +169,5 @@ onTimeout :: (MonadUnliftIO m) => m a -> m a -> m a
 onTimeout m r = m `catch` handler
   where
     handler (FailedCommand {rspError})
-      | "timeout" `T.isInfixOf` rspError = r
+      | rspError `L.elem` [Timeout, ScriptTimeout] = r
     handler other = throwIO other

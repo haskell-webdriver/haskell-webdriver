@@ -29,7 +29,7 @@ tests = introduceSession $ describe "Element retrieval" $ before "Open test page
 
     it "Nonexistent" $ do
       Left (FailedCommand {..}) <- try $ findElem (ByCSS ".nonexistent-element")
-      rspError `shouldBe` "no such element"
+      rspError `shouldBe` NoSuchElement
 
   it "findElems" $ do
     (length <$> findElems (ByCSS ".input-box")) >>= (`shouldBe` 3)

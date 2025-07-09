@@ -26,6 +26,10 @@ toCamelC4 = baseOptions { A.constructorTagModifier = snakeToCamelCase . toSnakeA
 toSpacedC3 :: A.Options
 toSpacedC3 = baseOptions { A.constructorTagModifier = snakeToSpaced . toSnakeAndDropN 3 }
 
+-- | For FailedCommandError
+toSpacedC0 :: A.Options
+toSpacedC0 = baseOptions { A.constructorTagModifier = snakeToSpaced . toSnakeAndDropN 0 }
+
 capabilitiesOptions :: A.Options
 capabilitiesOptions = baseOptions {
   A.fieldLabelModifier = specialCases . snakeToCamelCase . toSnakeAndDropN 1 . dropLeadingUnderscore
