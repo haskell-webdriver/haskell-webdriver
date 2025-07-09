@@ -96,8 +96,11 @@ data FailedCommandError =
   | UnknownMethod
   -- | Indicates that a command that should have executed properly cannot be supported for some reason.
   | UnsupportedOperation
+  -- | Some error string we weren't able to parse.
+  | UnparsedError Text
   deriving (Show, Eq)
 deriveFromJSON toSpacedC0 ''FailedCommandError
+deriveToJSON toSpacedC0 ''FailedCommandError
 
 -- | Internal type representing the JSON response object.
 data FailedCommand = FailedCommand {
