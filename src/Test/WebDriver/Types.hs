@@ -82,16 +82,19 @@ data DriverConfig =
     , driverConfigSeleniumJar :: FilePath
     , driverConfigSubDrivers :: [DriverConfig]
     , driverConfigLogDir :: FilePath
+    , driverConfigJavaFlags :: [String]
     }
   | DriverConfigGeckodriver {
       driverConfigGeckodriver :: FilePath
       , driverConfigFirefox :: FilePath
       , driverConfigLogDir :: FilePath
+      , driverConfigGeckodriverFlags :: [String]
       }
   | DriverConfigChromedriver {
       driverConfigChromedriver :: FilePath
       , driverConfigChrome :: FilePath
       , driverConfigLogDir :: FilePath
+      , driverConfigChromedriverFlags :: [String]
       }
 
 -- | An opaque identifier for a WebDriver session. These handles are produced by

@@ -46,6 +46,7 @@ main = do
               , driverConfigSeleniumJar = seleniumJar
               , driverConfigSubDrivers = subDrivers
               , driverConfigLogDir = dir
+              , driverConfigJavaFlags = []
               }
 
   let introduceSelenium4 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx, HasBrowserDependencies ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
@@ -61,6 +62,7 @@ main = do
               , driverConfigSeleniumJar = seleniumJar
               , driverConfigSubDrivers = subDrivers
               , driverConfigLogDir = dir
+              , driverConfigJavaFlags = []
               }
 
   let introduceChromedriver :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
@@ -74,6 +76,7 @@ main = do
               driverConfigChromedriver = chromedriver
               , driverConfigChrome = chrome
               , driverConfigLogDir = dir
+              , driverConfigChromedriverFlags = []
               }
 
   let introduceGeckodriver :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
@@ -87,6 +90,7 @@ main = do
               driverConfigGeckodriver = geckodriver
               , driverConfigFirefox = firefox
               , driverConfigLogDir = dir
+              , driverConfigGeckodriverFlags = []
               }
 
   let UserOptions {optBrowserToUse} = optUserOptions clo
@@ -129,13 +133,15 @@ getSubDrivers dir = getContext browserDependencies >>= \case
         driverConfigChromedriver = browserDependenciesChromeChromedriver
         , driverConfigChrome = browserDependenciesChromeChrome
         , driverConfigLogDir = dir
+        , driverConfigChromedriverFlags = []
         }]
   BrowserDependenciesFirefox {..} -> return [
     DriverConfigGeckodriver {
         driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
         , driverConfigFirefox = browserDependenciesFirefoxFirefox
         , driverConfigLogDir = dir
-        }]
+        , driverConfigGeckodriverFlags = []
+    }]
 
 
 tryFindSeleniumJar :: FilePath -> IO FilePath

@@ -163,11 +163,11 @@ getArguments port (DriverConfigSeleniumJar {..}) = do
   let fullArgs = javaArgs
                <> ["-jar", driverConfigSeleniumJar]
                <> extraArgs
-  return (driverConfigJava, fullArgs)
+  return (driverConfigJava, fullArgs <> driverConfigJavaFlags)
 getArguments port (DriverConfigChromedriver {..}) = do
-  return (driverConfigChromedriver, ["--port=" <> show port])
+  return (driverConfigChromedriver, ["--port=" <> show port] <> driverConfigChromedriverFlags)
 getArguments port (DriverConfigGeckodriver {..}) = do
-  return (driverConfigGeckodriver, ["--port", show port])
+  return (driverConfigGeckodriver, ["--port", show port] <> driverConfigGeckodriverFlags)
 
 getSubDriverArgs :: Monad m => DriverConfig -> m [FilePath]
 getSubDriverArgs (DriverConfigChromedriver {..}) = do
