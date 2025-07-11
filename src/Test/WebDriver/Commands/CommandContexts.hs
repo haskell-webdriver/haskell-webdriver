@@ -23,11 +23,11 @@ module Test.WebDriver.Commands.CommandContexts (
 import Control.Monad
 import Data.Aeson as A
 import Data.Aeson.Types
-import Data.CallStack
 import Data.Text (Text)
-import Test.WebDriver.Class
-import Test.WebDriver.CommandUtil
+import GHC.Stack
 import Test.WebDriver.JSON
+import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
 
 
 -- | Returns a handle to the currently focused window

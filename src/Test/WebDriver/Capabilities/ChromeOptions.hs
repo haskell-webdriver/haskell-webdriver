@@ -169,6 +169,7 @@ data ChromeOptions = ChromeOptions {
 deriveJSON toCamel2 ''ChromeOptions
 makeLenses ''ChromeOptions
 
+-- | Empty 'ChromeOptions'.
 defaultChromeOptions :: ChromeOptions
 defaultChromeOptions = ChromeOptions {
   _chromeOptionsArgs = Nothing

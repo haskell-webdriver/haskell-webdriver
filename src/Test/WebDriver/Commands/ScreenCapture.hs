@@ -11,10 +11,10 @@ import Control.Monad.IO.Class
 import Data.Aeson as A
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString, writeFile)
-import Data.CallStack
 import qualified Data.Text.Lazy.Encoding as TL
-import Test.WebDriver.Class
-import Test.WebDriver.CommandUtil
+import GHC.Stack
+import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
 
 
 -- | Grab a screenshot of the current page as a PNG image

@@ -65,5 +65,6 @@ emptyFirefoxOptions = FirefoxOptions {
   , _firefoxOptionsPrefs = Nothing
   }
 
+-- | Empty 'FirefoxOptions'.
 defaultFirefoxOptions :: FirefoxOptions
 defaultFirefoxOptions = emptyFirefoxOptions

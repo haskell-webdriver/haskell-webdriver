@@ -15,12 +15,12 @@ module Test.WebDriver.Commands.SeleniumSpecific.HTML5 (
   ) where
 
 import Data.Aeson as A
-import Data.CallStack
 import Data.Text (Text)
 import qualified Data.Text as T
-import Test.WebDriver.Class
-import Test.WebDriver.CommandUtil
+import GHC.Stack
 import Test.WebDriver.JSON
+import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
 
 
 -- | Get the current number of keys in a web storage area.
@@ -55,7 +55,7 @@ deleteKey s k = noReturn $ doStorageCommand methodPost s ("/key/" `T.append` url
 
 -- | A wrapper around 'doSessCommand' to create web storage requests.
 doStorageCommand :: (
-  HasCallStack, WebDriver wd, ToJSON a, FromJSON b, ToJSON b
+  HasCallStack, WebDriver wd, ToJSON a, FromJSON b
   ) => Method -> WebStorageType -> Text -> a -> wd b
 doStorageCommand m s path a = doSessCommand m (T.concat ["/", s', path]) a
   where s' = case s of

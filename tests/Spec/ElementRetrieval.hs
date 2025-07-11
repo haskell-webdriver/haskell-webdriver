@@ -2,10 +2,11 @@
 module Spec.ElementRetrieval where
 
 import Test.Sandwich
-import Test.WebDriver.Commands
+import Test.WebDriver
 import TestLib.Contexts.Session
 import TestLib.Contexts.StaticServer
 import TestLib.Types
+import UnliftIO.Exception
 
 
 tests :: SessionSpec
@@ -25,6 +26,10 @@ tests = introduceSession $ describe "Element retrieval" $ before "Open test page
 
     it "ByXPath" $ do
       findElem (ByXPath "//a[@id='click-here-link']") >>= getText >>= (`shouldBe` "Click here")
+
+    it "Nonexistent" $ do
+      Left (FailedCommand {..}) <- try $ findElem (ByCSS ".nonexistent-element")
+      rspError `shouldBe` NoSuchElement
 
   it "findElems" $ do
     (length <$> findElems (ByCSS ".input-box")) >>= (`shouldBe` 3)

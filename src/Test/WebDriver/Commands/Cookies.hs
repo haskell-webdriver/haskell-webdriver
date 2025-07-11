@@ -14,13 +14,13 @@ module Test.WebDriver.Commands.Cookies (
 
 import Data.Aeson as A
 import Data.Aeson.Types
-import Data.CallStack
 import qualified Data.Char as C
 import Data.Text (Text)
 import GHC.Generics
-import Test.WebDriver.Class
-import Test.WebDriver.CommandUtil
+import GHC.Stack
 import Test.WebDriver.JSON
+import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
 
 
 -- | Retrieve all cookies.
@@ -94,7 +94,7 @@ instance FromJSON Cookie where
                                 <*> opt "expiry" Nothing
     where
       req :: FromJSON a => Text -> Parser a
-      req = (o .:) . fromText
+      req = (o .:) . aesonKeyFromText
       opt :: FromJSON a => Text -> a -> Parser a
       opt k d = o .:?? k .!= d
   parseJSON v = typeMismatch "Cookie" v

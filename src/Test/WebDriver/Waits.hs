@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# OPTIONS_GHC -fno-warn-deriving-typeable #-}
 
 module Test.WebDriver.Waits (
   -- * Wait on expected conditions
@@ -24,29 +25,27 @@ module Test.WebDriver.Waits (
   ) where
 
 import Control.Concurrent
-import Control.Exception.Safe
 import Control.Monad.IO.Class
-import Data.CallStack
+import Control.Monad.IO.Unlift
 import qualified Data.Foldable as F
+import qualified Data.List as L
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock
-import Test.WebDriver.Class
+import GHC.Stack
 import Test.WebDriver.Commands
 import Test.WebDriver.Exceptions
-import Test.WebDriver.Session
-
-#if !MIN_VERSION_base(4,6,0) || defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 706
-import Prelude hiding (catch)
-#endif
+import Test.WebDriver.Types
+import UnliftIO.Exception
 
 
 instance Exception ExpectFailed
--- |An exception representing the failure of an expected condition.
+-- | An exception representing the failure of an expected condition.
 data ExpectFailed = ExpectFailed String deriving (Show, Eq, Typeable)
 
--- |throws 'ExpectFailed'. This is nice for writing your own abstractions.
+-- | Throws 'ExpectFailed'. This is nice for writing your own abstractions.
 unexpected :: (
-  MonadThrow m, HasCallStack
+  MonadIO m
   )
   => String -- ^ Reason why the expected condition failed.
   -> m a
@@ -55,19 +54,19 @@ unexpected = throwIO . ExpectFailed
 -- |An expected condition. This function allows you to express assertions in
 -- your explicit wait. This function raises 'ExpectFailed' if the given
 -- boolean is False, and otherwise does nothing.
-expect :: (MonadThrow m, HasCallStack) => Bool -> m ()
+expect :: (MonadIO m) => Bool -> m ()
 expect b
   | b = return ()
   | otherwise = unexpected "Test.WebDriver.Commands.Wait.expect"
 
 -- |Apply a monadic predicate to every element in a list, and 'expect' that
 -- at least one succeeds.
-expectAny :: (HasCallStack, F.Foldable f, MonadThrow m) => (a -> m Bool) -> f a -> m ()
+expectAny :: (F.Foldable f, MonadIO m) => (a -> m Bool) -> f a -> m ()
 expectAny p xs = expect . F.or =<< mapM p (F.toList xs)
 
 -- |Apply a monadic predicate to every element in a list, and 'expect' that all
 -- succeed.
-expectAll :: (HasCallStack, F.Foldable f, MonadThrow m) => (a -> m Bool) -> f a -> m ()
+expectAll :: (F.Foldable f, MonadIO m) => (a -> m Bool) -> f a -> m ()
 expectAll p xs = expect . F.and =<< mapM p (F.toList xs)
 
 -- | 'expect' the given 'Element' to not be stale and returns it
@@ -78,14 +77,14 @@ expectNotStale e = catchFailedCommand StaleElementReference $ do
 
 -- | 'expect' an alert to be present on the page, and returns its text.
 expectAlertOpen :: (HasCallStack, WebDriver wd) => wd Text
-expectAlertOpen = catchFailedCommand NoAlertOpen getAlertText
+expectAlertOpen = catchFailedCommand NoSuchAlert getAlertText
 
--- |Catches any `FailedCommand` exceptions with the given `FailedCommandType` and rethrows as 'ExpectFailed'
-catchFailedCommand :: (HasCallStack, MonadCatch m) => FailedCommandType -> m a -> m a
-catchFailedCommand t1 m = m `catch` handler
+-- | Catches any `FailedCommand` exceptions with the given `FailedCommandType` and rethrows as 'ExpectFailed'
+catchFailedCommand :: (MonadUnliftIO m) => FailedCommandError -> m a -> m a
+catchFailedCommand needle m = m `catch` handler
   where
-    handler e@(FailedCommand t2 _)
-      | t1 == t2 = unexpected . show $ e
+    handler e@(FailedCommand {rspError})
+      | rspError == needle = unexpected . show $ e
     handler e = throwIO e
 
 -- | Wait until either the given action succeeds or the timeout is reached.
@@ -93,22 +92,22 @@ catchFailedCommand t1 m = m `catch` handler
 -- 'FailedCommand' 'NoSuchElement' exceptions occur. If the timeout is reached,
 -- then a 'Timeout' exception will be raised. The timeout value
 -- is expressed in seconds.
-waitUntil :: (WDSessionStateControl m, HasCallStack) => Double -> m a -> m a
+waitUntil :: (MonadUnliftIO m, HasCallStack) => Double -> m a -> m a
 waitUntil = waitUntil' 500000
 
 -- |Similar to 'waitUntil' but allows you to also specify the poll frequency
 -- of the 'WD' action. The frequency is expressed as an integer in microseconds.
-waitUntil' :: (WDSessionStateControl m, HasCallStack) => Int -> Double -> m a -> m a
+waitUntil' :: (MonadUnliftIO m, HasCallStack) => Int -> Double -> m a -> m a
 waitUntil' = waitEither id (\_ -> return)
 
 -- |Like 'waitUntil', but retries the action until it fails or until the timeout
 -- is exceeded.
-waitWhile :: (WDSessionStateControl m, HasCallStack)  => Double -> m a -> m ()
+waitWhile :: (MonadUnliftIO m, HasCallStack)  => Double -> m a -> m ()
 waitWhile = waitWhile' 500000
 
 -- |Like 'waitUntil'', but retries the action until it either fails or
 -- until the timeout is exceeded.
-waitWhile' :: (WDSessionStateControl m, HasCallStack)  => Int -> Double -> m a -> m ()
+waitWhile' :: (MonadUnliftIO m, HasCallStack)  => Int -> Double -> m a -> m ()
 waitWhile' =
   waitEither  (\_ _ -> return ())
               (\retry _ -> retry "waitWhile: action did not fail")
@@ -116,7 +115,7 @@ waitWhile' =
 
 -- | Internal function used to implement explicit wait commands using success and failure continuations
 waitEither :: (
-  WDSessionStateControl m, HasCallStack
+  HasCallStack, MonadUnliftIO m
   )
   => ((String -> m b) -> String -> m b) -> ((String -> m b) -> a -> m b)
   -> Int
@@ -127,17 +126,18 @@ waitEither failure success = wait' handler
  where
   handler retry wd = do
     e <- fmap Right wd  `catches` [Handler handleFailedCommand
-                                  ,Handler handleExpectFailed
+                                  , Handler handleExpectFailed
                                   ]
     either (failure retry) (success retry) e
    where
-    handleFailedCommand e@(FailedCommand NoSuchElement _) = return . Left . show $ e
+    handleFailedCommand e@(FailedCommand {rspError})
+      | rspError == NoSuchElement = return . Left . show $ e
     handleFailedCommand err = throwIO err
 
     handleExpectFailed (e :: ExpectFailed) = return . Left . show $ e
 
 wait' :: (
-  WDSessionStateIO m, HasCallStack
+  HasCallStack, MonadIO m
   ) => ((String -> m b) -> m a -> m b) -> Int -> Double -> m a -> m b
 wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
   where
@@ -148,7 +148,12 @@ wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
           now <- liftIO getCurrentTime
           if diffUTCTime now startTime >= timeout
             then
-              failedCommand Timeout $ "wait': explicit wait timed out (" ++ why ++ ")."
+              throwIO $ FailedCommand {
+                rspError = Timeout
+                , rspMessage = "wait': explicit wait timed out (" <> T.pack why <> ")."
+                , rspStacktrace = T.pack $ show (popCallStack callStack)
+                , rspData = Nothing
+                }
             else do
               liftIO . threadDelay $ waitAmnt
               waitLoop startTime
@@ -160,8 +165,9 @@ wait' handler waitAmnt t wd = waitLoop =<< liftIO getCurrentTime
 --
 -- > waitUntil 5 (getText <=< findElem $ ByCSS ".class")
 -- >    `onTimeout` return ""
-onTimeout :: (HasCallStack, MonadCatch m) => m a -> m a -> m a
+onTimeout :: (MonadUnliftIO m) => m a -> m a -> m a
 onTimeout m r = m `catch` handler
   where
-    handler (FailedCommand Timeout _) = r
+    handler (FailedCommand {rspError})
+      | rspError `L.elem` [Timeout, ScriptTimeout] = r
     handler other = throwIO other

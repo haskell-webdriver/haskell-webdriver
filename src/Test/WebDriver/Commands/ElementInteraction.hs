@@ -6,11 +6,11 @@ module Test.WebDriver.Commands.ElementInteraction (
   -- , sendRawKeys
   ) where
 
-import Data.CallStack
 import Data.Text (Text)
-import Test.WebDriver.Class
-import Test.WebDriver.CommandUtil
+import GHC.Stack
 import Test.WebDriver.JSON (noObject, noReturn, single)
+import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
 
 
 -- | Click on an element.

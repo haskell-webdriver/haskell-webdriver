@@ -8,6 +8,7 @@
 module Main where
 
 import Control.Monad
+import Control.Monad.Reader
 import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Spec as Spec
@@ -15,6 +16,7 @@ import System.Environment
 import Test.Sandwich hiding (BrowserToUse(..))
 import Test.Sandwich.Contexts.Files
 import Test.Sandwich.Contexts.Nix
+import Test.WebDriver
 import TestLib.Contexts.BrowserDependencies
 import TestLib.Contexts.Selenium4
 import TestLib.Contexts.StaticServer
@@ -31,31 +33,65 @@ main = do
 
   clo <- parseCommandLineArgs userOptions (return ())
 
-  let introduceSelenium3 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverType" DriverType :> ctx) IO () -> SpecFree ctx IO ()
-      introduceSelenium3 = introduce "Introduce Selenium 3" driverType alloc (const $ return ())
+  let introduceSelenium3 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx, HasBrowserDependencies ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
+      introduceSelenium3 = introduce "Introduce Selenium 3" driverConfig alloc (const $ return ())
         where
           alloc = do
+            Just dir <- getCurrentFolder
             java <- getBinaryViaNixPackage @"java" "jre"
             seleniumJar <- getFileViaNixPackage "selenium-server-standalone" tryFindSeleniumJar
-            return $ DriverTypeSeleniumJar java seleniumJar
+            subDrivers <- getSubDrivers dir
+            return $ DriverConfigSeleniumJar {
+              driverConfigJava = java
+              , driverConfigSeleniumJar = seleniumJar
+              , driverConfigSubDrivers = subDrivers
+              , driverConfigLogDir = dir
+              , driverConfigJavaFlags = []
+              }
 
-  let introduceSelenium4 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverType" DriverType :> ctx) IO () -> SpecFree ctx IO ()
-      introduceSelenium4 = introduce "Introduce Selenium 4" driverType alloc (const $ return ())
+  let introduceSelenium4 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx, HasBrowserDependencies ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
+      introduceSelenium4 = introduce "Introduce Selenium 4" driverConfig alloc (const $ return ())
         where
           alloc = do
+            Just dir <- getCurrentFolder
             java <- getBinaryViaNixPackage @"java" "jre"
             seleniumJar <- getFileViaNixDerivation selenium4Derivation tryFindSeleniumJar
-            return $ DriverTypeSeleniumJar java seleniumJar
+            subDrivers <- getSubDrivers dir
+            return $ DriverConfigSeleniumJar {
+              driverConfigJava = java
+              , driverConfigSeleniumJar = seleniumJar
+              , driverConfigSubDrivers = subDrivers
+              , driverConfigLogDir = dir
+              , driverConfigJavaFlags = []
+              }
 
-  let introduceChromedriver :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverType" DriverType :> ctx) IO () -> SpecFree ctx IO ()
-      introduceChromedriver = introduce "Introduce chromedriver" driverType alloc (const $ return ())
+  let introduceChromedriver :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
+      introduceChromedriver = introduce "Introduce chromedriver" driverConfig alloc (const $ return ())
         where
-          alloc = DriverTypeChromedriver <$> getBinaryViaNixPackage @"chromedriver" "chromedriver"
+          alloc = do
+            Just dir <- getCurrentFolder
+            chrome <- getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
+            chromedriver <- getBinaryViaNixPackage @"chromedriver" "chromedriver"
+            return $ DriverConfigChromedriver {
+              driverConfigChromedriver = chromedriver
+              , driverConfigChrome = chrome
+              , driverConfigLogDir = dir
+              , driverConfigChromedriverFlags = []
+              }
 
-  let introduceGeckodriver :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverType" DriverType :> ctx) IO () -> SpecFree ctx IO ()
-      introduceGeckodriver = introduce "Introduce geckodriver" driverType alloc (const $ return ())
+  let introduceGeckodriver :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
+      introduceGeckodriver = introduce "Introduce geckodriver" driverConfig alloc (const $ return ())
         where
-          alloc = DriverTypeGeckodriver <$> getBinaryViaNixPackage @"geckodriver" "geckodriver"
+          alloc = do
+            Just dir <- getCurrentFolder
+            firefox <- getBinaryViaNixPackage @"firefox" "firefox"
+            geckodriver <- getBinaryViaNixPackage @"geckodriver" "geckodriver"
+            return $ DriverConfigGeckodriver {
+              driverConfigGeckodriver = geckodriver
+              , driverConfigFirefox = firefox
+              , driverConfigLogDir = dir
+              , driverConfigGeckodriverFlags = []
+              }
 
   let UserOptions {optBrowserToUse} = optUserOptions clo
 
@@ -63,15 +99,15 @@ main = do
     introduceNixContext nixpkgsRelease $
     introduceStaticServer $
     introduceBrowserDependencies $ do
-      describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriver $ Spec.spec
+      describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriverContext $ Spec.spec
 
-      describe "Selenium 4" $ introduceSelenium4 $ introduceWebDriver $ Spec.spec
+      describe "Selenium 4" $ introduceSelenium4 $ introduceWebDriverContext $ Spec.spec
 
       when (optBrowserToUse == UseChrome) $
-        describe "chromedriver direct" $ introduceChromedriver $ introduceWebDriver Spec.spec
+        describe "chromedriver direct" $ introduceChromedriver $ introduceWebDriverContext Spec.spec
 
       when (optBrowserToUse == UseFirefox) $
-        describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriver Spec.spec
+        describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriverContext Spec.spec
 
 
 -- | Nixpkgs release 24.05, accessed 6\/30\/2025.
@@ -89,6 +125,23 @@ nixpkgsRelease = NixpkgsDerivationFetchFromGitHub {
   , nixpkgsDerivationSha256 = "sha256-HXDDEjEBMycmwkOiU045bL3yuhOK1+nZZd3zsBh6zsA="
   , nixpkgsDerivationAllowUnfree = True
   }
+
+getSubDrivers :: (MonadReader ctx m, HasBrowserDependencies ctx) => FilePath -> m [DriverConfig]
+getSubDrivers dir = getContext browserDependencies >>= \case
+  BrowserDependenciesChrome {..} -> return [
+    DriverConfigChromedriver {
+        driverConfigChromedriver = browserDependenciesChromeChromedriver
+        , driverConfigChrome = browserDependenciesChromeChrome
+        , driverConfigLogDir = dir
+        , driverConfigChromedriverFlags = []
+        }]
+  BrowserDependenciesFirefox {..} -> return [
+    DriverConfigGeckodriver {
+        driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
+        , driverConfigFirefox = browserDependenciesFirefoxFirefox
+        , driverConfigLogDir = dir
+        , driverConfigGeckodriverFlags = []
+    }]
 
 
 tryFindSeleniumJar :: FilePath -> IO FilePath

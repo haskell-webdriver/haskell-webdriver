@@ -9,13 +9,13 @@ import Codec.Archive.Zip
 import Control.Monad.IO.Class
 import Data.ByteString.Base64.Lazy as B64
 import Data.ByteString.Lazy as LBS (ByteString)
-import Data.CallStack
 import Data.Function ((&))
 import Data.Text (Text)
 import qualified Data.Text.Lazy.Encoding as TL
-import Test.WebDriver.Class
-import Test.WebDriver.CommandUtil
+import GHC.Stack
 import Test.WebDriver.JSON
+import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
 
 
 -- | Uploads a file from the local filesystem by its file path. Returns the

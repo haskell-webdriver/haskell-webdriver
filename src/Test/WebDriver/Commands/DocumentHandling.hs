@@ -7,15 +7,16 @@ module Test.WebDriver.Commands.DocumentHandling (
   , JSArg(..)
   ) where
 
-import Control.Exception.Safe (throwIO, handle)
 import Data.Aeson as A
-import Data.CallStack
 import qualified Data.Foldable as F
+import qualified Data.List as L
 import Data.Text (Text)
-import Test.WebDriver.Class
-import Test.WebDriver.CommandUtil
-import Test.WebDriver.Exceptions.Internal
+import GHC.Stack
+import Test.WebDriver.Exceptions
 import Test.WebDriver.JSON
+import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
+import UnliftIO.Exception (handle, throwIO)
 
 
 -- | Get the current page source
@@ -82,8 +83,8 @@ asyncJS a s = handle timeout $ do
   where
     getResult endpoint = doSessCommand methodPost endpoint . pair ("args", "script") $ (F.toList a,s)
 
-    timeout (FailedCommand Timeout _)       = return Nothing
-    timeout (FailedCommand ScriptTimeout _) = return Nothing
+    timeout (FailedCommand {rspError})
+      | rspError `L.elem` [Timeout, ScriptTimeout] = return Nothing
     timeout err = throwIO err
 
 -- | An existential wrapper for any 'ToJSON' instance. This allows us to pass

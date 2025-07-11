@@ -18,12 +18,12 @@ module Test.WebDriver.Commands.SeleniumSpecific.Misc (
 
 import Data.Aeson as A
 import Data.Aeson.Types (typeMismatch)
-import Data.CallStack
 import Data.Maybe
 import Data.Text (Text)
-import Test.WebDriver.Class
-import Test.WebDriver.CommandUtil
+import GHC.Stack
 import Test.WebDriver.JSON
+import Test.WebDriver.Types
+import Test.WebDriver.Util.Commands
 
 
 -- | Submit a form element. This may be applied to descendents of a form element
