@@ -25,6 +25,7 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as T
+import Data.Time
 import Network.HTTP.Client
 import Network.HTTP.Types (hAccept, hContentType, statusCode)
 import Network.Socket
@@ -65,7 +66,13 @@ launchDriver driverConfig = do
   (logFilePath, logFileHandle) <- liftIO $ openTempFile (driverConfigLogDir driverConfig) ((driverBaseName driverConfig) <> ".log")
   logDebugN [i|Logging driver output to #{logFilePath}|]
 
-  flip withException (\(e :: SomeException) -> terminateProcess p >> liftIO (T.hPutStrLn logFileHandle [i|haskell-webdriver: process ending with exception: #{e}|]) >> liftIO (hClose logFileHandle)) $ do
+  let handler (e :: SomeException) = do
+        terminateProcess p
+        now <- liftIO getCurrentTime
+        liftIO (T.hPutStrLn logFileHandle [i|(#{now}) haskell-webdriver: process ending with exception: #{e}|])
+        liftIO (hClose logFileHandle)
+
+  flip withException handler $ do
     -- Read from the (combined) output stream until we see the up and running message
     maybeReady <- timeout 30_000_00 $ fix $ \loop -> do
       line <- fmap T.pack $ liftIO $ hGetLine hRead
