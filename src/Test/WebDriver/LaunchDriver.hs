@@ -74,7 +74,7 @@ launchDriver driverConfig = do
 
   flip withException handler $ do
     -- Read from the (combined) output stream until we see the up and running message
-    maybeReady <- timeout 30_000_00 $ fix $ \loop -> do
+    maybeReady <- timeout 30_000_000 $ fix $ \loop -> do
       line <- fmap T.pack $ liftIO $ hGetLine hRead
       liftIO $ T.hPutStrLn logFileHandle line
       unless (Prelude.any (`T.isInfixOf` line) (needles driverConfig)) loop
