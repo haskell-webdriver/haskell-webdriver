@@ -52,11 +52,11 @@ introduceSession' modifyCaps = introduce "Introduce session" session alloc clean
 
       dc <- getContext driverConfig
 
-      startSession' wdc dc caps "session1"
+      startSession wdc dc caps "session1"
 
     cleanup sess = do
       wdc <- getContext webdriverContext
-      closeSession' wdc sess
+      closeSession wdc sess
 
 
 introduceMobileSession :: forall m context. (

@@ -1,37 +1,46 @@
-{-|
-This module serves as the top-level interface to the Haskell WebDriver bindings,
-providing most of the functionality you're likely to want.
--}
-
 {-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE ViewPatterns #-}
 
+{-|
+
+Once upon a time, the main browser automation tool was Selenium. Users of this
+library had to start a Selenium session themselves, making sure to configure it
+with a browser-specific driver program like @chromedriver@ or @geckodriver@, and
+pass a hostname\/port to this library. Then, this library would connect to
+Selenium and use its wire protocol to control browsers.
+
+Nowadays, there is an official W3C spec (<https://www.w3.org/TR/webdriver1>)
+specifying the protocol, and a number of implementations. Selenium still exists,
+but Chromedriver and Geckodriver can both serve as standalone WebDriver servers.
+This library now helps you start up a driver in one of these supported
+configurations:
+
+1. Selenium.jar with one or more supported sub-drivers (@chromedriver@,
+@geckodriver@). This is similar to the traditional picture.
+2. Chromedriver standalone.
+3. Geckodriver standalone.
+
+You can pick the configuration you want by passing a 'DriverConfig' to the
+'startSession' function. The WebDriver implementations have a few differences
+between them, which this library tries to smooth over. For example, a single
+Geckodriver instance can't start multiple Firefox sessions (see
+<https://github.com/mozilla/geckodriver/issues/1946>). So, this library will spin
+up a separate @geckodriver@ process for every session.
+
+-}
+
 module Test.WebDriver (
+  -- * WebDriverContext
   WebDriverContext
   , mkEmptyWebDriverContext
   , teardownWebDriverContext
 
-  , mkDriverRequest
-  , _driverManager
-
-  -- , startSession
-  , startSession'
-  , closeSession'
-
-  -- * WebDriver monad
-  , WebDriver
-  , WebDriverBase
-
+  -- * Session creation/deletion
+  , startSession
+  , closeSession
   , DriverConfig(..)
-  , Session
 
-  -- * WebDriver commands
-  , module Test.WebDriver.Commands
-
-  -- * WebDriver Exceptions
-  , module Test.WebDriver.Exceptions
-
-  -- * Capabilities (advanced configuration)
+  -- * Capabilities
   , defaultCaps
   , defaultChromeOptions
   , defaultFirefoxOptions
@@ -39,7 +48,20 @@ module Test.WebDriver (
   , Platform(..)
   , ProxyType(..)
 
-  , Test.WebDriver.Commands.LogLevel(..)
+  -- * Commands
+  , module Test.WebDriver.Commands
+
+  , mkDriverRequest
+  , _driverManager
+
+  -- * WebDriver monad
+  , WebDriver
+  , WebDriverBase
+
+  , Session
+
+  -- * Exceptions
+  , module Test.WebDriver.Exceptions
   ) where
 
 import Data.Aeson as A
@@ -63,23 +85,30 @@ import UnliftIO.Concurrent
 import UnliftIO.Exception
 
 
--- startSession :: (MonadReader ctx m, HasWebDriverContext ctx) => DriverConfig -> String -> m Session
--- startSession = undefined
+-- | Start a WebDriver session, with a given 'WebDriverContext' and
+-- 'DriverConfig'.
+--
+-- You need to provide the WebDriver 'Capabilities' for the session. You should
+-- make sure the browser-specific fields of your 'Capabilities' are filled in
+-- correctly to match the given 'DriverConfig'. For example, if you're using
+-- 'DriverConfigChromedriver', you should make sure to fill in
+-- '_capabilitiesGoogChromeOptions' and in particular the '_chromeOptionsBinary'
+-- field.
 
-startSession' :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> DriverConfig -> Capabilities -> String -> m Session
-startSession' wdc dc@(DriverConfigSeleniumJar {}) caps sessionName = do
+startSession :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> DriverConfig -> Capabilities -> String -> m Session
+startSession wdc dc@(DriverConfigSeleniumJar {}) caps sessionName = do
   driver <- modifyMVar (_webDriverSelenium wdc) $ \maybeSelenium -> do
     driver <- maybe (launchDriver dc) return maybeSelenium
     return (Just driver, driver)
 
   launchSessionInDriver wdc driver caps sessionName
-startSession' wdc dc@(DriverConfigChromedriver {}) caps sessionName = do
+startSession wdc dc@(DriverConfigChromedriver {}) caps sessionName = do
   driver <- modifyMVar (_webDriverChromedriver wdc) $ \maybeChromedriver -> do
     driver <- maybe (launchDriver dc) return maybeChromedriver
     return (Just driver, driver)
 
   launchSessionInDriver wdc driver caps sessionName
-startSession' wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
+startSession wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
   driver <- launchDriver dc
   onException (launchSessionInDriver wdc driver caps sessionName)
               (teardownDriver driver)
@@ -102,8 +131,9 @@ launchSessionInDriver wdc driver caps sessionName = do
       Just _ -> throwIO SessionNameAlreadyExists
       Nothing -> return (M.insert sessionName sess sessionMap, sess)
 
-closeSession' :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Session -> m ()
-closeSession' wdc (Session { sessionId=(SessionId sessId), .. }) = do
+-- | Close the given WebDriver session.
+closeSession :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Session -> m ()
+closeSession wdc (Session { sessionId=(SessionId sessId), .. }) = do
   response <- doCommandBase sessionDriver methodDelete ("/session/" <> sessId) Null
   logInfoN [i|Close result: #{response}|]
 
@@ -113,11 +143,12 @@ closeSession' wdc (Session { sessionId=(SessionId sessId), .. }) = do
     DriverConfigGeckodriver {} -> teardownDriver sessionDriver
     _ -> return ()
 
+-- | Tear down all sessions and processes associated with a 'WebDriverContext'.
 teardownWebDriverContext :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> m ()
 teardownWebDriverContext wdc@(WebDriverContext {..}) = do
   sessions <- readMVar _webDriverSessions
   forM_ [sess | (_, sess) <- M.toList sessions] $ \sess ->
-    closeSession' wdc sess
+    closeSession wdc sess
 
   modifyMVar_ _webDriverSelenium $ \case
     Nothing -> return Nothing

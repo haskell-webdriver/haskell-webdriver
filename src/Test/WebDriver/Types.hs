@@ -52,12 +52,20 @@ import UnliftIO.Exception
 import UnliftIO.Process
 
 
+-- | The 'WebDriverContext' is an opaque type used by this library for
+-- bookkeeping purposes. It tracks all the processes we spin up and all the
+-- sessions we create.
+--
+-- Currently, we will create at most 1 Selenium or Chromedriver process per
+-- 'WebDriverContext', and N Geckodriver processes, where N is the number of
+-- Firefox sessions you request.
 data WebDriverContext = WebDriverContext {
   _webDriverSessions :: MVar (Map String Session)
   , _webDriverSelenium :: MVar (Maybe Driver)
   , _webDriverChromedriver :: MVar (Maybe Driver)
   }
 
+-- | Create a new 'WebDriverContext'.
 mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
 mkEmptyWebDriverContext = WebDriverContext
   <$> newMVar mempty
@@ -69,32 +77,47 @@ data Driver = Driver {
   , _driverPort :: Int
   , _driverBasePath :: String
   , _driverRequestHeaders :: RequestHeaders
-  , _driverAuthHeaders :: RequestHeaders
   , _driverManager :: Manager
   , _driverProcess :: ProcessHandle
   , _driverConfig :: DriverConfig
   , _driverLogAsync :: Async ()
   }
 
+-- | Configuration for how to launch a given driver.
 data DriverConfig =
+  -- | For launching a WebDriver via "java -jar selenium.jar".
+  -- Selenium can launch other drivers on your behalf. You should pass these as 'driverConfigSubDrivers'.
   DriverConfigSeleniumJar {
+    -- | Path to @java@ binary.
     driverConfigJava :: FilePath
-    , driverConfigSeleniumJar :: FilePath
-    , driverConfigSubDrivers :: [DriverConfig]
-    , driverConfigLogDir :: FilePath
+    -- | Extra flags to pass to @java@.
     , driverConfigJavaFlags :: [String]
+    -- | Path to @selenium.jar@ file. We'll try to autodetect if this is Selenium 3 or 4.
+    , driverConfigSeleniumJar :: FilePath
+    -- | Drivers to configure Selenium to use.
+    , driverConfigSubDrivers :: [DriverConfig]
+    -- | Directory in which to place driver logs.
+    , driverConfigLogDir :: FilePath
     }
   | DriverConfigGeckodriver {
+      -- | Path to @geckodriver@ binary.
       driverConfigGeckodriver :: FilePath
-      , driverConfigFirefox :: FilePath
-      , driverConfigLogDir :: FilePath
+      -- | Extra flags to pass to @geckodriver@.
       , driverConfigGeckodriverFlags :: [String]
+      -- | Path to @firefox@ binary.
+      , driverConfigFirefox :: FilePath
+      -- | Directory in which to place driver logs.
+      , driverConfigLogDir :: FilePath
       }
   | DriverConfigChromedriver {
+      -- | Path to @chromedriver@ binary.
       driverConfigChromedriver :: FilePath
-      , driverConfigChrome :: FilePath
-      , driverConfigLogDir :: FilePath
+      -- | Extra flags to pass to @chromedriver@.
       , driverConfigChromedriverFlags :: [String]
+      -- | Path to @chrome@ binary.
+      , driverConfigChrome :: FilePath
+      -- | Directory in which to place driver logs.
+      , driverConfigLogDir :: FilePath
       }
 
 -- | An opaque identifier for a WebDriver session. These handles are produced by

@@ -44,7 +44,6 @@ launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig ->
 launchDriver driverConfig = do
   manager <- liftIO $ newManager defaultManagerSettings
   let requestHeaders = mempty
-  let authHeaders = mempty
 
   port <- findFreePortOrException
 
@@ -98,7 +97,6 @@ launchDriver driverConfig = do
           , _driverPort = fromIntegral port
           , _driverBasePath = basePath
           , _driverRequestHeaders = requestHeaders
-          , _driverAuthHeaders = authHeaders
           , _driverManager = manager
           , _driverProcess = p
           , _driverConfig = driverConfig

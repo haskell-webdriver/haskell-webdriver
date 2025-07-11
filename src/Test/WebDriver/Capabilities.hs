@@ -4,11 +4,16 @@
 
 {-|
 
-This module contains the types for working with WebDriver Capabilities. Capabilities are used to configure and communicate the features supported by a session.
+This module contains the types for working with WebDriver Capabilities.
+Capabilities are used to configure and communicate the features supported by a
+session.
 
-Some settings, like '_capabilitiesTimeouts', are browser-agnostic. But the Capabilities object is also where browser-specific settings can be added, under '_capabilitiesGoogChromeOptions', '_capabilitiesMozFirefoxOptions', etc.
+Some settings, like '_capabilitiesTimeouts', are browser-agnostic. But the
+'Capabilities' object is also where browser-specific settings can be added,
+under '_capabilitiesGoogChromeOptions', '_capabilitiesMozFirefoxOptions', etc.
 
-This module provides lenses for all of the fields it defines, to make it easier to manipulate nested values.
+This module provides lenses for all of the fields it defines, to make it easier
+to manipulate nested values.
 
 -}
 
@@ -156,10 +161,7 @@ data Capabilities = Capabilities {
 deriveJSON capabilitiesOptions ''Capabilities
 makeLenses ''Capabilities
 
--- | Default capabilities. This is the same as the 'Default' instance, but with
--- less polymorphism. By default, we use 'firefox' of an unspecified 'version'
--- with default system-wide 'proxy' settings on whatever 'platform' is available
--- . All 'Maybe' capabilities are set to 'Nothing' (no preference).
+-- | Default capabilities.
 defaultCaps :: Capabilities
 defaultCaps = Capabilities {
   _capabilitiesBrowserName = Nothing
