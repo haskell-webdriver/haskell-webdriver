@@ -62,10 +62,10 @@ launchDriver driverConfig = do
 
   let hostname = "localhost"
 
-  (logFilePath, logFileHandle) <- liftIO $ openTempFile (driverConfigLogDir driverConfig) "driver.log"
+  (logFilePath, logFileHandle) <- liftIO $ openTempFile (driverConfigLogDir driverConfig) ((driverBaseName driverConfig) <> ".log")
   logDebugN [i|Logging driver output to #{logFilePath}|]
 
-  flip onException (liftIO $ hClose logFileHandle) $ do
+  flip withException (\(e :: SomeException) -> terminateProcess p >> liftIO (T.hPutStrLn logFileHandle [i|haskell-webdriver: process ending with exception: #{e}|]) >> liftIO (hClose logFileHandle)) $ do
     -- Read from the (combined) output stream until we see the up and running message
     maybeReady <- timeout 30_000_00 $ fix $ \loop -> do
       line <- fmap T.pack $ liftIO $ hGetLine hRead
@@ -78,44 +78,45 @@ launchDriver driverConfig = do
       line <- liftIO (T.hGetLine hRead)
       liftIO $ T.hPutStrLn logFileHandle line
 
-    -- Wait for a successful connection to the server socket
-    addr <- liftIO (getAddrInfo (Just defaultHints) (Just "127.0.0.1") (Just (show port))) >>= \case
-      addr:_ -> return addr
-      _ -> throwIO DriverGetAddrInfoFailed
-    let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 1_000_000 $ exponentialBackoff 1000
+    flip onException (cancel logAsync) $ do
+      -- Wait for a successful connection to the server socket
+      addr <- liftIO (getAddrInfo (Just defaultHints) (Just "127.0.0.1") (Just (show port))) >>= \case
+        addr:_ -> return addr
+        _ -> throwIO DriverGetAddrInfoFailed
+      let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 1_000_000 $ exponentialBackoff 1000
 
-    waitForSocket policy addr
+      waitForSocket policy addr
 
-    logDebugN [i|Finished wait for driver socket|]
+      logDebugN [i|Finished wait for driver socket|]
 
-    let basePath = case driverConfig of
-          DriverConfigSeleniumJar {} -> "/wd/hub"
-          _ -> ""
+      let basePath = case driverConfig of
+            DriverConfigSeleniumJar {} -> "/wd/hub"
+            _ -> ""
 
-    let driver = Driver {
-          _driverHostname = hostname
-          , _driverPort = fromIntegral port
-          , _driverBasePath = basePath
-          , _driverRequestHeaders = requestHeaders
-          , _driverManager = manager
-          , _driverProcess = Just p
-          , _driverLogAsync = Just logAsync
-          , _driverConfig = driverConfig
-          }
+      let driver = Driver {
+            _driverHostname = hostname
+            , _driverPort = fromIntegral port
+            , _driverBasePath = basePath
+            , _driverRequestHeaders = requestHeaders
+            , _driverManager = manager
+            , _driverProcess = Just p
+            , _driverLogAsync = Just logAsync
+            , _driverConfig = driverConfig
+            }
 
-    -- Wait for a successful call to /status
-    recoverAll policy $ \retryStatus -> do
-      let req = mkDriverRequest driver methodGet "/status" Null
-      resp <- liftIO $ httpLbs req manager
-      let code = statusCode (responseStatus resp)
-      if | code >= 200 && code < 300 -> return ()
-         | otherwise -> do
-             logWarnN [i|(#{retryStatus}) Invalid response from /status: #{resp}|]
-             throwIO DriverStatusEndpointNotReady
+      -- Wait for a successful call to /status
+      recoverAll policy $ \retryStatus -> do
+        let req = mkDriverRequest driver methodGet "/status" Null
+        resp <- liftIO $ httpLbs req manager
+        let code = statusCode (responseStatus resp)
+        if | code >= 200 && code < 300 -> return ()
+           | otherwise -> do
+               logWarnN [i|(#{retryStatus}) Invalid response from /status: #{resp}|]
+               throwIO DriverStatusEndpointNotReady
 
-    logInfoN [i|Finished wait for driver /status endpoint. Driver is running on #{hostname}:#{port}|]
+      logInfoN [i|Finished wait for driver /status endpoint. Driver is running on #{hostname}:#{port}|]
 
-    return driver
+      return driver
 
 autodetectSeleniumVersionByFileName :: FilePath -> Maybe SeleniumVersion
 autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodetectSeleniumMajorVersionByFileName of
@@ -185,6 +186,11 @@ needles :: DriverConfig -> [T.Text]
 needles (DriverConfigSeleniumJar {}) = ["Selenium Server is up and running", "Started Selenium Standalone"]
 needles (DriverConfigChromedriver {}) = ["ChromeDriver was started successfully"]
 needles (DriverConfigGeckodriver {}) = ["Listening on"]
+
+driverBaseName :: DriverConfig -> String
+driverBaseName (DriverConfigSeleniumJar {}) = "selenium"
+driverBaseName (DriverConfigChromedriver {}) = "chromedriver"
+driverBaseName (DriverConfigGeckodriver {}) = "geckodriver"
 
 data SeleniumVersion =
   Selenium3

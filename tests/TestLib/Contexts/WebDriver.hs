@@ -21,7 +21,8 @@ import UnliftIO.Exception
 introduceWebDriverContext :: forall context m. (
   HasCallStack, MonadUnliftIO m, MonadCatch m
   )
-  => SpecFree (LabelValue "webdriver" WebDriverContext :> context) m () -> SpecFree context m ()
+  => SpecFree (LabelValue "webdriver" WebDriverContext :> context) m ()
+  -> SpecFree context m ()
 introduceWebDriverContext = introduceWith "Introduce WebDriver" webdriverContext withAlloc
   where
     withAlloc action = bracket mkEmptyWebDriverContext teardownWebDriverContext (void . action)
