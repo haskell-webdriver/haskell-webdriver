@@ -91,7 +91,8 @@ jobs:
           --test-option="--headless-tests" \
           --test-option="--use-${{ matrix.browser }}" \
           --test-option="--webdriver-chrome-no-sandbox" \
-          --test-option="--fixed-root test_runs/run"
+          --test-option="--fixed-root" \
+          --test-option="test_runs/run"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4
