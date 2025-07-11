@@ -21,8 +21,9 @@ tests = introduceSession $ describe "Uploads" $ before "Open test page" (openSta
     findElem (ByCSS "input") >>= sendKeys (T.pack fp)
     findElem (ByCSS "#contents") >>= getText >>= (`shouldBe` "test-file.txt 13")
 
-  it "Selenium specific: upload file to grid and use sendKeys to upload to browser" $ do
-    pendingOnNonSelenium
-    filePath <- seleniumUploadRawFile "/shopping.txt" 0 "Eggs, Ham, Cheese"
-    findElem (ByCSS "input") >>= sendKeys filePath
-    findElem (ByCSS "#contents") >>= getText >>= (`shouldBe` "shopping.txt 17")
+  describe "Selenium specific" $ do
+    it "upload file to grid and use sendKeys to upload to browser" $ do
+      pendingOnNonSelenium
+      filePath <- seleniumUploadRawFile "/shopping.txt" 0 "Eggs, Ham, Cheese"
+      findElem (ByCSS "input") >>= sendKeys filePath
+      findElem (ByCSS "#contents") >>= getText >>= (`shouldBe` "shopping.txt 17")
