@@ -98,9 +98,9 @@ launchDriver driverConfig = do
           , _driverBasePath = basePath
           , _driverRequestHeaders = requestHeaders
           , _driverManager = manager
-          , _driverProcess = p
+          , _driverProcess = Just p
+          , _driverLogAsync = Just logAsync
           , _driverConfig = driverConfig
-          , _driverLogAsync = logAsync
           }
 
     -- Wait for a successful call to /status
@@ -225,5 +225,9 @@ mkDriverRequest (Driver {..}) meth wdPath args =
 
 teardownDriver :: (MonadUnliftIO m, MonadLogger m) => Driver -> m ()
 teardownDriver (Driver {..}) = do
-  terminateProcess _driverProcess
-  cancel _driverLogAsync
+  case _driverProcess of
+    Just p -> terminateProcess p
+    Nothing -> return ()
+  case _driverLogAsync of
+    Just x -> cancel x
+    Nothing -> return ()

@@ -78,9 +78,9 @@ data Driver = Driver {
   , _driverBasePath :: String
   , _driverRequestHeaders :: RequestHeaders
   , _driverManager :: Manager
-  , _driverProcess :: ProcessHandle
+  , _driverProcess :: Maybe ProcessHandle
+  , _driverLogAsync :: Maybe (Async ())
   , _driverConfig :: DriverConfig
-  , _driverLogAsync :: Async ()
   }
 
 -- | Configuration for how to launch a given driver.

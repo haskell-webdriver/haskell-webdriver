@@ -35,10 +35,15 @@ module Test.WebDriver (
   , mkEmptyWebDriverContext
   , teardownWebDriverContext
 
-  -- * Session creation/deletion
+  -- * Managed sessions
   , startSession
   , closeSession
   , DriverConfig(..)
+
+  -- * Lower-level session management
+  , startSession'
+  , closeSession'
+  , mkManualDriver
 
   -- * Capabilities
   , defaultCaps
@@ -76,11 +81,12 @@ import Test.WebDriver.Types
 import Data.Map as M
 import Control.Monad.Catch (MonadMask)
 import Control.Monad
+import Control.Monad.IO.Class
 import Data.String.Interpolate
 import Test.WebDriver.Util.Aeson (aesonLookup)
 import Control.Monad.Logger
 import Network.HTTP.Client
-import Network.HTTP.Types (statusCode)
+import Network.HTTP.Types (RequestHeaders, statusCode)
 import UnliftIO.Concurrent
 import UnliftIO.Exception
 
@@ -115,33 +121,73 @@ startSession wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
 
 launchSessionInDriver :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Driver -> Capabilities -> String -> m Session
 launchSessionInDriver wdc driver caps sessionName = do
-  response <- doCommandBase driver methodPost "/session" $ single "capabilities" $ single "alwaysMatch" caps
-
-  sess <-
-    if | statusCode (responseStatus response) == 200 -> do
-           case A.eitherDecode (responseBody response) of
-             Right x@(A.Object (aesonLookup "value" -> Just (A.Object (aesonLookup "sessionId" -> Just (A.String sessId))))) -> do
-               logInfoN [i|Got capabilities from driver: #{x}|]
-               return $ Session { sessionDriver = driver, sessionId = SessionId sessId, sessionName = sessionName }
-             _ -> throwIO $ SessionCreationResponseHadNoSessionId response
-       | otherwise -> throwIO SessionNameAlreadyExists
+  sess <- startSession' driver caps sessionName
 
   modifyMVar (_webDriverSessions wdc) $ \sessionMap ->
     case M.lookup sessionName sessionMap of
       Just _ -> throwIO SessionNameAlreadyExists
       Nothing -> return (M.insert sessionName sess sessionMap, sess)
 
--- | Close the given WebDriver session.
+-- | Lower-level version of 'startSession'. This one allows you to construct a
+-- driver instance manually and pass it in. Does not manage process lifecycles.
+startSession' :: (WebDriverBase m, MonadLogger m) => Driver -> Capabilities -> String -> m Session
+startSession' driver caps sessionName = do
+  response <- doCommandBase driver methodPost "/session" $ single "capabilities" $ single "alwaysMatch" caps
+
+  if | statusCode (responseStatus response) == 200 -> do
+         case A.eitherDecode (responseBody response) of
+           Right x@(A.Object (aesonLookup "value" -> Just (A.Object (aesonLookup "sessionId" -> Just (A.String sessId))))) -> do
+             logInfoN [i|Got capabilities from driver: #{x}|]
+             return $ Session { sessionDriver = driver, sessionId = SessionId sessId, sessionName = sessionName }
+           _ -> throwIO $ SessionCreationResponseHadNoSessionId response
+     | otherwise -> throwIO SessionNameAlreadyExists
+
+-- | Close the given WebDriver session. This sends the @DELETE
+-- \/session\/:sessionId@ command to the WebDriver API, and then shuts down the
+-- process if necessary.
 closeSession :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Session -> m ()
-closeSession wdc (Session { sessionId=(SessionId sessId), .. }) = do
-  response <- doCommandBase sessionDriver methodDelete ("/session/" <> sessId) Null
-  logInfoN [i|Close result: #{response}|]
+closeSession wdc sess@(Session {..}) = do
+  closeSession' sess
 
   modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
 
   case _driverConfig sessionDriver of
     DriverConfigGeckodriver {} -> teardownDriver sessionDriver
     _ -> return ()
+
+-- | Close the given WebDriver session. This is a lower-level version of
+-- 'closeSession', which manages the driver lifecycle for you. This version will
+-- only issue the @DELETE \/session\/:sessionId@ command to the driver, but will
+-- not shut driver processes.
+closeSession' :: (WebDriverBase m, MonadLogger m) => Session -> m ()
+closeSession' (Session { sessionId=(SessionId sessId), .. }) = do
+  response <- doCommandBase sessionDriver methodDelete ("/session/" <> sessId) Null
+  logInfoN [i|Close result: #{response}|]
+
+-- | Create a manual 'Driver' to use with 'startSession''/'closeSession''.
+mkManualDriver :: MonadIO m =>
+  -- | Host name
+  String
+  -- | Port
+  -> Int
+  -- | Base HTTP path (use "\/wd\/hub" for Selenium)
+  -> String
+  -- | Headers to send with every request
+  -> RequestHeaders
+  -> m Driver
+mkManualDriver hostname port basePath requestHeaders = do
+  manager <- liftIO $ newManager defaultManagerSettings
+
+  return $ Driver {
+    _driverHostname = hostname
+    , _driverPort = port
+    , _driverBasePath = basePath
+    , _driverRequestHeaders = requestHeaders
+    , _driverManager = manager
+    , _driverProcess = Nothing
+    , _driverLogAsync = Nothing
+    , _driverConfig = DriverConfigChromedriver "" [] "" "" -- Not used
+    }
 
 -- | Tear down all sessions and processes associated with a 'WebDriverContext'.
 teardownWebDriverContext :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> m ()
