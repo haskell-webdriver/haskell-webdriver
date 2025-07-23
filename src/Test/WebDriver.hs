@@ -3,10 +3,10 @@
 
 {-|
 
-Once upon a time, the main browser automation tool was Selenium. Users of this
-library had to start a Selenium session themselves, making sure to configure it
-with a browser-specific driver program like @chromedriver@ or @geckodriver@, and
-pass a hostname\/port to this library. Then, this library would connect to
+Once upon a time, the main browser automation tool was Selenium. Users of
+'Test.WebDriver' had to start a Selenium session themselves, making sure to
+configure it with a browser-specific driver program like @chromedriver@ or
+@geckodriver@, and provide a hostname\/port. Then, this library would connect to
 Selenium and use its wire protocol to control browsers.
 
 Nowadays, there is an official W3C spec (<https://www.w3.org/TR/webdriver1>)

@@ -7,12 +7,14 @@ cabal-version: 1.12
 name:           webdriver
 version:        0.12.0.1
 synopsis:       a Haskell client for the Selenium WebDriver protocol
-description:    A Selenium WebDriver client for Haskell.
-                You can use it to automate browser sessions
-                for testing, system administration, etc.
+description:    A WebDriver client for Haskell.
+                You can use it to automate browser sessions for testing, system administration, etc.
+                Here are some relevant links:
                 .
-                For more information about Selenium itself, see
-                <https://www.selenium.dev/>
+                * <https://www.w3.org/TR/webdriver2/>
+                * <https://www.selenium.dev/>
+                * <https://github.com/mozilla/geckodriver>
+                * <https://developer.chrome.com/docs/chromedriver>
 category:       Web, Browser, Testing, WebDriver, Selenium
 homepage:       https://github.com/haskell-webdriver/haskell-webdriver#readme
 bug-reports:    https://github.com/haskell-webdriver/haskell-webdriver/issues
@@ -28,6 +30,7 @@ tested-with:
   , GHC == 9.6.7
   , GHC == 9.8.4
   , GHC == 9.10.2
+  , GHC == 9.12.2
 extra-source-files:
     README.md
     CHANGELOG.md
