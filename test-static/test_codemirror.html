@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeMirror Test Page</title>
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/default.min.css">
+
+    <style>
+     body {
+         font-family: Arial, sans-serif;
+         margin: 20px;
+         background-color: #f5f5f5;
+     }
+
+     .container {
+         max-width: 800px;
+         margin: 0 auto;
+         background: white;
+         padding: 20px;
+         border-radius: 8px;
+         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+     }
+
+     h1 {
+         color: #333;
+         margin-bottom: 20px;
+     }
+
+     .editor-container {
+         border: 1px solid #ddd;
+         border-radius: 4px;
+         overflow: hidden;
+     }
+
+     .CodeMirror {
+         height: 300px;
+         font-size: 14px;
+     }
+
+     .controls {
+         margin-top: 15px;
+     }
+
+     button {
+         background: #007cba;
+         color: white;
+         border: none;
+         padding: 8px 16px;
+         border-radius: 4px;
+         cursor: pointer;
+         margin-right: 10px;
+     }
+
+     button:hover {
+         background: #005a87;
+     }
+
+     #output {
+         margin-top: 15px;
+         padding: 10px;
+         background: #f8f8f8;
+         border: 1px solid #ddd;
+         border-radius: 4px;
+         white-space: pre-wrap;
+         font-family: monospace;
+     }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>CodeMirror Test Page</h1>
+
+      <div class="editor-container">
+        <textarea id="code-editor">// Welcome to CodeMirror!
+// This is a simple JavaScript editor for testing
+
+function helloWorld() {
+    console.log("Hello, World!");
+    return "This is a test function";
+}
+
+// You can edit this code
+const message = "CodeMirror is working!";
+console.log(message);</textarea>
+      </div>
+
+      <div class="controls">
+        <button id="get-value" data-testid="get-value-btn">Get Editor Value</button>
+        <button id="set-value" data-testid="set-value-btn">Set Test Value</button>
+        <button id="clear-editor" data-testid="clear-btn">Clear Editor</button>
+      </div>
+
+      <div id="output" data-testid="output"></div>
+    </div>
+
+    <!-- CodeMirror JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/javascript/javascript.min.js"></script>
+
+    <script>
+     // Initialize CodeMirror
+     const editor = CodeMirror.fromTextArea(document.getElementById('code-editor'), {
+       mode: 'javascript',
+       theme: 'default',
+       lineNumbers: true,
+       indentUnit: 4,
+       lineWrapping: true,
+       autoCloseBrackets: true,
+       matchBrackets: true
+     });
+
+     // Make editor accessible globally for Selenium testing
+     window.codeMirrorEditor = editor;
+
+     // Helper functions for testing
+     window.getEditorValue = function() {
+       return editor.getValue();
+     };
+
+     window.setEditorValue = function(value) {
+       editor.setValue(value);
+     };
+
+     window.clearEditor = function() {
+       editor.setValue('');
+     };
+
+     // Button event handlers
+     document.getElementById('get-value').addEventListener('click', function() {
+       const value = editor.getValue();
+       document.getElementById('output').textContent = 'Editor content:\n' + value;
+     });
+
+     document.getElementById('set-value').addEventListener('click', function() {
+       const testCode = `// Test code set by button
+function testFunction() {
+    alert("This is a test!");
+}
+
+testFunction();`;
+       editor.setValue(testCode);
+       document.getElementById('output').textContent = 'Test code has been set in the editor.';
+     });
+
+     document.getElementById('clear-editor').addEventListener('click', function() {
+       editor.setValue('');
+       document.getElementById('output').textContent = 'Editor has been cleared.';
+     });
+
+     // Add ready state for Selenium to detect when page is fully loaded
+     window.codeMirrorReady = true;
+
+     console.log('CodeMirror initialized successfully');
+    </script>
+  </body>
+</html>

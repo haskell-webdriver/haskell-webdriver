@@ -128,6 +128,7 @@ test-suite tests
   other-modules:
       Spec
       Spec.Actions
+      Spec.CodeMirror
       Spec.CommandContexts
       Spec.Cookies
       Spec.DocumentHandling
