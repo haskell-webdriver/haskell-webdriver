@@ -338,7 +338,7 @@ loadFirefoxProfile path = do
 -- then base64 encodes the zipped data.
 firefoxProfileToArchive :: Profile Firefox -> Archive
 firefoxProfileToArchive (Profile {profileFiles = files, profilePrefs = prefs}) =
-  foldl' addProfileFile baseArchive (HM.toList files)
+  foldl addProfileFile baseArchive (HM.toList files)
 
   where
     baseArchive = emptyArchive
