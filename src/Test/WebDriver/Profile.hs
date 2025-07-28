@@ -344,10 +344,10 @@ firefoxProfileToArchive (Profile {profileFiles = files, profilePrefs = prefs}) =
     baseArchive = emptyArchive
                 & addEntryToArchive (toEntry ("user" <.> "js") 0 userJsContents)
 
-    userJsContents = LBS.concat
-        . map (\(k, v) -> LBS.concat [ "user_pref(", encode k,
-                                       ", ", encode v, ");\n"])
-        . HM.toList $ prefs
+    userJsContents = prefs
+                   & HM.toList
+                   & map (\(k, v) -> LBS.concat [ "user_pref(", encode k, ", ", encode v, ");\n"])
+                   & LBS.concat
 
     addProfileFile :: Archive -> (FilePath, ByteString) -> Archive
     addProfileFile archive (dest, bytes) = addEntryToArchive (toEntry dest 0 bytes) archive
