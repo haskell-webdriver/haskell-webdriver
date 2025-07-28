@@ -10,7 +10,6 @@
 module Test.WebDriver.Profile (
   -- * Profiles and profile preferences
   Profile(..)
-  , PreparedProfile(..)
   , ProfilePref(..)
   , ToPref(..)
 
@@ -20,24 +19,14 @@ module Test.WebDriver.Profile (
   , deletePref
 
   -- * Extensions
-  , addExtension
-  , deleteExtension
+  -- , addExtension
+  -- , deleteExtension
   , hasExtension
-
-  -- * Other files and directories
-  , addFile
-  , deleteFile
-  , hasFile
 
   -- * Miscellaneous profile operations
   , unionProfiles
   , onProfileFiles
   , onProfilePrefs
-
-  -- * Preparing zipped profiles
-  , prepareZippedProfile
-  , prepareZipArchive
-  , prepareRawZip
 
   -- * Profile errors
   , ProfileParseError(..)
@@ -46,37 +35,39 @@ module Test.WebDriver.Profile (
   , Firefox
   , defaultFirefoxProfile
   , loadFirefoxProfile
-  , prepareFirefoxProfile
-  , prepareFirefoxProfileArchive
-  , prepareTempFirefoxProfile
-  , prepareLoadedFirefoxProfile
+  , firefoxProfileToArchive
   ) where
 
 import Codec.Archive.Zip
 import Control.Applicative
-import Control.Arrow
 import Control.Exception.Safe hiding (try)
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.Aeson (Result(..), encode, fromJSON)
+import qualified Data.Aeson as A
 import Data.Aeson.Parser (jstring, value')
 import Data.Aeson.Types (FromJSON, ToJSON, Value(..), parseJSON, toJSON, typeMismatch)
 import Data.Attoparsec.ByteString.Char8 as AP
 import Data.ByteString as BS (readFile)
-import qualified Data.ByteString.Base64.Lazy as B64
+import qualified Data.ByteString.Base64.Lazy as B64L
 import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as LBS
 import Data.Fixed
 import Data.Function ((&))
 import qualified Data.HashMap.Strict as HM
 import Data.Int
+import qualified Data.List as L
+import Data.Maybe
 import Data.Ratio
 import Data.Text (Text, pack)
+import qualified Data.Text.Encoding as T
+import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
 import Data.Word
 import Prelude -- hides some "unused import" warnings
 import System.Directory
-import System.FilePath ((</>), (<.>), splitFileName)
+import System.FilePath ((</>), (<.>), takeFileName)
 
 #if MIN_VERSION_aeson(0,7,0)
 import Data.Scientific
@@ -90,32 +81,13 @@ import Data.Attoparsec.Number (Number(..))
 -- type is shared by both Firefox and Opera profiles; when a distinction
 -- must be made, the phantom type parameter is used to differentiate.
 data Profile b = Profile {
-  -- | A mapping from relative destination filepaths to source
-  -- filepaths found on the filesystem. When the profile is
-  -- prepared, these source filepaths will be moved to their
-  -- destinations within the profile directory.
-  --
-  -- Using the destination path as the key ensures that
-  -- there is one unique source path going to each
-  -- destination path.
-  profileFiles   :: HM.HashMap FilePath FilePath
-  -- | A map of profile preferences. These are the settings
-  -- found in the profile's prefs.js, and entries found in
-  -- about:config
+  -- | A mapping from relative destination filepaths to source contents.
+  profileFiles   :: HM.HashMap FilePath ByteString
+  -- | A map of profile preferences. These are the settings found in the
+  -- profile's prefs.js, and entries found in about:config
   , profilePrefs  :: HM.HashMap Text ProfilePref
   }
   deriving (Eq, Show)
-
--- | Represents a profile that has been prepared for
--- network transmission. The profile cannot be modified in this form.
-newtype PreparedProfile b = PreparedProfile ByteString
-  deriving (Eq, Show)
-
-instance FromJSON (PreparedProfile s) where
-  parseJSON v = PreparedProfile . TL.encodeUtf8 <$> parseJSON v
-
-instance ToJSON (PreparedProfile s) where
-  toJSON (PreparedProfile s) = toJSON $ TL.decodeUtf8 s
 
 -- | A profile preference value. This is the subset of JSON values that excludes
 -- arrays, objects, and null.
@@ -207,41 +179,15 @@ addPref k v p = onProfilePrefs p $ HM.insert k (toPref v)
 deletePref :: Text -> Profile b -> Profile b
 deletePref k p = onProfilePrefs p $ HM.delete k
 
--- | Add a file to the profile directory. The first argument is the source
--- of the file on the local filesystem. The second argument is the destination
--- as a path relative to a profile directory. Overwrites any file that
--- previously pointed to the same destination
-addFile :: FilePath -> FilePath -> Profile b -> Profile b
-addFile src dest p = onProfileFiles p $ HM.insert dest src
-
--- | Delete a file from the profile directory. The first argument is the name of
--- file within the profile directory.
-deleteFile :: FilePath -> Profile b -> Profile b
-deleteFile path prof = onProfileFiles prof $ HM.delete path
-
 -- | Determines if a profile contains the given file, specified as a path
 -- relative to the profile directory.
 hasFile :: String -> Profile b -> Bool
 hasFile path (Profile files _) = path `HM.member` files
 
--- | Add a new extension to the profile. The file path should refer to
--- a .xpi file or an extension directory on the filesystem.
-addExtension :: FilePath -> Profile b -> Profile b
-addExtension path = addFile path ("extensions" </> name)
-  where (_, name) = splitFileName path
-
--- | Delete an existing extension from the profile. The string parameter
--- should refer to an .xpi file or directory located within the extensions
--- directory of the profile. This operation has no effect if the extension was
--- never added to the profile.
-deleteExtension :: String -> Profile b -> Profile b
-deleteExtension name = deleteFile ("extensions" </> name)
-
 -- | Determines if a profile contains the given extension. specified as an
 -- .xpi file or directory name
 hasExtension :: String -> Profile b -> Bool
-hasExtension name prof = hasFile ("extensions" </> name) prof
-
+hasExtension name = hasFile ("extensions" </> name)
 
 -- | Takes the union of two profiles. This is the union of their 'HashMap'
 -- fields.
@@ -259,22 +205,22 @@ onProfilePrefs (Profile hs hm) f = Profile hs (f hm)
 -- | Modifies the 'profileFiles' field of a profile
 onProfileFiles ::
   Profile b
-  -> (HM.HashMap FilePath FilePath -> HM.HashMap FilePath FilePath)
+  -> (HM.HashMap FilePath ByteString -> HM.HashMap FilePath ByteString)
   -> Profile b
 onProfileFiles (Profile ls hm) f = Profile (f ls) hm
 
--- | Prepare a zip file of a profile on disk for network transmission.
--- This function is very efficient at loading large profiles from disk.
-prepareZippedProfile :: MonadIO m => FilePath -> m (PreparedProfile a)
-prepareZippedProfile path = prepareRawZip <$> liftIO (LBS.readFile path)
+-- -- | Prepare a zip file of a profile on disk for network transmission.
+-- -- This function is very efficient at loading large profiles from disk.
+-- prepareZippedProfile :: MonadIO m => FilePath -> m (PreparedProfile a)
+-- prepareZippedProfile path = prepareRawZip <$> liftIO (LBS.readFile path)
 
--- | Prepare a zip archive of a profile for network transmission.
-prepareZipArchive :: Archive -> PreparedProfile a
-prepareZipArchive = prepareRawZip . fromArchive
+-- -- | Prepare a zip archive of a profile for network transmission.
+-- prepareZipArchive :: Archive -> PreparedProfile a
+-- prepareZipArchive = prepareRawZip . fromArchive
 
--- | Prepare a 'ByteString' of raw zip data for network transmission.
-prepareRawZip :: ByteString -> PreparedProfile a
-prepareRawZip = PreparedProfile . B64.encode
+-- -- | Prepare a 'ByteString' of raw zip data for network transmission.
+-- prepareRawZip :: ByteString -> PreparedProfile a
+-- prepareRawZip = PreparedProfile . B64.encode
 
 -- * Firefox
 
@@ -355,78 +301,83 @@ defaultFirefoxProfile =
 -- 'defaultFirefoxProfile' are automatically merged into the preferences of the on-disk
 -- profile. The on-disk profile's preference will override those found in the
 -- default profile.
-loadFirefoxProfile :: MonadIO m => FilePath -> m (Profile Firefox)
+loadFirefoxProfile :: forall m. MonadIO m => FilePath -> m (Profile Firefox)
 loadFirefoxProfile path = do
-  unionProfiles defaultFirefoxProfile <$> (Profile <$> getFiles <*> getPrefs)
+  unionProfiles defaultFirefoxProfile <$> (Profile <$> getFiles path <*> getPrefs)
   where
     userPrefFile = path </> "prefs" <.> "js"
 
-    getFiles = HM.fromList . map (id &&& (path </>)) . filter isNotIgnored
-               <$> liftIO (getDirectoryContents path)
-      where isNotIgnored = (`notElem`
-                         [".", "..", "OfflineCache", "Cache"
-                         ,"parent.lock", ".parentlock", ".lock"
-                         ,userPrefFile])
+    getFiles :: FilePath -> m (HM.HashMap FilePath ByteString)
+    getFiles dir = liftIO $ do
+      allFiles <- getAllFiles dir
+      foldM (\acc p -> HM.insert p <$> LBS.readFile p <*> pure acc) HM.empty $
+        filter ((`notElem` filesToIgnore) . takeFileName) allFiles
+
+    getAllFiles :: FilePath -> IO [FilePath]
+    getAllFiles dir = do
+      exists <- doesDirectoryExist dir
+      if not exists then return [] else do
+        contents <- map (dir </>) <$> listDirectory dir
+        files <- filterM doesFileExist contents
+        dirs <- filterM doesDirectoryExist contents
+        subFiles <- concat <$> mapM getAllFiles dirs
+        return (files ++ subFiles)
+
+    filesToIgnore = [".", "..", "OfflineCache", "Cache", "parent.lock", ".parentlock", ".lock", userPrefFile]
 
     getPrefs = liftIO $ do
-       prefFileExists <- doesFileExist userPrefFile
-       if prefFileExists
-        then HM.fromList <$> (parsePrefs =<< BS.readFile userPrefFile)
-        else return HM.empty
-      where parsePrefs s = either (throwIO . ProfileParseError) return
-                           $ AP.parseOnly prefsParser s
+       doesFileExist userPrefFile >>= \case
+         True -> HM.fromList <$> (parsePrefs =<< BS.readFile userPrefFile)
+         False -> return HM.empty
+      where
+        parsePrefs s = either (throwIO . ProfileParseError) return
+                     $ AP.parseOnly prefsParser s
 
 -- | Prepare a Firefox profile for network transmission.
 -- Internally, this function constructs a Firefox profile as a zip archive,
 -- then base64 encodes the zipped data.
-prepareFirefoxProfile :: forall m. (MonadIO m) => Profile Firefox -> m (PreparedProfile Firefox)
-prepareFirefoxProfile ffProfile = prepareZipArchive <$> prepareFirefoxProfileArchive ffProfile
-
--- | Prepare a Firefox profile for network transmission.
--- Internally, this function constructs a Firefox profile as a zip archive,
--- then base64 encodes the zipped data.
-prepareFirefoxProfileArchive :: forall m. (MonadIO m) => Profile Firefox -> m Archive
-prepareFirefoxProfileArchive (Profile {profileFiles = files, profilePrefs = prefs}) = do
-  let baseArchive = emptyArchive
-                  & addEntryToArchive (toEntry ("user" <.> "js") 0 userJsContents)
-
-  liftIO $ foldM addProfileFile baseArchive (HM.toList files)
+firefoxProfileToArchive :: Profile Firefox -> Archive
+firefoxProfileToArchive (Profile {profileFiles = files, profilePrefs = prefs}) =
+  foldl' addProfileFile baseArchive (HM.toList files)
 
   where
+    baseArchive = emptyArchive
+                & addEntryToArchive (toEntry ("user" <.> "js") 0 userJsContents)
+
     userJsContents = LBS.concat
         . map (\(k, v) -> LBS.concat [ "user_pref(", encode k,
                                        ", ", encode v, ");\n"])
         . HM.toList $ prefs
 
-    addProfileFile :: Archive -> (FilePath, FilePath) -> IO Archive
-    addProfileFile archive (dest, pathOnDisk) = doesPathExist pathOnDisk >>= \case
-      False -> throwIO $ userError ("Path didn't exist: " ++ show pathOnDisk)
-      True -> doesDirectoryExist pathOnDisk >>= \case
-        False -> do
-          bytes <- LBS.readFile pathOnDisk
-          return $ archive
-                 & addEntryToArchive (toEntry dest 0 bytes)
-        True -> do
-          contents <- listDirectory pathOnDisk
-          foldM addProfileFile archive [(dest </> x, pathOnDisk </> x) | x <- contents]
+    addProfileFile :: Archive -> (FilePath, ByteString) -> Archive
+    addProfileFile archive (dest, bytes) = addEntryToArchive (toEntry dest 0 bytes) archive
 
--- | Apply a function on a default profile, and
--- prepare the result. The Profile passed to the handler function is
--- the default profile used by sessions when Nothing is specified
-prepareTempFirefoxProfile :: (MonadIO m) => (Profile Firefox -> Profile Firefox) -> m (PreparedProfile Firefox)
-prepareTempFirefoxProfile f = prepareFirefoxProfile . f $ defaultFirefoxProfile
+instance ToJSON (Profile Firefox) where
+  toJSON prof = firefoxProfileToArchive prof
+              & fromArchive
+              & B64L.encode
+              & LBS.toStrict
+              & T.decodeUtf8
+              & A.String
 
--- | Convenience function to load an existing Firefox profile from disk, apply
--- a handler function, and then prepare the result for network transmission.
---
--- NOTE: like 'prepareFirefoxProfile', the same caveat about large profiles applies.
-prepareLoadedFirefoxProfile :: (
-  MonadIO m
-  )
-  => FilePath
-  -> (Profile Firefox -> Profile Firefox)
-  -> m (PreparedProfile Firefox)
-prepareLoadedFirefoxProfile path f = liftM f (loadFirefoxProfile path) >>= prepareFirefoxProfile
+instance FromJSON (Profile Firefox) where
+  parseJSON (String t) = case B64L.decode (TL.encodeUtf8 (TL.fromStrict t)) of
+    Left err -> fail ("Couldn't decode Firefox profile archive: " <> err)
+    Right bytes -> case toArchiveOrFail bytes of
+      Left err -> fail ("Couldn't unzip Firefox profile archive: " <> err)
+      Right archive -> return $ Profile {
+        profileFiles = HM.fromList [(eRelativePath, fromEntry e) | e@(Entry {..}) <- otherFiles]
+        , profilePrefs = prefs
+        }
+        where
+          prefs = case L.find (\(Entry {..}) -> eRelativePath == "prefs.js") (zEntries archive) of
+            Nothing -> mempty
+            Just entry -> case AP.parseOnly prefsParser (BL.toStrict $ fromEntry entry) of
+              Left _err -> mempty
+              Right p -> HM.fromList p
+
+          otherFiles = [e | e@(Entry {..}) <- zEntries archive, eRelativePath /= "prefs.js"]
+  parseJSON other = typeMismatch "Profile Firefox" other
 
 -- Firefox prefs.js parser
 

@@ -43,7 +43,7 @@ data FirefoxOptions = FirefoxOptions {
   , _firefoxOptionsArgs :: Maybe [String]
   -- | Base64-encoded ZIP of a profile directory to use for the Firefox instance. This may be used to e.g. install
   -- extensions or custom certificates, but for setting custom preferences we recommend using the prefs entry instead.
-  , _firefoxOptionsProfile :: Maybe (PreparedProfile Firefox)
+  , _firefoxOptionsProfile :: Maybe (Profile Firefox)
   -- | To increase the logging verbosity of geckodriver and Firefox, you may pass a log object that may look like
   -- {"log": {"level": "trace"}} to include all trace-level logs and above.
   , _firefoxOptionsLog :: Maybe FirefoxLogLevel
