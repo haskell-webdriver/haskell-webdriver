@@ -60,13 +60,14 @@ getLogTypes :: (HasCallStack, WebDriver wd) => wd [LogType]
 getLogTypes = doSessCommand methodGet "/log/types" Null
 
 -- | A record that represents a single log entry.
-data LogEntry =
-  LogEntry { logTime  :: Integer  -- ^ timestamp for the log entry. The standard
-                                  -- does not specify the epoch or the unit of
-                                  -- time.
-           , logLevel :: LogLevel -- ^ log verbosity level
-           , logMsg   :: Text
-           }
+data LogEntry = LogEntry {
+  -- | Timestamp for the log entry. The standard does not specify the epoch or
+  -- the unit of time.
+  logTime  :: Integer
+  -- | Log verbosity level.
+  , logLevel :: LogLevel
+  , logMsg   :: Text
+  }
   deriving (Eq, Ord, Show, Read)
 
 
