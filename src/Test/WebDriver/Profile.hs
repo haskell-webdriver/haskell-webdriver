@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE ViewPatterns #-}
 {-# OPTIONS_GHC -fno-warn-deriving-typeable #-}
 {-# OPTIONS_HADDOCK not-home #-}
 
@@ -35,6 +36,7 @@ module Test.WebDriver.Profile (
   , Firefox
   , defaultFirefoxProfile
   , loadFirefoxProfile
+  , saveFirefoxProfile
   , firefoxProfileToArchive
   ) where
 
@@ -332,6 +334,14 @@ loadFirefoxProfile path = do
       where
         parsePrefs s = either (throwIO . ProfileParseError) return
                      $ AP.parseOnly prefsParser s
+
+-- | Save a Firefox profile to a destination directory. This directory should
+-- already exist.
+saveFirefoxProfile :: MonadIO m => Profile Firefox -> FilePath -> m ()
+saveFirefoxProfile (firefoxProfileToArchive -> archive) dest = liftIO $ flip extractFilesFromArchive archive [
+  OptRecursive
+  , OptDestination dest
+  ]
 
 -- | Prepare a Firefox profile for network transmission.
 -- Internally, this function constructs a Firefox profile as a zip archive,
