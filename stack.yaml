@@ -1,5 +1,10 @@
 
-resolver: nightly-2025-06-29
+resolver: lts-24.2
+
+nix:
+  enable: false
+
+system-ghc: true
 
 ghc-options:
   "$locals": >-
@@ -11,9 +16,3 @@ ghc-options:
 
 packages:
 - '.'
-
-nix:
-  pure: false
-  packages:
-  - pkg-config
-  - zlib
