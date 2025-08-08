@@ -9,7 +9,6 @@ module Test.WebDriver.Commands.SeleniumSpecific.Misc (
   , (</=>)
 
   -- * Server information and logs
-  , getLogs
   , getLogTypes
   , LogType
   , LogEntry(..)
@@ -47,13 +46,6 @@ e1 <==> (Element e2) = doElemCommand methodGet e1 ("/equals/" <> urlEncode e2) N
 infix 4 </=>
 (</=>) :: (HasCallStack, WebDriver wd) => Element -> Element -> wd Bool
 e1 </=> e2 = not <$> (e1 <==> e2)
-
--- | Retrieve the log buffer for a given log type. The server-side log buffer is reset after each request.
---
--- Which log types are available is server defined, but the wire protocol lists these as common log types:
--- client, driver, browser, server
-getLogs :: (HasCallStack, WebDriver wd) => LogType -> wd [LogEntry]
-getLogs t = doSessCommand methodPost "/log" . object $ ["type" .= t]
 
 -- | Get a list of available log types.
 getLogTypes :: (HasCallStack, WebDriver wd) => wd [LogType]

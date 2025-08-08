@@ -64,6 +64,11 @@ library
       Test.WebDriver.Commands.ElementInteraction
       Test.WebDriver.Commands.ElementRetrieval
       Test.WebDriver.Commands.ElementState
+      Test.WebDriver.Commands.Logs
+      Test.WebDriver.Commands.Logs.Chrome
+      Test.WebDriver.Commands.Logs.Common
+      Test.WebDriver.Commands.Logs.Firefox
+      Test.WebDriver.Commands.Logs.Selenium
       Test.WebDriver.Commands.Navigation
       Test.WebDriver.Commands.ScreenCapture
       Test.WebDriver.Commands.SeleniumSpecific.HTML5
@@ -134,6 +139,7 @@ test-suite tests
       Spec.ElementInteraction
       Spec.ElementRetrieval
       Spec.ElementState
+      Spec.Logs
       Spec.Navigation
       Spec.ScreenCapture
       Spec.SeleniumSpecific.Mobile
