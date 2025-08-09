@@ -131,6 +131,7 @@ data Session = Session {
   sessionDriver :: Driver
   , sessionId :: SessionId
   , sessionName :: String
+  , sessionWebSocketUrl :: Maybe String
   }
 instance Show Session where
   show (Session {sessionDriver=(Driver {..}), ..}) = [i|Session<[#{sessionId}] at #{_driverHostname}:#{_driverPort}#{_driverBasePath}>|]
