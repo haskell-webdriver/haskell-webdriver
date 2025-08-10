@@ -67,6 +67,7 @@ library:
   - retry
   - safe-exceptions
   - scientific >= 0.2
+  - stm
   - string-interpolate
   - text >= 0.11.3
   - time > 1.0
@@ -99,6 +100,7 @@ tests:
     - aeson
     - base
     - bytestring
+    - containers
     - exceptions
     - filepath
     - http-client
