@@ -1,6 +1,5 @@
 module Spec.Logs where
 
-import Control.Monad (unless)
 import Data.String.Interpolate
 import qualified Data.Text as T
 import Test.Sandwich
@@ -16,7 +15,7 @@ tests = introduceSession $ describe "Browser logs" $ before "Open test page" ope
   it "captures console.log messages" $ do
     ignoreReturn $ executeJS [] [i|console.log('test message from haskell-webdriver');|]
 
-    logTypes <- getLogTypes
+    logTypes <- getSeleniumLogTypes
     info [i|logTypes: #{logTypes}|]
 
     waitUntil 15 $ do
@@ -36,7 +35,7 @@ tests = introduceSession $ describe "Browser logs" $ before "Open test page" ope
       console.error('error message');
     |]
 
-    logTypes <- getLogTypes
+    logTypes <- getSeleniumLogTypes
     info [i|logTypes: #{logTypes}|]
 
     waitUntil 15 $ do
