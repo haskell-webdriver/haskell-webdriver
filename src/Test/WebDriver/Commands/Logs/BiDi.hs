@@ -1,19 +1,35 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Test.WebDriver.Commands.Logs.BiDi (
   withRecordBiDiLogs
   , withRecordBiDiLogs'
   ) where
 
+import Control.Monad (forever)
 import Control.Monad.IO.Unlift
+import Data.Aeson
+import Data.Aeson.TH
+import Data.Aeson.Types (parseEither)
 import Data.String.Interpolate
-import GHC.Stack
+import Data.Text (Text)
+import qualified Data.Text as T
+import qualified Network.WebSockets as WS
+import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Commands.Logs.Common
 import Test.WebDriver.Types
+import UnliftIO.Async
 import UnliftIO.Exception
 
 
-withRecordBiDiLogs :: (HasCallStack, WebDriver m) => (LogEntry -> m ()) -> m a -> m a
+data BiDiLogEvent = BiDiLogEvent {
+  biDiType :: Text
+  , biDiMethod :: Text
+  , biDiParams :: Value
+  } deriving Show
+deriveFromJSON toCamel2 ''BiDiLogEvent
+
+withRecordBiDiLogs :: WebDriver m => (LogEntry -> m ()) -> m a -> m a
 withRecordBiDiLogs cb action = do
   Session {..} <- getSession
   webSocketUrl <- case sessionWebSocketUrl of
@@ -22,9 +38,61 @@ withRecordBiDiLogs cb action = do
 
   withRecordBiDiLogs' webSocketUrl cb action
 
-withRecordBiDiLogs' :: (HasCallStack, MonadUnliftIO m) => String -> (LogEntry -> m ()) -> m a -> m a
-withRecordBiDiLogs' webSocketUrl cb action =
-  -- TODO: use the Network.WebSockets library to connect to the given URL, inside a bracket.
-  -- Use the BiDi protocol to subscribe to log entry events.
-  -- use withAsync to start a background thread to listen for these, parse them, and call the callback with each one.
-  undefined
+-- | Convert BiDi log parameters to LogEntry
+parseBiDiLogEntry :: Value -> Maybe LogEntry
+parseBiDiLogEntry = \case
+  Object o -> case parseEither parseLogEntry o of
+    Right entry -> Just entry
+    Left _ -> Nothing
+  _ -> Nothing
+  where
+    parseLogEntry o = do
+      timestamp <- o .: "timestamp"
+      levelText <- o .: "level"
+      message <- o .: "text"
+      level <- case parseLogLevel levelText of
+        Just l -> pure l
+        Nothing -> fail "Invalid log level"
+      pure $ LogEntry (round (timestamp :: Double)) level message
+
+    parseLogLevel :: Text -> Maybe LogLevel
+    parseLogLevel = \case
+      "debug" -> Just LogDebug
+      "info" -> Just LogInfo
+      "warn" -> Just LogWarning
+      "error" -> Just LogSevere
+      _ -> Nothing
+
+withRecordBiDiLogs' :: MonadUnliftIO m => String -> (LogEntry -> m ()) -> m a -> m a
+withRecordBiDiLogs' webSocketUrl cb action = withAsync backgroundAction $ \_ -> action
+  where
+    (host, port, path) = parseWebSocketUrl webSocketUrl
+
+    backgroundAction = withRunInIO $ \runInIO -> do
+      liftIO $ WS.runClient host port path $ \conn -> do
+        WS.sendTextData conn $ encode $ object [
+          "id" .= (1 :: Int)
+          , "method" .= ("log.entryAdded" :: Text)
+          , "params" .= object []
+          ]
+
+        forever $ do
+          (decode <$> WS.receiveData conn) >>= \case
+            Just (BiDiLogEvent "event" "log.entryAdded" params) ->
+              case parseBiDiLogEntry params of
+                Just logEntry -> runInIO (cb logEntry)
+                Nothing -> pure ()
+            _ -> pure ()
+
+parseWebSocketUrl :: String -> (String, Int, String)
+parseWebSocketUrl url =
+  let url' = if "ws://" `T.isPrefixOf` T.pack url
+             then drop 5 url
+             else url
+      (hostPort, path) = break (== '/') url'
+      (host, portStr) = break (== ':') hostPort
+      port = case portStr of
+               ':':p -> read p
+               _ -> 80
+      path' = if null path then "/" else path
+  in (host, port, path')
