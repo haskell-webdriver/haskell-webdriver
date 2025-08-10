@@ -36,7 +36,15 @@ introduceSession :: forall m context. (
   MonadUnliftIO m, MonadMask m
   , HasBrowserDependencies context, HasWebDriverContext context, HasDriverConfig context, HasCommandLineOptions context UserOptions
   ) => SpecFree (LabelValue "session" Session :> context) m () -> SpecFree context m ()
-introduceSession = introduceSession' return
+introduceSession = introduceSession' enableBiDi
+  where
+    enableBiDi :: Capabilities -> ExampleT context m Capabilities
+    enableBiDi x = do
+      getContext driverConfig >>= \case
+        DriverConfigSeleniumJar { driverConfigSeleniumVersion=(Just Selenium3) } -> return x
+        _ -> x
+             & set capabilitiesWebSocketUrl (Just True)
+             & return
 
 introduceSession' :: forall m context. (
   MonadUnliftIO m, MonadMask m
