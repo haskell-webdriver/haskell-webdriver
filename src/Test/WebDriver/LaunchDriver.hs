@@ -125,6 +125,28 @@ launchDriver driverConfig = do
 
       return driver
 
+getArguments :: (MonadIO m, MonadLogger m) => PortNumber -> DriverConfig -> m (FilePath, [String])
+getArguments port (DriverConfigSeleniumJar {..}) = do
+  javaArgs :: [String] <- mconcat <$> mapM getSubDriverArgs driverConfigSubDrivers
+
+  let maybeSeleniumVersion = case driverConfigSeleniumVersion of
+        Just x -> Just x
+        Nothing -> autodetectSeleniumVersionByFileName driverConfigSeleniumJar
+  logInfoN [i|Detected Selenium version: #{maybeSeleniumVersion}|]
+  let extraArgs = case maybeSeleniumVersion of
+        Just Selenium3 -> ["-port", show port]
+        Just Selenium4 -> ["standalone", "--port", show port, "--host", "localhost"]
+        Nothing -> ["-port", show port]
+
+  let fullArgs = javaArgs
+               <> ["-jar", driverConfigSeleniumJar]
+               <> extraArgs
+  return (driverConfigJava, fullArgs <> driverConfigJavaFlags)
+getArguments port (DriverConfigChromedriver {..}) = do
+  return (driverConfigChromedriver, ["--port=" <> show port] <> driverConfigChromedriverFlags)
+getArguments port (DriverConfigGeckodriver {..}) = do
+  return (driverConfigGeckodriver, ["--port", show port] <> driverConfigGeckodriverFlags)
+
 autodetectSeleniumVersionByFileName :: FilePath -> Maybe SeleniumVersion
 autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodetectSeleniumMajorVersionByFileName of
   Just 3 -> Just Selenium3
@@ -152,29 +174,6 @@ autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodet
               [x] -> Just x
               _ -> Nothing
 
--- autodetectSeleniumVersion :: FilePath -> FilePath -> m SeleniumVersion
--- autodetectSeleniumVersion _java _seleniumJar = undefined
-
-getArguments :: (MonadIO m, MonadLogger m) => PortNumber -> DriverConfig -> m (FilePath, [String])
-getArguments port (DriverConfigSeleniumJar {..}) = do
-  javaArgs :: [String] <- mconcat <$> mapM getSubDriverArgs driverConfigSubDrivers
-
-  let maybeSeleniumVersion = autodetectSeleniumVersionByFileName driverConfigSeleniumJar
-  logInfoN [i|Detected Selenium version: #{maybeSeleniumVersion}|]
-  let extraArgs = case maybeSeleniumVersion of
-        Just Selenium3 -> ["-port", show port]
-        Just Selenium4 -> ["standalone", "--port", show port, "--host", "localhost"]
-        Nothing -> ["-port", show port]
-
-  let fullArgs = javaArgs
-               <> ["-jar", driverConfigSeleniumJar]
-               <> extraArgs
-  return (driverConfigJava, fullArgs <> driverConfigJavaFlags)
-getArguments port (DriverConfigChromedriver {..}) = do
-  return (driverConfigChromedriver, ["--port=" <> show port] <> driverConfigChromedriverFlags)
-getArguments port (DriverConfigGeckodriver {..}) = do
-  return (driverConfigGeckodriver, ["--port", show port] <> driverConfigGeckodriverFlags)
-
 getSubDriverArgs :: Monad m => DriverConfig -> m [FilePath]
 getSubDriverArgs (DriverConfigChromedriver {..}) = do
   let chromedriverLog = driverConfigLogDir </> "chromedriver.log"
@@ -198,11 +197,6 @@ driverBaseName :: DriverConfig -> String
 driverBaseName (DriverConfigSeleniumJar {}) = "selenium"
 driverBaseName (DriverConfigChromedriver {}) = "chromedriver"
 driverBaseName (DriverConfigGeckodriver {}) = "geckodriver"
-
-data SeleniumVersion =
-  Selenium3
-  | Selenium4
-  deriving (Show, Eq)
 
 data DriverException =
   DriverGetAddrInfoFailed

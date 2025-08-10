@@ -20,6 +20,8 @@ import UnliftIO.IORef
 tests :: SessionSpec
 tests = introduceSession $ describe "Browser logs via BiDi" $ before "Open test page" openSimpleTestPage $ do
   it "captures console.log messages" $ do
+    pendingOnSelenium3
+
     allLogEntries <- newIORef (mempty :: Seq LogEntry)
 
     let cb logEntry = atomicModifyIORef' allLogEntries (\x -> (x |> logEntry, ()))

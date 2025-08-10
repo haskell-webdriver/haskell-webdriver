@@ -8,11 +8,11 @@ module Test.WebDriver.Commands.Logs.BiDi (
   , withRecordBiDiLogs'
   ) where
 
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM (retry)
 import Control.Monad (forever)
+import Control.Monad.Fix (fix)
 import Control.Monad.IO.Unlift
-import Control.Monad.Logger (MonadLogger, logDebugN, logInfoN, logWarnN)
+import Control.Monad.Logger (MonadLogger, logDebugN, logErrorN, logInfoN, logWarnN)
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Aeson.Types (parseEither)
@@ -25,9 +25,10 @@ import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Commands.Logs.Common
 import Test.WebDriver.Types
 import Text.Read (readMaybe)
-import UnliftIO.Async (race, withAsync)
+import UnliftIO.Async (withAsync)
 import UnliftIO.Exception
 import UnliftIO.STM (atomically, newTVarIO, readTVar, writeTVar)
+import UnliftIO.Timeout (timeout)
 
 
 data BiDiLogEvent = BiDiLogEvent {
@@ -43,13 +44,7 @@ data BiDiResponse = BiDiResponse {
   , biDiResponseResult :: Maybe Value
   , biDiResponseError :: Maybe Value
   } deriving Show
-
-instance FromJSON BiDiResponse where
-  parseJSON = withObject "BiDiResponse" $ \o -> BiDiResponse
-    <$> o .: "type"
-    <*> o .: "id"
-    <*> o .:? "result"
-    <*> o .:? "error"
+deriveFromJSON toCamel3 ''BiDiResponse
 
 withRecordBiDiLogs :: (WebDriver m, MonadLogger m) => (LogEntry -> m ()) -> m a -> m a
 withRecordBiDiLogs cb action = do
@@ -59,6 +54,90 @@ withRecordBiDiLogs cb action = do
     Just x -> pure x
 
   withRecordBiDiLogs' webSocketUrl cb action
+
+-- | Connect to WebSocket URL and subscribe to log events using the W3C BiDi protocol; see
+-- <https://w3c.github.io/webdriver-bidi/>
+withRecordBiDiLogs' :: (MonadUnliftIO m, MonadLogger m) => String -> (LogEntry -> m ()) -> m a -> m a
+withRecordBiDiLogs' webSocketUrl cb action = do
+  subscriptionStatus <- newTVarIO Nothing
+
+  withAsync (backgroundAction subscriptionStatus) $ \_ -> do
+    -- Wait for subscription to be confirmed or errored before proceeding
+    result <- atomically $ do
+      status <- readTVar subscriptionStatus
+      case status of
+        Nothing -> retry
+        Just (Left err) -> pure (Left err)
+        Just (Right ()) -> pure (Right ())
+
+    case result of
+      Left err -> throwIO err
+      Right () -> action
+
+  where
+    backgroundAction subscriptionStatus = withRunInIO $ \runInIO -> do
+      result <- tryAny $ do
+        runInIO $ logInfoN [i|BiDi: Parsing WebSocket URL: #{webSocketUrl}|]
+        (host, port, path) <- case URI.parseURI webSocketUrl of
+          Just (URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just port), ..})), .. }) ->
+            pure (uriRegName, port, uriPath)
+          _ -> liftIO $ throwIO $ userError [i|Invalid WebSocket URL: #{webSocketUrl}|]
+        runInIO $ logDebugN [i|BiDi: Connecting to #{host}:#{port}#{path}|]
+
+        liftIO $ WS.runClient host port path $ \conn -> do
+          runInIO $ logInfoN "BiDi: Connected successfully"
+
+          -- Send subscription request for console logs
+          runInIO $ logDebugN "BiDi: Sending subscription request"
+          WS.sendTextData conn $ encode $ object [
+            "id" .= (1 :: Int)
+            , "method" .= ("session.subscribe" :: Text)
+            , "params" .= object [
+                "events" .= (["log.entryAdded"] :: [Text])
+              ]
+            ]
+          runInIO $ logDebugN "BiDi: Sent subscription request, waiting for response..."
+
+          subscriptionResult <- timeout 15_000_000 $ fix $ \loop -> do
+            msg <- WS.receiveData conn
+            runInIO $ logDebugN [i|BiDi: Waiting for subscription response: #{msg}|]
+            case decode msg of
+              Just response@(BiDiResponse responseType responseId _ _)
+                | responseType == "success" && responseId == 1 -> do
+                    runInIO $ logInfoN "BiDi: Subscription successful!"
+                    atomically $ writeTVar subscriptionStatus (Just (Right ()))
+                | responseType == "error" && responseId == 1 -> do
+                    let errMsg = "BiDi subscription failed: " ++ show response
+                    runInIO $ logErrorN [i|BiDi: #{errMsg}|]
+                    atomically $ writeTVar subscriptionStatus (Just (Left (toException (userError errMsg))))
+                | otherwise -> do
+                    runInIO $ logDebugN [i|BiDi: Ignoring response with type #{responseType}, ID #{responseId}|]
+                    loop
+              Nothing -> do
+                runInIO $ logDebugN [i|BiDi: Not a BiDiResponse, continuing to wait for subscription response (#{msg})|]
+                loop
+
+          case subscriptionResult of
+            Nothing -> do
+              runInIO $ logErrorN "BiDi: Subscription response timed out"
+              atomically $ writeTVar subscriptionStatus (Just (Left (toException (userError "BiDi subscription response timed out"))))
+            Just () -> do
+              runInIO $ logDebugN "BiDi: Starting log event listener"
+              forever $ do
+                msg <- WS.receiveData conn
+                runInIO $ logDebugN [i|BiDi: Received log event: #{msg}|]
+                case decode msg of
+                  Just (BiDiLogEvent "event" "log.entryAdded" params) ->
+                    case parseBiDiLogEntry params of
+                      Just logEntry -> runInIO (cb logEntry)
+                      Nothing -> runInIO $ logWarnN "BiDi: Failed to parse log entry"
+                  _ -> runInIO $ logDebugN [i|BiDi: Ignoring non-log event message: #{msg}|]
+
+      case result of
+        Left ex -> do
+          runInIO $ logErrorN [i|BiDi: Exception occurred: #{ex}|]
+          atomically $ writeTVar subscriptionStatus (Just (Left ex))
+        Right () -> pure ()
 
 -- | Convert BiDi log parameters to LogEntry
 parseBiDiLogEntry :: Value -> Maybe LogEntry
@@ -84,84 +163,3 @@ parseBiDiLogEntry = \case
       "warn" -> Just LogWarning
       "error" -> Just LogSevere
       _ -> Nothing
-
-withRecordBiDiLogs' :: (MonadUnliftIO m, MonadLogger m) => String -> (LogEntry -> m ()) -> m a -> m a
-withRecordBiDiLogs' webSocketUrl cb action = do
-  subscriptionStatus <- newTVarIO Nothing  -- Nothing = pending, Just (Left err) = error, Just (Right ()) = success
-
-  withAsync (backgroundAction subscriptionStatus) $ \_ -> do
-    -- Wait for subscription to be confirmed or errored before proceeding
-    result <- atomically $ do
-      status <- readTVar subscriptionStatus
-      case status of
-        Nothing -> retry  -- Still pending
-        Just (Left err) -> pure (Left err)
-        Just (Right ()) -> pure (Right ())
-
-    case result of
-      Left err -> throwIO err
-      Right () -> action
-  where
-    backgroundAction subscriptionStatus = withRunInIO $ \runInIO -> do
-      -- Set a timeout for the entire background action
-      result <- race (liftIO $ threadDelay 10_000_000) $ tryAny $ do
-        runInIO $ logInfoN [i|BiDi: Parsing WebSocket URL: #{webSocketUrl}|]
-        (host, port, path) <- parseWebSocketUrl webSocketUrl
-        runInIO $ logInfoN [i|BiDi: Connecting to #{host}:#{port}#{path}|]
-
-        liftIO $ WS.runClient host port path $ \conn -> do
-          runInIO $ logInfoN "BiDi: Connected successfully"
-          -- Send subscription request for console logs
-          runInIO $ logInfoN "BiDi: Sending subscription request"
-          WS.sendTextData conn $ encode $ object [
-            "id" .= (1 :: Int)
-            , "method" .= ("session.subscribe" :: Text)
-            , "params" .= object [
-                "events" .= (["log.entryAdded"] :: [Text])
-              ]
-            ]
-          runInIO $ logInfoN "BiDi: Sent subscription request, waiting for response..."
-
-          -- Listen for messages
-          forever $ do
-            msg <- WS.receiveData conn
-            runInIO $ logInfoN [i|BiDi: Received message: #{msg}|]
-            -- Try to parse as response first
-            case decode msg of
-              Just response@(BiDiResponse responseType responseId _ _) -> do
-                runInIO $ logInfoN [i|BiDi: Parsed response: #{response}|]
-                if responseType == "success" && responseId == 1
-                  then do
-                    runInIO $ logInfoN "BiDi: Subscription successful!"
-                    atomically $ writeTVar subscriptionStatus (Just (Right ()))
-                  else if responseType == "error" && responseId == 1
-                    then do
-                      let errMsg = "BiDi subscription failed: " ++ show response
-                      runInIO $ logWarnN [i|BiDi: #{errMsg}|]
-                      atomically $ writeTVar subscriptionStatus (Just (Left (toException (userError errMsg))))
-                    else do
-                      runInIO $ logDebugN [i|BiDi: Ignoring response with type #{responseType}, ID #{responseId}|]
-              Nothing -> do
-                runInIO $ logWarnN "BiDi: Failed to parse as BiDiResponse"
-                -- Try to parse as log event
-                case decode msg of
-                  Just (BiDiLogEvent "event" "log.entryAdded" params) ->
-                    case parseBiDiLogEntry params of
-                      Just logEntry -> runInIO (cb logEntry)
-                      Nothing -> pure ()
-                  _ -> pure ()
-
-      case result of
-        Left () -> do -- Timeout occurred
-          runInIO $ logWarnN "BiDi: Connection timed out"
-          atomically $ writeTVar subscriptionStatus (Just (Left (toException (userError "BiDi WebSocket connection timed out"))))
-        Right (Left ex) -> do -- Exception occurred
-          runInIO $ logWarnN [i|BiDi: Exception occurred: #{ex}|]
-          atomically $ writeTVar subscriptionStatus (Just (Left ex))
-        Right (Right ()) -> pure () -- Success (shouldn't reach here normally)
-
-parseWebSocketUrl :: MonadIO m => String -> m (String, Int, String)
-parseWebSocketUrl url = case URI.parseURI url of
-  Just (URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just port), ..})), .. }) ->
-    pure (uriRegName, port, uriPath)
-  _ -> liftIO $ throwIO $ userError [i|Invalid WebSocket URL: #{url}|]

@@ -47,6 +47,7 @@ main = do
               , driverConfigSubDrivers = subDrivers
               , driverConfigLogDir = dir
               , driverConfigJavaFlags = []
+              , driverConfigSeleniumVersion = Just Selenium3
               }
 
   let introduceSelenium4 :: forall ctx. (HasBaseContext ctx, HasNixContext ctx, HasBrowserDependencies ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
@@ -63,6 +64,7 @@ main = do
               , driverConfigSubDrivers = subDrivers
               , driverConfigLogDir = dir
               , driverConfigJavaFlags = []
+              , driverConfigSeleniumVersion = Just Selenium4
               }
 
   let introduceChromedriver :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()

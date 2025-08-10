@@ -10,6 +10,7 @@ module TestLib.Contexts.Session (
   , introduceMobileSession
 
   , pendingOnNonSelenium
+  , pendingOnSelenium3
   ) where
 
 import Control.Exception.Safe
@@ -88,3 +89,9 @@ pendingOnNonSelenium = do
   getContext driverConfig >>= \case
     DriverConfigSeleniumJar {} -> return ()
     _ -> pending
+
+pendingOnSelenium3 :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
+pendingOnSelenium3 = do
+  getContext driverConfig >>= \case
+    DriverConfigSeleniumJar {driverConfigSeleniumVersion=(Just Selenium3)} -> pending
+    _ -> return ()
