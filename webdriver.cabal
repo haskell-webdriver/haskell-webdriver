@@ -142,6 +142,7 @@ test-suite tests
       Spec.ElementRetrieval
       Spec.ElementState
       Spec.Logs
+      Spec.LogsBiDi
       Spec.Navigation
       Spec.ScreenCapture
       Spec.SeleniumSpecific.Mobile

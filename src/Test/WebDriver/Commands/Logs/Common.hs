@@ -58,7 +58,7 @@ instance ToJSON LogEntry where
 
 type LogType = String
 
--- | Indicates a log verbosity level. Used in 'Firefox' and 'Opera' configuration.
+-- | Indicates a log verbosity level.
 data LogLevel =
   LogOff
   | LogSevere

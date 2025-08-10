@@ -1,5 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Test.WebDriver.Commands.Logs.BiDi (
   withRecordBiDiLogs
@@ -11,13 +12,15 @@ import Control.Monad.IO.Unlift
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Aeson.Types (parseEither)
+import qualified Data.List as L
 import Data.String.Interpolate
 import Data.Text (Text)
-import qualified Data.Text as T
+import qualified Network.URI as URI
 import qualified Network.WebSockets as WS
 import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Commands.Logs.Common
 import Test.WebDriver.Types
+import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Exception
 
@@ -66,9 +69,9 @@ parseBiDiLogEntry = \case
 withRecordBiDiLogs' :: MonadUnliftIO m => String -> (LogEntry -> m ()) -> m a -> m a
 withRecordBiDiLogs' webSocketUrl cb action = withAsync backgroundAction $ \_ -> action
   where
-    (host, port, path) = parseWebSocketUrl webSocketUrl
-
     backgroundAction = withRunInIO $ \runInIO -> do
+      (host, port, path) <- parseWebSocketUrl webSocketUrl
+
       liftIO $ WS.runClient host port path $ \conn -> do
         WS.sendTextData conn $ encode $ object [
           "id" .= (1 :: Int)
@@ -84,15 +87,8 @@ withRecordBiDiLogs' webSocketUrl cb action = withAsync backgroundAction $ \_ -> 
                 Nothing -> pure ()
             _ -> pure ()
 
-parseWebSocketUrl :: String -> (String, Int, String)
-parseWebSocketUrl url =
-  let url' = if "ws://" `T.isPrefixOf` T.pack url
-             then drop 5 url
-             else url
-      (hostPort, path) = break (== '/') url'
-      (host, portStr) = break (== ':') hostPort
-      port = case portStr of
-               ':':p -> read p
-               _ -> 80
-      path' = if null path then "/" else path
-  in (host, port, path')
+parseWebSocketUrl :: MonadIO m => String -> m (String, Int, String)
+parseWebSocketUrl url = case URI.parseURI url of
+  Just (URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just port), ..})), .. }) ->
+    pure (uriRegName, port, uriPath)
+  _ -> liftIO $ throwIO $ userError [i|Invalid WebSocket URL: #{url}|]
