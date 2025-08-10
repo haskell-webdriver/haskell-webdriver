@@ -3,6 +3,9 @@ module Test.WebDriver.Commands.Logs (
   getLogs
   , getConsoleLogs
 
+  , withRecordBiDiLogs
+  , withRecordBiDiLogs'
+
   -- * Driver-specific implementations
   , getChromeLogs
   , getFirefoxLogs
@@ -16,6 +19,7 @@ module Test.WebDriver.Commands.Logs (
   ) where
 
 import GHC.Stack
+import Test.WebDriver.Commands.Logs.BiDi
 import Test.WebDriver.Commands.Logs.Chrome
 import Test.WebDriver.Commands.Logs.Common
 import Test.WebDriver.Commands.Logs.Firefox
