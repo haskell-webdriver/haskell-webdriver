@@ -9,6 +9,7 @@ module TestLib.Contexts.Session (
 
   , introduceMobileSession
 
+  , pendingOnSelenium
   , pendingOnNonSelenium
   , pendingOnSelenium3
   , pendingOnFirefox
@@ -98,6 +99,12 @@ pendingOnNonSelenium = do
   getContext driverConfig >>= \case
     DriverConfigSeleniumJar {} -> return ()
     _ -> pending
+
+pendingOnSelenium :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
+pendingOnSelenium = do
+  getContext driverConfig >>= \case
+    DriverConfigSeleniumJar {} -> pending
+    _ -> return ()
 
 pendingOnSelenium3 :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
 pendingOnSelenium3 = do
