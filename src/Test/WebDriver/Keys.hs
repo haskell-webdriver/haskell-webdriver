@@ -173,8 +173,8 @@ pageUp = "\xe00e"
 pause :: Text
 pause = "\xe00b"
 
-return :: Text
-return = "\xe006"
+returnKey :: Text
+returnKey = "\xe006"
 
 right :: Text
 right = "\xe014"

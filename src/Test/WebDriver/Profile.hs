@@ -78,10 +78,9 @@ import Data.Attoparsec.Number (Number(..))
 #endif
 
 
--- | This structure allows you to construct and manipulate profiles in pure code,
--- deferring execution of IO operations until the profile is \"prepared\". This
--- type is shared by both Firefox and Opera profiles; when a distinction
--- must be made, the phantom type parameter is used to differentiate.
+-- | This structure allows you to construct and manipulate profiles. This type
+-- is shared by both Firefox and Opera profiles; when a distinction must be
+-- made, the phantom type parameter is used to differentiate.
 data Profile b = Profile {
   -- | A mapping from relative destination filepaths to source contents.
   profileFiles   :: HM.HashMap FilePath ByteString
@@ -110,8 +109,9 @@ instance FromJSON ProfilePref where
   parseJSON (String s) = return $ PrefString s
   parseJSON (Bool b) = return $ PrefBool b
 #if MIN_VERSION_aeson(0,7,0)
-  parseJSON (Number s) | base10Exponent s >= 0 = return $ PrefInteger (coefficient s * 10^(base10Exponent s))
-                       | otherwise = return $ PrefDouble $ realToFrac s
+  parseJSON (Number s)
+    | base10Exponent s >= 0 = return $ PrefInteger (coefficient s * 10^(base10Exponent s))
+    | otherwise = return $ PrefDouble $ realToFrac s
 #else
   parseJSON (Number (I i)) = return $ PrefInteger i
   parseJSON (Number (D d)) = return $ PrefDouble d
@@ -232,62 +232,61 @@ data Firefox
 
 -- | Default Firefox Profile, used when no profile is supplied.
 defaultFirefoxProfile :: Profile Firefox
-defaultFirefoxProfile =
-  Profile HM.empty
-  $ HM.fromList [("app.update.auto", PrefBool False)
-                ,("app.update.enabled", PrefBool False)
-                ,("browser.startup.page" , PrefInteger 0)
-                ,("browser.download.manager.showWhenStarting", PrefBool False)
-                ,("browser.EULA.override", PrefBool True)
-                ,("browser.EULA.3.accepted", PrefBool True)
-                ,("browser.link.open_external", PrefInteger 2)
-                ,("browser.link.open_newwindow", PrefInteger 2)
-                ,("browser.offline", PrefBool False)
-                ,("browser.safebrowsing.enabled", PrefBool False)
-                ,("browser.search.update", PrefBool False)
-                ,("browser.sessionstore.resume_from_crash", PrefBool False)
-                ,("browser.shell.checkDefaultBrowser", PrefBool False)
-                ,("browser.tabs.warnOnClose", PrefBool False)
-                ,("browser.tabs.warnOnOpen", PrefBool False)
-                ,("browser.startup.page", PrefInteger 0)
-                ,("browser.safebrowsing.malware.enabled", PrefBool False)
-                ,("startup.homepage_welcome_url", PrefString "about:blank")
-                ,("devtools.errorconsole.enabled", PrefBool True)
-                ,("focusmanager.testmode", PrefBool True)
-                ,("dom.disable_open_during_load", PrefBool False)
-                ,("extensions.autoDisableScopes" , PrefInteger 10)
-                ,("extensions.logging.enabled", PrefBool True)
-                ,("extensions.update.enabled", PrefBool False)
-                ,("extensions.update.notifyUser", PrefBool False)
-                ,("network.manage-offline-status", PrefBool False)
-                ,("network.http.max-connections-per-server", PrefInteger 10)
-                ,("network.http.phishy-userpass-length", PrefInteger 255)
-                ,("offline-apps.allow_by_default", PrefBool True)
-                ,("prompts.tab_modal.enabled", PrefBool False)
-                ,("security.fileuri.origin_policy", PrefInteger 3)
-                ,("security.fileuri.strict_origin_policy", PrefBool False)
-                ,("security.warn_entering_secure", PrefBool False)
-                ,("security.warn_submit_insecure", PrefBool False)
-                ,("security.warn_entering_secure.show_once", PrefBool False)
-                ,("security.warn_entering_weak", PrefBool False)
-                ,("security.warn_entering_weak.show_once", PrefBool False)
-                ,("security.warn_leaving_secure", PrefBool False)
-                ,("security.warn_leaving_secure.show_once", PrefBool False)
-                ,("security.warn_submit_insecure", PrefBool False)
-                ,("security.warn_viewing_mixed", PrefBool False)
-                ,("security.warn_viewing_mixed.show_once", PrefBool False)
-                ,("signon.rememberSignons", PrefBool False)
-                ,("toolkit.networkmanager.disable", PrefBool True)
-                ,("toolkit.telemetry.enabled", PrefBool False)
-                ,("toolkit.telemetry.prompted", PrefInteger 2)
-                ,("toolkit.telemetry.rejected", PrefBool True)
-                ,("javascript.options.showInConsole", PrefBool True)
-                ,("browser.dom.window.dump.enabled", PrefBool True)
-                ,("webdriver_accept_untrusted_certs", PrefBool True)
-                ,("webdriver_enable_native_events", native_events)
-                ,("webdriver_assume_untrusted_issuer", PrefBool True)
-                ,("dom.max_script_run_time", PrefInteger 30)
-                ]
+defaultFirefoxProfile = Profile HM.empty $ HM.fromList [
+  ("app.update.auto", PrefBool False)
+  ,("app.update.enabled", PrefBool False)
+  ,("browser.startup.page" , PrefInteger 0)
+  ,("browser.download.manager.showWhenStarting", PrefBool False)
+  ,("browser.EULA.override", PrefBool True)
+  ,("browser.EULA.3.accepted", PrefBool True)
+  ,("browser.link.open_external", PrefInteger 2)
+  ,("browser.link.open_newwindow", PrefInteger 2)
+  ,("browser.offline", PrefBool False)
+  ,("browser.safebrowsing.enabled", PrefBool False)
+  ,("browser.search.update", PrefBool False)
+  ,("browser.sessionstore.resume_from_crash", PrefBool False)
+  ,("browser.shell.checkDefaultBrowser", PrefBool False)
+  ,("browser.tabs.warnOnClose", PrefBool False)
+  ,("browser.tabs.warnOnOpen", PrefBool False)
+  ,("browser.startup.page", PrefInteger 0)
+  ,("browser.safebrowsing.malware.enabled", PrefBool False)
+  ,("startup.homepage_welcome_url", PrefString "about:blank")
+  ,("devtools.errorconsole.enabled", PrefBool True)
+  ,("focusmanager.testmode", PrefBool True)
+  ,("dom.disable_open_during_load", PrefBool False)
+  ,("extensions.autoDisableScopes" , PrefInteger 10)
+  ,("extensions.logging.enabled", PrefBool True)
+  ,("extensions.update.enabled", PrefBool False)
+  ,("extensions.update.notifyUser", PrefBool False)
+  ,("network.manage-offline-status", PrefBool False)
+  ,("network.http.max-connections-per-server", PrefInteger 10)
+  ,("network.http.phishy-userpass-length", PrefInteger 255)
+  ,("offline-apps.allow_by_default", PrefBool True)
+  ,("prompts.tab_modal.enabled", PrefBool False)
+  ,("security.fileuri.origin_policy", PrefInteger 3)
+  ,("security.fileuri.strict_origin_policy", PrefBool False)
+  ,("security.warn_entering_secure", PrefBool False)
+  ,("security.warn_submit_insecure", PrefBool False)
+  ,("security.warn_entering_secure.show_once", PrefBool False)
+  ,("security.warn_entering_weak", PrefBool False)
+  ,("security.warn_entering_weak.show_once", PrefBool False)
+  ,("security.warn_leaving_secure", PrefBool False)
+  ,("security.warn_leaving_secure.show_once", PrefBool False)
+  ,("security.warn_submit_insecure", PrefBool False)
+  ,("security.warn_viewing_mixed", PrefBool False)
+  ,("security.warn_viewing_mixed.show_once", PrefBool False)
+  ,("signon.rememberSignons", PrefBool False)
+  ,("toolkit.networkmanager.disable", PrefBool True)
+  ,("toolkit.telemetry.enabled", PrefBool False)
+  ,("toolkit.telemetry.prompted", PrefInteger 2)
+  ,("toolkit.telemetry.rejected", PrefBool True)
+  ,("javascript.options.showInConsole", PrefBool True)
+  ,("browser.dom.window.dump.enabled", PrefBool True)
+  ,("webdriver_accept_untrusted_certs", PrefBool True)
+  ,("webdriver_enable_native_events", native_events)
+  ,("webdriver_assume_untrusted_issuer", PrefBool True)
+  ,("dom.max_script_run_time", PrefInteger 30)
+  ]
     where
 #ifdef darwin_HOST_OS
       native_events = PrefBool False
@@ -304,8 +303,7 @@ defaultFirefoxProfile =
 -- profile. The on-disk profile's preference will override those found in the
 -- default profile.
 loadFirefoxProfile :: forall m. MonadIO m => FilePath -> m (Profile Firefox)
-loadFirefoxProfile path = do
-  unionProfiles defaultFirefoxProfile <$> (Profile <$> getFiles path <*> getPrefs)
+loadFirefoxProfile path = unionProfiles defaultFirefoxProfile <$> (Profile <$> getFiles path <*> getPrefs)
   where
     userPrefFile = path </> "prefs" <.> "js"
 
@@ -344,11 +342,9 @@ saveFirefoxProfile (firefoxProfileToArchive -> archive) dest = liftIO $ flip ext
   ]
 
 -- | Prepare a Firefox profile for network transmission.
--- Internally, this function constructs a Firefox profile as a zip archive,
--- then base64 encodes the zipped data.
 firefoxProfileToArchive :: Profile Firefox -> Archive
 firefoxProfileToArchive (Profile {profileFiles = files, profilePrefs = prefs}) =
-  foldl addProfileFile baseArchive (HM.toList files)
+  foldl' addProfileFile baseArchive (HM.toList files)
 
   where
     baseArchive = emptyArchive
