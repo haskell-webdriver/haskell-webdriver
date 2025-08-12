@@ -4,9 +4,9 @@
 {-|
 
 Once upon a time, the main browser automation tool was Selenium. Users of
-'Test.WebDriver' had to start a Selenium session themselves, making sure to
+this package had to start a Selenium session themselves, making sure to
 configure it with a browser-specific driver program like @chromedriver@ or
-@geckodriver@, and provide a hostname\/port. Then, this library would connect to
+@geckodriver@, and provide a hostname\/port. Then, this package would connect to
 Selenium and use its wire protocol to control browsers.
 
 Nowadays, there is an official W3C spec (<https://www.w3.org/TR/webdriver1>)
