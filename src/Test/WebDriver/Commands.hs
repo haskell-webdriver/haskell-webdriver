@@ -79,6 +79,10 @@ module Test.WebDriver.Commands (
   -- See https://www.w3.org/TR/webdriver1/#screen-capture.
   , module Test.WebDriver.Commands.ScreenCapture
 
+  -- * Browser logs
+  -- | Retrieve browser console logs and other log types.
+  , module Test.WebDriver.Commands.Logs
+
   -- * Selenium-specific
   -- ** Mobile device support
   , module Test.WebDriver.Commands.SeleniumSpecific.Mobile
@@ -100,6 +104,7 @@ import Test.WebDriver.Commands.DocumentHandling
 import Test.WebDriver.Commands.ElementInteraction
 import Test.WebDriver.Commands.ElementRetrieval
 import Test.WebDriver.Commands.ElementState
+import Test.WebDriver.Commands.Logs
 import Test.WebDriver.Commands.Navigation
 import Test.WebDriver.Commands.ScreenCapture
 import Test.WebDriver.Commands.SeleniumSpecific.HTML5

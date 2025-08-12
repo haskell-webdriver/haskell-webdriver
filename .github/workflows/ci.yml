@@ -155,7 +155,7 @@ jobs:
 
     - name: Test
       run: |
-        stack test --system-ghc --ta="--headless-tests --use-${{ matrix.browser }} --webdriver-chrome-no-sandbox --fixed-root test_runs/run"
+        stack test --system-ghc --ta="--headless-tests --use-${{ matrix.browser }} --webdriver-chrome-no-sandbox --fixed-root test_runs/run --print-failures"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v4

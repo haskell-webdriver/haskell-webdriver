@@ -34,6 +34,7 @@ module Test.WebDriver.Capabilities (
   , capabilitiesUnhandledPromptBehavior
   , capabilitiesGoogChromeOptions
   , capabilitiesMozFirefoxOptions
+  , capabilitiesWebSocketUrl
 
   -- ** Types
   , Timeouts(..)
@@ -157,6 +158,9 @@ data Capabilities = Capabilities {
   , _capabilitiesGoogChromeOptions :: Maybe ChromeOptions
   -- | Firefox options
   , _capabilitiesMozFirefoxOptions :: Maybe FirefoxOptions
+
+  , _capabilitiesWebSocketUrl :: Maybe Bool
+
   } deriving (Eq, Show)
 deriveJSON capabilitiesOptions ''Capabilities
 makeLenses ''Capabilities
@@ -183,4 +187,6 @@ defaultCaps = Capabilities {
 
   , _capabilitiesGoogChromeOptions = Nothing
   , _capabilitiesMozFirefoxOptions = Nothing
+
+  , _capabilitiesWebSocketUrl = Nothing
   }

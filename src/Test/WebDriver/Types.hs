@@ -8,6 +8,7 @@ module Test.WebDriver.Types (
 
   , Driver(..)
   , DriverConfig(..)
+  , SeleniumVersion(..)
 
   -- * SessionState class
   , SessionState(..)
@@ -83,6 +84,11 @@ data Driver = Driver {
   , _driverConfig :: DriverConfig
   }
 
+data SeleniumVersion =
+  Selenium3
+  | Selenium4
+  deriving (Show, Eq)
+
 -- | Configuration for how to launch a given driver.
 data DriverConfig =
   -- | For launching a WebDriver via "java -jar selenium.jar".
@@ -92,8 +98,10 @@ data DriverConfig =
     driverConfigJava :: FilePath
     -- | Extra flags to pass to @java@.
     , driverConfigJavaFlags :: [String]
-    -- | Path to @selenium.jar@ file. We'll try to autodetect if this is Selenium 3 or 4.
+    -- | Path to @selenium.jar@ file.
     , driverConfigSeleniumJar :: FilePath
+    -- | Specify if this is Selenium 3 or 4. If this is not provided, we'll try to autodetect.
+    , driverConfigSeleniumVersion :: Maybe SeleniumVersion
     -- | Drivers to configure Selenium to use.
     , driverConfigSubDrivers :: [DriverConfig]
     -- | Directory in which to place driver logs.
@@ -131,6 +139,7 @@ data Session = Session {
   sessionDriver :: Driver
   , sessionId :: SessionId
   , sessionName :: String
+  , sessionWebSocketUrl :: Maybe String
   }
 instance Show Session where
   show (Session {sessionDriver=(Driver {..}), ..}) = [i|Session<[#{sessionId}] at #{_driverHostname}:#{_driverPort}#{_driverBasePath}>|]

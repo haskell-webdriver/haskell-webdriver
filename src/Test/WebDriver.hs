@@ -83,6 +83,7 @@ import Control.Monad.Catch (MonadMask)
 import Control.Monad
 import Control.Monad.IO.Class
 import Data.String.Interpolate
+import qualified Data.Text as T
 import Test.WebDriver.Util.Aeson (aesonLookup)
 import Control.Monad.Logger
 import Network.HTTP.Client
@@ -136,9 +137,19 @@ startSession' driver caps sessionName = do
 
   if | statusCode (responseStatus response) == 200 -> do
          case A.eitherDecode (responseBody response) of
-           Right x@(A.Object (aesonLookup "value" -> Just (A.Object (aesonLookup "sessionId" -> Just (A.String sessId))))) -> do
-             logInfoN [i|Got capabilities from driver: #{x}|]
-             return $ Session { sessionDriver = driver, sessionId = SessionId sessId, sessionName = sessionName }
+           Right x@(A.Object (aesonLookup "value" -> Just value@(A.Object (aesonLookup "sessionId" -> Just (A.String sessId))))) -> do
+             logInfoN [i|Got capabilities from driver: #{A.encode x}|]
+
+             let maybeWebSocketUrl = case value of
+                   A.Object (aesonLookup "capabilities" -> Just (A.Object (aesonLookup "webSocketUrl" -> Just (A.String url)))) -> Just url
+                   _ -> Nothing
+
+             return $ Session {
+               sessionDriver = driver
+               , sessionId = SessionId sessId
+               , sessionName = sessionName
+               , sessionWebSocketUrl = T.unpack <$> maybeWebSocketUrl
+               }
            _ -> throwIO $ SessionCreationResponseHadNoSessionId response
      | otherwise -> throwIO SessionNameAlreadyExists
 

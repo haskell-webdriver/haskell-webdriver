@@ -9,7 +9,10 @@ module TestLib.Contexts.Session (
 
   , introduceMobileSession
 
+  , pendingOnSelenium
   , pendingOnNonSelenium
+  , pendingOnSelenium3
+  , pendingOnFirefox
   ) where
 
 import Control.Exception.Safe
@@ -35,7 +38,15 @@ introduceSession :: forall m context. (
   MonadUnliftIO m, MonadMask m
   , HasBrowserDependencies context, HasWebDriverContext context, HasDriverConfig context, HasCommandLineOptions context UserOptions
   ) => SpecFree (LabelValue "session" Session :> context) m () -> SpecFree context m ()
-introduceSession = introduceSession' return
+introduceSession = introduceSession' enableBiDi
+  where
+    enableBiDi :: Capabilities -> ExampleT context m Capabilities
+    enableBiDi x = do
+      getContext driverConfig >>= \case
+        DriverConfigSeleniumJar { driverConfigSeleniumVersion=(Just Selenium3) } -> return x
+        _ -> x
+             & set capabilitiesWebSocketUrl (Just True)
+             & return
 
 introduceSession' :: forall m context. (
   MonadUnliftIO m, MonadMask m
@@ -88,3 +99,22 @@ pendingOnNonSelenium = do
   getContext driverConfig >>= \case
     DriverConfigSeleniumJar {} -> return ()
     _ -> pending
+
+pendingOnSelenium :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
+pendingOnSelenium = do
+  getContext driverConfig >>= \case
+    DriverConfigSeleniumJar {} -> pending
+    _ -> return ()
+
+pendingOnSelenium3 :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
+pendingOnSelenium3 = do
+  getContext driverConfig >>= \case
+    DriverConfigSeleniumJar {driverConfigSeleniumVersion=(Just Selenium3)} -> pending
+    _ -> return ()
+
+pendingOnFirefox :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
+pendingOnFirefox = do
+  getContext driverConfig >>= \case
+    DriverConfigGeckodriver {} -> pending
+    DriverConfigSeleniumJar {driverConfigSubDrivers=[DriverConfigGeckodriver {}]} -> pending
+    _ -> return ()

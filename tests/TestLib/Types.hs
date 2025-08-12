@@ -101,13 +101,6 @@ session = Label
 
 type HasSession context = HasLabel context "session" Session
 
--- * SeleniumVersion
-
-data SeleniumVersion =
-  Selenium3
-  | Selenium4
-  deriving (Show, Eq)
-
 -- * Instances
 
 instance (HasSession context, MonadIO m) => SessionState (ExampleT context m) where
