@@ -69,7 +69,7 @@ expectAny p xs = expect . F.or =<< mapM p (F.toList xs)
 expectAll :: (F.Foldable f, MonadIO m) => (a -> m Bool) -> f a -> m ()
 expectAll p xs = expect . F.and =<< mapM p (F.toList xs)
 
--- | 'expect' the given 'Element' to not be stale and returns it
+-- | 'expect' the given 'Element' to not be stale and return it.
 expectNotStale :: (HasCallStack, WebDriver wd) => Element -> wd Element
 expectNotStale e = catchFailedCommand StaleElementReference $ do
     _ <- isEnabled e -- Any command will force a staleness check
@@ -79,7 +79,7 @@ expectNotStale e = catchFailedCommand StaleElementReference $ do
 expectAlertOpen :: (HasCallStack, WebDriver wd) => wd Text
 expectAlertOpen = catchFailedCommand NoSuchAlert getAlertText
 
--- | Catches any `FailedCommand` exceptions with the given `FailedCommandType` and rethrows as 'ExpectFailed'
+-- | Catches any `FailedCommand` exceptions with the given `FailedCommandType` and rethrows as 'ExpectFailed'.
 catchFailedCommand :: (MonadUnliftIO m) => FailedCommandError -> m a -> m a
 catchFailedCommand needle m = m `catch` handler
   where
