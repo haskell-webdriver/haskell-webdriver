@@ -65,7 +65,7 @@ withRecordLogsViaBiDi cb action = do
 -- | Connect to WebSocket URL and subscribe to log events using the W3C BiDi protocol; see
 -- <https://w3c.github.io/webdriver-bidi/>.
 withRecordLogsViaBiDi' :: (MonadUnliftIO m, MonadLogger m) => URI.URI -> (LogEntry -> m ()) -> m a -> m a
-withRecordLogsViaBiDi' (URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) cb action = do
+withRecordLogsViaBiDi' uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) cb action = do
   subscriptionStatus <- newTVarIO Nothing
 
   withAsync (backgroundAction subscriptionStatus) $ \_ -> do
@@ -137,7 +137,7 @@ withRecordLogsViaBiDi' (URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(read
 
       case result of
         Left ex -> do
-          runInIO $ logErrorN [i|BiDi: Exception occurred: #{ex}|]
+          runInIO $ logErrorN [i|BiDi: got exception (URI #{uri}): #{ex}|]
           atomically $ writeTVar subscriptionStatus (Just (Left ex))
         Right () -> pure ()
 withRecordLogsViaBiDi' uri _cb _action =
