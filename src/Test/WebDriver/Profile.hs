@@ -344,7 +344,7 @@ saveFirefoxProfile (firefoxProfileToArchive -> archive) dest = liftIO $ flip ext
 -- | Prepare a Firefox profile for network transmission.
 firefoxProfileToArchive :: Profile Firefox -> Archive
 firefoxProfileToArchive (Profile {profileFiles = files, profilePrefs = prefs}) =
-  foldl' addProfileFile baseArchive (HM.toList files)
+  foldl addProfileFile baseArchive (HM.toList files)
 
   where
     baseArchive = emptyArchive
