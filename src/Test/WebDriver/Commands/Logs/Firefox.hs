@@ -15,21 +15,7 @@ import UnliftIO.Exception
 
 
 getFirefoxLogs :: (HasCallStack, WebDriver wd) => LogType -> wd [LogEntry]
-getFirefoxLogs logType =
-  tryAny (getFirefoxLogsBiDi logType) >>= \case
-    Right logs -> return logs
-    Left (_ :: SomeException) -> getLegacyFirefoxLogs logType
-
--- | Attempt to get Firefox logs via WebDriver BiDi (future support)
-getFirefoxLogsBiDi :: (HasCallStack, WebDriver wd) => LogType -> wd [LogEntry]
-getFirefoxLogsBiDi _logType =
-  -- WebDriver BiDi support for logs is still experimental in Firefox
-  -- This would be the future implementation when Firefox supports log.entryAdded
-  doSessCommand methodGet "/log/entries" Null >>= parseFirefoxLogs
-
-parseFirefoxLogs :: WebDriver wd => Value -> wd [LogEntry]
-parseFirefoxLogs (Array logs) = mapM fromJSON' (F.toList logs)
-parseFirefoxLogs _ = return []
+getFirefoxLogs logType = getLegacyFirefoxLogs logType
 
 -- | Try legacy Firefox log endpoints (typically not supported)
 getLegacyFirefoxLogs :: (HasCallStack, WebDriver wd) => LogType -> wd [LogEntry]

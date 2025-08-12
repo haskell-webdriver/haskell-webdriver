@@ -4,8 +4,8 @@
 {-# LANGUAGE ViewPatterns #-}
 
 module Test.WebDriver.Commands.Logs.BiDi (
-  withRecordBiDiLogs
-  , withRecordBiDiLogs'
+  withRecordLogsViaBiDi
+  , withRecordLogsViaBiDi'
   ) where
 
 import Control.Concurrent.STM (retry)
@@ -46,19 +46,26 @@ data BiDiResponse = BiDiResponse {
   } deriving Show
 deriveFromJSON toCamel3 ''BiDiResponse
 
-withRecordBiDiLogs :: (WebDriver m, MonadLogger m) => (LogEntry -> m ()) -> m a -> m a
-withRecordBiDiLogs cb action = do
+-- | Wrapper around 'withRecordLogsViaBiDi'' which uses the WebSocket URL from
+-- the current 'Session'. You must make sure to pass '_capabilitiesWebSocketUrl'
+-- = @Just True@ to enable this. This will not work with Selenium 3.
+withRecordLogsViaBiDi :: (WebDriver m, MonadLogger m) => (LogEntry -> m ()) -> m a -> m a
+withRecordLogsViaBiDi cb action = do
   Session {..} <- getSession
   webSocketUrl <- case sessionWebSocketUrl of
     Nothing -> throwIO $ userError [i|Session wasn't configured with a BiDi WebSocket URL when trying to record logs. Make sure to enable _capabilitiesWebSocketUrl.|]
     Just x -> pure x
 
-  withRecordBiDiLogs' webSocketUrl cb action
+  uri <- case URI.parseURI webSocketUrl of
+    Just x -> pure x
+    Nothing -> throwIO $ userError [i|Couldn't parse WebSocket URL: #{webSocketUrl}|]
+
+  withRecordLogsViaBiDi' uri cb action
 
 -- | Connect to WebSocket URL and subscribe to log events using the W3C BiDi protocol; see
--- <https://w3c.github.io/webdriver-bidi/>
-withRecordBiDiLogs' :: (MonadUnliftIO m, MonadLogger m) => String -> (LogEntry -> m ()) -> m a -> m a
-withRecordBiDiLogs' webSocketUrl cb action = do
+-- <https://w3c.github.io/webdriver-bidi/>.
+withRecordLogsViaBiDi' :: (MonadUnliftIO m, MonadLogger m) => URI.URI -> (LogEntry -> m ()) -> m a -> m a
+withRecordLogsViaBiDi' (URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) cb action = do
   subscriptionStatus <- newTVarIO Nothing
 
   withAsync (backgroundAction subscriptionStatus) $ \_ -> do
@@ -77,14 +84,9 @@ withRecordBiDiLogs' webSocketUrl cb action = do
   where
     backgroundAction subscriptionStatus = withRunInIO $ \runInIO -> do
       result <- tryAny $ do
-        runInIO $ logInfoN [i|BiDi: Parsing WebSocket URL: #{webSocketUrl}|]
-        (host, port, path) <- case URI.parseURI webSocketUrl of
-          Just (URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just port), ..})), .. }) ->
-            pure (uriRegName, port, uriPath)
-          _ -> liftIO $ throwIO $ userError [i|Invalid WebSocket URL: #{webSocketUrl}|]
-        runInIO $ logDebugN [i|BiDi: Connecting to #{host}:#{port}#{path}|]
+        runInIO $ logDebugN [i|BiDi: Connecting to #{uriRegName}:#{port}#{uriPath}|]
 
-        liftIO $ WS.runClient host port path $ \conn -> do
+        liftIO $ WS.runClient uriRegName port uriPath $ \conn -> do
           runInIO $ logInfoN "BiDi: Connected successfully"
 
           -- Send subscription request for console logs
@@ -138,6 +140,8 @@ withRecordBiDiLogs' webSocketUrl cb action = do
           runInIO $ logErrorN [i|BiDi: Exception occurred: #{ex}|]
           atomically $ writeTVar subscriptionStatus (Just (Left ex))
         Right () -> pure ()
+withRecordLogsViaBiDi' uri _cb _action =
+  throwIO $ userError [i|WebSocket URL didn't contain an authority: #{uri}|]
 
 -- | Convert BiDi log parameters to LogEntry
 parseBiDiLogEntry :: Value -> Maybe LogEntry

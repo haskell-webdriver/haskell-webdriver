@@ -11,6 +11,7 @@ module TestLib.Contexts.Session (
 
   , pendingOnNonSelenium
   , pendingOnSelenium3
+  , pendingOnFirefox
   ) where
 
 import Control.Exception.Safe
@@ -102,4 +103,11 @@ pendingOnSelenium3 :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m (
 pendingOnSelenium3 = do
   getContext driverConfig >>= \case
     DriverConfigSeleniumJar {driverConfigSeleniumVersion=(Just Selenium3)} -> pending
+    _ -> return ()
+
+pendingOnFirefox :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
+pendingOnFirefox = do
+  getContext driverConfig >>= \case
+    DriverConfigGeckodriver {} -> pending
+    DriverConfigSeleniumJar {driverConfigSubDrivers=[DriverConfigGeckodriver {}]} -> pending
     _ -> return ()

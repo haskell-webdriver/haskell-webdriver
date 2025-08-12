@@ -81,7 +81,6 @@ module Test.WebDriver.Commands (
 
   -- * Browser logs
   -- | Retrieve browser console logs and other log types.
-  -- Supports Chrome (via CDP) and Firefox (via WebDriver BiDi when available).
   , module Test.WebDriver.Commands.Logs
 
   -- * Selenium-specific
