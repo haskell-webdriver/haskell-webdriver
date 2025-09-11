@@ -17,6 +17,8 @@ description: |
   * <https://github.com/mozilla/geckodriver>
   * <https://developer.chrome.com/docs/chromedriver>
 
+  See the announcement blog post [here](https://thomasjm.github.io/posts/webdriver-13) to learn about the changes in @0.13.0.0@.
+
 tested-with:
 - GHC == 9.0.2
 - GHC == 9.2.8

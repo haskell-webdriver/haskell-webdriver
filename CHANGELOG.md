@@ -10,6 +10,11 @@
 * Enhanced browser profile handling with in-memory zip archiving instead of on-disk preparation.
 * Added comprehensive test suite with matrix testing across Selenium versions and browsers.
 * Improved compatibility with modern WebDriver implementations.
+* Added browser log retrieval functions: [withRecordLogsViaBiDi](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:withRecordLogsViaBiDi) and [getLogs](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:getLogs).
+* Now you can manage the script, page load, and implicit wait timeouts in a single operation with [getTimeouts](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:getTimeouts)/[setTimeouts](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:setTimeouts).
+* The [getWindowSize](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:getWindowSize)/[setWindowSize](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:setWindowSize)/[getWindowPos](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:getWindowPos)/[setWindowPos](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:setWindowPos) functions have been replaced with [getWindowRect](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:getWindowRect)/[setWindowRect](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:setWindowRect).
+* [deleteCookieByName](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:deleteCookieByName) has been renamed to [deleteCookie](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:deleteCookie) and the pointless old [deleteCookie](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:deleteCookie) removed.
+* [screenshotBase64](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:screenshotBase64) has been removed and [screenshotElement](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:screenshotElement) added.
 * Deprecated function `elemInfo` removed.
 * `deleteVisibleCookies` renamed to `deleteCookies`.
 
@@ -124,15 +129,15 @@ Of course you can still use `WDConfig`, as it is now an instance of `WebDriverCo
 
 ### Reworked custom HTTP headers interface
 * Support for custom request headers was added rather hastily, resulting in several functions having explicit `RequestHeaders` parameters. The interface has been reworked now so that custom request headers are stored inside `WDSession` and explicit `RequestHeaders` parameters have been removed.
-* There's also now a distinction in configuration between `wdAuthHeaders` which are used only during initial session creation, and `wdRequestHeaders`, which are used with all other HTTP requests
-* Two new utility functions were added to make working with custom HTTP headers easier: `withRequestHeaders` and `withAuthHeaders`
+* There's also now a distinction in configuration between `wdAuthHeaders` which are used only during initial session creation, and `wdRequestHeaders`, which are used with all other HTTP requests.
+* Two new utility functions were added to make working with custom HTTP headers easier: `withRequestHeaders` and `withAuthHeaders`.
 
 ### Clean-up and dependency changes
 * Removed a whole mess of unusued import and deprecation warnings when building with GHC 7.10
 * We now enforce an attoparsec lower bound of 0.10 (there was no lower bound before)
 * The unnecessary dependency on mtl is now removed.
-* Added some monad transformer instances for WebDriver and WDSessionState that were mysteriously missing: strict WriterT, ReaderT, ListT
-* data-default dependency was changed to data-default-class
+* Added some monad transformer instances for WebDriver and WDSessionState that were mysteriously missing: strict WriterT, ReaderT, ListT.
+* data-default dependency was changed to data-default-class.
 
 ## 0.7
 
@@ -142,8 +147,8 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 
 ### Top-level API (exposed by`Test.WebDriver` module)
   * `withSession` is now overloaded over the new constraint alias `WDSessionStateControl` ([see below](#typeclass-api)). This means that it can be used with monad transformer stacks over `WD` without any lifting required.
-  * Added several new `WDConfig` convenience functions: `modifyCaps`, `useBrowser`, `useVersion`, `usePlatform`, `useProxy`; these functions are overloaded over the new `HasCapabilities` constraint alias ([see below](#typeclass-api))
-  * Reworked and improved session history API
+  * Added several new `WDConfig` convenience functions: `modifyCaps`, `useBrowser`, `useVersion`, `usePlatform`, `useProxy`; these functions are overloaded over the new `HasCapabilities` constraint alias ([see below](#typeclass-api)).
+  * Reworked and improved session history API.
     * Added a `SessionHistory` record type to replace the old `(Request, Response ByteString)` type. The new type has the same data as the previous tuple, but additionally records the number of attempted HTTP retries, and instead of `Response ByteString` uses `Either SomeException (Response ByteString)` so that HTTP request errors can be logged.
     * Removed `wdKeepSessHist` field from `WDConfig` and replaced it with `wdHistoryConfig`, which uses a new `SessionHistoryConfig` type.
 
@@ -164,7 +169,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
       ```
 
 ### Implicit waits API (`Test.WebDriver.Commands.Wait`)
-* Added functions for checking some expected conditions in explicit waits: `expectNotStale`, `expectAlertOpen`, `catchFailedCommand`
+* Added functions for checking some expected conditions in explicit waits: `expectNotStale`, `expectAlertOpen`, `catchFailedCommand`.
 
 ### Typeclass API
 * `WDSessionState` is now a superclass of `Monad` and `Applicative` instead of `MonadBaseControl IO`. This makes the class significantly more flexible in how it can be used, as it no longer requires `IO` as a base monad.
@@ -195,15 +200,15 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 
 ### Minor API changes (not exposed to `Test.WebDriver` module)
 * `Test.WebDriver.Session` changes
-  * new function `mostRecentHistory` added
-  * `lastHTTPRequest` renamed to `mostRecentHTTPRequest` (for consistency)
-  * `mkSession` moved from `Test.WebDriver.Config` to `Test.WebDriver.Session`
+  * new function `mostRecentHistory` added.
+  * `lastHTTPRequest` renamed to `mostRecentHTTPRequest` (for consistency).
+  * `mkSession` moved from `Test.WebDriver.Config` to `Test.WebDriver.Session`.
 * `Test.WebDriver.Internal` changes
   * `sendHTTPRequest` now returns `(Either SomeException (Response ByteString))` and catches any exceptions that occur during the request. When using default configuration, the exceptions are also saved in 'wdSessHist'.
   * `Test.WebDriver.Internal` no longer defines and exports exception types. All exception defined here previously have been moved to an unexposed `Test.WebDriver.Exceptions.Internal` module. These types are still exported in the usual places.
 
 ### Dependencies
-* Now supports http-types up to 0.9
+* Now supports http-types up to 0.9.
 
 ## 0.6.3.1
 * Fixed an issue with aeson 0.10 support.
@@ -241,10 +246,10 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 ## 0.6
 * Rather than WDSession serving dual roles as configuration and state, its functionality has been split into 2 respective types: WDConfig and WDSession.
 * runSession now takes a WDConfig instead of WDSession and Capabilities parameters.
-* runSession no longer closes its session on successful completion; use finallyClose or closeOnException for this behavior
-* The old Test.WebDriver.Classes module has been split into Test.WebDriver.Session and Test.WebDriver.Class
-* SessionState typeclass renamed to WDSessionState
-* We now use the http-client package instead of HTTP. This is reflected in the addition of Manager fields in both WDConfig and WDSession
+* runSession no longer closes its session on successful completion; use finallyClose or closeOnException for this behavior.
+* The old Test.WebDriver.Classes module has been split into Test.WebDriver.Session and Test.WebDriver.Class.
+* SessionState typeclass renamed to WDSessionState.
+* We now use the http-client package instead of HTTP. This is reflected in the addition of Manager fields in both WDConfig and WDSession.
 
 ## 0.5.5
 * Added optional HTTP history tracking for debugging purposes.
@@ -254,50 +259,50 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 * Relaxed dependencies on mtl, network and scientific.
 
 ## 0.5.3.3
-* Relaxed text dependency up to 1.2
+* Relaxed text dependency up to 1.2.
 
 ## 0.5.3.2
 ### bug fixes
-* fixed remaining compilation problems with aeson. now supports aeson >= 0.6.2.0 && < 0.8
+* fixed remaining compilation problems with aeson. now supports aeson >= 0.6.2.0 && < 0.8.
 * now depends on directory-tree instead of filesystem-trees. this fixes several problems with firefox/chrome profile support.
 
 ## 0.5.3.1
 ### bug fixes
-* fixed compilation error with aeson 0.7 and greater
+* fixed compilation error with aeson 0.7 and greater.
 
 ## 0.5.3
 
 ### new features
-* SessionNotCreated constructor added to FailedCommandType
-* new command deleteCookieByName added
+* SessionNotCreated constructor added to FailedCommandType.
+* new command deleteCookieByName added.
 
 ###b ug fixes
-* asyncJS now properly distinguishes between a null return and a script timeout
-* fixed a change in waitWhile causing the opposite of expected behavior
+* asyncJS now properly distinguishes between a null return and a script timeout.
+* fixed a change in waitWhile causing the opposite of expected behavior.
 
 ## 0.5.2
 ### API changes
-* added many new Internet Explorer capabilities
-* added additionalCaps to Capabilities, which allows support for non-standard capabilities
-* Browser type now supports non-standard browsers via the new Browser constructor
-* added support for the new unexpectedAlertBehaviour capability
+* added many new Internet Explorer capabilities.
+* added additionalCaps to Capabilities, which allows support for non-standard capabilities.
+* Browser type now supports non-standard browsers via the new Browser constructor.
+* added support for the new unexpectedAlertBehaviour capability.
 
 ### new features
-* new command getApplicationCacheStatus supported
-* error reporting for unknown commands now slightly improved
+* new command getApplicationCacheStatus supported.
+* error reporting for unknown commands now slightly improved.
 
 ### bug fixes
-* internal request URIs are now properly percent-encoded
-* improved handling of browser-specific capabilities
-* fixed incompatability with new session creation protocol changes introduced in selenium 2.35
-* updated to work with Aeson 0.6.2 and onward
+* internal request URIs are now properly percent-encoded.
+* improved handling of browser-specific capabilities.
+* fixed incompatability with new session creation protocol changes introduced in selenium 2.35.
+* updated to work with Aeson 0.6.2 and onward.
 
 ## hs-webdriver 0.5.1
 ### API changes
 * Test.WebDriver.Internal.FailedCommandInfo now stores screenshots as lazy bytestrings
 * Test.WebDriver.Common.Profile now stores PreparedProfile as a lazy bytestring
 * Test.WebDriver.Chrome.Extension now stores ChromeExtension as a lazy bytestring
-* The LogPref type has been renamed to LogLevel to reflect its use within the new log interface
+* The LogPref type has been renamed to LogLevel to reflect its use within the new log interface.
 
 ### new features
 * a new log interface as specified by the webdriver standard. This includes the functions getLogs and getLogTypes, and the types LogType and LogEntry.
@@ -327,7 +332,7 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 
 ### bug fixes
 * fixed a typo in the export list of Firefox.Profile; deleteFile is now correctly exported instead of removeFile from System.Directory
-* fixed an error in the JSON representation of MouseButton
+* fixed an error in the JSON representation of MouseButton.
 
 ### new features
 * A new module, Test.WebDriver.Commands.Internal, which exports some low-level functions used to implement the high-level interface. This makes it possible for library users to extend hs-webdriver with nonstandard or unimplemented features.
@@ -348,20 +353,20 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 * It's now possible to add entire directories to a profile in pure code using addFile and addExtension.
 * new functions in Common.Profile: unionProfiles, onProfileFiles, onProfilePrefs
 * new function in Commands.Wait: onTimeout
-* the WD monad now has a MonadCatchIO instance, as an alternative to lifted-base for exception handling
+* the WD monad now has a MonadCatchIO instance, as an alternative to lifted-base for exception handling.
 
 
 ## hs-webdriver 0.3.2.1
 
 ### bug fixes
-* Removed a bug in waitWhile' that resulted in an infinite loop
-* Fixed the incorrect representation of JSON profiles
-* Fixed relative path issues when zipping profile directories from disk
+* Removed a bug in waitWhile' that resulted in an infinite loop.
+* Fixed the incorrect representation of JSON profiles.
+* Fixed relative path issues when zipping profile directories from disk.
 
 ## hs-webdriver 0.3.2
 
 ### bug fixes
-* Changed the constraint on filesystrem-trees to avoid a broken version
+* Changed the constraint on filesystrem-trees to avoid a broken version.
 * Added the missing exports for addFile and deleteFile in Common.Profile and Firefox.Profile
 
 ### new features
@@ -412,11 +417,11 @@ to work as expected, but prepareTempProfile should.
 ### API changes
 * FailedCommandInfo changed so that it stores a WDSession rather than just a Maybe SessionId, thus providing server host and port information as well as the session ID.
 * As a result, mkFailedCommandInfo is now String -> WD FailedCommandInfo, since it requires access to the WDSession state.
-* HTML5StorageType changed to the more accurate WebStorageType
+* HTML5StorageType changed to the more accurate WebStorageType.
 
 ### new features
-* general documentation improvements
-* the uploadFile, uploadRawFile, and uploadZipEntry functions, which support uploading file contents to the remote server
+* general documentation improvements.
+* the uploadFile, uploadRawFile, and uploadZipEntry functions, which support uploading file contents to the remote server.
 
 ## hs-webdriver 0.1
 
@@ -424,8 +429,8 @@ to work as expected, but prepareTempProfile should.
 * getWindowSize, setWindowSize, getWindowPos, and setWindowPos have all been deprived of their WindowHandle argument. This is due to the fact that using unfocused windows with those commands causes undefined behavior.
 
 ### new features
-* the mkCookie function for convenient cookie construction
-* the focusFrame function for focusing to individual frames
-* the setPageLoadTimeout function
-* the maximize function for maximizing windows
-* support for HTML 5 web storage
+* the mkCookie function for convenient cookie construction.
+* the focusFrame function for focusing to individual frames.
+* the setPageLoadTimeout function.
+* the maximize function for maximizing windows.
+* support for HTML 5 web storage.
