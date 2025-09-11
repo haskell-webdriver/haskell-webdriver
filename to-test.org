@@ -50,7 +50,6 @@
 ** DONE isDisplayed
 ** tagName
 ** activeElem
-** elemInfo
 * Element equality
 ** (<==>)
 ** (</=>)

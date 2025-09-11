@@ -1,7 +1,16 @@
 # Change Log
 
 ## 0.13.0.0
-* Deprecated function `elemInfo` removed
+* Added support for Selenium 3 and 4 with W3C WebDriver protocol compatibility.
+* Dropped legacy Selenium JSON wire protocol support.
+* Introduced `WebDriverContext` for simplified process lifecycle management.
+* Added `startSession` function to launch WebDriver sessions with automatic process handling.
+* Replaced `WebDriver` class with `WebDriverBase` and switched from `MonadBaseControl IO` to `MonadUnliftIO`.
+* Simplified module hierarchy with centralized imports under `Test.WebDriver`.
+* Enhanced browser profile handling with in-memory zip archiving instead of on-disk preparation.
+* Added comprehensive test suite with matrix testing across Selenium versions and browsers.
+* Improved compatibility with modern WebDriver implementations.
+* Deprecated function `elemInfo` removed.
 * `deleteVisibleCookies` renamed to `deleteCookies`.
 
 ## 0.12.0.1
@@ -34,14 +43,14 @@
 ## 0.9
 
 ### Breaking API changes
-* Changed the type of the `cookExpiry` field of `Cookie` from `Maybe Integer` to `Maybe Double`. This fixes parsing issues with some Selenium server implementations
+* Changed the type of the `cookExpiry` field of `Cookie` from `Maybe Integer` to `Maybe Double`. This fixes parsing issues with some Selenium server implementations.
 * Changed `elemPos` and `elemSize` to return `Float` pairs instead of `Int` pairs. This fixes parsing issues with some Selemium server implementations.
 * Removed the `Element` argument from the `sendRawKeys` function. This argument is not used in modern Selenium versions.
 
 ### New API features
 * Added a `LogDebug` constructor to the `LogLevel` type.
 * Added `ffAccpetInsecureCerts` capability for `Firefox` geckodriver.
-* The constructor for `ExpectFailed` is now exported so that it can be caught properly by exception handlers
+* The constructor for `ExpectFailed` is now exported so that it can be caught properly by exception handlers.
 * Added GHC callstack support. `BadJSON` exceptions are now caught and rethrown with `error` calls to improve stack traces.
 
 ### W3C standard compatibility fixes
@@ -52,10 +61,10 @@
 * Fixed an error with some versions of chromedriver when using `closeWindow`
 
 ## 0.8.5
-* Added support for experimental Chrome options that are not part of the API
-* Added a Phantomjs constructor for the Browser type
-* Changed the type of StackFrame line numbers from Word to Int to avoid parse errors in newer Aeson versions (sometimes the server returns negative line numbers)
-* Fixed support for http-client > 0.5
+* Added support for experimental Chrome options that are not part of the API.
+* Added a Phantomjs constructor for the Browser type.
+* Changed the type of StackFrame line numbers from Word to Int to avoid parse errors in newer Aeson versions (sometimes the server returns negative line numbers).
+* Fixed support for http-client > 0.5.
 
 ## 0.8.4
 * Added a new `Test.WebDriver.Common.Keys` module with named constants for use with `sendKeys`
@@ -70,7 +79,7 @@
 * Added new `WebDriver` instance for `ExceptT`.
 
 ## 0.8.1
-* Previously internal convenience functions `noReturn` and `ignoreReturn` are now exported in Test.WebDriver.JSON
+* Previously internal convenience functions `noReturn` and `ignoreReturn` are now exported in Test.WebDriver.JSON.
 * `elemInfo` is now deprecated due to it being phased out in the Marionette (Firefox) driver. It will likely be removed once Selenium 4 is released.
 * Fixed an issue causing PAC settings to not work.
 
@@ -78,11 +87,11 @@
 * Quick fix to parse "unsupported command" errors when using Marionette driver (Selenium + Marionette has nonstandard behavior when reporting that error type)
 
 ## 0.8.0.3
-* Fixed build errors for GHC < 7.10. webdriver now builds with GHC stable releases 7.4.2, 7.6.3, and 7.8.4
+* Fixed build errors for GHC < 7.10. webdriver now builds with GHC stable releases 7.4.2, 7.6.3, and 7.8.4.
 * Fixed support for bytestring 0.9.*
 
 ## 0.8.0.2
-* Fixed issue introduced in 0.8 that caused build failure when using aeson < 0.10
+* Fixed issue introduced in 0.8 that caused build failure when using aeson < 0.10.
 
 ## 0.8.0.1
 * findElems and and findElemsFrom were accidentally changed to return a single Element in the last release. This has been fixed.
