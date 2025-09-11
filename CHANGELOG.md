@@ -17,28 +17,28 @@
 * Switch from `data-default-class` to `data-default` to address https://github.com/commercialhaskell/stackage/issues/7545. This is weirdly complicated: it looks like versions of `data-default` from `0.5.2` to `0.8.0.0` may pull in unnecessary (to us) `data-default-instances-*` dependencies. However, what we've done here should build with all versions, so we won't worry about it. At the next breaking change I'd like to remove `data-default` entirely.
 
 ## 0.12.0.0
-* Support aeson-2.2.0
+* Support aeson-2.2.0.
 
 ## 0.11.0.0
-* Support GHC 9.6
-* Fix a link to the wrong GitHub branch in package description
-* Remove instances for deprecated ListT and ErrorT
+* Support GHC 9.6.
+* Fix a link to the wrong GitHub branch in package description.
+* Remove instances for deprecated ListT and ErrorT.
 
 ## 0.10.0.1
-* Update links to reflect this package's new home at https://github.com/haskell-webdriver/haskell-webdriver/
+* Update links to reflect this package's new home at https://github.com/haskell-webdriver/haskell-webdriver/.
 
 ## 0.10.0.0
-* Add Aeson 2 compatibility to support GHC 9.0 and 9.2
-* Derive MonadMask instance for the WD monad
-* Fix parameter name in the `focusWindow` function
-* Fix Cookie ToJSON instance
-* Convert a couple noReturn calls to ignoreReturn to avoid a crash
-* Switch to hpack
-* Switch to GitHub Actions CI
-* Remove cabal flags and shorten extra-source-files
+* Add Aeson 2 compatibility to support GHC 9.0 and 9.2.
+* Derive MonadMask instance for the WD monad.
+* Fix parameter name in the `focusWindow` function.
+* Fix Cookie ToJSON instance.
+* Convert a couple noReturn calls to ignoreReturn to avoid a crash.
+* Switch to hpack.
+* Switch to GitHub Actions CI.
+* Remove cabal flags and shorten extra-source-files.
 
 ## 0.9.0.1
-* Fixed build errors when building against aeson-1.4.3.0
+* Fixed build errors when building against aeson-1.4.3.0.
 
 ## 0.9
 
@@ -54,11 +54,11 @@
 * Added GHC callstack support. `BadJSON` exceptions are now caught and rethrown with `error` calls to improve stack traces.
 
 ### W3C standard compatibility fixes
-* Fixed `ToJSON Element` instance so that it accepts both old OSS and new W3C element format (fixes compatibility issue with Selenium 3+ versions)
-* Changed the `maximize` API call to use POST instead of GET
+* Fixed `ToJSON Element` instance so that it accepts both old OSS and new W3C element format (fixes compatibility issue with Selenium 3+ versions).
+* Changed the `maximize` API call to use POST instead of GET.
 
 ### Other Selenium compatibility fixes
-* Fixed an error with some versions of chromedriver when using `closeWindow`
+* Fixed an error with some versions of chromedriver when using `closeWindow`.
 
 ## 0.8.5
 * Added support for experimental Chrome options that are not part of the API.
@@ -68,8 +68,8 @@
 
 ## 0.8.4
 * Added a new `Test.WebDriver.Common.Keys` module with named constants for use with `sendKeys`
-* Updated old URLs in documentation
-* Introduced support for http-client 5.0
+* Updated old URLs in documentation.
+* Introduced support for http-client 5.0.
 
 ## 0.8.3
 * Removed most upper bounds on dependencies in our cabal file to avoid stackage version madness.
@@ -84,7 +84,7 @@
 * Fixed an issue causing PAC settings to not work.
 
 ## 0.8.0.4
-* Quick fix to parse "unsupported command" errors when using Marionette driver (Selenium + Marionette has nonstandard behavior when reporting that error type)
+* Quick fix to parse "unsupported command" errors when using Marionette driver (Selenium + Marionette has nonstandard behavior when reporting that error type).
 
 ## 0.8.0.3
 * Fixed build errors for GHC < 7.10. webdriver now builds with GHC stable releases 7.4.2, 7.6.3, and 7.8.4.
@@ -206,34 +206,34 @@ Basic web test code only has to contend with a few additional symbol exports, ov
 * Now supports http-types up to 0.9
 
 ## 0.6.3.1
-* Fixed an issue with aeson 0.10 support
+* Fixed an issue with aeson 0.10 support.
 
 ## 0.6.3
-* Support aeson 0.10
-* Added support for multiple HTTP attempts per command request, using the new WDConfig field wdHTTPRetryCount
+* Support aeson 0.10.
+* Added support for multiple HTTP attempts per command request, using the new WDConfig field wdHTTPRetryCount.
 
 ## 0.6.2.1
-* Supports vector 0.11, aeson 0.9, attoparsec 0.13
+* Supports vector 0.11, aeson 0.9, attoparsec 0.13.
 
 ## 0.6.2
-* Supports GHC 7.10
-* Supports reworked Chrome capabilities used by newer versions of WebDriver
-* Servers that return empty JSON strings for commands with no return value will no longer cause parse errors
+* Supports GHC 7.10.
+* Supports reworked Chrome capabilities used by newer versions of WebDriver.
+* Servers that return empty JSON strings for commands with no return value will no longer cause parse errors.
 
 ## 0.6.1
-* Added the ability to pass HTTP request headers at session creation
-* Fixed an issue involving an obsolete JSON representation of Chrome capabilities
-* Relax upper bound on exceptions dependency
+* Added the ability to pass HTTP request headers at session creation.
+* Fixed an issue involving an obsolete JSON representation of Chrome capabilities.
+* Relax upper bound on exceptions dependency.
 
 ## 0.6.0.4
-* Support for monad-control 1.0
+* Support for monad-control 1.0.
 
 ## 0.6.0.3
-* Relaxed upper bounds on text and http-client versions
+* Relaxed upper bounds on text and http-client versions.
 
 ## 0.6.0.2
-* Added support for aeson > 0.8 and network > 2.6
-* Added support for the "X-Response-Body-Start" HTTP header used for error responses in newer http-client versions
+* Added support for aeson > 0.8 and network > 2.6.
+* Added support for the "X-Response-Body-Start" HTTP header used for error responses in newer http-client versions.
 
 ## 0.6.0.1
 * Fixed Haddock parse errors. No code changes introduced in this version.
