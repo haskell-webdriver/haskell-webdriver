@@ -1,5 +1,8 @@
 # Change Log
 
+## 0.13.0.1
+* Point release to add missing CHANGELOG items to Hackage.
+
 ## 0.13.0.0
 * Added support for Selenium 3 and 4 with W3C WebDriver protocol compatibility.
 * Dropped legacy Selenium JSON wire protocol support.

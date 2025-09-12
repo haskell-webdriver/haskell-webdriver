@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           webdriver
-version:        0.13.0.0
+version:        0.13.0.1
 synopsis:       a Haskell client for the Selenium WebDriver protocol
 description:    A WebDriver client for Haskell.
                 You can use it to automate browser sessions for testing, system administration, etc.
