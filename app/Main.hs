@@ -48,9 +48,6 @@ instance WebDriverBase (LoggingT IO) where
 instance SessionState WD where
   getSession = ask
 
-
--- | Executes a 'WD' computation within the 'IO' monad, using the given
--- 'WDSession' as state for WebDriver requests.
 runWD :: MonadIO m => Session -> WD a -> m a
 runWD sess (WD wd) = liftIO $ runReaderT wd sess
 
