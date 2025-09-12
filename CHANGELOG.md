@@ -3,8 +3,8 @@
 ## 0.13.0.0
 * Added support for Selenium 3 and 4 with W3C WebDriver protocol compatibility.
 * Dropped legacy Selenium JSON wire protocol support.
-* Reworked [createSession](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:createSession) into [startSession](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver.html#v:startSession), which uses [WebDriverContext]() for process lifecycle management.
-* Replaced `WebDriver` class with `WebDriverBase` and switched from `MonadBaseControl IO` to `MonadUnliftIO`.
+* Reworked [createSession](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:createSession) into [startSession](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver.html#v:startSession), which uses [WebDriverContext](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Types.html#t:WebDriverContext) for process lifecycle management.
+* Replaced [WebDriver](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Class.html#t:WebDriver) class with [WebDriverBase](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Types.html#t:WebDriverBase) and switched from `MonadBaseControl IO` to `MonadUnliftIO`.
 * Simplified module hierarchy with centralized imports under `Test.WebDriver`.
 * Enhanced browser profile handling with in-memory zip archiving instead of on-disk preparation.
 * Added comprehensive test suite with matrix testing across Selenium versions and browsers.
@@ -13,8 +13,8 @@
 * The [getWindowSize](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:getWindowSize)/[setWindowSize](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:setWindowSize)/[getWindowPos](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:getWindowPos)/[setWindowPos](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:setWindowPos) functions have been replaced with [getWindowRect](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:getWindowRect)/[setWindowRect](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:setWindowRect).
 * [deleteCookieByName](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:deleteCookieByName) has been renamed to [deleteCookie](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:deleteCookie) and the pointless old [deleteCookie](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:deleteCookie) removed.
 * [screenshotBase64](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:screenshotBase64) has been removed and [screenshotElement](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:screenshotElement) added.
-* Deprecated function `elemInfo` removed.
-* `deleteVisibleCookies` renamed to `deleteCookies`.
+* [deleteVisibleCookies](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:deleteVisibleCookies) renamed to [deleteCookies](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:deleteCookies).
+* Deprecated function [elemInfo](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:elemInfo) removed.
 
 ## 0.12.0.1
 * Switch from `data-default-class` to `data-default` to address https://github.com/commercialhaskell/stackage/issues/7545. This is weirdly complicated: it looks like versions of `data-default` from `0.5.2` to `0.8.0.0` may pull in unnecessary (to us) `data-default-instances-*` dependencies. However, what we've done here should build with all versions, so we won't worry about it. At the next breaking change I'd like to remove `data-default` entirely.
