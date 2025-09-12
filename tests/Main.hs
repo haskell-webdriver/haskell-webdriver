@@ -45,7 +45,7 @@ main = do
               driverConfigJava = java
               , driverConfigSeleniumJar = seleniumJar
               , driverConfigSubDrivers = subDrivers
-              , driverConfigLogDir = dir
+              , driverConfigLogDir = Just dir
               , driverConfigJavaFlags = []
               , driverConfigSeleniumVersion = Just Selenium3
               }
@@ -62,7 +62,7 @@ main = do
               driverConfigJava = java
               , driverConfigSeleniumJar = seleniumJar
               , driverConfigSubDrivers = subDrivers
-              , driverConfigLogDir = dir
+              , driverConfigLogDir = Just dir
               , driverConfigJavaFlags = []
               , driverConfigSeleniumVersion = Just Selenium4
               }
@@ -77,7 +77,7 @@ main = do
             return $ DriverConfigChromedriver {
               driverConfigChromedriver = chromedriver
               , driverConfigChrome = chrome
-              , driverConfigLogDir = dir
+              , driverConfigLogDir = Just dir
               , driverConfigChromedriverFlags = []
               }
 
@@ -91,7 +91,7 @@ main = do
             return $ DriverConfigGeckodriver {
               driverConfigGeckodriver = geckodriver
               , driverConfigFirefox = firefox
-              , driverConfigLogDir = dir
+              , driverConfigLogDir = Just dir
               , driverConfigGeckodriverFlags = []
               }
 
@@ -134,14 +134,14 @@ getSubDrivers dir = getContext browserDependencies >>= \case
     DriverConfigChromedriver {
         driverConfigChromedriver = browserDependenciesChromeChromedriver
         , driverConfigChrome = browserDependenciesChromeChrome
-        , driverConfigLogDir = dir
+        , driverConfigLogDir = Just dir
         , driverConfigChromedriverFlags = []
         }]
   BrowserDependenciesFirefox {..} -> return [
     DriverConfigGeckodriver {
         driverConfigGeckodriver = browserDependenciesFirefoxGeckodriver
         , driverConfigFirefox = browserDependenciesFirefoxFirefox
-        , driverConfigLogDir = dir
+        , driverConfigLogDir = Just dir
         , driverConfigGeckodriverFlags = []
     }]
 

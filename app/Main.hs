@@ -13,7 +13,6 @@ import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
 import qualified Network.HTTP.Client as HC
 import Network.HTTP.Types.Status as N
-import System.IO.Temp
 import Test.WebDriver
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Types
@@ -72,13 +71,11 @@ main = do
             }
         }
 
-  tmpDir <- getCanonicalTemporaryDirectory >>= flip createTempDirectory "chromedriver-logs"
-
   let driverConfig = DriverConfigChromedriver {
         driverConfigChromedriver = chromedriverBin
         , driverConfigChromedriverFlags = []
         , driverConfigChrome = chromeBin
-        , driverConfigLogDir = tmpDir
+        , driverConfigLogDir = Nothing
         }
 
   runStdoutLoggingT $ bracket mkEmptyWebDriverContext teardownWebDriverContext $ \wdc -> do

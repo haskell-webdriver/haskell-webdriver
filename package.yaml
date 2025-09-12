@@ -107,7 +107,6 @@ executables:
     - monad-logger
     - mtl
     - string-interpolate
-    - temporary
     - unliftio
     - unliftio-core
     - webdriver

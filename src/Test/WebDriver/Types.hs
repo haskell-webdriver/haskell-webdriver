@@ -105,7 +105,7 @@ data DriverConfig =
     -- | Drivers to configure Selenium to use.
     , driverConfigSubDrivers :: [DriverConfig]
     -- | Directory in which to place driver logs.
-    , driverConfigLogDir :: FilePath
+    , driverConfigLogDir :: Maybe FilePath
     }
   | DriverConfigGeckodriver {
       -- | Path to @geckodriver@ binary.
@@ -115,7 +115,7 @@ data DriverConfig =
       -- | Path to @firefox@ binary.
       , driverConfigFirefox :: FilePath
       -- | Directory in which to place driver logs.
-      , driverConfigLogDir :: FilePath
+      , driverConfigLogDir :: Maybe FilePath
       }
   | DriverConfigChromedriver {
       -- | Path to @chromedriver@ binary.
@@ -125,7 +125,7 @@ data DriverConfig =
       -- | Path to @chrome@ binary.
       , driverConfigChrome :: FilePath
       -- | Directory in which to place driver logs.
-      , driverConfigLogDir :: FilePath
+      , driverConfigLogDir :: Maybe FilePath
       }
 
 -- | An opaque identifier for a WebDriver session. These handles are produced by
