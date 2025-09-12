@@ -87,6 +87,30 @@ library:
   - Test.WebDriver.Types
   - Test.WebDriver.Waits
 
+executables:
+  demo:
+    main: Main.hs
+    source-dirs:
+    - app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -O2
+    - -W
+    dependencies:
+    - base
+    - bytestring
+    - exceptions
+    - http-client
+    - http-types
+    - monad-logger
+    - mtl
+    - string-interpolate
+    - unliftio
+    - unliftio-core
+    - webdriver
+
 tests:
   tests:
     main: Main.hs
