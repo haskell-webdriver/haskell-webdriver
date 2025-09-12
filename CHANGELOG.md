@@ -3,13 +3,11 @@
 ## 0.13.0.0
 * Added support for Selenium 3 and 4 with W3C WebDriver protocol compatibility.
 * Dropped legacy Selenium JSON wire protocol support.
-* Introduced `WebDriverContext` for simplified process lifecycle management.
-* Added `startSession` function to launch WebDriver sessions with automatic process handling.
+* Reworked [createSession](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:createSession) into [startSession](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver.html#v:startSession), which uses [WebDriverContext]() for process lifecycle management.
 * Replaced `WebDriver` class with `WebDriverBase` and switched from `MonadBaseControl IO` to `MonadUnliftIO`.
 * Simplified module hierarchy with centralized imports under `Test.WebDriver`.
 * Enhanced browser profile handling with in-memory zip archiving instead of on-disk preparation.
 * Added comprehensive test suite with matrix testing across Selenium versions and browsers.
-* Improved compatibility with modern WebDriver implementations.
 * Added browser log retrieval functions: [withRecordLogsViaBiDi](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:withRecordLogsViaBiDi) and [getLogs](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:getLogs).
 * Now you can manage the script, page load, and implicit wait timeouts in a single operation with [getTimeouts](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:getTimeouts)/[setTimeouts](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:setTimeouts).
 * The [getWindowSize](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:getWindowSize)/[setWindowSize](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:setWindowSize)/[getWindowPos](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:getWindowPos)/[setWindowPos](https://hackage.haskell.org/package/webdriver-0.12.0.0/docs/Test-WebDriver-Commands.html#v:setWindowPos) functions have been replaced with [getWindowRect](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:getWindowRect)/[setWindowRect](https://hackage-content.haskell.org/package/webdriver-0.13.0.0/docs/Test-WebDriver-Commands.html#v:setWindowRect).
