@@ -48,6 +48,15 @@ instance WebDriverBase (LoggingT IO) where
 instance SessionState WD where
   getSession = ask
 
+-- The following is a more general SessionState for MonadReader monads, but it
+-- requires UndecidableInstances
+-- class HasSession a where
+--   extractSession :: a -> Session
+-- instance HasSession Session where
+--   extractSession = id
+-- instance (HasSession a, MonadReader a m) => SessionState m where
+--   getSession = asks extractSession
+
 runWD :: Session -> WD a -> LoggingT IO a
 runWD sess (WD wd) = runReaderT wd sess
 
@@ -76,4 +85,9 @@ main = do
     sess <- startSession wdc driverConfig caps "session1"
     runWD sess $ do
       openPage "http://www.xkcd.com"
+      liftIO $ threadDelay 5_000_000
+
+    sess2 <- startSession wdc driverConfig caps "session2"
+    runWD sess2 $ do
+      openPage "http://www.smbc-comics.com"
       liftIO $ threadDelay 5_000_000
