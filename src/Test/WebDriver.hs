@@ -27,6 +27,10 @@ Geckodriver instance can't start multiple Firefox sessions (see
 <https://github.com/mozilla/geckodriver/issues/1946>). So, this library will spin
 up a separate @geckodriver@ process for every session.
 
+For an example of using this package by itself, see "Test.WebDriver.WD". For a
+full test framework integrated with this package, see
+[sandwich-webdriver](https://hackage.haskell.org/package/sandwich-webdriver).
+
 -}
 
 module Test.WebDriver (

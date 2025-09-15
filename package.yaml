@@ -64,6 +64,7 @@ library:
   - network
   - microlens-th >= 0.4.0.0
   - monad-logger
+  - mtl
   - network-uri >= 2.6
   - random
   - retry
@@ -86,6 +87,7 @@ library:
   - Test.WebDriver.Profile
   - Test.WebDriver.Types
   - Test.WebDriver.Waits
+  - Test.WebDriver.WD
 
 executables:
   demo:

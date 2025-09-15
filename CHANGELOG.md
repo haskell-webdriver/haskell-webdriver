@@ -3,6 +3,7 @@
 ## 0.13.1.0
 * Point release toadd missing CHANGELOG items to Hackage.
 * Fix MVar bug in teardownWebDriverContext.
+* Add "Test.WebDriver.WD" module for simple usage.
 
 ## 0.13.0.0
 * Added support for Selenium 3 and 4 with W3C WebDriver protocol compatibility.
