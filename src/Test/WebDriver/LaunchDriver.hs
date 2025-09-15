@@ -63,27 +63,34 @@ launchDriver driverConfig = do
 
   let hostname = "localhost"
 
-  (logFilePath, logFileHandle) <- liftIO $ openTempFile (driverConfigLogDir driverConfig) ((driverBaseName driverConfig) <> ".log")
-  logDebugN [i|Logging driver output to #{logFilePath}|]
+  maybeLogFileHandle <- case driverConfigLogDir driverConfig of
+    Nothing -> return Nothing
+    Just logDir -> do
+      (logFilePath, logFileHandle) <- liftIO $ openTempFile logDir ((driverBaseName driverConfig) <> ".log")
+      logDebugN [i|Logging driver output to #{logFilePath}|]
+      return $ Just logFileHandle
 
   let handler (e :: SomeException) = do
         terminateProcess p
         now <- liftIO getCurrentTime
-        liftIO (T.hPutStrLn logFileHandle [i|(#{now}) haskell-webdriver: process ending with exception: #{e}|])
-        liftIO (hClose logFileHandle)
+        whenJust maybeLogFileHandle $ \logFileHandle -> do
+          liftIO (T.hPutStrLn logFileHandle [i|(#{now}) haskell-webdriver: process ending with exception: #{e}|])
+          liftIO (hClose logFileHandle)
 
   flip withException handler $ do
     -- Read from the (combined) output stream until we see the up and running message
     maybeReady <- timeout 30_000_000 $ fix $ \loop -> do
       line <- fmap T.pack $ liftIO $ hGetLine hRead
-      liftIO $ T.hPutStrLn logFileHandle line
+      whenJust maybeLogFileHandle $ \logFileHandle ->
+        liftIO $ T.hPutStrLn logFileHandle line
       unless (Prelude.any (`T.isInfixOf` line) (needles driverConfig)) loop
     when (isNothing maybeReady) $
       throwIO DriverNoReadyMessage
 
-    logAsync <- async $ flip finally (liftIO $ hClose logFileHandle) $ forever $ do
+    logAsync <- async $ flip finally (liftIO $ whenJust maybeLogFileHandle hClose) $ forever $ do
       line <- liftIO (T.hGetLine hRead)
-      liftIO $ T.hPutStrLn logFileHandle line
+      whenJust maybeLogFileHandle $ \logFileHandle ->
+        liftIO $ T.hPutStrLn logFileHandle line
 
     flip onException (cancel logAsync) $ do
       -- Wait for a successful connection to the server socket
@@ -176,12 +183,12 @@ autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodet
 
 getSubDriverArgs :: Monad m => DriverConfig -> m [FilePath]
 getSubDriverArgs (DriverConfigChromedriver {..}) = do
-  let chromedriverLog = driverConfigLogDir </> "chromedriver.log"
-  return [
-    "-Dwebdriver.chrome.logfile=" <> chromedriverLog
-    , "-Dwebdriver.chrome.verboseLogging=true"
-    , "-Dwebdriver.chrome.driver=" <> driverConfigChromedriver
-    ]
+  let logArgs = case driverConfigLogDir of
+        Just d -> ["-Dwebdriver.chrome.logfile=" <> (d </> "chromedriver.log")
+                  , "-Dwebdriver.chrome.verboseLogging=true"
+                  ]
+        Nothing -> []
+  return (["-Dwebdriver.chrome.driver=" <> driverConfigChromedriver] <> logArgs)
 getSubDriverArgs (DriverConfigGeckodriver {..}) = do
   return [
     "-Dwebdriver.gecko.driver=" <> driverConfigGeckodriver
@@ -238,3 +245,6 @@ teardownDriver (Driver {..}) = do
   case _driverLogAsync of
     Just x -> cancel x
     Nothing -> return ()
+
+whenJust :: Applicative m => Maybe a -> (a -> m ()) -> m ()
+whenJust mg f = maybe (pure ()) f mg
