@@ -148,7 +148,8 @@ executable demo
       ScopedTypeVariables
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -O2 -W
   build-depends:
-      base
+      aeson
+    , base
     , bytestring
     , exceptions
     , http-client
@@ -156,6 +157,7 @@ executable demo
     , monad-logger
     , mtl
     , string-interpolate
+    , text
     , unliftio
     , unliftio-core
     , webdriver

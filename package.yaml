@@ -99,6 +99,7 @@ executables:
     - -O2
     - -W
     dependencies:
+    - aeson
     - base
     - bytestring
     - exceptions
@@ -107,6 +108,7 @@ executables:
     - monad-logger
     - mtl
     - string-interpolate
+    - text
     - unliftio
     - unliftio-core
     - webdriver

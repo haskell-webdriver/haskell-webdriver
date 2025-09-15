@@ -172,8 +172,9 @@ closeSession wdc sess@(Session {..}) = do
 -- not shut driver processes.
 closeSession' :: (WebDriverBase m, MonadLogger m) => Session -> m ()
 closeSession' (Session { sessionId=(SessionId sessId), .. }) = do
-  response <- doCommandBase sessionDriver methodDelete ("/session/" <> sessId) Null
-  logInfoN [i|Close result: #{response}|]
+  _response <- doCommandBase sessionDriver methodDelete ("/session/" <> sessId) Null
+  -- TODO: throw an exception if this failed?
+  return ()
 
 -- | Create a manual 'Driver' to use with 'startSession''/'closeSession''.
 mkManualDriver :: MonadIO m =>
