@@ -202,10 +202,10 @@ mkManualDriver hostname port basePath requestHeaders = do
 
 -- | Tear down all sessions and processes associated with a 'WebDriverContext'.
 teardownWebDriverContext :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> m ()
-teardownWebDriverContext wdc@(WebDriverContext {..}) = do
+teardownWebDriverContext (WebDriverContext {..}) = do
   modifyMVar_ _webDriverSessions $ \sessions -> do
     forM_ [sess | (_, sess) <- M.toList sessions] $ \sess ->
-      closeSession wdc sess
+      closeSession' sess
     return mempty
 
   modifyMVar_ _webDriverSelenium $ \case
