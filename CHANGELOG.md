@@ -1,8 +1,8 @@
 # Change Log
 
-## 0.13.1.0
-* Point release toadd missing CHANGELOG items to Hackage.
+## 0.14.0.0
 * Fix MVar bug in teardownWebDriverContext.
+* Make driverConfigLogDir optional (#206).
 * Add "Test.WebDriver.WD" module for simple usage.
 
 ## 0.13.0.0
