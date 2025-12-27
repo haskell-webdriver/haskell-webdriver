@@ -79,7 +79,9 @@ withRecordLogsViaBiDi' uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(
 
     case result of
       Left err -> throwIO err
-      Right () -> action
+      Right () ->
+        flip finally (logInfoN [i|BiDi: finished wrapped action|])
+        action
 
   where
     backgroundAction subscriptionStatus = withRunInIO $ \runInIO -> do
