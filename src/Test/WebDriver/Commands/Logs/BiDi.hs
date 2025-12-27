@@ -83,7 +83,9 @@ withRecordLogsViaBiDi' uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(
         ret <- flip finally (logInfoN [i|BiDi: finished wrapped action|]) action
 
         logInfoN [i|BiDi: Going to try cancelling the background action|]
-        flip withException (\(e :: SomeException) -> (logInfoN [i|BiDi: finished cancelling background action: #{e}|])) $ cancel backgroundActionAsy
+        flip finally (logInfoN [i|BiDi: finished cancelling background action|]) $
+          flip withException (\(e :: SomeException) -> (logInfoN [i|BiDi: cancelling background action threw exception: #{e}|])) $
+          cancel backgroundActionAsy
 
         return ret
 
