@@ -25,7 +25,7 @@ import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Commands.Logs.Common
 import Test.WebDriver.Types
 import Text.Read (readMaybe)
-import UnliftIO.Async (withAsync)
+import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.Exception
 import UnliftIO.STM (atomically, newTVarIO, readTVar, writeTVar)
 import UnliftIO.Timeout (timeout)
@@ -68,7 +68,7 @@ withRecordLogsViaBiDi' :: (MonadUnliftIO m, MonadLogger m) => URI.URI -> (LogEnt
 withRecordLogsViaBiDi' uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) cb action = do
   subscriptionStatus <- newTVarIO Nothing
 
-  withAsync (backgroundAction subscriptionStatus) $ \_ -> do
+  withAsync (backgroundAction subscriptionStatus) $ \backgroundActionAsy -> do
     -- Wait for subscription to be confirmed or errored before proceeding
     result <- atomically $ do
       status <- readTVar subscriptionStatus
@@ -79,9 +79,13 @@ withRecordLogsViaBiDi' uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(
 
     case result of
       Left err -> throwIO err
-      Right () ->
-        flip finally (logInfoN [i|BiDi: finished wrapped action|])
-        action
+      Right () -> do
+        ret <- flip finally (logInfoN [i|BiDi: finished wrapped action|]) action
+
+        logInfoN [i|BiDi: Going to try cancelling the background action|]
+        flip withException (\(e :: SomeException) -> (logInfoN [i|BiDi: finished cancelling background action: #{e}|])) $ cancel backgroundActionAsy
+
+        return ret
 
   where
     backgroundAction subscriptionStatus = withRunInIO $ \runInIO -> do
