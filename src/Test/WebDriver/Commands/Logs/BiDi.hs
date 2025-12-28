@@ -8,7 +8,6 @@ module Test.WebDriver.Commands.Logs.BiDi (
   , withRecordLogsViaBiDi'
   ) where
 
-import Control.Concurrent.STM (retry)
 import Control.Monad (forever)
 import Control.Monad.Fix (fix)
 import Control.Monad.IO.Unlift
@@ -27,7 +26,7 @@ import Test.WebDriver.Types
 import Text.Read (readMaybe)
 import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.Exception
-import UnliftIO.STM (TVar, atomically, newTVarIO, readTVar, stateTVar, writeTVar)
+import UnliftIO.STM (atomically, stateTVar)
 import UnliftIO.Timeout (timeout)
 
 
@@ -68,79 +67,61 @@ withRecordLogsViaBiDi cb action = do
 -- <https://w3c.github.io/webdriver-bidi/>.
 withRecordLogsViaBiDi' :: (MonadUnliftIO m, MonadLogger m) => Int -> URI.URI -> (LogEntry -> m ()) -> m a -> m a
 withRecordLogsViaBiDi' bidiSessionId uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) cb action = do
-  subscriptionStatus <- newTVarIO Nothing
+  logDebugN [i|BiDi: Connecting to #{uriRegName}:#{port}#{uriPath}|]
 
-  withAsync (backgroundAction subscriptionStatus) $ \backgroundActionAsy -> do
-    -- Wait for subscription to be confirmed or errored before proceeding
-    result <- atomically $
-      readTVar subscriptionStatus >>= \case
-        Nothing -> retry
-        Just x -> pure x
+  withRunInIO $ \runInIO -> liftIO $ WS.runClient uriRegName port uriPath $ \conn -> runInIO $ do
+    logDebugN [i|BiDi: Connected successfully, sending subscription request with ID #{bidiSessionId}|]
+    liftIO $ WS.sendTextData conn $ encode $ object [
+      "id" .= bidiSessionId
+      , "method" .= ("session.subscribe" :: Text)
+      , "params" .= object [
+          "events" .= (["log.entryAdded"] :: [Text])
+        ]
+      ]
+    logDebugN "BiDi: Sent subscription request, waiting for response..."
 
-    case result of
-      Left err -> throwIO err
-      Right () -> do
-        ret <- flip finally (logInfoN [i|BiDi: finished wrapped action|]) action
+    timeout 15_000_000 (waitForSubscriptionResult bidiSessionId conn) >>= \case
+      Nothing -> throwIO $ userError "BiDi: Subscription response timed out"
+      Just (Left err) ->
+        throwIO $ userError [i|BiDi: got exception (URI #{uri}): #{err}|]
+      Just (Right ()) -> do
+        logDebugN "BiDi: Starting log event listener"
+        withAsync (messageListener conn) $ \messageListenerAsy -> do
+          ret <- flip finally (logInfoN [i|BiDi: finished wrapped action|]) action
 
-        logInfoN [i|BiDi: Going to try cancelling the background action|]
-        flip finally (logInfoN [i|BiDi: finished cancelling background action|]) $
-          flip withException (\(e :: SomeException) -> (logInfoN [i|BiDi: cancelling background action threw exception: #{e}|])) $
-          cancel backgroundActionAsy
+          logInfoN [i|BiDi: Going to try cancelling the log event listener|]
+          flip finally (logInfoN [i|BiDi: finished cancelling log event listener|]) $
+            flip withException (\(e :: SomeException) -> (logInfoN [i|BiDi: cancelling log event listener threw exception: #{e}|])) $
+            cancel messageListenerAsy
 
-        return ret
+          return ret
 
   where
-    backgroundAction subscriptionStatus = withRunInIO $ \runInIO -> do
-      result <- tryAny $ do
-        runInIO $ logDebugN [i|BiDi: Connecting to #{uriRegName}:#{port}#{uriPath}|]
-
-        liftIO $ WS.runClient uriRegName port uriPath $ \conn -> runInIO $ do
-          logDebugN [i|BiDi: Connected successfully, sending subscription request with ID #{bidiSessionId}|]
-          liftIO $ WS.sendTextData conn $ encode $ object [
-            "id" .= bidiSessionId
-            , "method" .= ("session.subscribe" :: Text)
-            , "params" .= object [
-                "events" .= (["log.entryAdded"] :: [Text])
-              ]
-            ]
-          logDebugN "BiDi: Sent subscription request, waiting for response..."
-
-          timeout 15_000_000 (waitForSubscriptionResult bidiSessionId conn subscriptionStatus) >>= \case
-            Nothing -> do
-              logErrorN "BiDi: Subscription response timed out"
-              atomically $ writeTVar subscriptionStatus (Just (Left (toException (userError "BiDi subscription response timed out"))))
-            Just () -> do
-              logDebugN "BiDi: Starting log event listener"
-              forever $
-                (decode <$>) (liftIO $ WS.receiveData conn) >>= \case
-                  Just (BiDiLogEvent "event" "log.entryAdded" params) ->
-                    case parseBiDiLogEntry params of
-                      Just logEntry -> cb logEntry
-                      Nothing -> logWarnN "BiDi: Failed to parse log entry"
-                  x -> logDebugN [i|BiDi: Ignoring non-log event message: #{x}|]
-
-      case result of
-        Left ex -> do
-          runInIO $ logErrorN [i|BiDi: got exception (URI #{uri}): #{ex}|]
-          atomically $ writeTVar subscriptionStatus (Just (Left ex))
-        Right () -> pure ()
+    messageListener conn =
+      forever $
+        (decode <$>) (liftIO $ WS.receiveData conn) >>= \case
+          Just (BiDiLogEvent "event" "log.entryAdded" params) ->
+            case parseBiDiLogEntry params of
+              Just logEntry -> cb logEntry
+              Nothing -> logWarnN "BiDi: Failed to parse log entry"
+          x -> logDebugN [i|BiDi: Ignoring non-log event message: #{x}|]
 withRecordLogsViaBiDi' _ uri _cb _action =
   throwIO $ userError [i|WebSocket URL didn't contain an authority: #{uri}|]
 
 
-waitForSubscriptionResult :: (MonadIO m, MonadLogger m) => Int -> WS.Connection -> TVar (Maybe (Either SomeException ())) -> m ()
-waitForSubscriptionResult bidiSessionId conn subscriptionStatus = fix $ \loop -> do
+waitForSubscriptionResult :: (MonadIO m, MonadLogger m) => Int -> WS.Connection -> m (Either SomeException ())
+waitForSubscriptionResult bidiSessionId conn = fix $ \loop -> do
   msg <- liftIO $ WS.receiveData conn
   logDebugN [i|BiDi: Waiting for subscription response: #{msg}|]
   case decode msg of
     Just response@(BiDiResponse responseType responseId _ _)
       | responseType == "success" && responseId == bidiSessionId -> do
           logInfoN "BiDi: Subscription successful!"
-          atomically $ writeTVar subscriptionStatus (Just (Right ()))
+          return $ Right ()
       | responseType == "error" && responseId == bidiSessionId -> do
           let errMsg = "BiDi subscription failed: " ++ show response
           logErrorN [i|BiDi: #{errMsg}|]
-          atomically $ writeTVar subscriptionStatus (Just (Left (toException (userError errMsg))))
+          return $ Left (toException (userError errMsg))
       | otherwise -> do
           logDebugN [i|BiDi: Ignoring response with type #{responseType}, ID #{responseId}|]
           loop
