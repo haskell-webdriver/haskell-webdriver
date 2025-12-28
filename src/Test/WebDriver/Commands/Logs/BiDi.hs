@@ -24,8 +24,9 @@ import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Commands.Logs.Common
 import Test.WebDriver.Types
 import Text.Read (readMaybe)
-import UnliftIO.Async (cancel, withAsync)
+import UnliftIO.Async (withAsync)
 import UnliftIO.Exception
+import UnliftIO.MVar (newEmptyMVar, putMVar, tryTakeMVar)
 import UnliftIO.STM (atomically, stateTVar)
 import UnliftIO.Timeout (timeout)
 
@@ -69,32 +70,35 @@ withRecordLogsViaBiDi' :: (MonadUnliftIO m, MonadLogger m) => Int -> URI.URI -> 
 withRecordLogsViaBiDi' bidiSessionId uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) cb action = do
   logDebugN [i|BiDi: Connecting to #{uriRegName}:#{port}#{uriPath}|]
 
+  -- retVar <- newEmptyMVar
+
   withRunInIO $ \runInIO -> liftIO $ WS.runClient uriRegName port uriPath $ \conn -> runInIO $ do
-    logDebugN [i|BiDi: Connected successfully, sending subscription request with ID #{bidiSessionId}|]
-    liftIO $ WS.sendTextData conn $ encode $ object [
-      "id" .= bidiSessionId
-      , "method" .= ("session.subscribe" :: Text)
-      , "params" .= object [
-          "events" .= (["log.entryAdded"] :: [Text])
+    -- WS.withPingPong WS.defaultPingPongOptions conn' $ \conn -> runInIO $ do
+      logDebugN [i|BiDi: Connected successfully, sending subscription request with ID #{bidiSessionId}|]
+      liftIO $ WS.sendTextData conn $ encode $ object [
+        "id" .= bidiSessionId
+        , "method" .= ("session.subscribe" :: Text)
+        , "params" .= object [
+            "events" .= (["log.entryAdded"] :: [Text])
+          ]
         ]
-      ]
-    logDebugN "BiDi: Sent subscription request, waiting for response..."
 
-    timeout 15_000_000 (waitForSubscriptionResult bidiSessionId conn) >>= \case
-      Nothing -> throwIO $ userError "BiDi: Subscription response timed out"
-      Just (Left err) ->
-        throwIO $ userError [i|BiDi: got exception (URI #{uri}): #{err}|]
-      Just (Right ()) -> do
-        logDebugN "BiDi: Starting log event listener"
-        withAsync (messageListener conn) $ \messageListenerAsy -> do
-          ret <- flip finally (logInfoN [i|BiDi: finished wrapped action|]) action
+      logDebugN "BiDi: Sent subscription request, waiting for response..."
+      timeout 15_000_000 (waitForSubscriptionResult bidiSessionId conn) >>= \case
+        Nothing -> throwIO $ userError "BiDi: Subscription response timed out"
+        Just (Left err) ->
+          throwIO $ userError [i|BiDi: got exception (URI #{uri}): #{err}|]
+        Just (Right ()) -> do
+          logDebugN "BiDi: Starting log event listener"
+          withAsync (messageListener conn) $ \_messageListenerAsy -> do
+            finally action $ do
+              logInfoN [i|BiDi: finished wrapped action|]
+              liftIO $ WS.sendClose conn ([i|Finishing session #{bidiSessionId}|] :: Text)
+          -- putMVar retVar result
 
-          logInfoN [i|BiDi: Going to try cancelling the log event listener|]
-          flip finally (logInfoN [i|BiDi: finished cancelling log event listener|]) $
-            flip withException (\(e :: SomeException) -> (logInfoN [i|BiDi: cancelling log event listener threw exception: #{e}|])) $
-            cancel messageListenerAsy
-
-          return ret
+  -- tryTakeMVar retVar >>= \case
+  --   Nothing -> throwIO $ userError [i|BiDi: action didn't produce a result|]
+  --   Just x -> pure x
 
   where
     messageListener conn =
