@@ -51,6 +51,7 @@ import UnliftIO.Async
 import UnliftIO.Concurrent
 import UnliftIO.Exception
 import UnliftIO.Process
+import UnliftIO.STM
 
 
 -- | The 'WebDriverContext' is an opaque type used by this library for
@@ -140,6 +141,8 @@ data Session = Session {
   , sessionId :: SessionId
   , sessionName :: String
   , sessionWebSocketUrl :: Maybe String
+  -- | Used to generate IDs for BiDi.
+  , sessionIdCounter :: TVar Int
   }
 instance Show Session where
   show (Session {sessionDriver=(Driver {..}), ..}) = [i|Session<[#{sessionId}] at #{_driverHostname}:#{_driverPort}#{_driverBasePath}>|]

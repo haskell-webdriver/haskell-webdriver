@@ -94,6 +94,7 @@ import Network.HTTP.Client
 import Network.HTTP.Types (RequestHeaders, statusCode)
 import UnliftIO.Concurrent
 import UnliftIO.Exception
+import UnliftIO.STM
 
 
 -- | Start a WebDriver session, with a given 'WebDriverContext' and
@@ -148,11 +149,14 @@ startSession' driver caps sessionName = do
                    A.Object (aesonLookup "capabilities" -> Just (A.Object (aesonLookup "webSocketUrl" -> Just (A.String url)))) -> Just url
                    _ -> Nothing
 
+             idCounterVar <- newTVarIO 1
+
              return $ Session {
                sessionDriver = driver
                , sessionId = SessionId sessId
                , sessionName = sessionName
                , sessionWebSocketUrl = T.unpack <$> maybeWebSocketUrl
+               , sessionIdCounter = idCounterVar
                }
            _ -> throwIO $ SessionCreationResponseHadNoSessionId response
      | otherwise -> throwIO SessionNameAlreadyExists

@@ -27,7 +27,7 @@ import Test.WebDriver.Types
 import Text.Read (readMaybe)
 import UnliftIO.Async (cancel, withAsync)
 import UnliftIO.Exception
-import UnliftIO.STM (atomically, newTVarIO, readTVar, writeTVar)
+import UnliftIO.STM (TVar, atomically, newTVarIO, readTVar, stateTVar, writeTVar)
 import UnliftIO.Timeout (timeout)
 
 
@@ -60,22 +60,22 @@ withRecordLogsViaBiDi cb action = do
     Just x -> pure x
     Nothing -> throwIO $ userError [i|Couldn't parse WebSocket URL: #{webSocketUrl}|]
 
-  withRecordLogsViaBiDi' uri cb action
+  bidiSessionId <- atomically $ stateTVar sessionIdCounter (\x -> (x, x + 1))
+
+  withRecordLogsViaBiDi' bidiSessionId uri cb action
 
 -- | Connect to WebSocket URL and subscribe to log events using the W3C BiDi protocol; see
 -- <https://w3c.github.io/webdriver-bidi/>.
-withRecordLogsViaBiDi' :: (MonadUnliftIO m, MonadLogger m) => URI.URI -> (LogEntry -> m ()) -> m a -> m a
-withRecordLogsViaBiDi' uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) cb action = do
+withRecordLogsViaBiDi' :: (MonadUnliftIO m, MonadLogger m) => Int -> URI.URI -> (LogEntry -> m ()) -> m a -> m a
+withRecordLogsViaBiDi' bidiSessionId uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) cb action = do
   subscriptionStatus <- newTVarIO Nothing
 
   withAsync (backgroundAction subscriptionStatus) $ \backgroundActionAsy -> do
     -- Wait for subscription to be confirmed or errored before proceeding
-    result <- atomically $ do
-      status <- readTVar subscriptionStatus
-      case status of
+    result <- atomically $
+      readTVar subscriptionStatus >>= \case
         Nothing -> retry
-        Just (Left err) -> pure (Left err)
-        Just (Right ()) -> pure (Right ())
+        Just x -> pure x
 
     case result of
       Left err -> throwIO err
@@ -94,84 +94,78 @@ withRecordLogsViaBiDi' uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(
       result <- tryAny $ do
         runInIO $ logDebugN [i|BiDi: Connecting to #{uriRegName}:#{port}#{uriPath}|]
 
-        liftIO $ WS.runClient uriRegName port uriPath $ \conn -> do
-          runInIO $ logInfoN "BiDi: Connected successfully"
-
-          -- Send subscription request for console logs
-          runInIO $ logDebugN "BiDi: Sending subscription request"
-          WS.sendTextData conn $ encode $ object [
-            "id" .= (1 :: Int)
+        liftIO $ WS.runClient uriRegName port uriPath $ \conn -> runInIO $ do
+          logDebugN [i|BiDi: Connected successfully, sending subscription request with ID #{bidiSessionId}|]
+          liftIO $ WS.sendTextData conn $ encode $ object [
+            "id" .= bidiSessionId
             , "method" .= ("session.subscribe" :: Text)
             , "params" .= object [
                 "events" .= (["log.entryAdded"] :: [Text])
               ]
             ]
-          runInIO $ logDebugN "BiDi: Sent subscription request, waiting for response..."
+          logDebugN "BiDi: Sent subscription request, waiting for response..."
 
-          subscriptionResult <- timeout 15_000_000 $ fix $ \loop -> do
-            msg <- WS.receiveData conn
-            runInIO $ logDebugN [i|BiDi: Waiting for subscription response: #{msg}|]
-            case decode msg of
-              Just response@(BiDiResponse responseType responseId _ _)
-                | responseType == "success" && responseId == 1 -> do
-                    runInIO $ logInfoN "BiDi: Subscription successful!"
-                    atomically $ writeTVar subscriptionStatus (Just (Right ()))
-                | responseType == "error" && responseId == 1 -> do
-                    let errMsg = "BiDi subscription failed: " ++ show response
-                    runInIO $ logErrorN [i|BiDi: #{errMsg}|]
-                    atomically $ writeTVar subscriptionStatus (Just (Left (toException (userError errMsg))))
-                | otherwise -> do
-                    runInIO $ logDebugN [i|BiDi: Ignoring response with type #{responseType}, ID #{responseId}|]
-                    loop
-              Nothing -> do
-                runInIO $ logDebugN [i|BiDi: Not a BiDiResponse, continuing to wait for subscription response (#{msg})|]
-                loop
-
-          case subscriptionResult of
+          timeout 15_000_000 (waitForSubscriptionResult bidiSessionId conn subscriptionStatus) >>= \case
             Nothing -> do
-              runInIO $ logErrorN "BiDi: Subscription response timed out"
+              logErrorN "BiDi: Subscription response timed out"
               atomically $ writeTVar subscriptionStatus (Just (Left (toException (userError "BiDi subscription response timed out"))))
             Just () -> do
-              runInIO $ logDebugN "BiDi: Starting log event listener"
-              forever $ do
-                msg <- WS.receiveData conn
-                runInIO $ logDebugN [i|BiDi: Received log event: #{msg}|]
-                case decode msg of
+              logDebugN "BiDi: Starting log event listener"
+              forever $
+                (decode <$>) (liftIO $ WS.receiveData conn) >>= \case
                   Just (BiDiLogEvent "event" "log.entryAdded" params) ->
                     case parseBiDiLogEntry params of
-                      Just logEntry -> runInIO (cb logEntry)
-                      Nothing -> runInIO $ logWarnN "BiDi: Failed to parse log entry"
-                  _ -> runInIO $ logDebugN [i|BiDi: Ignoring non-log event message: #{msg}|]
+                      Just logEntry -> cb logEntry
+                      Nothing -> logWarnN "BiDi: Failed to parse log entry"
+                  x -> logDebugN [i|BiDi: Ignoring non-log event message: #{x}|]
 
       case result of
         Left ex -> do
           runInIO $ logErrorN [i|BiDi: got exception (URI #{uri}): #{ex}|]
           atomically $ writeTVar subscriptionStatus (Just (Left ex))
         Right () -> pure ()
-withRecordLogsViaBiDi' uri _cb _action =
+withRecordLogsViaBiDi' _ uri _cb _action =
   throwIO $ userError [i|WebSocket URL didn't contain an authority: #{uri}|]
 
--- | Convert BiDi log parameters to LogEntry
+
+waitForSubscriptionResult :: (MonadIO m, MonadLogger m) => Int -> WS.Connection -> TVar (Maybe (Either SomeException ())) -> m ()
+waitForSubscriptionResult bidiSessionId conn subscriptionStatus = fix $ \loop -> do
+  msg <- liftIO $ WS.receiveData conn
+  logDebugN [i|BiDi: Waiting for subscription response: #{msg}|]
+  case decode msg of
+    Just response@(BiDiResponse responseType responseId _ _)
+      | responseType == "success" && responseId == bidiSessionId -> do
+          logInfoN "BiDi: Subscription successful!"
+          atomically $ writeTVar subscriptionStatus (Just (Right ()))
+      | responseType == "error" && responseId == bidiSessionId -> do
+          let errMsg = "BiDi subscription failed: " ++ show response
+          logErrorN [i|BiDi: #{errMsg}|]
+          atomically $ writeTVar subscriptionStatus (Just (Left (toException (userError errMsg))))
+      | otherwise -> do
+          logDebugN [i|BiDi: Ignoring response with type #{responseType}, ID #{responseId}|]
+          loop
+    Nothing -> do
+      logDebugN [i|BiDi: Not a BiDiResponse, continuing to wait for subscription response (#{msg})|]
+      loop
+
 parseBiDiLogEntry :: Value -> Maybe LogEntry
-parseBiDiLogEntry = \case
-  Object o -> case parseEither parseLogEntry o of
-    Right entry -> Just entry
-    Left _ -> Nothing
-  _ -> Nothing
+parseBiDiLogEntry (Object o) = case parseEither parseLogEntry o of
+  Right entry -> Just entry
+  Left _ -> Nothing
   where
-    parseLogEntry o = do
-      timestamp <- o .: "timestamp"
-      levelText <- o .: "level"
-      message <- o .: "text"
+    parseLogEntry o' = do
+      timestamp <- o' .: "timestamp"
+      levelText <- o' .: "level"
+      message <- o' .: "text"
       level <- case parseLogLevel levelText of
         Just l -> pure l
         Nothing -> fail "Invalid log level"
       pure $ LogEntry (round (timestamp :: Double)) level message
+parseBiDiLogEntry _ = Nothing
 
-    parseLogLevel :: Text -> Maybe LogLevel
-    parseLogLevel = \case
-      "debug" -> Just LogDebug
-      "info" -> Just LogInfo
-      "warn" -> Just LogWarning
-      "error" -> Just LogSevere
-      _ -> Nothing
+parseLogLevel :: Text -> Maybe LogLevel
+parseLogLevel "debug" = Just LogDebug
+parseLogLevel "info" = Just LogInfo
+parseLogLevel "warn" = Just LogWarning
+parseLogLevel "error" = Just LogSevere
+parseLogLevel _ = Nothing
