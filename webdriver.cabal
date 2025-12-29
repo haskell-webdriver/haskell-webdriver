@@ -60,6 +60,7 @@ library
       Test.WebDriver.Capabilities.Timeouts
       Test.WebDriver.Capabilities.UserPromptHandler
       Test.WebDriver.Commands.Actions
+      Test.WebDriver.Commands.BiDi.NetworkActivity
       Test.WebDriver.Commands.BiDi.Session
       Test.WebDriver.Commands.CommandContexts
       Test.WebDriver.Commands.Cookies
