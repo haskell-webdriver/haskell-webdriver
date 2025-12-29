@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiWayIf #-}
 
 module Test.WebDriver.Commands.BiDi.NetworkActivity (
   withRecordNetworkActivityViaBiDi
@@ -7,6 +8,7 @@ module Test.WebDriver.Commands.BiDi.NetworkActivity (
 
   , readNetworkActivity
   , waitForNetworkIdle
+  , waitForNetworkIdleWithDelay
 
   -- * Types
   , NetworkActivityVar
@@ -16,6 +18,7 @@ module Test.WebDriver.Commands.BiDi.NetworkActivity (
 
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM (retry)
+import Control.Monad (unless)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger (MonadLogger, logDebugN, logWarnN)
 import Data.Aeson
@@ -25,11 +28,12 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.String.Interpolate
 import Data.Text (Text)
-import Data.Time (UTCTime)
+import Data.Time
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import qualified Network.URI as URI
 import Test.WebDriver.Commands.BiDi.Session
 import Test.WebDriver.Types
+import UnliftIO.Concurrent
 import UnliftIO.STM
 
 
@@ -56,7 +60,13 @@ data RequestInfo = RequestInfo {
   , requestInfoCompleted :: Bool
   } deriving (Show, Eq)
 
-type NetworkActivityVar = TVar (Map RequestId RequestInfo)
+data NetworkActivity = NetworkActivity {
+  naRequests :: Map RequestId RequestInfo
+  , naLastActivityTime :: UTCTime
+  , naDelayTimer :: Maybe (TVar Bool)  -- Timer for delay after last activity
+  } deriving (Eq)
+
+type NetworkActivityVar = TVar NetworkActivity
 
 -- | Wrapper around 'withRecordLogsViaBiDi'' which uses the WebSocket URL from
 -- the current 'Session'. You must make sure to pass '_capabilitiesWebSocketUrl'
@@ -77,17 +87,22 @@ mkCallback :: (MonadIO m, MonadLogger m) => NetworkActivityVar -> BiDiEvent -> m
 mkCallback nav (BiDiEvent "event" "network.beforeRequestSent" params) = do
   case parseBeforeRequestSent params of
     Just (requestId, method, url, timestamp, headers) -> do
-      atomically $ modifyTVar nav $ Map.insert requestId $ RequestInfo {
-        requestInfoRequestId = requestId
-        , requestInfoMethod = method
-        , requestInfoUrl = url
-        , requestInfoTimestamp = timestamp
-        , requestInfoRequestHeaders = headers
-        , requestInfoResponseHeaders = Nothing
-        , requestInfoResponseStatus = Nothing
-        , requestInfoResponseText = Nothing
-        , requestInfoErrorText = Nothing
-        , requestInfoCompleted = False
+      now <- liftIO getCurrentTime
+      atomically $ modifyTVar nav $ \na -> na {
+        naRequests = Map.insert requestId (RequestInfo {
+          requestInfoRequestId = requestId
+          , requestInfoMethod = method
+          , requestInfoUrl = url
+          , requestInfoTimestamp = timestamp
+          , requestInfoRequestHeaders = headers
+          , requestInfoResponseHeaders = Nothing
+          , requestInfoResponseStatus = Nothing
+          , requestInfoResponseText = Nothing
+          , requestInfoErrorText = Nothing
+          , requestInfoCompleted = False
+          }) (naRequests na),
+        naLastActivityTime = now,
+        naDelayTimer = Nothing
         }
       logDebugN [i|BiDi: Network request started: #{requestId} #{method} #{url}|]
     Nothing -> logWarnN "BiDi: Failed to parse network.beforeRequestSent event"
@@ -95,9 +110,14 @@ mkCallback nav (BiDiEvent "event" "network.beforeRequestSent" params) = do
 mkCallback nav (BiDiEvent "event" "network.responseStarted" params) = do
   case parseResponseStarted params of
     Just (requestId, status, headers) -> do
-      atomically $ modifyTVar nav $ flip Map.adjust requestId $ \ri -> ri {
-        requestInfoResponseStatus = Just status
-        , requestInfoResponseHeaders = headers
+      now <- liftIO getCurrentTime
+      atomically $ modifyTVar nav $ \na -> na {
+        naRequests = Map.adjust (\ri -> ri {
+          requestInfoResponseStatus = Just status
+          , requestInfoResponseHeaders = headers
+          }) requestId (naRequests na),
+        naLastActivityTime = now,
+        naDelayTimer = Nothing
         }
       logDebugN [i|BiDi: Network response started: #{requestId} status #{status}|]
     Nothing -> logWarnN "BiDi: Failed to parse network.responseStarted event"
@@ -105,19 +125,29 @@ mkCallback nav (BiDiEvent "event" "network.responseStarted" params) = do
 mkCallback nav (BiDiEvent "event" "network.responseCompleted" params) = do
   case parseResponseCompleted params of
     Just (requestId, responseText) -> do
-      atomically $ modifyTVar nav $ flip Map.adjust requestId $ \ri -> ri {
-        requestInfoResponseText = responseText
-        , requestInfoCompleted = True
+      now <- liftIO getCurrentTime
+      atomically $ modifyTVar nav $ \na -> na {
+        naRequests = Map.adjust (\ri -> ri {
+          requestInfoResponseText = responseText
+          , requestInfoCompleted = True
+          }) requestId (naRequests na),
+        naLastActivityTime = now,
+        naDelayTimer = Nothing
         }
       logDebugN [i|BiDi: Network response completed: #{requestId}|]
     Nothing -> logWarnN "BiDi: Failed to parse network.responseCompleted event"
 
-mkCallback nav (BiDiEvent "event" "network.fetchError" params) =
+mkCallback nav (BiDiEvent "event" "network.fetchError" params) = do
   case parseFetchError params of
     Just (requestId, errorText) -> do
-      atomically $ modifyTVar nav $ flip Map.adjust requestId $ \ri -> ri {
-        requestInfoErrorText = Just errorText
-        , requestInfoCompleted = True
+      now <- liftIO getCurrentTime
+      atomically $ modifyTVar nav $ \na -> na {
+        naRequests = Map.adjust (\ri -> ri {
+          requestInfoErrorText = Just errorText
+          , requestInfoCompleted = True
+          }) requestId (naRequests na),
+        naLastActivityTime = now,
+        naDelayTimer = Nothing
         }
       logDebugN [i|BiDi: Network fetch error: #{requestId} - #{errorText}|]
     Nothing -> logWarnN "BiDi: Failed to parse network.fetchError event"
@@ -202,18 +232,41 @@ optional :: Parser a -> Parser (Maybe a)
 optional p = (Just <$> p) <|> pure Nothing
 
 newNetworkActivityVar :: MonadIO m => m NetworkActivityVar
-newNetworkActivityVar = newTVarIO Map.empty
+newNetworkActivityVar = do
+  now <- liftIO getCurrentTime
+  newTVarIO $ NetworkActivity Map.empty now Nothing
 
 -- | Read the current network activity map
 readNetworkActivity :: MonadIO m => NetworkActivityVar -> m (Map RequestId RequestInfo)
-readNetworkActivity = readTVarIO
+readNetworkActivity nav = naRequests <$> readTVarIO nav
 
--- | Wait for network to be idle (no pending requests)
--- This is useful for waiting until all network activity has finished
+-- | Wait for network to be idle (no pending requests).
 waitForNetworkIdle :: MonadIO m => NetworkActivityVar -> m ()
 waitForNetworkIdle nav = atomically $ do
-  requests <- readTVar nav
-  let pending = filter (not . requestInfoCompleted) (Map.elems requests)
-  if null pending
-    then pure ()
-    else retry
+  na <- readTVar nav
+  let pending = filter (not . requestInfoCompleted) (Map.elems (naRequests na))
+  unless (null pending) retry
+
+-- | Wait for network to be idle with a delay after the last activity
+-- This waits until:
+-- 1. There are no outstanding requests AND
+-- 2. No request has started or finished in the last N microseconds
+waitForNetworkIdleWithDelay :: MonadIO m => NetworkActivityVar -> NominalDiffTime -> m ()
+waitForNetworkIdleWithDelay nav idleTime = do
+  lastActivityTime <- atomically $ do
+    na <- readTVar nav
+    let pending = filter (not . requestInfoCompleted) (Map.elems (naRequests na))
+    unless (null pending) retry
+
+    return (naLastActivityTime na)
+
+  now <- liftIO getCurrentTime
+  let timeSinceLastActivity = diffUTCTime now lastActivityTime
+  if | timeSinceLastActivity >= idleTime ->
+         return ()
+     | otherwise -> do
+         threadDelay $ nominalDiffTimeToMicroseconds (idleTime - timeSinceLastActivity)
+         waitForNetworkIdleWithDelay nav idleTime
+  where
+    nominalDiffTimeToMicroseconds :: NominalDiffTime -> Int
+    nominalDiffTimeToMicroseconds t = round (t * 1000000)
