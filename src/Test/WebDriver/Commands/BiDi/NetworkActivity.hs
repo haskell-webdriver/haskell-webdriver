@@ -10,6 +10,7 @@ module Test.WebDriver.Commands.BiDi.NetworkActivity (
   , readNetworkActivity
   , waitForNetworkIdle
   , waitForNetworkIdleForPeriod
+  , withWaitForNetworkIdleForPeriod
 
   -- * Types
   , NetworkActivityVar
@@ -289,6 +290,13 @@ waitForNetworkIdleForPeriod nav idleTime = do
   where
     nominalDiffTimeToMicroseconds :: NominalDiffTime -> Int
     nominalDiffTimeToMicroseconds t = round (t * 1000000)
+
+withWaitForNetworkIdleForPeriod :: (WebDriver m, MonadLogger m) => NominalDiffTime -> m a -> m a
+withWaitForNetworkIdleForPeriod dt action  = do
+  withRecordNetworkActivityViaBiDi $ \nav -> do
+    ret <- action
+    waitForNetworkIdleForPeriod nav dt
+    return ret
 
 adjustAndReturnNew :: Ord k => k -> M.Map k a -> (a -> a) -> (Maybe a, M.Map k a)
 adjustAndReturnNew k m f = M.alterF alter k m
