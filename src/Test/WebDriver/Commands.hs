@@ -83,6 +83,10 @@ module Test.WebDriver.Commands (
   -- | Retrieve browser console logs and other log types.
   , module Test.WebDriver.Commands.Logs
 
+  -- * Network activity (experimental)
+  -- | Use BiDi to track network activity events.
+  , module Test.WebDriver.Commands.BiDi.NetworkActivity
+
   -- * Selenium-specific
   -- ** Mobile device support
   , module Test.WebDriver.Commands.SeleniumSpecific.Mobile
@@ -98,6 +102,7 @@ module Test.WebDriver.Commands (
   ) where
 
 import Test.WebDriver.Commands.Actions
+import Test.WebDriver.Commands.BiDi.NetworkActivity
 import Test.WebDriver.Commands.CommandContexts
 import Test.WebDriver.Commands.Cookies
 import Test.WebDriver.Commands.DocumentHandling

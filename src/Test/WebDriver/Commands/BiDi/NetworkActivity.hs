@@ -1,13 +1,17 @@
 
 module Test.WebDriver.Commands.BiDi.NetworkActivity (
-    NetworkActivityVar
-  , RequestInfo(..)
-  , RequestId
-  , withRecordNetworkActivityViaBiDi
+  withRecordNetworkActivityViaBiDi
   , withRecordNetworkActivityViaBiDi'
+
   , newNetworkActivityVar
+
   , readNetworkActivity
   , waitForNetworkIdle
+
+  -- * Types
+  , NetworkActivityVar
+  , RequestInfo(..)
+  , RequestId
   ) where
 
 import Control.Applicative ((<|>))
@@ -57,18 +61,20 @@ type NetworkActivityVar = TVar (Map RequestId RequestInfo)
 -- | Wrapper around 'withRecordLogsViaBiDi'' which uses the WebSocket URL from
 -- the current 'Session'. You must make sure to pass '_capabilitiesWebSocketUrl'
 -- = @Just True@ to enable this. This will not work with Selenium 3.
-withRecordNetworkActivityViaBiDi :: (WebDriver m, MonadLogger m) => NetworkActivityVar -> m a -> m a
-withRecordNetworkActivityViaBiDi networkActivityVar action = do
-  withBiDiSession networkEvents (mkCallback networkActivityVar) action
+withRecordNetworkActivityViaBiDi :: (WebDriver m, MonadLogger m) => (NetworkActivityVar -> m a) -> m a
+withRecordNetworkActivityViaBiDi action = do
+  networkActivityVar <- newNetworkActivityVar
+  withBiDiSession networkEvents (mkCallback networkActivityVar) (action networkActivityVar)
 
--- | Connect to WebSocket URL and subscribe to log events using the W3C BiDi protocol; see
+-- | Connect to WebSocket URL and subscribe to network events using the W3C BiDi protocol; see
 -- <https://w3c.github.io/webdriver-bidi/>.
-withRecordNetworkActivityViaBiDi' :: forall m a. (MonadUnliftIO m, MonadLogger m) => Int -> URI.URI -> NetworkActivityVar -> m a -> m a
-withRecordNetworkActivityViaBiDi' bidiSessionId uri networkActivityVar action =
-  withBiDiSession' bidiSessionId uri networkEvents (mkCallback networkActivityVar) action
+withRecordNetworkActivityViaBiDi' :: forall m a. (MonadUnliftIO m, MonadLogger m) => Int -> URI.URI -> (NetworkActivityVar -> m a) -> m a
+withRecordNetworkActivityViaBiDi' bidiSessionId uri action = do
+  networkActivityVar <- newNetworkActivityVar
+  withBiDiSession' bidiSessionId uri networkEvents (mkCallback networkActivityVar) (action networkActivityVar)
 
 mkCallback :: (MonadIO m, MonadLogger m) => NetworkActivityVar -> BiDiEvent -> m ()
-mkCallback nav (BiDiEvent "event" "network.beforeRequestSent" params) =
+mkCallback nav (BiDiEvent "event" "network.beforeRequestSent" params) = do
   case parseBeforeRequestSent params of
     Just (requestId, method, url, timestamp, headers) -> do
       atomically $ modifyTVar nav $ Map.insert requestId $ RequestInfo {
@@ -86,7 +92,7 @@ mkCallback nav (BiDiEvent "event" "network.beforeRequestSent" params) =
       logDebugN [i|BiDi: Network request started: #{requestId} #{method} #{url}|]
     Nothing -> logWarnN "BiDi: Failed to parse network.beforeRequestSent event"
 
-mkCallback nav (BiDiEvent "event" "network.responseStarted" params) =
+mkCallback nav (BiDiEvent "event" "network.responseStarted" params) = do
   case parseResponseStarted params of
     Just (requestId, status, headers) -> do
       atomically $ modifyTVar nav $ flip Map.adjust requestId $ \ri -> ri {
@@ -96,7 +102,7 @@ mkCallback nav (BiDiEvent "event" "network.responseStarted" params) =
       logDebugN [i|BiDi: Network response started: #{requestId} status #{status}|]
     Nothing -> logWarnN "BiDi: Failed to parse network.responseStarted event"
 
-mkCallback nav (BiDiEvent "event" "network.responseCompleted" params) =
+mkCallback nav (BiDiEvent "event" "network.responseCompleted" params) = do
   case parseResponseCompleted params of
     Just (requestId, responseText) -> do
       atomically $ modifyTVar nav $ flip Map.adjust requestId $ \ri -> ri {
@@ -118,22 +124,21 @@ mkCallback nav (BiDiEvent "event" "network.fetchError" params) =
 
 mkCallback _nav x = logDebugN [i|BiDi: Ignoring event: #{x}|]
 
--- | Parse network.beforeRequestSent event parameters
 parseBeforeRequestSent :: Value -> Maybe (RequestId, Text, Text, UTCTime, Maybe (Map Text Text))
 parseBeforeRequestSent (Object o) = case parseEither parseRequest o of
   Right result -> Just result
   Left _ -> Nothing
   where
     parseRequest o' = do
-      requestId <- o' .: "requestId"
       request <- o' .: "request"
+      requestId <- request .: "request"  -- The requestId is in request.request
       method <- request .: "method"
       url <- request .: "url"
-      timestamp <- o' .: "timestamp"
+      timestamp <- o' .: "timestamp" :: Parser Integer
       headers <- optional (request .: "headers") >>= \case
         Just headerList -> Just <$> parseHeaders headerList
         Nothing -> pure Nothing
-      let utcTime = posixSecondsToUTCTime (timestamp / 1000)
+      let utcTime = posixSecondsToUTCTime (realToFrac timestamp / 1000)
       pure (requestId, method, url, utcTime, headers)
 parseBeforeRequestSent _ = Nothing
 
@@ -143,7 +148,8 @@ parseResponseStarted (Object o) = case parseEither parseResponse o of
   Left _ -> Nothing
   where
     parseResponse o' = do
-      requestId <- o' .: "requestId"
+      request <- o' .: "request"
+      requestId <- request .: "request"  -- The requestId is in request.request
       response <- o' .: "response"
       status <- response .: "status"
       headers <- optional (response .: "headers") >>= \case
@@ -158,7 +164,8 @@ parseResponseCompleted (Object o) = case parseEither parseResponse o of
   Left _ -> Nothing
   where
     parseResponse o' = do
-      requestId <- o' .: "requestId"
+      request <- o' .: "request"
+      requestId <- request .: "request"  -- The requestId is in request.request
       responseText <- optional (o' .: "response" >>= (.: "body") >>= (.: "value"))
       pure (requestId, responseText)
 parseResponseCompleted _ = Nothing
@@ -169,7 +176,8 @@ parseFetchError (Object o) = case parseEither parseError o of
   Left _ -> Nothing
   where
     parseError o' = do
-      requestId <- o' .: "requestId"
+      request <- o' .: "request"
+      requestId <- request .: "request"  -- The requestId is in request.request
       errorText <- o' .: "errorText"
       pure (requestId, errorText)
 parseFetchError _ = Nothing
@@ -181,7 +189,11 @@ parseHeaders (Array headers) = do
   where
     parseHeader (Object h) = do
       name <- h .: "name"
-      value <- h .: "value"
+      valueObj <- h .: "value"
+      value <- case valueObj of
+        Object vo -> vo .: "value"  -- Extract value from {type: "string", value: "..."}
+        String s -> pure s          -- Fallback for direct string values
+        _ -> fail "Invalid header value format"
       pure (name, value)
     parseHeader _ = fail "Invalid header format"
 parseHeaders _ = fail "Headers should be an array"
@@ -189,7 +201,6 @@ parseHeaders _ = fail "Headers should be an array"
 optional :: Parser a -> Parser (Maybe a)
 optional p = (Just <$> p) <|> pure Nothing
 
--- | Create a new empty NetworkActivityVar
 newNetworkActivityVar :: MonadIO m => m NetworkActivityVar
 newNetworkActivityVar = newTVarIO Map.empty
 
