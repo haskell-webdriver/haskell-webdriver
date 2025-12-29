@@ -173,7 +173,7 @@ withBetterPingPong (PingPongOptions {..}) connection app = void $
           WS.sendPing connection bytes
 
           timeout (pongTimeout * 1000 * 1000) (takeMVar (WS.connectionHeartbeat connection)) >>= \case
-            Just () -> return ()
+            Just _ -> return ()
             Nothing -> throwIO $ BetterPongTimeoutNoResponse
 
           threadDelay (pongTimeout * 1000 * 1000)
