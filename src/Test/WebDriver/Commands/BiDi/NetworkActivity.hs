@@ -9,7 +9,7 @@ module Test.WebDriver.Commands.BiDi.NetworkActivity (
 
   , readNetworkActivity
   , waitForNetworkIdle
-  , waitForNetworkIdleWithDelay
+  , waitForNetworkIdleForPeriod
 
   -- * Types
   , NetworkActivityVar
@@ -270,8 +270,8 @@ waitForNetworkIdle nav = atomically $ do
 -- This waits until:
 -- 1. There are no outstanding requests AND
 -- 2. No request has started or finished in the last N microseconds
-waitForNetworkIdleWithDelay :: MonadIO m => NetworkActivityVar -> NominalDiffTime -> m ()
-waitForNetworkIdleWithDelay nav idleTime = do
+waitForNetworkIdleForPeriod :: MonadIO m => NetworkActivityVar -> NominalDiffTime -> m ()
+waitForNetworkIdleForPeriod nav idleTime = do
   lastActivityTime <- atomically $ do
     na <- readTVar nav
     let pending = filter (not . requestInfoCompleted) (M.elems (networkActivityRequests na))
@@ -285,7 +285,7 @@ waitForNetworkIdleWithDelay nav idleTime = do
          return ()
      | otherwise -> do
          threadDelay $ nominalDiffTimeToMicroseconds (idleTime - timeSinceLastActivity)
-         waitForNetworkIdleWithDelay nav idleTime
+         waitForNetworkIdleForPeriod nav idleTime
   where
     nominalDiffTimeToMicroseconds :: NominalDiffTime -> Int
     nominalDiffTimeToMicroseconds t = round (t * 1000000)
