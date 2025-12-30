@@ -11,27 +11,22 @@ module Test.WebDriver.Commands.BiDi.Session (
   , BiDiResponse(..)
   ) where
 
-import Control.Monad (forever, void)
+import Control.Monad (forever)
 import Control.Monad.Fix (fix)
 import Control.Monad.IO.Unlift
 import Control.Monad.Logger (MonadLogger, logDebugN, logErrorN)
 import Data.Aeson
 import Data.Aeson.TH
-import qualified Data.ByteString.Builder as Builder
-import qualified Data.ByteString.Lazy as BL
 import qualified Data.List as L
 import Data.String.Interpolate
 import Data.Text (Text)
 import qualified Network.URI as URI
 import qualified Network.WebSockets as WS
-import qualified Network.WebSockets.Connection as WS
 import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Types
 import Text.Read (readMaybe)
-import UnliftIO.Async (AsyncCancelled(..), waitAnyCancel, withAsync)
-import UnliftIO.Concurrent (threadDelay)
+import UnliftIO.Async (withAsync)
 import UnliftIO.Exception
-import UnliftIO.MVar (takeMVar, tryTakeMVar)
 import UnliftIO.STM (atomically, stateTVar)
 import UnliftIO.Timeout (timeout)
 
@@ -75,36 +70,27 @@ withBiDiSession' :: (MonadUnliftIO m, MonadLogger m) => Int -> URI.URI -> [Text]
 withBiDiSession' bidiSessionId uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) events cb action = do
   logDebugN [i|BiDi: Connecting to #{uriRegName}:#{port}#{uriPath}|]
 
-  -- retVar <- newEmptyMVar
-
   withRunInIO $ \runInIO -> liftIO $ WS.runClient uriRegName port uriPath $ \conn -> runInIO $ do
-    -- WS.withPingPong WS.defaultPingPongOptions conn' $ \conn -> runInIO $ do
-      logDebugN [i|BiDi: Connected successfully, sending subscription request with ID #{bidiSessionId}|]
-      liftIO $ WS.sendTextData conn $ encode $ object [
-        "id" .= bidiSessionId
-        , "method" .= ("session.subscribe" :: Text)
-        , "params" .= object [
-            "events" .= (events :: [Text])
-          ]
+    logDebugN [i|BiDi: Connected successfully, sending subscription request with ID #{bidiSessionId}|]
+    liftIO $ WS.sendTextData conn $ encode $ object [
+      "id" .= bidiSessionId
+      , "method" .= ("session.subscribe" :: Text)
+      , "params" .= object [
+          "events" .= (events :: [Text])
         ]
+      ]
 
-      logDebugN "BiDi: Sent subscription request, waiting for response..."
-      timeout 15_000_000 (waitForSubscriptionResult bidiSessionId conn) >>= \case
-        Nothing -> throwIO $ userError "BiDi: Subscription response timed out"
-        Just (Left err) ->
-          throwIO $ userError [i|BiDi: got exception (URI #{uri}): #{err}|]
-        Just (Right ()) -> do
-          logDebugN "BiDi: Starting log event listener"
-          withAsync (messageListener conn) $ \_messageListenerAsy -> do
-            finally action $ do
-              logDebugN [i|BiDi: finished wrapped action|]
-              liftIO $ WS.sendClose conn ([i|Finishing session #{bidiSessionId}|] :: Text)
-          -- putMVar retVar result
-
-  -- tryTakeMVar retVar >>= \case
-  --   Nothing -> throwIO $ userError [i|BiDi: action didn't produce a result|]
-  --   Just x -> pure x
-
+    logDebugN "BiDi: Sent subscription request, waiting for response..."
+    timeout 15_000_000 (waitForSubscriptionResult bidiSessionId conn) >>= \case
+      Nothing -> throwIO $ userError "BiDi: Subscription response timed out"
+      Just (Left err) ->
+        throwIO $ userError [i|BiDi: got exception (URI #{uri}): #{err}|]
+      Just (Right ()) -> do
+        logDebugN "BiDi: Starting log event listener"
+        withAsync (messageListener conn) $ \_messageListenerAsy -> do
+          finally action $ do
+            logDebugN [i|BiDi: finished wrapped action|]
+            liftIO $ WS.sendClose conn ([i|Finishing session #{bidiSessionId}|] :: Text)
   where
     messageListener conn =
       forever $
@@ -136,49 +122,57 @@ waitForSubscriptionResult bidiSessionId conn = fix $ \loop -> do
       loop
 
 -- * Better WebSocket ping/pong
+-- | I've run into problems with the ping/pong support in the websockets
+-- library, so I came up with this alternative version that I use in my
+-- websockets projects.
+--
+-- But, according to some searching, it seems that the BiDi client doesn't need
+-- to do ping/pong, as we can count on the browser driver to do it. So leaving
+-- this unused for now. It might still be useful to use at some point to catch
+-- dead drivers etc.
 
-data BetterPongTimeout =
-  BetterPongTimeoutUnexpectedResponse BL.ByteString
-  | BetterPongTimeoutNoResponse
-  deriving Show
-instance Exception BetterPongTimeout
+-- data BetterPongTimeout =
+--   BetterPongTimeoutUnexpectedResponse BL.ByteString
+--   | BetterPongTimeoutNoResponse
+--   deriving Show
+-- instance Exception BetterPongTimeout
 
-data PingPongOptions = PingPongOptions {
-  pingInterval :: Int -- ^ Interval in seconds
-  , pongTimeout :: Int -- ^ Timeout in seconds
-  , pingAction :: Int -> IO () -- ^ Action to perform after sending a ping
-  , pingMessage :: Text -> IO () -- ^ Message to log
-}
-defaultPingPongOptions :: PingPongOptions
-defaultPingPongOptions = PingPongOptions {
-  pingInterval = 15
-  , pongTimeout = 30
-  , pingAction = const $ return ()
-  , pingMessage = const $ return ()
-}
+-- data PingPongOptions = PingPongOptions {
+--   pingInterval :: Int -- ^ Interval in seconds
+--   , pongTimeout :: Int -- ^ Timeout in seconds
+--   , pingAction :: Int -> IO () -- ^ Action to perform after sending a ping
+--   , pingMessage :: Text -> IO () -- ^ Message to log
+-- }
+-- defaultPingPongOptions :: PingPongOptions
+-- defaultPingPongOptions = PingPongOptions {
+--   pingInterval = 15
+--   , pongTimeout = 30
+--   , pingAction = const $ return ()
+--   , pingMessage = const $ return ()
+-- }
 
-withBetterPingPong :: MonadUnliftIO m => PingPongOptions -> WS.Connection -> (WS.Connection -> m ()) -> m ()
-withBetterPingPong (PingPongOptions {..}) connection app = void $
-  withAsync (app connection) $ \appAsync -> do
-    withAsync (liftIO pingPongThread) $ \pingAsync -> do
-      waitAnyCancel [appAsync, pingAsync]
-    where
-      pingPongThread = do
-        -- Make sure the heartbeat MVar is empty
-        _ <- tryTakeMVar (WS.connectionHeartbeat connection)
+-- withBetterPingPong :: MonadUnliftIO m => PingPongOptions -> WS.Connection -> (WS.Connection -> m ()) -> m ()
+-- withBetterPingPong (PingPongOptions {..}) connection app = void $
+--   withAsync (app connection) $ \appAsync -> do
+--     withAsync (liftIO pingPongThread) $ \pingAsync -> do
+--       waitAnyCancel [appAsync, pingAsync]
+--     where
+--       pingPongThread = do
+--         -- Make sure the heartbeat MVar is empty
+--         _ <- tryTakeMVar (WS.connectionHeartbeat connection)
 
-        flip withException reportPingPongException $ flip fix (0 :: Int) $ \loop n -> do
-          let bytes :: BL.ByteString = Builder.toLazyByteString $ Builder.int64BE $ fromIntegral n
+--         flip withException reportPingPongException $ flip fix (0 :: Int) $ \loop n -> do
+--           let bytes :: BL.ByteString = Builder.toLazyByteString $ Builder.int64BE $ fromIntegral n
 
-          WS.sendPing connection bytes
+--           WS.sendPing connection bytes
 
-          timeout (pongTimeout * 1000 * 1000) (takeMVar (WS.connectionHeartbeat connection)) >>= \case
-            Just _ -> return ()
-            Nothing -> throwIO $ BetterPongTimeoutNoResponse
+--           timeout (pongTimeout * 1000 * 1000) (takeMVar (WS.connectionHeartbeat connection)) >>= \case
+--             Just _ -> return ()
+--             Nothing -> throwIO $ BetterPongTimeoutNoResponse
 
-          threadDelay (pongTimeout * 1000 * 1000)
-          loop (n + 1)
+--           threadDelay (pongTimeout * 1000 * 1000)
+--           loop (n + 1)
 
-      reportPingPongException :: SomeException -> IO ()
-      reportPingPongException (fromException -> Just (AsyncCancelled {})) = return ()
-      reportPingPongException e = pingMessage [i|Ping pong thread had exception: #{e}|]
+--       reportPingPongException :: SomeException -> IO ()
+--       reportPingPongException (fromException -> Just (AsyncCancelled {})) = return ()
+--       reportPingPongException e = pingMessage [i|Ping pong thread had exception: #{e}|]
