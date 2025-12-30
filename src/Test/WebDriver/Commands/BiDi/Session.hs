@@ -101,7 +101,9 @@ withBiDiSession' _ uri _events _cb _action =
   throwIO $ userError [i|WebSocket URL didn't contain an authority: #{uri}|]
 
 
-waitForSubscriptionResult :: (MonadIO m, MonadLogger m) => Int -> WS.Connection -> m (Either SomeException ())
+waitForSubscriptionResult :: (
+  MonadIO m, MonadLogger m
+  ) => Int -> WS.Connection -> m (Either SomeException ())
 waitForSubscriptionResult bidiSessionId conn = fix $ \loop -> do
   msg <- liftIO $ WS.receiveData conn
   logDebugN [i|BiDi: Waiting for subscription response: #{msg}|]

@@ -5,16 +5,22 @@ module Test.WebDriver.Commands.BiDi.NetworkActivity (
   withRecordNetworkActivityViaBiDi
   , withRecordNetworkActivityViaBiDi'
 
-  , newNetworkActivityVar
-
   , readNetworkActivity
   , waitForNetworkIdle
   , waitForNetworkIdleForPeriod
   , withWaitForNetworkIdleForPeriod
 
   -- * Types
-  , NetworkActivityVar
-  , RequestInfo(..)
+  , RequestInfo
+  , requestInfoRequestId
+  , requestInfoMethod
+  , requestInfoUrl
+  , requestInfoTimestamp
+  , requestInfoRequestHeaders
+  , requestInfoResponseHeaders
+  , requestInfoResponseText
+  , requestInfoErrorText
+  , requestInfoCompleted
   , RequestId
   ) where
 
@@ -69,7 +75,7 @@ data NetworkActivity = NetworkActivity {
 
 type NetworkActivityVar = TVar NetworkActivity
 
--- | Wrapper around 'withRecordLogsViaBiDi'' which uses the WebSocket URL from
+-- | Wrapper around 'withRecordNetworkActivityViaBiDi'' which uses the WebSocket URL from
 -- the current 'Session'. You must make sure to pass '_capabilitiesWebSocketUrl'
 -- = @Just True@ to enable this. This will not work with Selenium 3.
 withRecordNetworkActivityViaBiDi :: (WebDriver m, MonadLogger m) => (NetworkActivityVar -> m a) -> m a
@@ -256,7 +262,7 @@ newNetworkActivityVar = do
   now <- liftIO getCurrentTime
   newTVarIO $ NetworkActivity M.empty now
 
--- | Read the current network activity map
+-- | Read the current network activity map.
 readNetworkActivity :: MonadIO m => NetworkActivityVar -> m (Map RequestId RequestInfo)
 readNetworkActivity nav = networkActivityRequests <$> readTVarIO nav
 
@@ -269,8 +275,9 @@ waitForNetworkIdle nav = atomically $ do
 
 -- | Wait for network to be idle with a delay after the last activity
 -- This waits until:
+--
 -- 1. There are no outstanding requests AND
--- 2. No request has started or finished in the last N microseconds
+-- 2. No request has started or finished in the last time period given by the 'NominalDiffTime'.
 waitForNetworkIdleForPeriod :: MonadIO m => NetworkActivityVar -> NominalDiffTime -> m ()
 waitForNetworkIdleForPeriod nav idleTime = do
   lastActivityTime <- atomically $ do
