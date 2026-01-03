@@ -1,14 +1,13 @@
 
-resolver: lts-22.39
+resolver: nightly-2025-12-25
 
 packages:
 - '.'
 
 nix:
-  pure: false
-  packages:
-  - pkg-config
-  - zlib
+  enable: false
+
+system-ghc: true
 
 extra-deps:
 - git: https://github.com/codedownio/sandwich
