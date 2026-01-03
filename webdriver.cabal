@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.38.0.
+-- This file has been generated from package.yaml by hpack version 0.38.1.
 --
 -- see: https://github.com/sol/hpack
 
@@ -60,6 +60,8 @@ library
       Test.WebDriver.Capabilities.Timeouts
       Test.WebDriver.Capabilities.UserPromptHandler
       Test.WebDriver.Commands.Actions
+      Test.WebDriver.Commands.BiDi.NetworkActivity
+      Test.WebDriver.Commands.BiDi.Session
       Test.WebDriver.Commands.CommandContexts
       Test.WebDriver.Commands.Cookies
       Test.WebDriver.Commands.DocumentHandling
