@@ -1,7 +1,7 @@
 {
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix/master";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-25.11";
   inputs.nixpkgsMaster.url = "github:NixOS/nixpkgs/master";
 
   outputs = { self, flake-utils, haskellNix, nixpkgs, nixpkgsMaster }:
@@ -30,8 +30,8 @@
                 pkg-config
                 zlib
               ]) ++ (with pkgsMaster; [
-                haskell.compiler.ghc9102
-                (haskell-language-server.override { supportedGhcVersions = ["9102"]; })
+                haskell.compiler.ghc9122
+                (haskell-language-server.override { supportedGhcVersions = ["9122"]; })
               ]);
             };
           };
