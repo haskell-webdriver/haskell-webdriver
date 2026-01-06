@@ -25,15 +25,15 @@ logEvents = ["log.entryAdded"]
 -- | Wrapper around 'withRecordLogsViaBiDi'' which uses the WebSocket URL from
 -- the current 'Session'. You must make sure to pass '_capabilitiesWebSocketUrl'
 -- = @Just True@ to enable this. This will not work with Selenium 3.
-withRecordLogsViaBiDi :: (WebDriver m, MonadLogger m) => (LogEntry -> m ()) -> m a -> m a
-withRecordLogsViaBiDi cb action = do
-  withBiDiSession logEvents (mkLogCallback cb) action
+withRecordLogsViaBiDi :: (WebDriver m, MonadLogger m) => BiDiOptions -> (LogEntry -> m ()) -> m a -> m a
+withRecordLogsViaBiDi biDiOptions cb action = do
+  withBiDiSession biDiOptions logEvents (mkLogCallback cb) action
 
 -- | Connect to WebSocket URL and subscribe to log events using the W3C BiDi protocol; see
 -- <https://w3c.github.io/webdriver-bidi/>.
-withRecordLogsViaBiDi' :: forall m a. (MonadUnliftIO m, MonadLogger m) => Int -> URI.URI -> (LogEntry -> m ()) -> m a -> m a
-withRecordLogsViaBiDi' bidiSessionId uri cb action =
-  withBiDiSession' bidiSessionId uri logEvents (mkLogCallback cb) action
+withRecordLogsViaBiDi' :: forall m a. (MonadUnliftIO m, MonadLogger m) => BiDiOptions -> Int -> URI.URI -> (LogEntry -> m ()) -> m a -> m a
+withRecordLogsViaBiDi' biDiOptions bidiSessionId uri cb action =
+  withBiDiSession' biDiOptions bidiSessionId uri logEvents (mkLogCallback cb) action
 
 mkLogCallback :: (MonadLogger m) => (LogEntry -> m ()) -> BiDiEvent -> m ()
 mkLogCallback cb (BiDiEvent "event" "log.entryAdded" params) = case parseBiDiLogEntry params of

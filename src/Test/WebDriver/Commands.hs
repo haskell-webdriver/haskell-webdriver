@@ -83,6 +83,10 @@ module Test.WebDriver.Commands (
   -- | Retrieve browser console logs and other log types.
   , module Test.WebDriver.Commands.Logs
 
+  -- * BiDi sessions (experimental)
+  -- | Low-level BiDi session establishment.
+  , module Test.WebDriver.Commands.BiDi.Session
+
   -- * Network activity (experimental)
   -- | Use BiDi to track network activity events.
   , module Test.WebDriver.Commands.BiDi.NetworkActivity
@@ -103,6 +107,7 @@ module Test.WebDriver.Commands (
 
 import Test.WebDriver.Commands.Actions
 import Test.WebDriver.Commands.BiDi.NetworkActivity
+import Test.WebDriver.Commands.BiDi.Session
 import Test.WebDriver.Commands.CommandContexts
 import Test.WebDriver.Commands.Cookies
 import Test.WebDriver.Commands.DocumentHandling

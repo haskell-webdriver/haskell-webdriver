@@ -78,17 +78,17 @@ type NetworkActivityVar = TVar NetworkActivity
 -- | Wrapper around 'withRecordNetworkActivityViaBiDi'' which uses the WebSocket URL from
 -- the current 'Session'. You must make sure to pass '_capabilitiesWebSocketUrl'
 -- = @Just True@ to enable this. This will not work with Selenium 3.
-withRecordNetworkActivityViaBiDi :: (WebDriver m, MonadLogger m) => (NetworkActivityVar -> m a) -> m a
-withRecordNetworkActivityViaBiDi action = do
+withRecordNetworkActivityViaBiDi :: (WebDriver m, MonadLogger m) => BiDiOptions -> (NetworkActivityVar -> m a) -> m a
+withRecordNetworkActivityViaBiDi biDiOptions action = do
   networkActivityVar <- newNetworkActivityVar
-  withBiDiSession networkEvents (mkCallback networkActivityVar) (action networkActivityVar)
+  withBiDiSession biDiOptions networkEvents (mkCallback networkActivityVar) (action networkActivityVar)
 
 -- | Connect to WebSocket URL and subscribe to network events using the W3C BiDi protocol; see
 -- <https://w3c.github.io/webdriver-bidi/>.
-withRecordNetworkActivityViaBiDi' :: forall m a. (MonadUnliftIO m, MonadLogger m) => Int -> URI.URI -> (NetworkActivityVar -> m a) -> m a
-withRecordNetworkActivityViaBiDi' bidiSessionId uri action = do
+withRecordNetworkActivityViaBiDi' :: forall m a. (MonadUnliftIO m, MonadLogger m) => BiDiOptions -> Int -> URI.URI -> (NetworkActivityVar -> m a) -> m a
+withRecordNetworkActivityViaBiDi' biDiOptions bidiSessionId uri action = do
   networkActivityVar <- newNetworkActivityVar
-  withBiDiSession' bidiSessionId uri networkEvents (mkCallback networkActivityVar) (action networkActivityVar)
+  withBiDiSession' biDiOptions bidiSessionId uri networkEvents (mkCallback networkActivityVar) (action networkActivityVar)
 
 mkCallback :: (MonadIO m, MonadLogger m) => NetworkActivityVar -> BiDiEvent -> m ()
 mkCallback nav (BiDiEvent "event" "network.beforeRequestSent" params) = do
@@ -298,9 +298,9 @@ waitForNetworkIdleForPeriod nav idleTime = do
     nominalDiffTimeToMicroseconds :: NominalDiffTime -> Int
     nominalDiffTimeToMicroseconds t = round (t * 1000000)
 
-withWaitForNetworkIdleForPeriod :: (WebDriver m, MonadLogger m) => NominalDiffTime -> m a -> m a
-withWaitForNetworkIdleForPeriod dt action  = do
-  withRecordNetworkActivityViaBiDi $ \nav -> do
+withWaitForNetworkIdleForPeriod :: (WebDriver m, MonadLogger m) => BiDiOptions -> NominalDiffTime -> m a -> m a
+withWaitForNetworkIdleForPeriod biDiOptions dt action  = do
+  withRecordNetworkActivityViaBiDi biDiOptions $ \nav -> do
     ret <- action
     waitForNetworkIdleForPeriod nav dt
     return ret

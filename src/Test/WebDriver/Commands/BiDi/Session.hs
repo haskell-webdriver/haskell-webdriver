@@ -9,6 +9,9 @@ module Test.WebDriver.Commands.BiDi.Session (
 
   , BiDiEvent(..)
   , BiDiResponse(..)
+
+  , BiDiOptions(..)
+  , defaultBiDiOptions
   ) where
 
 import Control.Monad (forever)
@@ -46,11 +49,21 @@ data BiDiResponse = BiDiResponse {
   } deriving Show
 deriveFromJSON toCamel3 ''BiDiResponse
 
+-- | Options controlling BiDi session establishment.
+data BiDiOptions = BiDiOptions {
+  biDiSubscriptionRequestTimeoutUs :: Int
+  }
+-- | Default BiDi options.
+defaultBiDiOptions :: BiDiOptions
+defaultBiDiOptions = BiDiOptions {
+  biDiSubscriptionRequestTimeoutUs = 15_000_000
+  }
+
 -- | Wrapper around 'withBiDiSession'' which uses the WebSocket URL from
 -- the current 'Session'. You must make sure to pass '_capabilitiesWebSocketUrl'
 -- = @Just True@ to enable this. This will not work with Selenium 3.
-withBiDiSession :: (WebDriver m, MonadLogger m) => [Text] -> (BiDiEvent -> m ()) -> m a -> m a
-withBiDiSession events cb action = do
+withBiDiSession :: (WebDriver m, MonadLogger m) => BiDiOptions -> [Text] -> (BiDiEvent -> m ()) -> m a -> m a
+withBiDiSession biDiOptions events cb action = do
   Session {..} <- getSession
   webSocketUrl <- case sessionWebSocketUrl of
     Nothing -> throwIO $ userError [i|Session wasn't configured with a BiDi WebSocket URL when trying to record logs. Make sure to enable _capabilitiesWebSocketUrl.|]
@@ -62,12 +75,12 @@ withBiDiSession events cb action = do
 
   bidiSessionId <- atomically $ stateTVar sessionIdCounter (\x -> (x, x + 1))
 
-  withBiDiSession' bidiSessionId uri events cb action
+  withBiDiSession' biDiOptions bidiSessionId uri events cb action
 
 -- | Connect to WebSocket URL and subscribe to the given events using the W3C BiDi protocol; see
 -- <https://w3c.github.io/webdriver-bidi/>.
-withBiDiSession' :: (MonadUnliftIO m, MonadLogger m) => Int -> URI.URI -> [Text] -> (BiDiEvent -> m ()) -> m a -> m a
-withBiDiSession' bidiSessionId uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) events cb action = do
+withBiDiSession' :: (MonadUnliftIO m, MonadLogger m) => BiDiOptions -> Int -> URI.URI -> [Text] -> (BiDiEvent -> m ()) -> m a -> m a
+withBiDiSession' biDiOptions bidiSessionId uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {uriPort=(readMaybe . L.drop 1 -> Just (port :: Int)), ..})), .. }) events cb action = do
   logDebugN [i|BiDi: Connecting to #{uriRegName}:#{port}#{uriPath}|]
 
   withRunInIO $ \runInIO -> liftIO $ WS.runClient uriRegName port uriPath $ \conn -> runInIO $ do
@@ -81,7 +94,7 @@ withBiDiSession' bidiSessionId uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {u
       ]
 
     logDebugN "BiDi: Sent subscription request, waiting for response..."
-    timeout 15_000_000 (waitForSubscriptionResult bidiSessionId conn) >>= \case
+    timeout (biDiSubscriptionRequestTimeoutUs biDiOptions) (waitForSubscriptionResult bidiSessionId conn) >>= \case
       Nothing -> throwIO $ userError "BiDi: Subscription response timed out"
       Just (Left err) ->
         throwIO $ userError [i|BiDi: got exception (URI #{uri}): #{err}|]
@@ -97,7 +110,7 @@ withBiDiSession' bidiSessionId uri@(URI.URI { uriAuthority=(Just (URI.URIAuth {u
         (decode <$>) (liftIO $ WS.receiveData conn) >>= \case
           Just (x :: BiDiEvent) -> cb x
           x -> logDebugN [i|BiDi: Ignoring non-log event message: #{x}|]
-withBiDiSession' _ uri _events _cb _action =
+withBiDiSession' _ _ uri _events _cb _action =
   throwIO $ userError [i|WebSocket URL didn't contain an authority: #{uri}|]
 
 
