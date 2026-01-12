@@ -26,7 +26,7 @@ tests = introduceSession $ describe "Browser logs via BiDi" $ before "Open test 
     allLogEntries <- newIORef (mempty :: Seq LogEntry)
 
     let cb logEntry = atomicModifyIORef' allLogEntries (\x -> (x |> logEntry, ()))
-    withRecordLogsViaBiDi cb $ do
+    withRecordLogsViaBiDi defaultBiDiOptions cb $ do
       ignoreReturn $ executeJS [] [i|console.log('log message from haskell-webdriver');|]
       ignoreReturn $ executeJS [] [i|console.warn('warn message from haskell-webdriver');|]
       ignoreReturn $ executeJS [] [i|console.error('error message from haskell-webdriver');|]
