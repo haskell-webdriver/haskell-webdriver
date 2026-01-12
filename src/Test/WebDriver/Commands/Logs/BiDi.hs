@@ -38,7 +38,7 @@ withRecordLogsViaBiDi' biDiOptions bidiSessionId uri cb action =
 mkLogCallback :: (MonadLogger m) => (LogEntry -> m ()) -> BiDiEvent -> m ()
 mkLogCallback cb (BiDiEvent "event" "log.entryAdded" params) = case parseBiDiLogEntry params of
   Just logEntry -> cb logEntry
-  Nothing -> logWarnN "BiDi: Failed to parse log entry"
+  Nothing -> logWarnN [i|BiDi: Failed to parse log entry: #{params}|]
 mkLogCallback _cb x =
   logDebugN [i|BiDi: Ignoring non-log event message: #{x}|]
 
