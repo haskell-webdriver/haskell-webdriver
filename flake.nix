@@ -1,14 +1,12 @@
 {
   inputs.flake-utils.url = "github:numtide/flake-utils";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix/master";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/release-25.11";
-  inputs.nixpkgsMaster.url = "github:NixOS/nixpkgs/master";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/master";
 
-  outputs = { self, flake-utils, haskellNix, nixpkgs, nixpkgsMaster }:
+  outputs = { self, flake-utils, haskellNix, nixpkgs }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = import nixpkgs { inherit system; };
-        pkgsMaster = import nixpkgsMaster {
+        pkgs = import nixpkgs {
           inherit system;
           overlays = [haskellNix.overlay];
           config = haskellNix.config;
@@ -17,8 +15,8 @@
       in
         {
           packages = {
-            weeder = pkgsMaster.callPackage ./nix/weeder.nix {
-              compiler-nix-name = "ghc9102";
+            weeder = pkgs.callPackage ./nix/weeder.nix {
+              compiler-nix-name = "ghc9124";
             };
           };
 
@@ -29,9 +27,9 @@
                 ncurses
                 pkg-config
                 zlib
-              ]) ++ (with pkgsMaster; [
-                haskell.compiler.ghc9122
-                (haskell-language-server.override { supportedGhcVersions = ["9122"]; })
+              ]) ++ (with pkgs; [
+                haskell.compiler.ghc9124
+                # (haskell-language-server.override { supportedGhcVersions = ["9124"]; })
               ]);
             };
           };
