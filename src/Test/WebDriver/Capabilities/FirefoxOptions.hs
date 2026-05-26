@@ -4,6 +4,7 @@ module Test.WebDriver.Capabilities.FirefoxOptions where
 
 import Data.Aeson as A
 import Data.Aeson.TH
+import Data.Map (Map)
 import Lens.Micro.TH
 import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Profile
@@ -31,24 +32,42 @@ makeLenses ''FirefoxLogLevel
 -- | See https://developer.mozilla.org/en-US/docs/Web/WebDriver/Capabilities/firefoxOptions
 data FirefoxOptions = FirefoxOptions {
   -- | Absolute path to the custom Firefox binary to use.
-  -- On macOS you may either give the path to the application bundle, i.e. @\/Applications\/Firefox.app@, or the absolute
-  -- path to the executable binary inside this bundle, for example
-  -- @\/Applications\/Firefox.app\/Contents\/MacOS\/firefox-bin@. geckodriver will attempt to deduce the default location of
-  -- Firefox on the current system if left undefined.
+  --
+  -- On macOS you may either give the path to the application bundle, i.e.
+  -- @\/Applications\/Firefox.app@, or the absolute path to the executable
+  -- binary inside this bundle, for example
+  -- @\/Applications\/Firefox.app\/Contents\/MacOS\/firefox-bin@.
+  --
+  -- geckodriver will attempt to deduce the default location of Firefox on the
+  -- current system if left undefined.
   _firefoxOptionsBinary :: Maybe String
-  -- | Command line arguments to pass to the Firefox binary.
-  -- These must include the leading dash (-) where required, e.g. ["-headless"].
-  -- To have geckodriver pick up an existing profile on the local filesystem, you may pass @["-profile", -- "\/path\/to\/profile"]@.
-  -- But if a profile has to be transferred to a target machine it is recommended to use the profile entry.
+  -- | Command line arguments to pass to the Firefox binary. These must include
+  -- the leading dash (-) where required, e.g. ["-headless"].
+  --
+  -- To have geckodriver pick up an existing profile on the local filesystem,
+  -- you may pass @["-profile", -- "\/path\/to\/profile"]@. But if a profile has
+  -- to be transferred to a target machine it is recommended to use the profile
+  -- entry.
   , _firefoxOptionsArgs :: Maybe [String]
-  -- | Base64-encoded ZIP of a profile directory to use for the Firefox instance. This may be used to e.g. install
-  -- extensions or custom certificates, but for setting custom preferences we recommend using the prefs entry instead.
+  -- | Base64-encoded ZIP of a profile directory to use for the Firefox
+  -- instance. This may be used to e.g. install extensions or custom
+  -- certificates, but for setting custom preferences we recommend using the
+  -- prefs entry instead.
   , _firefoxOptionsProfile :: Maybe (Profile Firefox)
-  -- | To increase the logging verbosity of geckodriver and Firefox, you may pass a log object that may look like
-  -- {"log": {"level": "trace"}} to include all trace-level logs and above.
+  -- | To increase the logging verbosity of geckodriver and Firefox, you may
+  -- pass a log object that may look like {"log": {"level": "trace"}} to include
+  -- all trace-level logs and above.
   , _firefoxOptionsLog :: Maybe FirefoxLogLevel
-  -- | Map of preference name to preference value, which can be a string, a boolean or an integer.
+  -- | Map of preference name to preference value, which can be a string, a
+  -- boolean or an integer.
   , _firefoxOptionsPrefs :: Maybe A.Object
+  -- | Map of environment variable name to environment variable value, both of
+  -- which must be strings.
+  --
+  -- On Desktop, the Firefox under test will launch with given variable in its
+  -- environment. On Android, the GeckoView-based App will have the given
+  -- variable added to the env block in its configuration YAML.
+  , _firefoxOptionsEnv :: Maybe (Map String String)
 
   -- TODO: Android options
   }
@@ -63,6 +82,7 @@ emptyFirefoxOptions = FirefoxOptions {
   , _firefoxOptionsProfile = Nothing
   , _firefoxOptionsLog = Nothing
   , _firefoxOptionsPrefs = Nothing
+  , _firefoxOptionsEnv = Nothing
   }
 
 -- | Empty 'FirefoxOptions'.

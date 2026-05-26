@@ -98,11 +98,12 @@ module Test.WebDriver.Capabilities (
   , defaultFirefoxOptions
 
   -- ** Lenses
-  , firefoxOptionsProfile
-  , firefoxOptionsPrefs
-  , firefoxOptionsLog
   , firefoxOptionsBinary
   , firefoxOptionsArgs
+  , firefoxOptionsProfile
+  , firefoxOptionsLog
+  , firefoxOptionsPrefs
+  , firefoxOptionsEnv
 
   -- ** Log level
   , FirefoxLogLevel(..)

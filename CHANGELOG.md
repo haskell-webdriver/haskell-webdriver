@@ -1,5 +1,8 @@
 # Change Log
 
+## Unreleased
+* Add `_firefoxOptionsEnv` to set Firefox environment variables. Useful to pass MOZ_ENABLE_WAYLAND=0 to make window positioning work better.
+
 ## 0.14.0.0
 * Fix MVar bug in teardownWebDriverContext.
 * Make driverConfigLogDir optional (#206).
