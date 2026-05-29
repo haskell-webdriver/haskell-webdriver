@@ -240,7 +240,10 @@ mkDriverRequest (Driver {..}) meth wdPath args =
 teardownDriver :: (MonadUnliftIO m, MonadLogger m) => Driver -> m ()
 teardownDriver (Driver {..}) = do
   case _driverProcess of
-    Just p -> terminateProcess p
+    Just p -> do
+      terminateProcess p
+      -- Reap the child process to avoid leaving zombies.
+      void $ liftIO $ waitForProcess p
     Nothing -> return ()
   case _driverLogAsync of
     Just x -> cancel x

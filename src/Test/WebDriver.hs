@@ -166,18 +166,20 @@ startSession' driver caps sessionName = do
 -- process if necessary.
 closeSession :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Session -> m ()
 closeSession wdc sess@(Session {..}) = do
-  closeSession' sess
+  -- For geckodriver, we own the process (one per session), so we must always
+  -- tear it down -- even if the HTTP DELETE to close the session fails.
+  let teardownGecko = case _driverConfig sessionDriver of
+        DriverConfigGeckodriver {} -> teardownDriver sessionDriver
+        _ -> return ()
 
-  modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
-
-  case _driverConfig sessionDriver of
-    DriverConfigGeckodriver {} -> teardownDriver sessionDriver
-    _ -> return ()
+  flip finally teardownGecko $ do
+    closeSession' sess
+    modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
 
 -- | Close the given WebDriver session. This is a lower-level version of
 -- 'closeSession', which manages the driver lifecycle for you. This version will
 -- only issue the @DELETE \/session\/:sessionId@ command to the driver, but will
--- not shut driver processes.
+-- not shut down driver processes.
 closeSession' :: (WebDriverBase m, MonadLogger m) => Session -> m ()
 closeSession' (Session { sessionId=(SessionId sessId), .. }) = do
   _response <- doCommandBase sessionDriver methodDelete ("/session/" <> sessId) Null
@@ -212,10 +214,21 @@ mkManualDriver hostname port basePath requestHeaders = do
 -- | Tear down all sessions and processes associated with a 'WebDriverContext'.
 teardownWebDriverContext :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> m ()
 teardownWebDriverContext (WebDriverContext {..}) = do
-  modifyMVar_ _webDriverSessions $ \sessions -> do
-    forM_ [sess | (_, sess) <- M.toList sessions] $ \sess ->
-      closeSession' sess
-    return mempty
+  -- Atomically take all sessions and clear the map, so we can clean up each
+  -- one without holding the MVar (and without modifyMVar_ restoring the old
+  -- value if any individual cleanup throws).
+  sessions <- modifyMVar _webDriverSessions $ \s -> return (mempty, M.toList s)
+
+  forM_ sessions $ \(_name, sess) -> do
+    catch (closeSession' sess)
+          (\(e :: SomeException) -> logWarnN [i|Exception closing session during teardown: #{e}|])
+    -- Geckodriver runs one process per session; tear it down here since
+    -- closeSession' only sends the HTTP DELETE and doesn't manage processes.
+    case _driverConfig (sessionDriver sess) of
+      DriverConfigGeckodriver {} ->
+        catch (teardownDriver (sessionDriver sess))
+              (\(e :: SomeException) -> logWarnN [i|Exception tearing down geckodriver during teardown: #{e}|])
+      _ -> return ()
 
   modifyMVar_ _webDriverSelenium $ \case
     Nothing -> return Nothing

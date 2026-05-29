@@ -2,6 +2,7 @@
 
 ## Unreleased
 * Add `_firefoxOptionsEnv` to set Firefox environment variables. Useful to pass MOZ_ENABLE_WAYLAND=0 to make window positioning work better.
+* Fix some missed teardown of geckodriver processes.
 
 ## 0.14.0.0
 * Fix MVar bug in teardownWebDriverContext.
