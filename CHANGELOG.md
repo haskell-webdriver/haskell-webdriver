@@ -1,8 +1,11 @@
 # Change Log
 
-## Unreleased
+## 0.15.0.0
+* Add `Test.WebDriver.Commands.BiDi.NetworkActivity` with tools for working with browser network activity.
+* Add support for starting BiDi sessions and watching events.
 * Add `_firefoxOptionsEnv` to set Firefox environment variables. Useful to pass MOZ_ENABLE_WAYLAND=0 to make window positioning work better.
 * Fix some missed teardown of geckodriver processes.
+* Add flags to pass environment variables to drivers.
 
 ## 0.14.0.0
 * Fix MVar bug in teardownWebDriverContext.

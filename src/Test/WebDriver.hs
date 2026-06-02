@@ -208,7 +208,7 @@ mkManualDriver hostname port basePath requestHeaders = do
     , _driverManager = manager
     , _driverProcess = Nothing
     , _driverLogAsync = Nothing
-    , _driverConfig = DriverConfigChromedriver "" [] "" Nothing -- Not used
+    , _driverConfig = DriverConfigChromedriver "" [] Nothing "" Nothing -- Not used
     }
 
 -- | Tear down all sessions and processes associated with a 'WebDriverContext'.

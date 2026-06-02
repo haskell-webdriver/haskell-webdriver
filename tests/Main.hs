@@ -47,6 +47,7 @@ main = do
               , driverConfigSubDrivers = subDrivers
               , driverConfigLogDir = Just dir
               , driverConfigJavaFlags = []
+              , driverConfigJavaExtraEnv = Nothing
               , driverConfigSeleniumVersion = Just Selenium3
               }
 
@@ -64,6 +65,7 @@ main = do
               , driverConfigSubDrivers = subDrivers
               , driverConfigLogDir = Just dir
               , driverConfigJavaFlags = []
+              , driverConfigJavaExtraEnv = Nothing
               , driverConfigSeleniumVersion = Just Selenium4
               }
 
@@ -79,6 +81,7 @@ main = do
               , driverConfigChrome = chrome
               , driverConfigLogDir = Just dir
               , driverConfigChromedriverFlags = []
+              , driverConfigChromedriverExtraEnv = Nothing
               }
 
   let introduceGeckodriver :: forall ctx. (HasBaseContext ctx, HasNixContext ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
@@ -93,6 +96,7 @@ main = do
               , driverConfigFirefox = firefox
               , driverConfigLogDir = Just dir
               , driverConfigGeckodriverFlags = []
+              , driverConfigGeckodriverExtraEnv = Nothing
               }
 
   let UserOptions {optBrowserToUse} = optUserOptions clo
@@ -136,6 +140,7 @@ getSubDrivers dir = getContext browserDependencies >>= \case
         , driverConfigChrome = browserDependenciesChromeChrome
         , driverConfigLogDir = Just dir
         , driverConfigChromedriverFlags = []
+        , driverConfigChromedriverExtraEnv = Nothing
         }]
   BrowserDependenciesFirefox {..} -> return [
     DriverConfigGeckodriver {
@@ -143,6 +148,7 @@ getSubDrivers dir = getContext browserDependencies >>= \case
         , driverConfigFirefox = browserDependenciesFirefoxFirefox
         , driverConfigLogDir = Just dir
         , driverConfigGeckodriverFlags = []
+        , driverConfigGeckodriverExtraEnv = Nothing
     }]
 
 

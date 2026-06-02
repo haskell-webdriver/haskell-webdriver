@@ -36,6 +36,7 @@ import Test.WebDriver.Util.Ports
 import Test.WebDriver.Util.Sockets
 import Text.Read (readMaybe)
 import UnliftIO.Async
+import UnliftIO.Environment
 import UnliftIO.Exception
 import UnliftIO.Process
 import UnliftIO.Timeout
@@ -48,15 +49,22 @@ launchDriver driverConfig = do
 
   port <- findFreePortOrException
 
-  (programName, args) <- getArguments port driverConfig
+  (programName, args, maybeEnv) <- getArguments port driverConfig
   logDebugN [i|#{programName} #{T.unwords $ fmap T.pack args}|]
 
   (hRead, hWrite) <- createPipe
+
+  envToUse <- case maybeEnv of
+    Nothing -> pure Nothing
+    Just extraEnv -> do
+      env <- getEnvironment
+      return $ Just (extraEnv <> env)
 
   let cp = (proc programName args) {
         create_group = True
         , std_out = UseHandle hWrite
         , std_err = UseHandle hWrite
+        , env = envToUse
         }
 
   (_, _, _, p) <- createProcess cp
@@ -132,7 +140,7 @@ launchDriver driverConfig = do
 
       return driver
 
-getArguments :: (MonadIO m, MonadLogger m) => PortNumber -> DriverConfig -> m (FilePath, [String])
+getArguments :: (MonadIO m, MonadLogger m) => PortNumber -> DriverConfig -> m (FilePath, [String], Maybe [(String, String)])
 getArguments port (DriverConfigSeleniumJar {..}) = do
   javaArgs :: [String] <- mconcat <$> mapM getSubDriverArgs driverConfigSubDrivers
 
@@ -148,11 +156,11 @@ getArguments port (DriverConfigSeleniumJar {..}) = do
   let fullArgs = javaArgs
                <> ["-jar", driverConfigSeleniumJar]
                <> extraArgs
-  return (driverConfigJava, fullArgs <> driverConfigJavaFlags)
+  return (driverConfigJava, fullArgs <> driverConfigJavaFlags, driverConfigJavaExtraEnv)
 getArguments port (DriverConfigChromedriver {..}) = do
-  return (driverConfigChromedriver, ["--port=" <> show port] <> driverConfigChromedriverFlags)
+  return (driverConfigChromedriver, ["--port=" <> show port] <> driverConfigChromedriverFlags, driverConfigChromedriverExtraEnv)
 getArguments port (DriverConfigGeckodriver {..}) = do
-  return (driverConfigGeckodriver, ["--port", show port] <> driverConfigGeckodriverFlags)
+  return (driverConfigGeckodriver, ["--port", show port] <> driverConfigGeckodriverFlags, driverConfigGeckodriverExtraEnv)
 
 autodetectSeleniumVersionByFileName :: FilePath -> Maybe SeleniumVersion
 autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodetectSeleniumMajorVersionByFileName of

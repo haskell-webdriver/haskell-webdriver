@@ -27,6 +27,7 @@ main = do
   let driverConfig = DriverConfigChromedriver {
         driverConfigChromedriver = chromedriverBin
         , driverConfigChromedriverFlags = []
+        , driverConfigChromedriverExtraEnv = Nothing
         , driverConfigChrome = chromeBin
         , driverConfigLogDir = Nothing
         }

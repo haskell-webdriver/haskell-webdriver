@@ -99,6 +99,8 @@ data DriverConfig =
     driverConfigJava :: FilePath
     -- | Extra flags to pass to @java@.
     , driverConfigJavaFlags :: [String]
+    -- | Extra flags to pass to @java@.
+    , driverConfigJavaExtraEnv :: Maybe [(String, String)]
     -- | Path to @selenium.jar@ file.
     , driverConfigSeleniumJar :: FilePath
     -- | Specify if this is Selenium 3 or 4. If this is not provided, we'll try to autodetect.
@@ -113,6 +115,8 @@ data DriverConfig =
       driverConfigGeckodriver :: FilePath
       -- | Extra flags to pass to @geckodriver@.
       , driverConfigGeckodriverFlags :: [String]
+      -- | Extra environment variables to pass to @geckodriver@.
+      , driverConfigGeckodriverExtraEnv :: Maybe [(String, String)]
       -- | Path to @firefox@ binary.
       , driverConfigFirefox :: FilePath
       -- | Directory in which to place driver logs.
@@ -123,6 +127,8 @@ data DriverConfig =
       driverConfigChromedriver :: FilePath
       -- | Extra flags to pass to @chromedriver@.
       , driverConfigChromedriverFlags :: [String]
+      -- | Extra environment variables to pass to @chromedriver@.
+      , driverConfigChromedriverExtraEnv :: Maybe [(String, String)]
       -- | Path to @chrome@ binary.
       , driverConfigChrome :: FilePath
       -- | Directory in which to place driver logs.
