@@ -65,7 +65,13 @@ jobs:
         cabal configure --enable-tests
         cabal freeze
 
-    - uses: DeterminateSystems/magic-nix-cache-action@main
+    - uses: nix-community/cache-nix-action@v7
+      name: Cache /nix/store
+      with:
+        primary-key: nix-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('tests/Main.hs') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-${{ matrix.browser }}-
+        gc-max-store-size-linux: 5G
+        gc-max-store-size-macos: 5G
 
     - uses: actions/cache@v5
       name: Cache ~/.cabal/store
@@ -140,7 +146,12 @@ jobs:
         ghc-version: ${{ matrix.ghc }}
         stack-version: "latest"
 
-    - uses: DeterminateSystems/magic-nix-cache-action@main
+    - uses: nix-community/cache-nix-action@v7
+      name: Cache /nix/store
+      with:
+        primary-key: nix-${{ runner.os }}-${{ matrix.browser }}-${{ hashFiles('tests/Main.hs') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-${{ matrix.browser }}-
+        gc-max-store-size-linux: 5G
 
     - uses: actions/cache/restore@v5
       name: Cache restore ~/.stack
