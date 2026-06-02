@@ -74,7 +74,7 @@ main = do
         where
           alloc = do
             Just dir <- getCurrentFolder
-            chrome <- getBinaryViaNixPackage @"chromium" "chromium"
+            chrome <- getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
             chromedriver <- getBinaryViaNixPackage @"chromedriver" "chromedriver"
             return $ DriverConfigChromedriver {
               driverConfigChromedriver = chromedriver
@@ -116,19 +116,19 @@ main = do
         describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriverContext Spec.spec
 
 
--- | Nixpkgs release 24.05, accessed 6\/30\/2025.
+-- | Nixpkgs nixos-unstable, accessed 6\/2\/2026 (provides google-chrome 148.0.7778.215).
 -- You can compute updated values for this release (or others) by running
--- nix-prefetch-github NixOS nixpkgs --rev release-25.05
+-- nix-prefetch-github NixOS nixpkgs --rev nixos-unstable
 -- We pin this here rather than using 'nixpkgsReleaseDefault' from sandwich-contexts
--- so that sandwich updates can't break this (especially on aarch64-darwin, where
--- google-chrome isn't available on older versions of release-24.05). Also, firefox
--- isn't available for macOS on older Nixpkgs releases.
+-- so that sandwich updates can't break this. Note that 'google-chrome' fetches a
+-- versioned .deb from Google, which gets removed once a newer Chrome stable ships, so
+-- this rev needs bumping periodically to a Nixpkgs whose google-chrome is current.
 nixpkgsRelease :: NixpkgsDerivation
 nixpkgsRelease = NixpkgsDerivationFetchFromGitHub {
   nixpkgsDerivationOwner = "NixOS"
   , nixpkgsDerivationRepo = "nixpkgs"
-  , nixpkgsDerivationRev = "32bd9b9bf9dd95eafff1e83da314c96719908657"
-  , nixpkgsDerivationSha256 = "sha256-HXDDEjEBMycmwkOiU045bL3yuhOK1+nZZd3zsBh6zsA="
+  , nixpkgsDerivationRev = "331800de5053fcebacf6813adb5db9c9dca22a0c"
+  , nixpkgsDerivationSha256 = "sha256-x5UQuRsH3MqI0U9afaXSNqzTPSeZlRLvFAav2Ux1pNw="
   , nixpkgsDerivationAllowUnfree = True
   }
 
