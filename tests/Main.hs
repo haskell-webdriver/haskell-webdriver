@@ -74,7 +74,7 @@ main = do
         where
           alloc = do
             Just dir <- getCurrentFolder
-            chrome <- getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
+            chrome <- getBinaryViaNixPackage @"chromium" "chromium"
             chromedriver <- getBinaryViaNixPackage @"chromedriver" "chromedriver"
             return $ DriverConfigChromedriver {
               driverConfigChromedriver = chromedriver

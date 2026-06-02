@@ -24,7 +24,7 @@ introduceBrowserDependencies = introduce "Introduce browser dependencies" browse
 
       deps <- case optBrowserToUse of
         UseChrome ->
-          BrowserDependenciesChrome <$> getBinaryViaNixPackage @"google-chrome-stable" "google-chrome"
+          BrowserDependenciesChrome <$> getBinaryViaNixPackage @"chromium" "chromium"
                                     <*> getBinaryViaNixPackage @"chromedriver" "chromedriver"
                                     <*> pure optChromeNoSandbox
         UseFirefox ->
