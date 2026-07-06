@@ -31,7 +31,9 @@ withRecordLogsViaBiDi biDiOptions cb action = do
 
 -- | Connect to WebSocket URL and subscribe to log events using the W3C BiDi protocol; see
 -- <https://w3c.github.io/webdriver-bidi/>.
-withRecordLogsViaBiDi' :: forall m a. (MonadUnliftIO m, MonadLogger m) => BiDiOptions -> Int -> URI.URI -> (LogEntry -> m ()) -> m a -> m a
+withRecordLogsViaBiDi' :: forall m a. (
+  MonadUnliftIO m, MonadLogger m
+  ) => BiDiOptions -> Int -> URI.URI -> (LogEntry -> m ()) -> m a -> m a
 withRecordLogsViaBiDi' biDiOptions bidiSessionId uri cb action =
   withBiDiSession' biDiOptions bidiSessionId uri logEvents (mkLogCallback cb) action
 
@@ -39,8 +41,7 @@ mkLogCallback :: (MonadLogger m) => (LogEntry -> m ()) -> BiDiEvent -> m ()
 mkLogCallback cb (BiDiEvent "event" "log.entryAdded" params) = case parseBiDiLogEntry params of
   Just logEntry -> cb logEntry
   Nothing -> logWarnN [i|BiDi: Failed to parse log entry: #{params}|]
-mkLogCallback _cb x =
-  logDebugN [i|BiDi: Ignoring non-log event message: #{x}|]
+mkLogCallback _cb _x = return ()
 
 parseBiDiLogEntry :: Value -> Maybe LogEntry
 parseBiDiLogEntry (Object o) = case parseEither parseLogEntry o of

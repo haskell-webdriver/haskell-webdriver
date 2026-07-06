@@ -109,7 +109,7 @@ withBiDiSession' biDiOptions bidiSessionId uri@(URI.URI { uriAuthority=(Just (UR
       forever $
         (decode <$>) (liftIO $ WS.receiveData conn) >>= \case
           Just (x :: BiDiEvent) -> cb x
-          x -> logDebugN [i|BiDi: Ignoring non-log event message: #{x}|]
+          x -> logDebugN [i|BiDi: failed to parse event: #{x}|]
 withBiDiSession' _ _ uri _events _cb _action =
   throwIO $ userError [i|WebSocket URL didn't contain an authority: #{uri}|]
 

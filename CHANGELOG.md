@@ -1,5 +1,8 @@
 # Change Log
 
+## Unreleased
+* Reduce BiDi log noise
+
 ## 0.15.0.0
 * Add `Test.WebDriver.Commands.BiDi.NetworkActivity` with tools for working with browser network activity.
 * Add support for starting BiDi sessions and watching events.
