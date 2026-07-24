@@ -95,6 +95,7 @@ import Network.HTTP.Types (RequestHeaders, statusCode)
 import UnliftIO.Concurrent
 import UnliftIO.Exception
 import UnliftIO.STM
+import UnliftIO.Timeout
 
 
 -- | Start a WebDriver session, with a given 'WebDriverContext' and
@@ -211,19 +212,26 @@ mkManualDriver hostname port basePath requestHeaders = do
     , _driverConfig = DriverConfigChromedriver "" [] Nothing "" Nothing -- Not used
     }
 
+-- | How long to wait for a single session's DELETE during context teardown before giving up.
+sessionCloseTimeoutUs :: Int
+sessionCloseTimeoutUs = 30 * 1000000 -- 30s
+
 -- | Tear down all sessions and processes associated with a 'WebDriverContext'.
 teardownWebDriverContext :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> m ()
 teardownWebDriverContext (WebDriverContext {..}) = do
-  -- Atomically take all sessions and clear the map, so we can clean up each
-  -- one without holding the MVar (and without modifyMVar_ restoring the old
-  -- value if any individual cleanup throws).
+  -- Atomically take all sessions and clear the map, so we can clean up each one without holding the
+  -- MVar (and without modifyMVar_ restoring the old value if any individual cleanup throws).
   sessions <- modifyMVar _webDriverSessions $ \s -> return (mempty, M.toList s)
 
   forM_ sessions $ \(_name, sess) -> do
-    catch (closeSession' sess)
-          (\(e :: SomeException) -> logWarnN [i|Exception closing session during teardown: #{e}|])
-    -- Geckodriver runs one process per session; tear it down here since
-    -- closeSession' only sends the HTTP DELETE and doesn't manage processes.
+    -- Bound the close so an unresponsive driver can't stall teardown; the http-client response timeout
+    -- doesn't cover every stuck state (e.g. a hung connect).
+    tryAny (timeout sessionCloseTimeoutUs (closeSession' sess)) >>= \case
+      Right (Just ()) -> return ()
+      Right Nothing -> logWarnN [i|Timed out closing session during teardown|]
+      Left e -> logWarnN [i|Exception closing session during teardown: #{e}|]
+    -- Geckodriver runs one process per session; tear it down here since closeSession' only sends the
+    -- HTTP DELETE and doesn't manage processes.
     case _driverConfig (sessionDriver sess) of
       DriverConfigGeckodriver {} ->
         catch (teardownDriver (sessionDriver sess))

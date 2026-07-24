@@ -245,13 +245,38 @@ mkDriverRequest (Driver {..}) meth wdPath args =
       ]
 
 
+-- | Grace period to wait at each escalation step when stopping a driver process.
+driverStopGracePeriodUs :: Int
+driverStopGracePeriodUs = 15_000_000
+
+gracefullyStopDriverProcess :: (MonadUnliftIO m, MonadLogger m) => ProcessHandle -> m ()
+gracefullyStopDriverProcess p = do
+  let waitForExit = do
+        let policy = limitRetriesByCumulativeDelay driverStopGracePeriodUs $ capDelay 200_000 $ exponentialBackoff 1_000
+        retrying policy (\_ x -> return (isNothing x)) $ \_ -> getProcessExitCode p
+
+  -- Interrupting can throw if the group is already gone (a benign race); anything else is worth surfacing.
+  let interruptGroup = tryAny (interruptProcessGroupOf p) >>= \case
+        Right () -> return ()
+        Left e -> logWarnN [i|Failed to interrupt driver process group: #{e}|]
+
+  interruptGroup
+  waitForExit >>= \case
+    Just _ -> return ()
+    Nothing -> do
+      logWarnN [i|Driver process didn't stop after interrupting its group; interrupting again|]
+      interruptGroup
+      waitForExit >>= \case
+        Just _ -> return ()
+        Nothing -> do
+          logWarnN [i|Driver process still didn't stop; terminating the leader|]
+          terminateProcess p
+          void waitForExit
+
 teardownDriver :: (MonadUnliftIO m, MonadLogger m) => Driver -> m ()
 teardownDriver (Driver {..}) = do
   case _driverProcess of
-    Just p -> do
-      terminateProcess p
-      -- Reap the child process to avoid leaving zombies.
-      void $ liftIO $ waitForProcess p
+    Just p -> gracefullyStopDriverProcess p
     Nothing -> return ()
   case _driverLogAsync of
     Just x -> cancel x
