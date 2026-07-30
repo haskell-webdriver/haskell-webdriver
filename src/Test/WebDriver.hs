@@ -91,7 +91,7 @@ import qualified Data.Text as T
 import Test.WebDriver.Util.Aeson (aesonLookup)
 import Control.Monad.Logger
 import Network.HTTP.Client
-import Network.HTTP.Types (RequestHeaders, statusCode)
+import Network.HTTP.Types (RequestHeaders, methodGet, statusCode)
 import UnliftIO.Concurrent
 import UnliftIO.Exception
 import UnliftIO.STM
@@ -122,7 +122,13 @@ startSession wdc dc@(DriverConfigChromedriver {}) caps sessionName = do
 
   launchSessionInDriver wdc driver caps sessionName
 startSession wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
-  driver <- launchDriver dc
+  -- Reuse an idle process if there is one; concurrent sessions launch their own.
+  maybeIdle <- modifyMVar (_webDriverGeckodriversIdle wdc) $ \case
+    [] -> return ([], Nothing)
+    (d:ds) -> return (ds, Just d)
+
+  driver <- maybe (launchDriver dc) return maybeIdle
+
   onException (launchSessionInDriver wdc driver caps sessionName)
               (teardownDriver driver)
 
@@ -162,20 +168,42 @@ startSession' driver caps sessionName = do
            _ -> throwIO $ SessionCreationResponseHadNoSessionId response
      | otherwise -> throwIO SessionNameAlreadyExists
 
+-- | Wait for a geckodriver to release its session (/status is 200 either way).
+geckodriverReadyForReuse :: (WebDriverBase m, MonadLogger m) => Driver -> m Bool
+geckodriverReadyForReuse driver = go (50 :: Int) -- ~5s at 100ms
+  where
+    go n
+      | n <= 0 = return False
+      | otherwise = do
+          isReady <- (tryAny $ doCommandBase driver methodGet "/status" Null) >>= \case
+            Left _ -> return False
+            Right resp -> return $ case A.eitherDecode (responseBody resp) of
+              Right (A.Object (aesonLookup "value" -> Just (A.Object (aesonLookup "ready" -> Just (A.Bool b))))) -> b
+              _ -> False
+          if isReady then return True else threadDelay 100000 >> go (n - 1)
+
 -- | Close the given WebDriver session. This sends the @DELETE
 -- \/session\/:sessionId@ command to the WebDriver API, and then shuts down the
 -- process if necessary.
 closeSession :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Session -> m ()
 closeSession wdc sess@(Session {..}) = do
-  -- For geckodriver, we own the process (one per session), so we must always
-  -- tear it down -- even if the HTTP DELETE to close the session fails.
-  let teardownGecko = case _driverConfig sessionDriver of
+  -- Hand the geckodriver back for reuse, but only if the session closed cleanly.
+  let releaseGecko = case _driverConfig sessionDriver of
+        DriverConfigGeckodriver {} ->
+          geckodriverReadyForReuse sessionDriver >>= \case
+            True -> modifyMVar_ (_webDriverGeckodriversIdle wdc) (return . (sessionDriver :))
+            False -> do
+              logWarnN [i|Geckodriver didn't become ready after closing its session; tearing it down instead of reusing it|]
+              teardownDriver sessionDriver
+        _ -> return ()
+      teardownGecko = case _driverConfig sessionDriver of
         DriverConfigGeckodriver {} -> teardownDriver sessionDriver
         _ -> return ()
 
-  flip finally teardownGecko $ do
+  flip onException teardownGecko $ do
     closeSession' sess
     modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
+    releaseGecko
 
 -- | Close the given WebDriver session. This is a lower-level version of
 -- 'closeSession', which manages the driver lifecycle for you. This version will
@@ -237,6 +265,12 @@ teardownWebDriverContext (WebDriverContext {..}) = do
         catch (teardownDriver (sessionDriver sess))
               (\(e :: SomeException) -> logWarnN [i|Exception tearing down geckodriver during teardown: #{e}|])
       _ -> return ()
+
+  -- Geckodriver processes kept for reuse; no session left to close.
+  idleGeckodrivers <- modifyMVar _webDriverGeckodriversIdle $ \ds -> return ([], ds)
+  forM_ idleGeckodrivers $ \driver ->
+    catch (teardownDriver driver)
+          (\(e :: SomeException) -> logWarnN [i|Exception tearing down idle geckodriver during teardown: #{e}|])
 
   modifyMVar_ _webDriverSelenium $ \case
     Nothing -> return Nothing

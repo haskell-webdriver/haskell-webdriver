@@ -65,6 +65,8 @@ data WebDriverContext = WebDriverContext {
   _webDriverSessions :: MVar (Map String Session)
   , _webDriverSelenium :: MVar (Maybe Driver)
   , _webDriverChromedriver :: MVar (Maybe Driver)
+  -- | Geckodriver processes with no session attached, available for reuse.
+  , _webDriverGeckodriversIdle :: MVar [Driver]
   }
 
 -- | Create a new 'WebDriverContext'.
@@ -73,6 +75,7 @@ mkEmptyWebDriverContext = WebDriverContext
   <$> newMVar mempty
   <*> newMVar Nothing
   <*> newMVar Nothing
+  <*> newMVar []
 
 data Driver = Driver {
   _driverHostname :: String
