@@ -30,7 +30,9 @@ import Network.HTTP.Client
 import Network.HTTP.Types (hAccept, hContentType, statusCode)
 import Network.Socket
 import System.FilePath
+import System.Exit (ExitCode)
 import System.IO
+import System.IO.Error (isEOFError)
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Ports
 import Test.WebDriver.Util.Sockets
@@ -38,12 +40,26 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Environment
 import UnliftIO.Exception
+import UnliftIO.IORef
 import UnliftIO.Process
 import UnliftIO.Timeout
 
 
 launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
-launchDriver driverConfig = do
+launchDriver driverConfig = recovering policy [const handler] $ \_ -> launchDriver' driverConfig
+  where
+    policy = limitRetries 10 <> capDelay 1_000_000 (exponentialBackoff 50_000)
+
+    handler = Handler $ \case
+      DriverOutputEndedBeforeReady _ output | Prelude.any isPortTaken output -> do
+        logWarnN [i|Driver couldn't bind port; retrying on a fresh one|]
+        return True
+      _ -> return False
+
+    isPortTaken line = "address already in use" `T.isInfixOf` T.toLower line
+
+launchDriver' :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
+launchDriver' driverConfig = do
   manager <- liftIO $ newManager defaultManagerSettings
   let requestHeaders = mempty
 
@@ -85,10 +101,20 @@ launchDriver driverConfig = do
           liftIO (T.hPutStrLn logFileHandle [i|(#{now}) haskell-webdriver: process ending with exception: #{e}|])
           liftIO (hClose logFileHandle)
 
+  startupOutput <- newIORef []
+
   flip withException handler $ do
     -- Read from the (combined) output stream until we see the up and running message
     maybeReady <- timeout 30_000_000 $ fix $ \loop -> do
-      line <- fmap T.pack $ liftIO $ hGetLine hRead
+      line <- liftIO (try (T.pack <$> hGetLine hRead)) >>= \case
+        Right line -> return line
+        -- EOF usually means the driver exited, but not necessarily, so don't wait forever.
+        Left e | isEOFError e -> do
+                   maybeExitCode <- timeout 5_000_000 (waitForProcess p)
+                   output <- Prelude.reverse <$> readIORef startupOutput
+                   throwIO $ DriverOutputEndedBeforeReady maybeExitCode output
+               | otherwise -> throwIO e
+      modifyIORef' startupOutput (line :)
       whenJust maybeLogFileHandle $ \logFileHandle ->
         liftIO $ T.hPutStrLn logFileHandle line
       unless (Prelude.any (`T.isInfixOf` line) (needles driverConfig)) loop
@@ -217,6 +243,7 @@ data DriverException =
   DriverGetAddrInfoFailed
   | DriverNoReadyMessage
   | DriverStatusEndpointNotReady
+  | DriverOutputEndedBeforeReady (Maybe ExitCode) [T.Text]
   deriving (Show, Eq)
 
 instance Exception DriverException
