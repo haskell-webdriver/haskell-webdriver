@@ -48,7 +48,7 @@ import UnliftIO.Timeout
 launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
 launchDriver driverConfig = recovering policy [const handler] $ \_ -> launchDriver' driverConfig
   where
-    policy = limitRetries 5 <> capDelay 1_000_000 (exponentialBackoff 50_000)
+    policy = limitRetries 10 <> capDelay 1_000_000 (exponentialBackoff 50_000)
 
     handler = Handler $ \case
       DriverOutputEndedBeforeReady _ output | Prelude.any isPortTaken output -> do
