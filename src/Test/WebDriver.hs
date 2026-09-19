@@ -74,6 +74,7 @@ module Test.WebDriver (
   ) where
 
 import Data.Aeson as A
+import Data.Maybe (fromMaybe)
 import Test.WebDriver.Capabilities
 import Test.WebDriver.Capabilities.Proxy
 import Test.WebDriver.Commands
@@ -139,7 +140,7 @@ launchSessionInDriver wdc driver caps sessionName = do
 -- driver instance manually and pass it in. Does not manage process lifecycles.
 startSession' :: (WebDriverBase m, MonadLogger m) => Driver -> Capabilities -> String -> m Session
 startSession' driver caps sessionName = do
-  response <- doCommandBase driver methodPost "/session" $ single "capabilities" $ single "alwaysMatch" caps
+  response <- doCommandBase driver Nothing methodPost "/session" $ single "capabilities" $ single "alwaysMatch" caps
 
   if | statusCode (responseStatus response) == 200 -> do
          case A.eitherDecode (responseBody response) of
@@ -151,6 +152,9 @@ startSession' driver caps sessionName = do
                    _ -> Nothing
 
              idCounterVar <- newTVarIO 1
+             -- Prefer what the server reports, since capabilities can set these at creation time;
+             -- fall back to the spec's session defaults, which are in force either way.
+             timeoutsVar <- newTVarIO $ fromMaybe defaultAppliedTimeouts (appliedTimeoutsFromCaps value)
 
              return $ Session {
                sessionDriver = driver
@@ -158,9 +162,24 @@ startSession' driver caps sessionName = do
                , sessionName = sessionName
                , sessionWebSocketUrl = T.unpack <$> maybeWebSocketUrl
                , sessionIdCounter = idCounterVar
+               , sessionTimeouts = timeoutsVar
                }
            _ -> throwIO $ SessionCreationResponseHadNoSessionId response
      | otherwise -> throwIO SessionNameAlreadyExists
+
+-- | Read a session's starting timeouts out of the capabilities returned by session creation.
+appliedTimeoutsFromCaps :: A.Value -> Maybe AppliedTimeouts
+appliedTimeoutsFromCaps (A.Object (aesonLookup "capabilities" -> Just (A.Object (aesonLookup "timeouts" -> Just (A.Object timeouts))))) =
+  Just $ AppliedTimeouts {
+    appliedScriptMs = ms "script"
+    , appliedPageLoadMs = ms "pageLoad"
+    , appliedImplicitMs = ms "implicit"
+    }
+  where
+    ms k = case aesonLookup k timeouts of
+      Just (A.Number n) -> Just (round n)
+      _ -> Nothing
+appliedTimeoutsFromCaps _ = Nothing
 
 -- | Close the given WebDriver session. This sends the @DELETE
 -- \/session\/:sessionId@ command to the WebDriver API, and then shuts down the
@@ -183,7 +202,7 @@ closeSession wdc sess@(Session {..}) = do
 -- not shut down driver processes.
 closeSession' :: (WebDriverBase m, MonadLogger m) => Session -> m ()
 closeSession' (Session { sessionId=(SessionId sessId), .. }) = do
-  _response <- doCommandBase sessionDriver methodDelete ("/session/" <> sessId) Null
+  _response <- doCommandBase sessionDriver Nothing methodDelete ("/session/" <> sessId) Null
   -- TODO: throw an exception if this failed?
   return ()
 

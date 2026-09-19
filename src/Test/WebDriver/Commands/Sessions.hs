@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 module Test.WebDriver.Commands.Sessions (
@@ -21,12 +22,14 @@ module Test.WebDriver.Commands.Sessions (
   -- , getActualCaps
   ) where
 
+import Control.Applicative ((<|>))
 import Data.Aeson as A
 import Data.Aeson.TH as A
 import GHC.Stack
 import Test.WebDriver.Capabilities.Aeson
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Commands
+import UnliftIO.STM
 
 
 -- | Get information from the server as a JSON 'Object'. For more information
@@ -58,17 +61,36 @@ getTimeouts = doSessCommand methodGet "/timeouts" Null
 
 -- | Set all the 'Timeouts' simultaneously.
 setTimeouts :: (HasCallStack, WebDriver wd) => Timeouts -> wd ()
-setTimeouts timeouts = doSessCommand methodPost "/timeouts" (A.toJSON timeouts)
+setTimeouts timeouts@(Timeouts {..}) = do
+  () <- doSessCommand methodPost "/timeouts" (A.toJSON timeouts)
+  recordAppliedTimeouts $ \applied -> applied {
+    appliedScriptMs = timeoutsScript <|> appliedScriptMs applied
+    , appliedPageLoadMs = timeoutsPageLoad <|> appliedPageLoadMs applied
+    , appliedImplicitMs = timeoutsImplicit <|> appliedImplicitMs applied
+    }
 
 -- | Set the "script" value of the 'Timeouts'.
 -- Selenium 3 and 4 accept @null@ for this value, which unsets it. The spec doesn't mention this.
 setScriptTimeout :: (HasCallStack, WebDriver wd) => Maybe Integer -> wd ()
-setScriptTimeout x = doSessCommand methodPost "/timeouts" (A.object [("script", maybe A.Null (A.Number . fromIntegral) x)])
+setScriptTimeout x = do
+  () <- doSessCommand methodPost "/timeouts" (A.object [("script", maybe A.Null (A.Number . fromIntegral) x)])
+  recordAppliedTimeouts $ \applied -> applied { appliedScriptMs = x }
 
 -- | Set the "pageLoad" value of the 'Timeouts'.
 setPageLoadTimeout :: (HasCallStack, WebDriver wd) => Integer -> wd ()
-setPageLoadTimeout x = doSessCommand methodPost "/timeouts" (A.object [("pageLoad", A.Number $ fromIntegral x)])
+setPageLoadTimeout x = do
+  () <- doSessCommand methodPost "/timeouts" (A.object [("pageLoad", A.Number $ fromIntegral x)])
+  recordAppliedTimeouts $ \applied -> applied { appliedPageLoadMs = Just x }
+
+-- | Remember what we last told the server, so that 'Test.WebDriver.Util.Commands.doCommand' can
+-- keep each request's HTTP response timeout above the WebDriver timeout governing it.
+recordAppliedTimeouts :: (WebDriver wd) => (AppliedTimeouts -> AppliedTimeouts) -> wd ()
+recordAppliedTimeouts f = do
+  Session {sessionTimeouts} <- getSession
+  atomically $ modifyTVar' sessionTimeouts f
 
 -- | Set the "implicit" value of the 'Timeouts'.
 setImplicitWait :: (HasCallStack, WebDriver wd) => Integer -> wd ()
-setImplicitWait x = doSessCommand methodPost "/timeouts" (A.object [("implicit", A.Number $ fromIntegral x)])
+setImplicitWait x = do
+  () <- doSessCommand methodPost "/timeouts" (A.object [("implicit", A.Number $ fromIntegral x)])
+  recordAppliedTimeouts $ \applied -> applied { appliedImplicitMs = Just x }

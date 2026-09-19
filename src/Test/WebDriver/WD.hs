@@ -57,9 +57,11 @@ newtype WD a = WD (ReaderT Session (LoggingT IO) a)
 
 doCommandBaseWithLogging :: (
   MonadLogger m, MonadUnliftIO m, A.ToJSON p
-  ) => Driver -> Method -> T.Text -> p -> m (HC.Response BL.ByteString)
-doCommandBaseWithLogging driver method path args = do
-  let req = mkDriverRequest driver method path args
+  ) => Driver -> Maybe HC.ResponseTimeout -> Method -> T.Text -> p -> m (HC.Response BL.ByteString)
+doCommandBaseWithLogging driver maybeResponseTimeout method path args = do
+  -- The response timeout is chosen per command so the WebDriver-side timeout fires first; see
+  -- 'Test.WebDriver.Util.Commands.responseTimeoutForCommand'.
+  let req = applyResponseTimeout maybeResponseTimeout $ mkDriverRequest driver method path args
   logDebugN [i|--> #{HC.method req} #{HC.path req}#{HC.queryString req} (#{showRequestBody (HC.requestBody req)})|]
   response <- tryAny (liftIO $ HC.httpLbs req (_driverManager driver)) >>= either throwIO return
   let (N.Status code _) = HC.responseStatus response
@@ -75,6 +77,9 @@ doCommandBaseWithLogging driver method path args = do
   return response
 
   where
+    applyResponseTimeout Nothing r = r
+    applyResponseTimeout (Just t) r = r { HC.responseTimeout = t }
+
     showRequestBody :: HC.RequestBody -> B.ByteString
     showRequestBody (HC.RequestBodyLBS bytes) = BL.toStrict bytes
     showRequestBody (HC.RequestBodyBS bytes) = bytes

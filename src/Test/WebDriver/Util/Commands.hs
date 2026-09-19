@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-deriving-typeable #-}
@@ -35,7 +36,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding as TE
 import GHC.Stack
-import Network.HTTP.Client (Response(..))
+import Network.HTTP.Client (Response(..), ResponseTimeout, responseTimeoutMicro)
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.Status (Status(..))
 import qualified Network.HTTP.Types.URI as HTTP
@@ -46,6 +47,7 @@ import Test.WebDriver.JSON
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Aeson
 import UnliftIO.Exception
+import UnliftIO.STM
 
 
 data SuccessResponse a = SuccessResponse {
@@ -142,7 +144,36 @@ doCommand :: (
   -- | The JSON result of the HTTP request.
   -> m b
 doCommand method url params = do
-  Session {sessionDriver} <- getSession
-  doCommandBase sessionDriver method url params
+  Session {sessionDriver, sessionTimeouts} <- getSession
+  timeouts <- readTVarIO sessionTimeouts
+  doCommandBase sessionDriver (responseTimeoutForCommand timeouts url) method url params
     >>= getJSONResult
     >>= either throwIO return
+
+-- | The HTTP response timeout to use for a command, derived from the WebDriver timeout that
+-- governs it.
+--
+-- Each of the three session timeouts covers a disjoint set of commands, and everything else --
+-- clicks, attribute reads, screenshots, session creation -- has no server-side bound at all. For
+-- the bounded ones we want the server to hit its own timeout first and answer with a protocol
+-- error, so we allow the HTTP request 'responseTimeoutMargin' longer than the server has. For the
+-- rest we return 'Nothing' and leave the manager's default in place, since raising it would remove
+-- the only limit those commands have.
+responseTimeoutForCommand :: AppliedTimeouts -> Text -> Maybe ResponseTimeout
+responseTimeoutForCommand (AppliedTimeouts {..}) url
+  | isScript = fromMs appliedScriptMs
+  | isNavigation = fromMs appliedPageLoadMs
+  | isElementLookup = fromMs appliedImplicitMs
+  | otherwise = Nothing
+  where
+    isScript = "/execute/" `T.isInfixOf` url
+    isNavigation = any (`T.isSuffixOf` url) ["/url", "/back", "/forward", "/refresh"]
+    isElementLookup = any (`T.isSuffixOf` url) ["/element", "/elements"]
+
+    fromMs = fmap $ \ms -> responseTimeoutMicro $ fromIntegral (ms * 1000) + responseTimeoutMargin
+
+-- | How much longer than the governing WebDriver timeout to let an HTTP request run, in
+-- microseconds. Absolute rather than proportional, so a long 'timeoutsPageLoad' doesn't turn into
+-- a much longer HTTP wait.
+responseTimeoutMargin :: Int
+responseTimeoutMargin = 30 * 1000 * 1000
