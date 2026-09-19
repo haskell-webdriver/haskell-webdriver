@@ -17,6 +17,8 @@ module Test.WebDriver.Types (
   -- ** WebDriver sessions
   , SessionId(..)
   , Session(..)
+  , AppliedTimeouts(..)
+  , defaultAppliedTimeouts
 
   -- * Exceptions
   , SessionException(..)
@@ -149,10 +151,39 @@ data Session = Session {
   , sessionWebSocketUrl :: Maybe String
   -- | Used to generate IDs for BiDi.
   , sessionIdCounter :: TVar Int
+  -- | The session timeouts most recently applied to the server, tracked so each request can be
+  -- given an HTTP response timeout above whichever WebDriver timeout governs it.
+  , sessionTimeouts :: TVar AppliedTimeouts
   }
+
 instance Show Session where
   show (Session {sessionDriver=(Driver {..}), ..}) = [i|Session<[#{sessionId}] at #{_driverHostname}:#{_driverPort}#{_driverBasePath}>|]
 
+-- | The session-level timeouts we have applied to the server, in milliseconds.
+--
+-- We keep these so that a request's HTTP response timeout can be derived from the WebDriver
+-- timeout that actually governs that request. The two must not be independent: if the HTTP
+-- timeout is the shorter one it fires first, and the caller sees a transport-level timeout
+-- instead of the protocol error the server was about to send.
+data AppliedTimeouts = AppliedTimeouts {
+  appliedScriptMs :: Maybe Integer
+  , appliedPageLoadMs :: Maybe Integer
+  , appliedImplicitMs :: Maybe Integer
+  } deriving (Show, Eq)
+
+-- | The timeouts a session has before anyone changes them, from the WebDriver spec's table of
+-- session defaults.
+--
+-- Seeded rather than left empty because the server applies these from the moment the session
+-- exists: treating them as unknown would leave navigation on the HTTP manager's default until the
+-- first 'Test.WebDriver.Commands.Sessions.setTimeouts', which is the mismatch this tracking is
+-- meant to remove.
+defaultAppliedTimeouts :: AppliedTimeouts
+defaultAppliedTimeouts = AppliedTimeouts {
+  appliedScriptMs = Just 30000
+  , appliedPageLoadMs = Just 300000
+  , appliedImplicitMs = Just 0
+  }
 -- class HasLens ctx a where
 --   getLens :: Lens' ctx a
 
@@ -180,6 +211,9 @@ class (MonadUnliftIO m) => WebDriverBase m where
     HasCallStack, ToJSON a
     )
     => Driver
+    -- | HTTP response timeout for this request, overriding the manager's default. 'Nothing' leaves
+    -- the manager's setting in place, which is what commands with no WebDriver-side timeout want.
+    -> Maybe ResponseTimeout
     -- | HTTP request method
     -> Method
     -- | URL of request
