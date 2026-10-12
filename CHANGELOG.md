@@ -1,6 +1,9 @@
 # Change Log
 
 ## Unreleased
+* Fix `loadFirefoxProfile` on profiles written by Firefox 60 or later (#181).
+* Accept single-quoted strings and Firefox's escape sequences in preference files.
+* Add `parseFirefoxPrefs`.
 * Reduce BiDi log noise
 * Gracefully stop driver processes by signalling their whole process group (escalating sigINT -> sigTERM and waiting for exit), so the driver's browser child isn't left orphaned.
 * Bound each session close in `teardownWebDriverContext` with a timeout so an unresponsive driver can't block session teardown.

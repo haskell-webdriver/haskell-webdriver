@@ -38,6 +38,7 @@ module Test.WebDriver.Profile (
   , loadFirefoxProfile
   , saveFirefoxProfile
   , firefoxProfileToArchive
+  , parseFirefoxPrefs
   ) where
 
 import Codec.Archive.Zip
@@ -47,14 +48,15 @@ import Control.Monad
 import Control.Monad.IO.Class
 import Data.Aeson (Result(..), encode, fromJSON)
 import qualified Data.Aeson as A
-import Data.Aeson.Parser (jstring, value')
 import Data.Aeson.Types (FromJSON, ToJSON, Value(..), parseJSON, toJSON, typeMismatch)
 import Data.Attoparsec.ByteString.Char8 as AP
-import Data.ByteString as BS (readFile)
+import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base64.Lazy as B64L
+import qualified Data.ByteString.Char8 as BS8
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.ByteString.Lazy.Char8 as LBS
+import Data.Char (chr, digitToInt, isHexDigit)
 import Data.Fixed
 import Data.Function ((&))
 import qualified Data.HashMap.Strict as HM
@@ -62,7 +64,7 @@ import Data.Int
 import qualified Data.List as L
 import Data.Maybe
 import Data.Ratio
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, singleton)
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Encoding as TL
@@ -327,11 +329,8 @@ loadFirefoxProfile path = unionProfiles defaultFirefoxProfile <$> (Profile <$> g
 
     getPrefs = liftIO $ do
        doesFileExist userPrefFile >>= \case
-         True -> HM.fromList <$> (parsePrefs =<< BS.readFile userPrefFile)
+         True -> either throwIO return . parseFirefoxPrefs userPrefFile =<< BS.readFile userPrefFile
          False -> return HM.empty
-      where
-        parsePrefs s = either (throwIO . ProfileParseError) return
-                     $ AP.parseOnly prefsParser s
 
 -- | Save a Firefox profile to a destination directory. This directory should
 -- already exist.
@@ -385,27 +384,100 @@ instance FromJSON (Profile Firefox) where
           otherFiles = [e | e@(Entry {..}) <- zEntries archive, eRelativePath /= "prefs.js"]
   parseJSON other = typeMismatch "Profile Firefox" other
 
--- Firefox prefs.js parser
+-- * Firefox prefs.js parser
+
+-- | Parse the contents of a Firefox preferences file (@prefs.js@ or @user.js@): a sequence of
+-- @user_pref("name", value);@ statements, with @\/\/@ and @#@ line comments and C-style block
+-- comments allowed between them. Later entries for the same name override earlier ones, as in
+-- Firefox.
+--
+-- The 'FilePath' is only used to label error messages.
+parseFirefoxPrefs :: FilePath -> BS.ByteString -> Either ProfileParseError (HM.HashMap Text ProfilePref)
+parseFirefoxPrefs path contents = case parseComplete prefsParser contents of
+  AP.Done _ prefs -> Right (HM.fromList prefs)
+  AP.Fail rest ctxs msg -> Left $ ProfileParseError $ mconcat [
+    path, ":", show (lineNumber rest), ": prefs parse error: "
+    -- Labels are outermost first, so the head is the one attached to the construct being parsed.
+    , case ctxs of { (ctx:_) -> ctx; [] -> msg }
+    , " near ", show (BS8.unpack (BS8.take snippetLength (BS8.takeWhile (\c -> c /= '\n' && c /= '\r') rest)))
+    ]
+  AP.Partial _ -> Left $ ProfileParseError (path <> ": prefs parse error: unexpected end of input")
+  where
+    -- Pref lines can be thousands of characters long (JSON blobs), so cap the quoted snippet.
+    snippetLength = 60
+
+    -- Like `parseOnly`, but keeps the unconsumed input for the error's line number and
+    -- snippet. Feeding an empty chunk marks the end of input.
+    parseComplete p s = AP.parse p s `AP.feed` BS.empty
+
+    lineNumber rest = 1 + BS8.count '\n' (BS.take (BS.length contents - BS.length rest) contents)
 
 prefsParser :: AP.Parser [(Text, ProfilePref)]
-prefsParser = AP.many1 $ do
-  void . padSpaces $ AP.string "user_pref("
-  k <- prefKey <?> "preference key"
-  void . padSpaces $ AP.char ','
-  v <- prefVal <?> "preference value"
-  void . padSpaces $ AP.string ");"
-  return (k,v)
+prefsParser = skipSpaceAndComments *> statements
   where
-    prefKey = jstring
-    prefVal = do
-      v <- value'
-      case fromJSON v of
-        Error str -> fail str
-        Success p -> return p
+    -- Explicit recursion instead of `many statement <* AP.endOfInput` to avoid unhelpful
+    -- "end of input" error message when parsing a statement fails
+    statements = (AP.endOfInput *> pure [])
+             <|> ((:) <$> statement <*> statements)
 
-    padSpaces p = spaces >> p <* spaces
-    spaces = many (AP.endOfLine <|> void AP.space <|> void comment)
+    statement = do
+      symbol "user_pref"
+      symbol "("
+      k <- lexeme prefString <?> "expected quoted preference name"
+      symbol ","
+      v <- lexeme prefValue <?> "expected preference value (string, integer or boolean)"
+      symbol ")"
+      symbol ";"
+      return (k, v)
+
+    -- A token and the space and comments after it.
+    lexeme p = p <* skipSpaceAndComments
+    symbol s = void (lexeme (AP.string s)) <?> ("expected " <> BS8.unpack s)
+
+    -- Firefox's grammar: a string, true, false, or a signed integer. Decimals are accepted too,
+    -- since that is how firefoxProfileToArchive writes a PrefDouble.
+    prefValue = AP.choice [
+      PrefString <$> prefString
+      , PrefBool True <$ AP.string "true"
+      , PrefBool False <$ AP.string "false"
+      , AP.scientific >>= numberPref
+      ]
       where
-        comment = inlineComment <|> lineComment
-        lineComment = AP.char '#' *> AP.manyTill AP.anyChar AP.endOfLine
-        inlineComment = AP.string "/*" *> AP.manyTill AP.anyChar (AP.string "*/")
+        numberPref s = case fromJSON (Number s) of
+          Success p -> return p
+          Error err -> fail err
+
+    -- A string literal in Firefox's grammar: single or double quoted, with the escapes
+    -- \" \' \\ \n \r, \xNN for a raw byte and \uNNNN for a UTF-16 code unit.
+    prefString = do
+      quote <- AP.satisfy (\c -> c == '"' || c == '\'')
+      pieces <- AP.manyTill (plain quote <|> escaped) (AP.char quote)
+      either (const (fail "string is not valid UTF-8")) return (T.decodeUtf8' (BS.concat pieces))
+      where
+        plain quote = AP.takeWhile1 (\c -> c /= quote && c /= '\\' && c /= '\n' && c /= '\r')
+        escaped = AP.char '\\' *> AP.choice [
+          "\"" <$ AP.char '"'
+          , "'" <$ AP.char '\''
+          , "\\" <$ AP.char '\\'
+          , "\n" <$ AP.char 'n'
+          , "\r" <$ AP.char 'r'
+          , BS.singleton . fromIntegral <$> (AP.char 'x' *> hex 2)
+          , T.encodeUtf8 . singleton . chr <$> (AP.char 'u' *> (hex 4 >>= codeUnit))
+          ]
+        codeUnit u
+          | isHighSurrogate u = do
+              l <- AP.string "\\u" *> hex 4
+              if isLowSurrogate l
+                then return (0x10000 + (u - 0xD800) * 0x400 + (l - 0xDC00))
+                else fail "expected low surrogate after high surrogate"
+          | isLowSurrogate u = fail "expected high surrogate before low surrogate"
+          | otherwise = return u
+        isHighSurrogate u = u >= 0xD800 && u <= 0xDBFF
+        isLowSurrogate u = u >= 0xDC00 && u <= 0xDFFF
+        hex n = foldl (\acc d -> acc * 16 + digitToInt d) 0 <$> AP.count n (AP.satisfy isHexDigit)
+
+    skipSpaceAndComments = AP.skipMany (void (AP.takeWhile1 AP.isSpace) <|> comment)
+    comment = lineComment "//" <|> lineComment "#" <|> blockComment
+    lineComment start = AP.string start *> AP.skipWhile (\c -> c /= '\n' && c /= '\r')
+    -- Both delimiters must stay on one line: this module is preprocessed by CPP.
+    blockComment = (AP.string "/*" *> void (AP.manyTill AP.anyChar (AP.string "*/"))) <?> "unterminated block comment"
