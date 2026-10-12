@@ -1,6 +1,3 @@
-#known issues
-- fix loadProfile so that it doesn't cause an overlap with user addExtension calls
-
 #features
 - support new w3c webdriver spec: http://www.w3.org/TR/webdriver/
   - try to support backwards compatibility with old wire protocol, otherwise provide legacy API in submodule (?)
