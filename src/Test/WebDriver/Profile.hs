@@ -360,8 +360,21 @@ firefoxProfileToArchive (Profile {profileFiles = files, profilePrefs = prefs}) =
 
     userJsContents = prefs
                    & HM.toList
-                   & map (\(k, v) -> LBS.concat [ "user_pref(", encode k, ", ", encode v, ");\n"])
+                   & map (\(k, v) -> LBS.concat [ "user_pref(", quoted k, ", ", value v, ");\n"])
                    & LBS.concat
+
+    value (PrefString s) = quoted s
+    value v = encode v
+
+    -- Quoted the way Firefox's own prefs writer does it: only \n, \r, \\ and \" are escaped.
+    -- aeson's encoding would also produce \t and \uXXXX, which Firefox's parser rejects.
+    quoted s = LBS.concat ["\"", TL.encodeUtf8 (TL.concatMap escape (TL.fromStrict s)), "\""]
+      where
+        escape '\n' = "\\n"
+        escape '\r' = "\\r"
+        escape '\\' = "\\\\"
+        escape '"' = "\\\""
+        escape c = TL.singleton c
 
     addProfileFile :: Archive -> (FilePath, ByteString) -> Archive
     addProfileFile archive (dest, bytes) = addEntryToArchive (toEntry dest 0 bytes) archive
