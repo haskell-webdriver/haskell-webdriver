@@ -71,7 +71,7 @@ import qualified Data.Text.Lazy.Encoding as TL
 import Data.Word
 import Prelude -- hides some "unused import" warnings
 import System.Directory
-import System.FilePath ((</>), (<.>), takeFileName)
+import System.FilePath ((</>), (<.>))
 
 #if MIN_VERSION_aeson(0,7,0)
 import Data.Scientific
@@ -297,40 +297,49 @@ defaultFirefoxProfile = Profile HM.empty $ HM.fromList [
 #endif
 
 
+-- | The files Firefox reads preferences from, in the order it reads them: later files
+-- override earlier ones.
+firefoxPrefFiles :: [FilePath]
+firefoxPrefFiles = ["prefs.js", "user.js"]
+
 -- | Load an existing profile from the file system. Any prepared changes made to
 -- the 'Profile' will have no effect to the profile on disk.
 --
--- To make automated browser run smoothly, preferences found in
--- 'defaultFirefoxProfile' are automatically merged into the preferences of the on-disk
--- profile. The on-disk profile's preference will override those found in the
--- default profile.
-loadFirefoxProfile :: forall m. MonadIO m => FilePath -> m (Profile Firefox)
-loadFirefoxProfile path = unionProfiles defaultFirefoxProfile <$> (Profile <$> getFiles path <*> getPrefs)
+-- Preferences are read from the profile's @prefs.js@ and @user.js@ (the latter taking
+-- precedence, as in Firefox) and merged over 'defaultFirefoxProfile', so that preferences
+-- found on disk override the defaults. Every other regular file below the directory is
+-- stored under its path relative to the directory, except for lock files and cache
+-- directories.
+--
+-- Throws an 'IOException' if the directory can't be read and a 'ProfileParseError' if a
+-- preferences file can't be parsed.
+loadFirefoxProfile :: MonadIO m => FilePath -> m (Profile Firefox)
+loadFirefoxProfile dir = liftIO $ do
+  paths <- listFiles ""
+  -- Files are read one at a time and strictly, so the number of open handles stays bounded.
+  files <- forM (filter (`notElem` firefoxPrefFiles) paths) $ \rel -> do
+    bytes <- BS.readFile (dir </> rel)
+    return (rel, BL.fromStrict bytes)
+  prefs <- foldM readPrefs HM.empty (filter (`elem` paths) firefoxPrefFiles)
+  return $ Profile (HM.fromList files) prefs `unionProfiles` defaultFirefoxProfile
   where
-    userPrefFile = path </> "prefs" <.> "js"
+    -- Regular files below the profile directory, as paths relative to it.
+    listFiles rel = do
+      names <- listDirectory (dir </> rel)
+      fmap concat $ forM (filter (`notElem` ignored) names) $ \name -> do
+        let rel' = rel </> name
+        isDir <- doesDirectoryExist (dir </> rel')
+        if isDir then listFiles rel' else do
+          isFile <- doesFileExist (dir </> rel')
+          return [rel' | isFile]
 
-    getFiles :: FilePath -> m (HM.HashMap FilePath ByteString)
-    getFiles dir = liftIO $ do
-      allFiles <- getAllFiles dir
-      foldM (\acc p -> HM.insert p <$> LBS.readFile p <*> pure acc) HM.empty $
-        filter ((`notElem` filesToIgnore) . takeFileName) allFiles
+    ignored = ["parent.lock", ".parentlock", "lock", ".lock", "Cache", "OfflineCache"]
 
-    getAllFiles :: FilePath -> IO [FilePath]
-    getAllFiles dir = do
-      exists <- doesDirectoryExist dir
-      if not exists then return [] else do
-        contents <- map (dir </>) <$> listDirectory dir
-        files <- filterM doesFileExist contents
-        dirs <- filterM doesDirectoryExist contents
-        subFiles <- concat <$> mapM getAllFiles dirs
-        return (files ++ subFiles)
-
-    filesToIgnore = [".", "..", "OfflineCache", "Cache", "parent.lock", ".parentlock", ".lock", userPrefFile]
-
-    getPrefs = liftIO $ do
-       doesFileExist userPrefFile >>= \case
-         True -> either throwIO return . parseFirefoxPrefs userPrefFile =<< BS.readFile userPrefFile
-         False -> return HM.empty
+    readPrefs acc name = do
+      let path = dir </> name
+      ps <- either throwIO return . parseFirefoxPrefs path =<< BS.readFile path
+      -- HM.union is left-biased, so this file's preferences win over the earlier ones.
+      return (ps `HM.union` acc)
 
 -- | Save a Firefox profile to a destination directory. This directory should
 -- already exist.
