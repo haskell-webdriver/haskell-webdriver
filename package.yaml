@@ -148,6 +148,7 @@ tests:
     - text
     - unliftio-core
     - unliftio
+    - unordered-containers
     - wai-app-static
     - warp
     - webdriver
