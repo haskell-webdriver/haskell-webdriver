@@ -61,7 +61,6 @@ import Data.Fixed
 import Data.Function ((&))
 import qualified Data.HashMap.Strict as HM
 import Data.Int
-import qualified Data.List as L
 import Data.Maybe
 import Data.Ratio
 import Data.Text (Text, pack, singleton)
@@ -349,7 +348,8 @@ saveFirefoxProfile (firefoxProfileToArchive -> archive) dest = liftIO $ flip ext
   , OptDestination dest
   ]
 
--- | Prepare a Firefox profile for network transmission.
+-- | Prepare a Firefox profile for network transmission. The preferences are written to a
+-- @user.js@ entry, which Firefox reads after @prefs.js@.
 firefoxProfileToArchive :: Profile Firefox -> Archive
 firefoxProfileToArchive (Profile {profileFiles = files, profilePrefs = prefs}) =
   foldl addProfileFile baseArchive (HM.toList files)
@@ -379,18 +379,18 @@ instance FromJSON (Profile Firefox) where
     Left err -> fail ("Couldn't decode Firefox profile archive: " <> err)
     Right bytes -> case toArchiveOrFail bytes of
       Left err -> fail ("Couldn't unzip Firefox profile archive: " <> err)
-      Right archive -> return $ Profile {
-        profileFiles = HM.fromList [(eRelativePath, fromEntry e) | e@(Entry {..}) <- otherFiles]
-        , profilePrefs = prefs
-        }
-        where
-          prefs = case L.find (\(Entry {..}) -> eRelativePath == "prefs.js") (zEntries archive) of
-            Nothing -> mempty
-            Just entry -> case AP.parseOnly prefsParser (BL.toStrict $ fromEntry entry) of
-              Left _err -> mempty
-              Right p -> HM.fromList p
-
-          otherFiles = [e | e@(Entry {..}) <- zEntries archive, eRelativePath /= "prefs.js"]
+      Right archive -> do
+        prefs <- foldM (readPrefs archive) HM.empty firefoxPrefFiles
+        return $ Profile {
+          profileFiles = HM.fromList [(eRelativePath, fromEntry e) | e@(Entry {..}) <- zEntries archive, eRelativePath `notElem` firefoxPrefFiles]
+          , profilePrefs = prefs
+          }
+    where
+      readPrefs archive acc name = case findEntryByPath name archive of
+        Nothing -> return acc
+        Just entry -> case parseFirefoxPrefs name (BL.toStrict (fromEntry entry)) of
+          Left (ProfileParseError err) -> fail err
+          Right ps -> return (ps `HM.union` acc)
   parseJSON other = typeMismatch "Profile Firefox" other
 
 -- * Firefox prefs.js parser
