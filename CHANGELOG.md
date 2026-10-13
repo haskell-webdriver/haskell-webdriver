@@ -1,6 +1,7 @@
 # Change Log
 
 ## Unreleased
+* Throw `SessionCreationFailed`, carrying the driver's response, when a new session is rejected. It was `SessionNameAlreadyExists`.
 * Reduce BiDi log noise
 * Gracefully stop driver processes by signalling their whole process group (escalating sigINT -> sigTERM and waiting for exit), so the driver's browser child isn't left orphaned.
 * Bound each session close in `teardownWebDriverContext` with a timeout so an unresponsive driver can't block session teardown.

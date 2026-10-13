@@ -160,7 +160,7 @@ startSession' driver caps sessionName = do
                , sessionIdCounter = idCounterVar
                }
            _ -> throwIO $ SessionCreationResponseHadNoSessionId response
-     | otherwise -> throwIO SessionNameAlreadyExists
+     | otherwise -> throwIO $ SessionCreationFailed response
 
 -- | Close the given WebDriver session. This sends the @DELETE
 -- \/session\/:sessionId@ command to the WebDriver API, and then shuts down the
