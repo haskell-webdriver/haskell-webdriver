@@ -29,6 +29,7 @@ detectBrowserFromDriver driverConfig = case driverConfig of
       [] -> Just BrowserSelenium
   DriverConfigGeckodriver {} -> Just BrowserFirefox
   DriverConfigChromedriver {} -> Just BrowserChrome
+  DriverConfigSafaridriver {} -> Nothing
 
 
 -- | A record that represents a single log entry.

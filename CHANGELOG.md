@@ -1,6 +1,7 @@
 # Change Log
 
 ## Unreleased
+* Add `DriverConfigSafaridriver` to drive Safari with `safaridriver`, standalone or under Selenium.
 * Add `SafariOptions`, under `_capabilitiesSafariOptions`, for Safari's `safari:` and `webkit:WebRTC` capabilities.
 * Throw `SessionCreationFailed`, carrying the driver's response, when a new session is rejected. It was `SessionNameAlreadyExists`.
 * Reduce BiDi log noise
