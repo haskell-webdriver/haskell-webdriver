@@ -8,6 +8,12 @@ on:
   # Runs CI by hand on a branch without a pull request.
   workflow_dispatch:
 
+# A new push to a pull request cancels its run in progress. Other runs each get their own group,
+# so runs on main never cancel each other.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   cabal:
     name: ${{ matrix.os }} / ghc ${{ matrix.ghc }} / ${{ matrix.browser }}
@@ -183,7 +189,8 @@ jobs:
         retention-days: 7
 
     - uses: actions/cache/save@v5
-      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+      # A cancelled job may have stopped mid-build, so it doesn't save.
+      if: ${{ !cancelled() && steps.cache-restore.outputs.cache-hit != 'true' }}
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-stack
