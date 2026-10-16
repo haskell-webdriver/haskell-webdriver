@@ -73,6 +73,9 @@ data BrowserDependencies = BrowserDependenciesChrome {
       browserDependenciesFirefoxFirefox :: FilePath
       , browserDependenciesFirefoxGeckodriver :: FilePath
       }
+  | BrowserDependenciesSafari {
+      browserDependenciesSafariSafaridriver :: FilePath
+      }
   deriving (Show)
 
 browserDependencies :: Label "browserDependencies" BrowserDependencies
@@ -143,6 +146,10 @@ getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps 
     defaultFirefoxOptions
       & set firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
       & over (firefoxOptionsArgs . non []) (if headless then ("-headless" :) else id)
+  }
+-- Safari has no headless mode.
+getCapabilities _ (BrowserDependenciesSafari {}) = pure $ defaultCaps {
+  _capabilitiesBrowserName = Just "safari"
   }
 
 -- * Spec types

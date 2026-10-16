@@ -13,9 +13,11 @@ module TestLib.Contexts.Session (
   , pendingOnNonSelenium
   , pendingOnSelenium3
   , pendingOnFirefox
+  , pendingOnSafari
   ) where
 
 import Control.Exception.Safe
+import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.Function
@@ -44,6 +46,8 @@ introduceSession = introduceSession' enableBiDi
     enableBiDi x = do
       getContext driverConfig >>= \case
         DriverConfigSeleniumJar { driverConfigSeleniumVersion=(Just Selenium3) } -> return x
+        -- safaridriver only offers BiDi when started with --bidi, which these tests don't do.
+        dc | isSafari dc -> return x
         _ -> x
              & set capabilitiesWebSocketUrl (Just True)
              & return
@@ -118,3 +122,11 @@ pendingOnFirefox = do
     DriverConfigGeckodriver {} -> pending
     DriverConfigSeleniumJar {driverConfigSubDrivers=[DriverConfigGeckodriver {}]} -> pending
     _ -> return ()
+
+pendingOnSafari :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
+pendingOnSafari = getContext driverConfig >>= \dc -> when (isSafari dc) pending
+
+isSafari :: DriverConfig -> Bool
+isSafari (DriverConfigSafaridriver {}) = True
+isSafari (DriverConfigSeleniumJar {driverConfigSubDrivers=[DriverConfigSafaridriver {}]}) = True
+isSafari _ = False

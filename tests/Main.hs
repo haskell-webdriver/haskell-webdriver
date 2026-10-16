@@ -100,6 +100,21 @@ main = do
               , driverConfigGeckodriverExtraEnv = Nothing
               }
 
+  let introduceSafaridriver :: forall ctx. (HasBaseContext ctx, HasBrowserDependencies ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
+      introduceSafaridriver = introduce "Introduce safaridriver" driverConfig alloc (const $ return ())
+        where
+          alloc = do
+            Just dir <- getCurrentFolder
+            safaridriver <- getContext browserDependencies >>= \case
+              BrowserDependenciesSafari {..} -> return browserDependenciesSafariSafaridriver
+              deps -> expectationFailure [i|Expected Safari dependencies, got #{deps}|]
+            return $ DriverConfigSafaridriver {
+              driverConfigSafaridriver = safaridriver
+              , driverConfigSafaridriverFlags = []
+              , driverConfigSafaridriverExtraEnv = Nothing
+              , driverConfigLogDir = Just dir
+              }
+
   let UserOptions {optBrowserToUse} = optUserOptions clo
 
   runSandwichWithCommandLineArgs' defaultOptions userOptions $ do
@@ -118,6 +133,9 @@ main = do
 
         when (optBrowserToUse == UseFirefox) $
           describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriverContext Spec.spec
+
+        when (optBrowserToUse == UseSafari) $
+          describe "safaridriver direct" $ introduceSafaridriver $ introduceWebDriverContext Spec.spec
 
 
 -- | Nixpkgs nixos-unstable, accessed 6\/2\/2026 (provides google-chrome 148.0.7778.215).
@@ -153,6 +171,13 @@ getSubDrivers dir = getContext browserDependencies >>= \case
         , driverConfigLogDir = Just dir
         , driverConfigGeckodriverFlags = []
         , driverConfigGeckodriverExtraEnv = Nothing
+    }]
+  BrowserDependenciesSafari {..} -> return [
+    DriverConfigSafaridriver {
+        driverConfigSafaridriver = browserDependenciesSafariSafaridriver
+        , driverConfigSafaridriverFlags = []
+        , driverConfigSafaridriverExtraEnv = Nothing
+        , driverConfigLogDir = Just dir
     }]
 
 

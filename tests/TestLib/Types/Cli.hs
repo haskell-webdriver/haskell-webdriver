@@ -5,12 +5,13 @@ module TestLib.Types.Cli where
 import Options.Applicative
 
 
-data BrowserToUse = UseChrome | UseFirefox
+data BrowserToUse = UseChrome | UseFirefox | UseSafari
   deriving (Show, Eq)
 
 browserToUse :: (forall f a. Mod f a) -> Parser BrowserToUse
 browserToUse maybeInternal =
   flag' UseFirefox (long "use-firefox" <> help "Use Firefox" <> maybeInternal)
+  <|> flag' UseSafari (long "use-safari" <> help "Use Safari (macOS only)" <> maybeInternal)
   <|> flag UseChrome UseChrome (long "use-chrome" <> help "Use Chrome (default)" <> maybeInternal)
 
 data UserOptions = UserOptions {
@@ -20,6 +21,8 @@ data UserOptions = UserOptions {
 
   , optFirefoxBinary :: Maybe FilePath
   , optGeckoDriver :: Maybe FilePath
+
+  , optSafariDriver :: Maybe FilePath
 
   , optBrowserToUse :: BrowserToUse
 
@@ -34,6 +37,8 @@ userOptions = UserOptions
 
   <*> optional (strOption (long "webdriver-firefox" <> help "Path to Firefox binary"))
   <*> optional (strOption (long "webdriver-geckodriver" <> help "Path to geckodriver"))
+
+  <*> optional (strOption (long "webdriver-safaridriver" <> help "Path to safaridriver (default: the one on the PATH)"))
 
   <*> browserToUse mempty
 
