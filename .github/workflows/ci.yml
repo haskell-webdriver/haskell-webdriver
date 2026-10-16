@@ -2,7 +2,11 @@ name: ci
 
 on:
   pull_request:
+  # Other branches are tested through their pull requests.
   push:
+    branches: [main]
+  # Runs CI by hand on a branch without a pull request.
+  workflow_dispatch:
 
 jobs:
   cabal:
