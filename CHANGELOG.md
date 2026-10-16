@@ -1,6 +1,7 @@
 # Change Log
 
 ## Unreleased
+* Add `SafariOptions`, under `_capabilitiesSafariOptions`, for Safari's `safari:` and `webkit:WebRTC` capabilities.
 * Throw `SessionCreationFailed`, carrying the driver's response, when a new session is rejected. It was `SessionNameAlreadyExists`.
 * Reduce BiDi log noise
 * Gracefully stop driver processes by signalling their whole process group (escalating sigINT -> sigTERM and waiting for exit), so the driver's browser child isn't left orphaned.

@@ -57,6 +57,7 @@ library
       Test.WebDriver.Capabilities.FirefoxOptions
       Test.WebDriver.Capabilities.Platform
       Test.WebDriver.Capabilities.Proxy
+      Test.WebDriver.Capabilities.Safari
       Test.WebDriver.Capabilities.Timeouts
       Test.WebDriver.Capabilities.UserPromptHandler
       Test.WebDriver.Commands.Actions
@@ -196,6 +197,7 @@ test-suite tests
       TestLib.Types
       TestLib.Types.Cli
       TestLib.Waits
+      Unit.Capabilities
       Paths_webdriver
   hs-source-dirs:
       tests
