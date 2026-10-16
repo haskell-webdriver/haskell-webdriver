@@ -120,22 +120,13 @@ jobs:
           !test_runs/**/gcroot
         retention-days: 7
 
+  # Builds with the stack.yaml resolver's GHC. The cabal job covers the other GHC versions.
   stack:
-    name: stack / ghc ${{ matrix.ghc }} / ${{ matrix.browser }}
+    name: stack / ${{ matrix.browser }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        ghc:
-        # - "8.6.5"
-        # - "8.8.4"
-        # - "8.10.7"
-        - "9.0.2"
-        - "9.2.8"
-        - "9.4.8"
-        - "9.6.7"
-        - "9.8.4"
-        - "9.10.2"
         browser:
         - firefox
         - chrome
@@ -153,7 +144,8 @@ jobs:
       name: Setup Haskell Stack
       with:
         enable-stack: true
-        ghc-version: ${{ matrix.ghc }}
+        # Stack installs the resolver's GHC itself, into the cached ~/.stack.
+        stack-no-global: true
         stack-version: "latest"
 
     - uses: nix-community/cache-nix-action@v7
@@ -168,7 +160,9 @@ jobs:
       id: cache-restore
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
+        # Changing the resolver or the dependencies saves a new cache, seeded from the newest old one.
+        key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml', 'stack.yaml.lock', 'package.yaml') }}
+        restore-keys: ${{ runner.os }}-stack-
 
     - name: Build
       run: |
@@ -182,7 +176,7 @@ jobs:
       uses: actions/upload-artifact@v7
       if: always()
       with:
-        name: test-runs-stack-${{ matrix.ghc }}-${{ matrix.browser }}
+        name: test-runs-stack-${{ matrix.browser }}
         path: |
           test_runs
           !test_runs/**/gcroot
@@ -193,4 +187,4 @@ jobs:
       if: ${{ !cancelled() && steps.cache-restore.outputs.cache-hit != 'true' }}
       with:
         path: ~/.stack
-        key: ${{ runner.os }}-${{ matrix.ghc }}-stack
+        key: ${{ steps.cache-restore.outputs.cache-primary-key }}
