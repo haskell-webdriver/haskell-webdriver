@@ -196,6 +196,7 @@ test-suite tests
       TestLib.Types
       TestLib.Types.Cli
       TestLib.Waits
+      Unit
       Unit.FirefoxProfile
       Paths_webdriver
   hs-source-dirs:

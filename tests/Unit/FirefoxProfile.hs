@@ -1,5 +1,6 @@
-
-module Unit.FirefoxProfile where
+module Unit.FirefoxProfile (
+  tests
+  ) where
 
 import Control.Monad
 import Control.Monad.IO.Class

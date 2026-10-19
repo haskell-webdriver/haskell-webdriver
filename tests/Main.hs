@@ -23,7 +23,7 @@ import TestLib.Contexts.StaticServer
 import TestLib.Contexts.WebDriver
 import TestLib.Types
 import TestLib.Types.Cli
-import qualified Unit.FirefoxProfile
+import qualified Unit
 import UnliftIO.Process
 
 
@@ -103,9 +103,7 @@ main = do
   let UserOptions {optBrowserToUse} = optUserOptions clo
 
   runSandwichWithCommandLineArgs' defaultOptions userOptions $ do
-    -- Pure tests, needing neither Nix nor a browser. Run them alone with -f "Unit tests".
-    describe "Unit tests" $ do
-      Unit.FirefoxProfile.tests
+    Unit.tests
 
     introduceNixContext nixpkgsRelease $
       introduceStaticServer $
