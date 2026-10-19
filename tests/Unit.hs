@@ -8,9 +8,10 @@ module Unit (
   ) where
 
 import Test.Sandwich
+import TestLib.Types
 
 #insert_test_imports
 
 
-tests :: TopSpec
+tests :: NixSpec
 tests = $(getSpecFromFolder defaultGetSpecFromFolderOptions)

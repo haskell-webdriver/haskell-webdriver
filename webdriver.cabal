@@ -188,6 +188,7 @@ test-suite tests
       Spec.Sessions
       Spec.UserPrompts
       TestLib.Contexts.BrowserDependencies
+      TestLib.Contexts.FirefoxProfile
       TestLib.Contexts.Selenium4
       TestLib.Contexts.Session
       TestLib.Contexts.StaticServer
@@ -197,7 +198,8 @@ test-suite tests
       TestLib.Types.Cli
       TestLib.Waits
       Unit
-      Unit.FirefoxProfile
+      Unit.FirefoxProfileBasics
+      Unit.RealFirefoxProfile
       Paths_webdriver
   hs-source-dirs:
       tests

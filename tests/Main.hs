@@ -103,20 +103,20 @@ main = do
   let UserOptions {optBrowserToUse} = optUserOptions clo
 
   runSandwichWithCommandLineArgs' defaultOptions userOptions $ do
-    Unit.tests
+    introduceNixContext nixpkgsRelease $ do
+      Unit.tests
 
-    introduceNixContext nixpkgsRelease $
       introduceStaticServer $
-      introduceBrowserDependencies $ do
-        describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriverContext $ Spec.spec
+        introduceBrowserDependencies $ do
+          describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriverContext $ Spec.spec
 
-        describe "Selenium 4" $ introduceSelenium4 $ introduceWebDriverContext $ Spec.spec
+          describe "Selenium 4" $ introduceSelenium4 $ introduceWebDriverContext $ Spec.spec
 
-        when (optBrowserToUse == UseChrome) $
-          describe "chromedriver direct" $ introduceChromedriver $ introduceWebDriverContext Spec.spec
+          when (optBrowserToUse == UseChrome) $
+            describe "chromedriver direct" $ introduceChromedriver $ introduceWebDriverContext Spec.spec
 
-        when (optBrowserToUse == UseFirefox) $
-          describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriverContext Spec.spec
+          when (optBrowserToUse == UseFirefox) $
+            describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriverContext Spec.spec
 
 
 -- | Nixpkgs nixos-unstable, accessed 6\/2\/2026 (provides google-chrome 148.0.7778.215).
