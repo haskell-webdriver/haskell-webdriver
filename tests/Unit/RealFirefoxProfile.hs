@@ -12,6 +12,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import System.FilePath ((</>))
+import System.Info (os)
 import Test.Sandwich
 import Test.Sandwich.Contexts.Nix
 import Test.WebDriver.Profile
@@ -20,8 +21,9 @@ import TestLib.Types
 import UnliftIO.Temporary (withSystemTempDirectory)
 
 
+-- On macOS, Firefox can't run inside a Nix build, and Firefox 59 is Linux-only.
 tests :: NixSpec
-tests = describe "Profiles written by a real Firefox" $ do
+tests = when (os == "linux") $ describe "Profiles written by a real Firefox" $ do
   describe "Firefox 151.0.2" $ introduceNixContext nixpkgsFirefox151 $ introduceFirefoxProfile $ do
     realProfileTests "151.0.2"
 
