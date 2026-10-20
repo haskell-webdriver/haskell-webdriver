@@ -1,0 +1,9 @@
+resolver: lts-24.64
+
+packages:
+- ../
+
+nix:
+  enable: false
+
+system-ghc: true

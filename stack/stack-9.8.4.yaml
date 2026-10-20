@@ -1,0 +1,9 @@
+resolver: lts-23.28
+
+packages:
+- ../
+
+nix:
+  enable: false
+
+system-ghc: true

@@ -1,0 +1,20 @@
+resolver: lts-20.26
+
+packages:
+- ../
+
+nix:
+  enable: false
+
+system-ghc: true
+
+extra-deps:
+- attoparsec-aeson-2.1.0.0
+- brick-2.4
+- sandwich-0.3.0.0
+- sandwich-contexts-0.3.0.0
+- text-zipper-0.13
+- vty-6.2
+- vty-crossplatform-0.4.0.0
+- vty-unix-0.2.0.0
+- websockets-0.13.0.0

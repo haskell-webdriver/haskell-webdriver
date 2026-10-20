@@ -20,24 +20,17 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest]
         ghc:
-        # - "8.10.7"
-        - "9.0.2"
         - "9.2.8"
         - "9.4.8"
         - "9.6.6"
         - "9.8.4"
-        - "9.10.2"
-        - "9.12.2"
+        - "9.10.3"
+        - "9.12.4"
+        - "9.14.1"
         browser:
         - firefox
         - chrome
         exclude:
-        # These don't work on GitHub CI anymore because they need llvm@13, which became
-        # disabled on 12/31/2024
-        - os: macOS-latest
-          ghc: 8.10.7
-        - os: macOS-latest
-          ghc: 9.0.2
         # We can't install Firefox on macOS using Nix, and it's not immediately clear how you can
         # set up Firefox + geckodriver on Github Actions on macOS
         - os: macOS-latest
@@ -126,15 +119,12 @@ jobs:
       fail-fast: false
       matrix:
         ghc:
-        # - "8.6.5"
-        # - "8.8.4"
-        # - "8.10.7"
-        - "9.0.2"
         - "9.2.8"
         - "9.4.8"
         - "9.6.7"
         - "9.8.4"
-        - "9.10.2"
+        - "9.10.3"
+        - "9.12.4"
         browser:
         - firefox
         - chrome
@@ -171,11 +161,11 @@ jobs:
 
     - name: Build
       run: |
-        stack build --system-ghc --test --bench --no-run-tests --no-run-benchmarks
+        stack build --stack-yaml stack/stack-${{ matrix.ghc }}.yaml --system-ghc --test --bench --no-run-tests --no-run-benchmarks
 
     - name: Test
       run: |
-        stack test --system-ghc --ta="--headless-tests --use-${{ matrix.browser }} --webdriver-chrome-no-sandbox --fixed-root test_runs/run --print-failures"
+        stack test --stack-yaml stack/stack-${{ matrix.ghc }}.yaml --system-ghc --ta="--headless-tests --use-${{ matrix.browser }} --webdriver-chrome-no-sandbox --fixed-root test_runs/run --print-failures"
 
     - name: Archive test_runs
       uses: actions/upload-artifact@v7
