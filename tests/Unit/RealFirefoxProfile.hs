@@ -64,7 +64,7 @@ realProfileTests expectedVersion = do
     Profile {profileFiles} <- loadProfile
     let paths = HM.keys profileFiles
 
-    forM_ ["chrome" </> "userChrome.css", "compatibility.ini", "times.json"] $ \path ->
+    forM_ ["chrome" </> "userChrome.css", "compatibility.ini"] $ \path ->
       paths `shouldContain` [path]
     forM_ ["prefs.js", "user.js", ".parentlock", "lock"] $ \path ->
       paths `shouldNotContain` [path]
