@@ -1,0 +1,9 @@
+resolver: nightly-2026-04-19
+
+packages:
+- ../
+
+nix:
+  enable: false
+
+system-ghc: true

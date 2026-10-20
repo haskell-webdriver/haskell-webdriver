@@ -1,0 +1,14 @@
+resolver: lts-22.44
+
+packages:
+- ../
+
+nix:
+  enable: false
+
+system-ghc: true
+
+extra-deps:
+- sandwich-0.3.0.5
+- sandwich-contexts-0.3.0.3
+- websockets-0.13.0.0
