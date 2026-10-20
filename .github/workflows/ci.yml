@@ -2,14 +2,11 @@ name: ci
 
 on:
   pull_request:
-  # Other branches are tested through their pull requests.
   push:
     branches: [main]
-  # Runs CI by hand on a branch without a pull request.
   workflow_dispatch:
 
-# A new push to a pull request cancels its run in progress. Other runs each get their own group,
-# so runs on main never cancel each other.
+# Runs on main each get their own group, so a merge never cancels another merge's run.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
@@ -122,7 +119,6 @@ jobs:
           !test_runs/**/gcroot
         retention-days: 7
 
-  # Builds with the stack.yaml resolver's GHC. The cabal job covers the other GHC versions.
   stack:
     name: stack / ${{ matrix.browser }}
     runs-on: ubuntu-latest
@@ -146,7 +142,6 @@ jobs:
       name: Setup Haskell Stack
       with:
         enable-stack: true
-        # Stack installs the resolver's GHC itself, into the cached ~/.stack.
         stack-no-global: true
         stack-version: "latest"
 
@@ -162,7 +157,6 @@ jobs:
       id: cache-restore
       with:
         path: ~/.stack
-        # Changing the resolver or the dependencies saves a new cache, seeded from the newest old one.
         key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml', 'stack.yaml.lock', 'package.yaml') }}
         restore-keys: ${{ runner.os }}-stack-
 
@@ -185,7 +179,6 @@ jobs:
         retention-days: 7
 
     - uses: actions/cache/save@v5
-      # A cancelled job may have stopped mid-build, so it doesn't save.
       if: ${{ !cancelled() && steps.cache-restore.outputs.cache-hit != 'true' }}
       with:
         path: ~/.stack
