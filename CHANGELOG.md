@@ -1,12 +1,7 @@
 # Change Log
 
 ## Unreleased
-* Fix `loadFirefoxProfile` on profiles written by Firefox 60 or later (#181).
-* Accept single-quoted strings and Firefox's escape sequences in preference files.
-* Add `parseFirefoxPrefs`.
-* Make `loadFirefoxProfile` store paths relative to the profile directory, read `user.js`, and let on-disk preferences override the defaults.
-* Fix decoding a `Profile Firefox` from JSON dropping its preferences.
-* Quote preference strings the way Firefox does when uploading a profile, so strings containing tabs or other control characters load.
+* Fix Firefox profile handling for Firefox <60 and also files with unusual comments, single quotes, etc. + fix preference overriding + add `parseFirefoxPrefs` (#181)
 * Reduce BiDi log noise
 * Gracefully stop driver processes by signalling their whole process group (escalating sigINT -> sigTERM and waiting for exit), so the driver's browser child isn't left orphaned.
 * Bound each session close in `teardownWebDriverContext` with a timeout so an unresponsive driver can't block session teardown.
