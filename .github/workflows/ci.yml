@@ -59,6 +59,8 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
+        # https://github.com/actions/runner-images/issues/14940
+        sudo xcode-select -s /Library/Developer/CommandLineTools
         # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
         echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
 
