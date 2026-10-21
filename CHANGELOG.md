@@ -1,9 +1,8 @@
 # Change Log
 
 ## Unreleased
-* Add `DriverConfigSafaridriver` to drive Safari with `safaridriver`, standalone or under Selenium.
-* Add `SafariOptions`, under `_capabilitiesSafariOptions`, for Safari's `safari:` and `webkit:WebRTC` capabilities.
-* Throw `SessionCreationFailed`, carrying the driver's response, when a new session is rejected. It was `SessionNameAlreadyExists`.
+* Add Safari support with `DriverConfigSafaridriver` and `SafariOptions` (#175)
+* Throw `SessionCreationFailed` instead of `SessionNameAlreadyExists` when the driver rejects a new session
 * Reduce BiDi log noise
 * Gracefully stop driver processes by signalling their whole process group (escalating sigINT -> sigTERM and waiting for exit), so the driver's browser child isn't left orphaned.
 * Bound each session close in `teardownWebDriverContext` with a timeout so an unresponsive driver can't block session teardown.
