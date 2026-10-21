@@ -61,8 +61,8 @@ setTimeouts :: (HasCallStack, WebDriver wd) => Timeouts -> wd ()
 setTimeouts timeouts = doSessCommand methodPost "/timeouts" (A.toJSON timeouts)
 
 -- | Set the "script" value of the 'Timeouts'.
--- 'Nothing' sends @null@, which the spec defines as no timeout. safaridriver rejects it, as of
--- Safari 27.2.
+-- Selenium 3 and 4 accept @null@ for this value, which unsets it. The spec defines it as no timeout.
+-- safaridriver rejects it, as of Safari 27.2.
 setScriptTimeout :: (HasCallStack, WebDriver wd) => Maybe Integer -> wd ()
 setScriptTimeout x = doSessCommand methodPost "/timeouts" (A.object [("script", maybe A.Null (A.Number . fromIntegral) x)])
 
