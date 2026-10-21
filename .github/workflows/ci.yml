@@ -3,6 +3,13 @@ name: ci
 on:
   pull_request:
   push:
+    branches: [main]
+  workflow_dispatch:
+
+# Runs on main each get their own group, so a merge never cancels another merge's run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   cabal:
@@ -49,6 +56,8 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
+        # https://github.com/actions/runner-images/issues/14940
+        sudo xcode-select -s /Library/Developer/CommandLineTools
         # https://gitlab.haskell.org/ghc/ghc/-/issues/20592#note_391266
         echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
 
@@ -179,7 +188,7 @@ jobs:
         retention-days: 7
 
     - uses: actions/cache/save@v5
-      if: always() && steps.cache-restore.outputs.cache-hit != 'true'
+      if: ${{ !cancelled() && steps.cache-restore.outputs.cache-hit != 'true' }}
       with:
         path: ~/.stack
         key: ${{ runner.os }}-${{ matrix.ghc }}-stack
