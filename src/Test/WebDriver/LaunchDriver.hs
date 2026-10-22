@@ -47,13 +47,15 @@ import UnliftIO.Timeout
 
 
 launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
-launchDriver driverConfig = recovering policy [const handler] $ \_ -> launchDriver' driverConfig
+launchDriver driverConfig = recovering policy [handler] $ \_ -> launchDriver' driverConfig
   where
     policy = limitRetries 10 <> capDelay 1_000_000 (exponentialBackoff 50_000)
 
-    handler = Handler $ \case
+    handler retryStatus = Handler $ \case
       DriverOutputEndedBeforeReady _ output | Prelude.any isPortTaken output -> do
-        logWarnN [i|Driver couldn't bind port; retrying on a fresh one|]
+        willRetry <- isJust <$> applyPolicy policy retryStatus
+        when willRetry $
+          logWarnN [i|Driver couldn't bind port; retrying on a fresh one|]
         return True
       _ -> return False
 
