@@ -128,7 +128,7 @@ launchDriver' driverConfig = do
 
     flip onException (cancel logAsync) $ do
       -- Wait for a successful connection to the server socket
-      addr <- liftIO (getAddrInfo (Just defaultHints) (Just "127.0.0.1") (Just (show port))) >>= \case
+      addr <- liftIO (getAddrInfo (Just defaultHints { addrSocketType = Stream }) (Just "127.0.0.1") (Just (show port))) >>= \case
         addr:_ -> return addr
         _ -> throwIO DriverGetAddrInfoFailed
       let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 1_000_000 $ exponentialBackoff 1000
