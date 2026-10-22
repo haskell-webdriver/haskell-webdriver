@@ -16,6 +16,10 @@ module TestLib.Types (
   , browserDependencies
   , HasBrowserDependencies
 
+  , FirefoxProfileContext(..)
+  , firefoxProfile
+  , HasFirefoxProfile
+
   , driverConfig
   , HasDriverConfig
 
@@ -29,6 +33,7 @@ module TestLib.Types (
 
   , SeleniumVersion(..)
 
+  , NixSpec
   , SessionSpec
   , SpecWithWebDriver
   ) where
@@ -38,6 +43,7 @@ import Control.Monad.IO.Unlift
 import Data.ByteString
 import qualified Data.ByteString.Lazy as BL
 import Data.String.Interpolate
+import Data.Text (Text)
 import Lens.Micro
 import qualified Network.HTTP.Client as HC
 import Network.HTTP.Types.Status as N
@@ -79,6 +85,20 @@ browserDependencies :: Label "browserDependencies" BrowserDependencies
 browserDependencies = Label
 
 type HasBrowserDependencies context = HasLabel context "browserDependencies" BrowserDependencies
+
+-- * FirefoxProfile
+
+-- | A Firefox profile directory that a real Firefox wrote.
+data FirefoxProfileContext = FirefoxProfileContext {
+  firefoxProfileContextDir :: FilePath
+  , firefoxProfileContextVersion :: Text
+  }
+  deriving (Show)
+
+firefoxProfile :: Label "firefoxProfile" FirefoxProfileContext
+firefoxProfile = Label
+
+type HasFirefoxProfile context = HasLabel context "firefoxProfile" FirefoxProfileContext
 
 -- * WebDriver
 
@@ -146,6 +166,11 @@ getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps 
   }
 
 -- * Spec types
+
+type NixSpec = forall context. (
+  HasBaseContext context
+  , HasNixContext context
+  ) => SpecFree context IO ()
 
 type SpecWithWebDriver = forall context. (
   HasBaseContext context

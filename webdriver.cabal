@@ -188,6 +188,7 @@ test-suite tests
       Spec.Sessions
       Spec.UserPrompts
       TestLib.Contexts.BrowserDependencies
+      TestLib.Contexts.FirefoxProfile
       TestLib.Contexts.Selenium4
       TestLib.Contexts.Session
       TestLib.Contexts.StaticServer
@@ -196,6 +197,9 @@ test-suite tests
       TestLib.Types
       TestLib.Types.Cli
       TestLib.Waits
+      Unit
+      Unit.FirefoxProfileBasics
+      Unit.RealFirefoxProfile
       Paths_webdriver
   hs-source-dirs:
       tests
@@ -234,6 +238,7 @@ test-suite tests
     , text
     , unliftio
     , unliftio-core
+    , unordered-containers
     , wai-app-static
     , warp
     , webdriver
