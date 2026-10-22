@@ -6,22 +6,29 @@ on:
 
 jobs:
   stress:
-    name: ${{ matrix.runner }}${{ matrix.stp && ' / Technology Preview' || '' }}
+    name: ${{ matrix.runner }} / ${{ matrix.modes }}
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 120
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
         include:
-        - runner: macos-14
-        - runner: macos-15
-        - runner: macos-15-intel
         - runner: macos-26
+          modes: sel3
         - runner: xcode-27
+          modes: sel3
+        - runner: macos-15
+          modes: sel3
+        - runner: macos-14
+          modes: sel3
         - runner: macos-26
-          stp: true
-          # Selenium 3 can't start Technology Preview.
-          modes: bare-eph,bare-overlap,bare-concurrent,sel4,sel4new
+          modes: sel4new
+        - runner: macos-26
+          modes: bare-eph
+        - runner: xcode-27
+          modes: sel4new
+        - runner: macos-14
+          modes: bare-eph
 
     steps:
     - uses: actions/checkout@v6
@@ -30,10 +37,6 @@ jobs:
       with:
         distribution: temurin
         java-version: "21"
-
-    - name: Install Safari Technology Preview
-      if: matrix.stp
-      run: brew install --cask safari-technology-preview
 
     - name: Fetch Selenium
       run: |
@@ -44,29 +47,23 @@ jobs:
 
     - name: Stress
       run: |
-        if [ "${{ matrix.stp }}" = "true" ]; then
-          DRIVER="/Applications/Safari Technology Preview.app/Contents/MacOS/safaridriver"
-          BROWSER="Safari Technology Preview"
-        else
-          DRIVER=/usr/bin/safaridriver
-          BROWSER=safari
-        fi
+        DRIVER=/usr/bin/safaridriver
         sudo "$DRIVER" --enable
         mkdir -p out
         /usr/bin/log stream --style compact --level info --predicate \
-          'subsystem BEGINSWITH "com.apple.WebDriver" OR process CONTAINS "WebDriver" OR process == "safaridriver" OR category == "Automation"' \
+          'subsystem BEGINSWITH "com.apple.WebDriver" OR process CONTAINS "WebDriver" OR process == "safaridriver" OR process == "webinspectord" OR category == "Automation"' \
           > out/webdriver-log-stream.txt 2>&1 &
         STREAM=$!
         python3 .github/diagnostics/safari-launch-stress.py out \
-          --rounds 1000 --per-round 3 --max-minutes 95 \
-          --modes ${{ matrix.modes || 'bare-eph,bare-overlap,bare-concurrent,sel3,sel3-gap,sel4,sel4new' }} \
-          --safaridriver "$DRIVER" --browser "$BROWSER" --java "$JAVA_HOME/bin/java" \
+          --rounds 1000 --per-round 3 --max-minutes 40 --modes ${{ matrix.modes }} \
+          --safaridriver "$DRIVER" --browser safari --java "$JAVA_HOME/bin/java" \
           --sel3-jar jars/selenium-3.jar --sel4-jar jars/selenium-4.29.jar --sel4new-jar jars/selenium-4.51.jar \
           --selenium-timeout 75
         kill $STREAM
+        grep -E 'webinspectord.*(Shutting|last client)' out/webdriver-log-stream.txt | tail -40 || true
 
     - uses: actions/upload-artifact@v7
       if: always()
       with:
-        name: launch-stress-${{ matrix.runner }}${{ matrix.stp && '-stp' || '' }}
+        name: launch-stress-${{ matrix.runner }}-${{ matrix.modes }}
         path: out/

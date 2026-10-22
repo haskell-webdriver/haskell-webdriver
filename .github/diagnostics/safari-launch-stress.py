@@ -249,6 +249,15 @@ def caps(browser):
     return {"capabilities": {"alwaysMatch": {"browserName": browser}}}
 
 
+def pids(name):
+    return ",".join(run(["pgrep", "-x", name]).split()) or "-"
+
+
+def state(ctx):
+    """Which Safari and webinspectord processes are running as an iteration starts."""
+    return {"safari": pids(ctx["browser_process"]), "webinspectord": pids("webinspectord")}
+
+
 def bare_iteration(ctx, mode, rnd, i):
     # bare-overlap stops the previous iteration's safaridriver with SIGTERM just before launching
     # this one, without waiting for it to exit; bare-concurrent leaves the previous one running until
@@ -258,7 +267,7 @@ def bare_iteration(ctx, mode, rnd, i):
     if held is not None and mode == "bare-overlap" and held.poll() is None:
         held.terminate()
     rec = {"mode": mode, "round": rnd, "i": i, "t": stamp(), "port": port, "bidi_8080_busy": listening(8080),
-           "prev_driver_alive": held is not None and held.poll() is None}
+           "prev_driver_alive": held is not None and held.poll() is None, **state(ctx)}
     prev = ctx.get("prev_svc")
     rec["prev_svc_alive"] = prev is not None and alive(prev)
     outpath = os.path.join(ctx["outdir"], "driver-output", f"{mode}-{rnd}-{i}.txt")
@@ -309,7 +318,7 @@ def selenium_iteration(ctx, server, mode, rnd, i):
     if mode.endswith("-gap"):
         # Give the previous session's safaridriver time to finish shutting down.
         time.sleep(ctx["gap"])
-    rec = {"mode": mode, "round": rnd, "i": i, "t": stamp(), "bidi_8080_busy": listening(8080)}
+    rec = {"mode": mode, "round": rnd, "i": i, "t": stamp(), "bidi_8080_busy": listening(8080), **state(ctx)}
     result = {}
 
     def request():
@@ -397,7 +406,8 @@ def main():
     modes = a.modes.split(",")
     ctx = {"outdir": a.outdir, "safaridriver": a.safaridriver, "browser": a.browser,
            "listen_timeout": a.listen_timeout, "session_timeout": a.session_timeout,
-           "selenium_timeout": a.selenium_timeout, "no_session": a.no_session, "gap": a.gap}
+           "selenium_timeout": a.selenium_timeout, "no_session": a.no_session, "gap": a.gap,
+           "browser_process": "Safari Technology Preview" if "Technology Preview" in a.browser else "Safari"}
 
     with open(os.path.join(a.outdir, "environment.txt"), "w") as f:
         f.write(run(["sw_vers"]) + run(["uname", "-m"]) + run([a.safaridriver, "--version"]))
@@ -439,7 +449,8 @@ def main():
                         flag = f" ERROR {rec.get('http_status')} {rec.get('error', '')[:120]!r}"
                     elif rec.get("session_s", 0) > 30:
                         flag = " SLOW"
-                    say(f"r{rnd} {mode} #{i} listen={rec.get('listen_s')} session={rec.get('session_s')}{flag}")
+                    say(f"r{rnd} {mode} #{i} listen={rec.get('listen_s')} session={rec.get('session_s')}"
+                        f" safari={rec['safari']} webinspectord={rec['webinspectord']}{flag}")
             rinfo = {"round_end": rnd, "t": stamp(), "screen_locked": screen_locked(),
                      "lid_closed": '"AppleClamshellState" = Yes' in run(["ioreg", "-r", "-k", "AppleClamshellState", "-d", "4"]),
                      "interruptions": interruptions_since(start)}
