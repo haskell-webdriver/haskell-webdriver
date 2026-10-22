@@ -40,6 +40,9 @@ tests = introduceSession $ describe "Command contexts" $ before "Open test page"
     minimize
 
   it "fullscreen" $ do
+    -- Released Safari, through 27.0.1 at least, never finishes going fullscreen on GitHub's macOS
+    -- runners. Technology Preview 254 does, and the 27.2 betas go fullscreen the same way.
+    pendingOnSafariBefore [27, 2]
     fullscreen
 
   describe "rect" $ do
