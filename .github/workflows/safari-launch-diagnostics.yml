@@ -1,0 +1,72 @@
+name: Safari launch diagnostics
+
+on:
+  push:
+    branches: [diagnose-safari-launch]
+
+jobs:
+  stress:
+    name: ${{ matrix.runner }}${{ matrix.stp && ' / Technology Preview' || '' }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - runner: macos-14
+        - runner: macos-15
+        - runner: macos-15-intel
+        - runner: macos-26
+        - runner: xcode-27
+        - runner: macos-26
+          stp: true
+          # Selenium 3 can't start Technology Preview.
+          modes: bare-eph,bare-overlap,bare-concurrent,sel4,sel4new
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: "21"
+
+    - name: Install Safari Technology Preview
+      if: matrix.stp
+      run: brew install --cask safari-technology-preview
+
+    - name: Fetch Selenium
+      run: |
+        mkdir -p jars
+        curl -sSLf -o jars/selenium-3.jar https://github.com/SeleniumHQ/selenium/releases/download/selenium-3.141.59/selenium-server-standalone-3.141.59.jar
+        curl -sSLf -o jars/selenium-4.29.jar https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.29.0/selenium-server-4.29.0.jar
+        curl -sSLf -o jars/selenium-4.51.jar https://github.com/SeleniumHQ/selenium/releases/download/selenium-4.51.0/selenium-server-4.51.0.jar
+
+    - name: Stress
+      run: |
+        if [ "${{ matrix.stp }}" = "true" ]; then
+          DRIVER="/Applications/Safari Technology Preview.app/Contents/MacOS/safaridriver"
+          BROWSER="Safari Technology Preview"
+        else
+          DRIVER=/usr/bin/safaridriver
+          BROWSER=safari
+        fi
+        sudo "$DRIVER" --enable
+        mkdir -p out
+        /usr/bin/log stream --style compact --level info --predicate \
+          'subsystem BEGINSWITH "com.apple.WebDriver" OR process CONTAINS "WebDriver" OR process == "safaridriver" OR category == "Automation"' \
+          > out/webdriver-log-stream.txt 2>&1 &
+        STREAM=$!
+        python3 .github/diagnostics/safari-launch-stress.py out \
+          --rounds 1000 --per-round 3 --max-minutes 95 \
+          --modes ${{ matrix.modes || 'bare-eph,bare-overlap,bare-concurrent,sel3,sel3-gap,sel4,sel4new' }} \
+          --safaridriver "$DRIVER" --browser "$BROWSER" --java "$JAVA_HOME/bin/java" \
+          --sel3-jar jars/selenium-3.jar --sel4-jar jars/selenium-4.29.jar --sel4new-jar jars/selenium-4.51.jar \
+          --selenium-timeout 75
+        kill $STREAM
+
+    - uses: actions/upload-artifact@v7
+      if: always()
+      with:
+        name: launch-stress-${{ matrix.runner }}${{ matrix.stp && '-stp' || '' }}
+        path: out/
