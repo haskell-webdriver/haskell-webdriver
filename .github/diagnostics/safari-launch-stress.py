@@ -309,7 +309,14 @@ def bare_iteration(ctx, mode, rnd, i):
             ctx["held_driver"] = proc
             rec["stop"] = "held for the next iteration"
         else:
+            # bare-linger keeps safaridriver running for --gap seconds after the session ends, as
+            # Selenium 4 does while it waits for safaridriver to exit after GET /shutdown;
+            # bare-pause stops it at once and waits --gap seconds before the next launch.
+            if mode == "bare-linger":
+                time.sleep(ctx["gap"])
             rec["stop"] = stop(proc)
+            if mode == "bare-pause":
+                time.sleep(ctx["gap"])
     rec["output"] = open(outpath).read()[:400]
     return rec
 

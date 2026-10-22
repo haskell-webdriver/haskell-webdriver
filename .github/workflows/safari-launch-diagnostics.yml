@@ -13,22 +13,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - runner: macos-26
-          modes: sel3
-        - runner: xcode-27
-          modes: sel3
-        - runner: macos-15
-          modes: sel3
         - runner: macos-14
-          modes: sel3
-        - runner: macos-26
-          modes: sel4new
-        - runner: macos-26
-          modes: bare-eph
-        - runner: xcode-27
-          modes: sel4new
+          modes: bare-linger
         - runner: macos-14
-          modes: bare-eph
+          modes: bare-pause
+        - runner: macos-26
+          modes: bare-linger
+        - runner: macos-26
+          modes: bare-pause
+        - runner: xcode-27
+          modes: bare-linger
+        - runner: xcode-27
+          modes: bare-pause
+        - runner: macos-15-intel
+          modes: bare-linger
+        - runner: macos-15-intel
+          modes: bare-pause
 
     steps:
     - uses: actions/checkout@v6
@@ -55,7 +55,7 @@ jobs:
           > out/webdriver-log-stream.txt 2>&1 &
         STREAM=$!
         python3 .github/diagnostics/safari-launch-stress.py out \
-          --rounds 1000 --per-round 3 --max-minutes 40 --modes ${{ matrix.modes }} \
+          --rounds 1000 --per-round 3 --max-minutes 40 --gap 10 --modes ${{ matrix.modes }} \
           --safaridriver "$DRIVER" --browser safari --java "$JAVA_HOME/bin/java" \
           --sel3-jar jars/selenium-3.jar --sel4-jar jars/selenium-4.29.jar --sel4new-jar jars/selenium-4.51.jar \
           --selenium-timeout 75
