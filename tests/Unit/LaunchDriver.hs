@@ -17,7 +17,12 @@ import UnliftIO.Exception
 
 
 tests :: NixSpec
-tests = describe "Driver startup" $ introduceBinaryViaNixDerivation @"mock-driver" mockDriverDerivation $ do
+tests = do
+  driverStartup
+  safariSessionStartup
+
+driverStartup :: NixSpec
+driverStartup = describe "Driver startup" $ introduceBinaryViaNixDerivation @"mock-driver" mockDriverDerivation $ do
   -- launchDriver gives up after 10 retries.
   it "retries safaridriver whenever it exits before it's ready" $
     startsBeforeGivingUp 11 $ \mockDriver dir env -> DriverConfigSafaridriver {
@@ -53,3 +58,34 @@ startsBeforeGivingUp expectedStarts mkDriverConfig = do
   starts <- lines <$> liftIO (readFile startsFile)
   length starts `shouldBe` expectedStarts
   all ("--port" `isPrefixOf`) starts `shouldBe` True
+
+safariSessionStartup :: NixSpec
+safariSessionStartup = describe "Safari session startup" $
+  introduceBinaryViaNixDerivation @"mock-safaridriver" mockSafaridriverDerivation $ do
+    it "launches a new safaridriver when one exits while starting a session" $ do
+      (starts, sessions) <- startSessionAfterFailure
+      length starts `shouldBe` 2
+      length sessions `shouldBe` 2
+
+-- | Start and close a session on the mock safaridriver, which exits on its first new-session
+-- request, and return the lines it wrote for each start and each new-session request.
+startSessionAfterFailure :: (
+  HasBaseContext context, HasFile context "mock-safaridriver"
+  ) => ExampleT context IO ([String], [String])
+startSessionAfterFailure = do
+  Just dir <- getCurrentFolder
+  mockSafaridriver <- askFile @"mock-safaridriver"
+  let startsFile = dir </> "starts"
+      sessionsFile = dir </> "sessions"
+      dc = DriverConfigSafaridriver {
+        driverConfigSafaridriver = mockSafaridriver
+        , driverConfigSafaridriverFlags = []
+        , driverConfigSafaridriverExtraEnv = Just [
+            ("MOCK_DRIVER_STARTS", startsFile)
+            , ("MOCK_DRIVER_SESSIONS", sessionsFile)
+            ]
+        , driverConfigLogDir = Just dir
+        }
+  bracket mkEmptyWebDriverContext teardownWebDriverContext $ \wdc ->
+    startSession wdc dc defaultCaps "session1" >>= closeSession wdc
+  (,) <$> (lines <$> liftIO (readFile startsFile)) <*> (lines <$> liftIO (readFile sessionsFile))
