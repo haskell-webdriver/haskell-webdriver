@@ -123,7 +123,10 @@ main = do
 
       introduceStaticServer $
         introduceBrowserDependencies $ do
-          describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriverContext $ Spec.spec
+          -- Selenium 3 starts a safaridriver for every session, and when one exits at launch it
+          -- waits 50 s before failing the session.
+          unless (optBrowserToUse == UseSafari) $
+            describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriverContext $ Spec.spec
 
           describe "Selenium 4" $ introduceSelenium4 $ introduceWebDriverContext $ Spec.spec
 
