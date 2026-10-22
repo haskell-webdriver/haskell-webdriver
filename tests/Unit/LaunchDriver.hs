@@ -18,8 +18,9 @@ import UnliftIO.Exception
 
 tests :: NixSpec
 tests = describe "Driver startup" $ introduceBinaryViaNixDerivation @"mock-driver" mockDriverDerivation $ do
-  it "retries safaridriver on a new port when its port is taken" $
-    portClashIsRetried $ \mockDriver dir env -> DriverConfigSafaridriver {
+  -- launchDriver gives up after 10 retries.
+  it "retries safaridriver whenever it exits before it's ready" $
+    startsBeforeGivingUp 11 $ \mockDriver dir env -> DriverConfigSafaridriver {
       driverConfigSafaridriver = mockDriver
       , driverConfigSafaridriverFlags = []
       , driverConfigSafaridriverExtraEnv = Just env
@@ -27,7 +28,7 @@ tests = describe "Driver startup" $ introduceBinaryViaNixDerivation @"mock-drive
       }
 
   it "retries chromedriver on a new port when its port is taken" $
-    portClashIsRetried $ \mockDriver dir env -> DriverConfigChromedriver {
+    startsBeforeGivingUp 2 $ \mockDriver dir env -> DriverConfigChromedriver {
       driverConfigChromedriver = mockDriver
       , driverConfigChromedriverFlags = []
       , driverConfigChromedriverExtraEnv = Just env
@@ -35,12 +36,13 @@ tests = describe "Driver startup" $ introduceBinaryViaNixDerivation @"mock-drive
       , driverConfigLogDir = Just dir
       }
 
--- | Start a session on the mock driver. Its first start hits a taken port, so launchDriver should
--- retry once, then report the second start's different failure.
-portClashIsRetried :: (
+-- | Start a session on the mock driver, which hits a taken port on its first start and fails for
+-- another reason after that. Check that launchDriver started it the given number of times and then
+-- reported the last start's failure.
+startsBeforeGivingUp :: (
   HasBaseContext context, HasFile context "mock-driver"
-  ) => (FilePath -> FilePath -> [(String, String)] -> DriverConfig) -> ExampleT context IO ()
-portClashIsRetried mkDriverConfig = do
+  ) => Int -> (FilePath -> FilePath -> [(String, String)] -> DriverConfig) -> ExampleT context IO ()
+startsBeforeGivingUp expectedStarts mkDriverConfig = do
   Just dir <- getCurrentFolder
   mockDriver <- askFile @"mock-driver"
   let startsFile = dir </> "starts"
@@ -49,5 +51,5 @@ portClashIsRetried mkDriverConfig = do
     startSession wdc (mkDriverConfig mockDriver dir [("MOCK_DRIVER_STARTS", startsFile)]) defaultCaps "session1"
   show e `shouldBe` "DriverOutputEndedBeforeReady (Just (ExitFailure 2)) [\"mock-driver: failed for another reason\"]"
   starts <- lines <$> liftIO (readFile startsFile)
-  length starts `shouldBe` 2
+  length starts `shouldBe` expectedStarts
   all ("--port" `isPrefixOf`) starts `shouldBe` True

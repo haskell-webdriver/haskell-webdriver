@@ -57,6 +57,13 @@ launchDriver driverConfig = recovering policy [handler] $ \_ -> launchDriver' dr
         when willRetry $
           logWarnN [i|Driver couldn't bind port; retrying on a fresh one|]
         return True
+      -- A safaridriver started soon after another one exits sometimes exits at once, with no output
+      -- or with "Operation not permitted", and starts fine when tried again.
+      DriverOutputEndedBeforeReady maybeExitCode _ | DriverConfigSafaridriver {} <- driverConfig -> do
+        willRetry <- isJust <$> applyPolicy policy retryStatus
+        when willRetry $
+          logWarnN [i|safaridriver exited before it was ready (#{maybeExitCode}); retrying|]
+        return True
       _ -> return False
 
     isPortTaken line = "address already in use" `T.isInfixOf` T.toLower line
