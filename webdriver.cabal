@@ -197,6 +197,7 @@ test-suite tests
       TestLib.Types
       TestLib.Types.Cli
       TestLib.Waits
+      Unit
       Unit.Capabilities
       Paths_webdriver
   hs-source-dirs:

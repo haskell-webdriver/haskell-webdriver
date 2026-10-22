@@ -29,6 +29,7 @@ module TestLib.Types (
 
   , SeleniumVersion(..)
 
+  , NixSpec
   , SessionSpec
   , SpecWithWebDriver
   ) where
@@ -153,6 +154,11 @@ getCapabilities _ (BrowserDependenciesSafari {}) = pure $ defaultCaps {
   }
 
 -- * Spec types
+
+type NixSpec = forall context. (
+  HasBaseContext context
+  , HasNixContext context
+  ) => SpecFree context IO ()
 
 type SpecWithWebDriver = forall context. (
   HasBaseContext context

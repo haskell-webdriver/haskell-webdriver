@@ -23,7 +23,7 @@ import TestLib.Contexts.StaticServer
 import TestLib.Contexts.WebDriver
 import TestLib.Types
 import TestLib.Types.Cli
-import qualified Unit.Capabilities
+import qualified Unit
 import UnliftIO.Process
 
 
@@ -118,24 +118,23 @@ main = do
   let UserOptions {optBrowserToUse} = optUserOptions clo
 
   runSandwichWithCommandLineArgs' defaultOptions userOptions $ do
-    describe "Unit tests" $ do
-      Unit.Capabilities.tests
+    introduceNixContext nixpkgsRelease $ do
+      Unit.tests
 
-    introduceNixContext nixpkgsRelease $
       introduceStaticServer $
-      introduceBrowserDependencies $ do
-        describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriverContext $ Spec.spec
+        introduceBrowserDependencies $ do
+          describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriverContext $ Spec.spec
 
-        describe "Selenium 4" $ introduceSelenium4 $ introduceWebDriverContext $ Spec.spec
+          describe "Selenium 4" $ introduceSelenium4 $ introduceWebDriverContext $ Spec.spec
 
-        when (optBrowserToUse == UseChrome) $
-          describe "chromedriver direct" $ introduceChromedriver $ introduceWebDriverContext Spec.spec
+          when (optBrowserToUse == UseChrome) $
+            describe "chromedriver direct" $ introduceChromedriver $ introduceWebDriverContext Spec.spec
 
-        when (optBrowserToUse == UseFirefox) $
-          describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriverContext Spec.spec
+          when (optBrowserToUse == UseFirefox) $
+            describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriverContext Spec.spec
 
-        when (optBrowserToUse == UseSafari) $
-          describe "safaridriver direct" $ introduceSafaridriver $ introduceWebDriverContext Spec.spec
+          when (optBrowserToUse == UseSafari) $
+            describe "safaridriver direct" $ introduceSafaridriver $ introduceWebDriverContext Spec.spec
 
 
 -- | Nixpkgs nixos-unstable, accessed 6\/2\/2026 (provides google-chrome 148.0.7778.215).

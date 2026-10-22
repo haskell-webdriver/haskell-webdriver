@@ -1,12 +1,13 @@
-
-module Unit.Capabilities where
+module Unit.Capabilities (
+  tests
+  ) where
 
 import qualified Data.Aeson as A
 import Test.Sandwich
 import Test.WebDriver.Capabilities
 
 
-tests :: TopSpec
+tests :: SpecFree context IO ()
 tests = describe "Capabilities" $ do
   it "encodes SafariOptions as top-level vendor-prefixed capabilities" $
     A.toJSON safariCaps `shouldBe` A.object [
