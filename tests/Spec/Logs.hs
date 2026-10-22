@@ -14,6 +14,7 @@ tests :: SessionSpec
 tests = introduceSession $ describe "Browser logs" $ before "Open test page" openSimpleTestPage $ do
   it "captures different log levels" $ do
     pendingOnFirefox
+    pendingOnSafari
 
     ignoreReturn $ executeJS [] [i|
       console.log('info message');

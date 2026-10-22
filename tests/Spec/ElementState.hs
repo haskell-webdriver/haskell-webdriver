@@ -42,9 +42,11 @@ tests = introduceSession $ describe "Element state" $ before "Open test page" op
     findElem (ByCSS "#click-here-link") >>= getText >>= (`shouldBe` "Click here")
 
   it "tagName" $ do
-    findElem (ByCSS "#incrementButton") >>= tagName >>= (`shouldBe` "button")
-    findElem (ByCSS "#numberLabel") >>= tagName >>= (`shouldBe` "label")
-    findElem (ByCSS "a") >>= tagName >>= (`shouldBe` "a")
+    -- Safari returns HTML tag names upper case.
+    let htmlTagName = fmap T.toLower . tagName
+    findElem (ByCSS "#incrementButton") >>= htmlTagName >>= (`shouldBe` "button")
+    findElem (ByCSS "#numberLabel") >>= htmlTagName >>= (`shouldBe` "label")
+    findElem (ByCSS "a") >>= htmlTagName >>= (`shouldBe` "a")
 
   it "elemRect" $ do
     rect1 <- findElem (ByCSS "#input1") >>= elemRect

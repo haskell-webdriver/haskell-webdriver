@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE ViewPatterns #-}
 
 {-|
@@ -16,9 +17,10 @@ This library now helps you start up a driver in one of these supported
 configurations:
 
 1. Selenium.jar with one or more supported sub-drivers (@chromedriver@,
-@geckodriver@). This is similar to the traditional picture.
+@geckodriver@, @safaridriver@). This is similar to the traditional picture.
 2. Chromedriver standalone.
 3. Geckodriver standalone.
+4. Safaridriver standalone, on macOS.
 
 You can pick the configuration you want by passing a 'DriverConfig' to the
 'startSession' function. The WebDriver implementations have a few differences
@@ -26,6 +28,10 @@ between them, which this library tries to smooth over. For example, a single
 Geckodriver instance can't start multiple Firefox sessions (see
 <https://github.com/mozilla/geckodriver/issues/1946>). So, this library will spin
 up a separate @geckodriver@ process for every session.
+
+Safari itself runs one WebDriver session at a time, and @safaridriver@ needs
+Remote Automation to have been enabled once with @safaridriver --enable@; see
+<https://developer.apple.com/documentation/webkit/testing-with-webdriver-in-safari>.
 
 For an example of using this package by itself, see "Test.WebDriver.WD". For a
 full test framework integrated with this package, see
@@ -90,6 +96,7 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import Test.WebDriver.Util.Aeson (aesonLookup)
 import Control.Monad.Logger
+import Control.Retry
 import Network.HTTP.Client
 import Network.HTTP.Types (RequestHeaders, statusCode)
 import UnliftIO.Concurrent
@@ -106,25 +113,35 @@ import UnliftIO.Timeout
 -- correctly to match the given 'DriverConfig'. For example, if you're using
 -- 'DriverConfigChromedriver', you should make sure to fill in
 -- '_capabilitiesGoogChromeOptions' and in particular the '_chromeOptionsBinary'
--- field.
+-- field. For 'DriverConfigSafaridriver', set '_capabilitiesBrowserName' to
+-- @"safari"@, and put Safari's other settings in '_capabilitiesSafariOptions'.
 
 startSession :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> DriverConfig -> Capabilities -> String -> m Session
-startSession wdc dc@(DriverConfigSeleniumJar {}) caps sessionName = do
-  driver <- modifyMVar (_webDriverSelenium wdc) $ \maybeSelenium -> do
-    driver <- maybe (launchDriver dc) return maybeSelenium
-    return (Just driver, driver)
+startSession wdc dc caps sessionName = case dc of
+  DriverConfigSeleniumJar {} -> shared (_webDriverSelenium wdc)
+  DriverConfigChromedriver {} -> shared (_webDriverChromedriver wdc)
+  -- Safari takes a moment to free itself after closeSession stops safaridriver.
+  DriverConfigSafaridriver {} -> recovering pairedPolicy [const alreadyPaired] $ \_ -> shared (_webDriverSafaridriver wdc)
+  DriverConfigGeckodriver {} -> do
+    driver <- launchDriver dc
+    onException (launchSessionInDriver wdc driver caps sessionName)
+                (teardownDriver driver)
+  where
+    shared var = do
+      driver <- modifyMVar var $ \maybeDriver -> do
+        driver <- maybe (launchDriver dc) return maybeDriver
+        return (Just driver, driver)
 
-  launchSessionInDriver wdc driver caps sessionName
-startSession wdc dc@(DriverConfigChromedriver {}) caps sessionName = do
-  driver <- modifyMVar (_webDriverChromedriver wdc) $ \maybeChromedriver -> do
-    driver <- maybe (launchDriver dc) return maybeChromedriver
-    return (Just driver, driver)
+      launchSessionInDriver wdc driver caps sessionName
 
-  launchSessionInDriver wdc driver caps sessionName
-startSession wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
-  driver <- launchDriver dc
-  onException (launchSessionInDriver wdc driver caps sessionName)
-              (teardownDriver driver)
+    pairedPolicy = limitRetriesByCumulativeDelay 5_000_000 (constantDelay 250_000)
+
+    alreadyPaired = Handler $ \case
+      SessionCreationFailed response -> return $ case A.decode (responseBody response) of
+        Just (A.Object (aesonLookup "value" -> Just (A.Object (aesonLookup "message" -> Just (A.String message))))) ->
+          "already paired" `T.isInfixOf` message
+        _ -> False
+      _ -> return False
 
 launchSessionInDriver :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Driver -> Capabilities -> String -> m Session
 launchSessionInDriver wdc driver caps sessionName = do
@@ -160,11 +177,14 @@ startSession' driver caps sessionName = do
                , sessionIdCounter = idCounterVar
                }
            _ -> throwIO $ SessionCreationResponseHadNoSessionId response
-     | otherwise -> throwIO SessionNameAlreadyExists
+     | otherwise -> throwIO $ SessionCreationFailed response
 
 -- | Close the given WebDriver session. This sends the @DELETE
 -- \/session\/:sessionId@ command to the WebDriver API, and then shuts down the
 -- process if necessary.
+--
+-- Safari runs no other session until this one ends, so if a Safari session
+-- can't be closed, this stops @safaridriver@ to end it.
 closeSession :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Session -> m ()
 closeSession wdc sess@(Session {..}) = do
   -- For geckodriver, we own the process (one per session), so we must always
@@ -173,8 +193,19 @@ closeSession wdc sess@(Session {..}) = do
         DriverConfigGeckodriver {} -> teardownDriver sessionDriver
         _ -> return ()
 
+      -- safaridriver answers a session's DELETE only after its command in progress, which may never finish.
+      stopSafaridriver = case _driverConfig sessionDriver of
+        DriverConfigSafaridriver {} -> modifyMVar_ (_webDriverSafaridriver wdc) $ \case
+          Just driver | _driverPort driver == _driverPort sessionDriver -> do
+            logWarnN [i|Couldn't close session #{sessionName}; stopping safaridriver to end it|]
+            teardownDriver driver
+            modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
+            return Nothing
+          other -> return other
+        _ -> return ()
+
   flip finally teardownGecko $ do
-    closeSession' sess
+    closeSession' sess `onException` stopSafaridriver
     modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
 
 -- | Close the given WebDriver session. This is a lower-level version of
@@ -238,13 +269,10 @@ teardownWebDriverContext (WebDriverContext {..}) = do
               (\(e :: SomeException) -> logWarnN [i|Exception tearing down geckodriver during teardown: #{e}|])
       _ -> return ()
 
-  modifyMVar_ _webDriverSelenium $ \case
-    Nothing -> return Nothing
-    Just driver -> teardownDriver driver >> return Nothing
-
-  modifyMVar_ _webDriverChromedriver $ \case
-    Nothing -> return Nothing
-    Just driver -> teardownDriver driver >> return Nothing
+  forM_ [_webDriverSelenium, _webDriverChromedriver, _webDriverSafaridriver] $ \var ->
+    modifyMVar_ var $ \case
+      Nothing -> return Nothing
+      Just driver -> teardownDriver driver >> return Nothing
 
 -- -- | Set a temporary list of custom 'RequestHeaders' to use within the given action.
 -- -- All previous custom headers are temporarily removed, and then restored at the end.

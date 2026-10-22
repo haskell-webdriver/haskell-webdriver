@@ -22,6 +22,8 @@ tests = introduceSession $ describe "Browser logs via BiDi" $ before "Open test 
   it "captures console.log messages" $ do
     -- This test should pass on Selenium 4, but we get an error connecting to the BiDi socket.
     pendingOnSelenium
+    -- No webSocketUrl is requested for Safari; see introduceSession.
+    pendingOnSafari
 
     allLogEntries <- newIORef (mempty :: Seq LogEntry)
 

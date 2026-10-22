@@ -13,19 +13,25 @@ module TestLib.Contexts.Session (
   , pendingOnNonSelenium
   , pendingOnSelenium3
   , pendingOnFirefox
+  , pendingOnSafari
+  , pendingOnSafariBefore
   ) where
 
 import Control.Exception.Safe
+import Control.Monad
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.Function
 import Data.Maybe
+import Data.Version (Version, makeVersion, parseVersion)
 import Lens.Micro
 import Test.Sandwich
 import Test.WebDriver
 import Test.WebDriver.Capabilities
 import TestLib.Types
 import TestLib.Types.Cli
+import Text.ParserCombinators.ReadP (readP_to_S)
+import UnliftIO.Process (readProcess)
 
 #if MIN_VERSION_aeson(2,0,0)
 import qualified Data.Aeson.KeyMap          as KM
@@ -44,6 +50,8 @@ introduceSession = introduceSession' enableBiDi
     enableBiDi x = do
       getContext driverConfig >>= \case
         DriverConfigSeleniumJar { driverConfigSeleniumVersion=(Just Selenium3) } -> return x
+        -- safaridriver only offers BiDi when started with --bidi, which these tests don't do.
+        dc | isSafari dc -> return x
         _ -> x
              & set capabilitiesWebSocketUrl (Just True)
              & return
@@ -118,3 +126,28 @@ pendingOnFirefox = do
     DriverConfigGeckodriver {} -> pending
     DriverConfigSeleniumJar {driverConfigSubDrivers=[DriverConfigGeckodriver {}]} -> pending
     _ -> return ()
+
+pendingOnSafari :: (MonadReader ctx m, HasDriverConfig ctx, MonadIO m) => m ()
+pendingOnSafari = getContext driverConfig >>= \dc -> when (isSafari dc) pending
+
+-- | Pending on Safari releases older than the given version, but not on Technology Preview.
+pendingOnSafariBefore :: (MonadReader ctx m, HasBrowserDependencies ctx, MonadIO m) => [Int] -> m ()
+pendingOnSafariBefore minimumVersion = getContext browserDependencies >>= \case
+  BrowserDependenciesSafari {..} -> do
+    output <- readProcess browserDependenciesSafariSafaridriver ["--version"] ""
+    case safariVersion output of
+      Just version | version < makeVersion minimumVersion -> pending
+      _ -> return ()
+  _ -> return ()
+
+-- | Read the Safari version from @safaridriver --version@, which prints for example "Included with
+-- Safari 26.6.2 (21624.5.1.11.3)". Technology Preview's prints a release number instead.
+safariVersion :: String -> Maybe Version
+safariVersion output = case words output of
+  "Included" : "with" : "Safari" : v : _ -> listToMaybe [version | (version, "") <- readP_to_S parseVersion v]
+  _ -> Nothing
+
+isSafari :: DriverConfig -> Bool
+isSafari (DriverConfigSafaridriver {}) = True
+isSafari (DriverConfigSeleniumJar {driverConfigSubDrivers=[DriverConfigSafaridriver {}]}) = True
+isSafari _ = False

@@ -38,6 +38,7 @@ import Test.WebDriver.Util.Ports
 import Test.WebDriver.Util.Sockets
 import Text.Read (readMaybe)
 import UnliftIO.Async
+import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Environment
 import UnliftIO.Exception
 import UnliftIO.IORef
@@ -46,13 +47,15 @@ import UnliftIO.Timeout
 
 
 launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
-launchDriver driverConfig = recovering policy [const handler] $ \_ -> launchDriver' driverConfig
+launchDriver driverConfig = recovering policy [handler] $ \_ -> launchDriver' driverConfig
   where
     policy = limitRetries 10 <> capDelay 1_000_000 (exponentialBackoff 50_000)
 
-    handler = Handler $ \case
+    handler retryStatus = Handler $ \case
       DriverOutputEndedBeforeReady _ output | Prelude.any isPortTaken output -> do
-        logWarnN [i|Driver couldn't bind port; retrying on a fresh one|]
+        willRetry <- isJust <$> applyPolicy policy retryStatus
+        when willRetry $
+          logWarnN [i|Driver couldn't bind port; retrying on a fresh one|]
         return True
       _ -> return False
 
@@ -102,40 +105,42 @@ launchDriver' driverConfig = do
           liftIO (hClose logFileHandle)
 
   startupOutput <- newIORef []
+  -- Keep recording output until the driver is up, so a failure can report it.
+  recording <- newIORef True
+
+  let outputEnded = do
+        -- EOF usually means the driver exited, but not necessarily, so don't wait forever.
+        maybeExitCode <- timeout 5_000_000 (waitForProcess p)
+        output <- Prelude.reverse <$> readIORef startupOutput
+        return $ DriverOutputEndedBeforeReady maybeExitCode output
 
   flip withException handler $ do
     -- Read from the (combined) output stream until we see the up and running message
-    maybeReady <- timeout 30_000_000 $ fix $ \loop -> do
-      line <- liftIO (try (T.pack <$> hGetLine hRead)) >>= \case
-        Right line -> return line
-        -- EOF usually means the driver exited, but not necessarily, so don't wait forever.
-        Left e | isEOFError e -> do
-                   maybeExitCode <- timeout 5_000_000 (waitForProcess p)
-                   output <- Prelude.reverse <$> readIORef startupOutput
-                   throwIO $ DriverOutputEndedBeforeReady maybeExitCode output
-               | otherwise -> throwIO e
-      modifyIORef' startupOutput (line :)
-      whenJust maybeLogFileHandle $ \logFileHandle ->
-        liftIO $ T.hPutStrLn logFileHandle line
-      unless (Prelude.any (`T.isInfixOf` line) (needles driverConfig)) loop
-    when (isNothing maybeReady) $
-      throwIO DriverNoReadyMessage
+    -- safaridriver prints nothing, so for it readiness comes from the socket and /status checks alone.
+    whenJust (needles driverConfig) $ \ns -> do
+      maybeReady <- timeout 30_000_000 $ fix $ \loop -> do
+        line <- liftIO (try (T.pack <$> hGetLine hRead)) >>= \case
+          Right line -> return line
+          Left e | isEOFError e -> outputEnded >>= throwIO
+                 | otherwise -> throwIO e
+        modifyIORef' startupOutput (line :)
+        whenJust maybeLogFileHandle $ \logFileHandle ->
+          liftIO $ T.hPutStrLn logFileHandle line
+        unless (Prelude.any (`T.isInfixOf` line) ns) loop
+      when (isNothing maybeReady) $
+        throwIO DriverNoReadyMessage
 
     logAsync <- async $ flip finally (liftIO $ whenJust maybeLogFileHandle hClose) $ forever $ do
       line <- liftIO (T.hGetLine hRead)
+      readIORef recording >>= flip when (modifyIORef' startupOutput (line :))
       whenJust maybeLogFileHandle $ \logFileHandle ->
         liftIO $ T.hPutStrLn logFileHandle line
 
     flip onException (cancel logAsync) $ do
-      -- Wait for a successful connection to the server socket
       addr <- liftIO (getAddrInfo (Just defaultHints { addrSocketType = Stream }) (Just "127.0.0.1") (Just (show port))) >>= \case
         addr:_ -> return addr
         _ -> throwIO DriverGetAddrInfoFailed
       let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 1_000_000 $ exponentialBackoff 1000
-
-      waitForSocket policy addr
-
-      logDebugN [i|Finished wait for driver socket|]
 
       let basePath = case driverConfig of
             DriverConfigSeleniumJar {} -> "/wd/hub"
@@ -152,15 +157,36 @@ launchDriver' driverConfig = do
             , _driverConfig = driverConfig
             }
 
-      -- Wait for a successful call to /status
-      recoverAll policy $ \retryStatus -> do
-        let req = mkDriverRequest driver methodGet "/status" Null
-        resp <- liftIO $ httpLbs req manager
-        let code = statusCode (responseStatus resp)
-        if | code >= 200 && code < 300 -> return ()
-           | otherwise -> do
-               logWarnN [i|(#{retryStatus}) Invalid response from /status: #{resp}|]
-               throwIO DriverStatusEndpointNotReady
+      -- A driver that fails to start, for example because its port was taken after all, exits without
+      -- ever listening. Watch for that rather than waiting the whole policy out. Without a ready
+      -- message we can't tell our listener from another process's on the same port, though, so a clash
+      -- that safaridriver notices only after /status has answered goes undetected.
+      let watchProcess = fix $ \loop -> getProcessExitCode p >>= \case
+            -- Poll: waitForProcess would block every thread in a program built without -threaded.
+            Nothing -> threadDelay 100_000 >> loop
+            Just _ -> do
+              -- Let the log thread finish copying the output; it ends when the pipe closes.
+              _ <- timeout 5_000_000 (waitCatch logAsync)
+              outputEnded
+
+      let waitForDriver = do
+            -- Wait for a successful connection to the server socket
+            waitForSocket policy addr
+
+            logDebugN [i|Finished wait for driver socket|]
+
+            -- Wait for a successful call to /status
+            recoverAll policy $ \retryStatus -> do
+              let req = mkDriverRequest driver methodGet "/status" Null
+              resp <- liftIO $ httpLbs req manager
+              let code = statusCode (responseStatus resp)
+              if | code >= 200 && code < 300 -> return ()
+                 | otherwise -> do
+                     logWarnN [i|(#{retryStatus}) Invalid response from /status: #{resp}|]
+                     throwIO DriverStatusEndpointNotReady
+
+      race watchProcess waitForDriver >>= either throwIO return
+      writeIORef recording False
 
       logInfoN [i|Finished wait for driver /status endpoint. Driver is running on #{hostname}:#{port}|]
 
@@ -187,6 +213,8 @@ getArguments port (DriverConfigChromedriver {..}) = do
   return (driverConfigChromedriver, ["--port=" <> show port] <> driverConfigChromedriverFlags, driverConfigChromedriverExtraEnv)
 getArguments port (DriverConfigGeckodriver {..}) = do
   return (driverConfigGeckodriver, ["--port", show port] <> driverConfigGeckodriverFlags, driverConfigGeckodriverExtraEnv)
+getArguments port (DriverConfigSafaridriver {..}) = do
+  return (driverConfigSafaridriver, ["--port", show port] <> driverConfigSafaridriverFlags, driverConfigSafaridriverExtraEnv)
 
 autodetectSeleniumVersionByFileName :: FilePath -> Maybe SeleniumVersion
 autodetectSeleniumVersionByFileName (takeFileName -> seleniumJar) = case autodetectSeleniumMajorVersionByFileName of
@@ -227,17 +255,25 @@ getSubDriverArgs (DriverConfigGeckodriver {..}) = do
   return [
     "-Dwebdriver.gecko.driver=" <> driverConfigGeckodriver
     ]
+-- Selenium 4 honours this property; Selenium 3 ignores it and uses /usr/bin/safaridriver.
+getSubDriverArgs (DriverConfigSafaridriver {..}) = do
+  return [
+    "-Dwebdriver.safari.driver=" <> driverConfigSafaridriver
+    ]
 getSubDriverArgs _ = return []
 
-needles :: DriverConfig -> [T.Text]
-needles (DriverConfigSeleniumJar {}) = ["Selenium Server is up and running", "Started Selenium Standalone"]
-needles (DriverConfigChromedriver {}) = ["ChromeDriver was started successfully"]
-needles (DriverConfigGeckodriver {}) = ["Listening on"]
+-- | Output that shows the driver is listening, for drivers that print any.
+needles :: DriverConfig -> Maybe [T.Text]
+needles (DriverConfigSeleniumJar {}) = Just ["Selenium Server is up and running", "Started Selenium Standalone"]
+needles (DriverConfigChromedriver {}) = Just ["ChromeDriver was started successfully"]
+needles (DriverConfigGeckodriver {}) = Just ["Listening on"]
+needles (DriverConfigSafaridriver {}) = Nothing
 
 driverBaseName :: DriverConfig -> String
 driverBaseName (DriverConfigSeleniumJar {}) = "selenium"
 driverBaseName (DriverConfigChromedriver {}) = "chromedriver"
 driverBaseName (DriverConfigGeckodriver {}) = "geckodriver"
+driverBaseName (DriverConfigSafaridriver {}) = "safaridriver"
 
 data DriverException =
   DriverGetAddrInfoFailed

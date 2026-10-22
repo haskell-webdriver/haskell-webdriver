@@ -29,6 +29,7 @@ module TestLib.Types (
 
   , SeleniumVersion(..)
 
+  , NixSpec
   , SessionSpec
   , SpecWithWebDriver
   ) where
@@ -72,6 +73,9 @@ data BrowserDependencies = BrowserDependenciesChrome {
   | BrowserDependenciesFirefox {
       browserDependenciesFirefoxFirefox :: FilePath
       , browserDependenciesFirefoxGeckodriver :: FilePath
+      }
+  | BrowserDependenciesSafari {
+      browserDependenciesSafariSafaridriver :: FilePath
       }
   deriving (Show)
 
@@ -144,8 +148,17 @@ getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps 
       & set firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
       & over (firefoxOptionsArgs . non []) (if headless then ("-headless" :) else id)
   }
+-- Safari has no headless mode.
+getCapabilities _ (BrowserDependenciesSafari {}) = pure $ defaultCaps {
+  _capabilitiesBrowserName = Just "safari"
+  }
 
 -- * Spec types
+
+type NixSpec = forall context. (
+  HasBaseContext context
+  , HasNixContext context
+  ) => SpecFree context IO ()
 
 type SpecWithWebDriver = forall context. (
   HasBaseContext context

@@ -23,6 +23,7 @@ import TestLib.Contexts.StaticServer
 import TestLib.Contexts.WebDriver
 import TestLib.Types
 import TestLib.Types.Cli
+import qualified Unit
 import UnliftIO.Process
 
 
@@ -99,21 +100,41 @@ main = do
               , driverConfigGeckodriverExtraEnv = Nothing
               }
 
+  let introduceSafaridriver :: forall ctx. (HasBaseContext ctx, HasBrowserDependencies ctx) => SpecFree (LabelValue "driverConfig" DriverConfig :> ctx) IO () -> SpecFree ctx IO ()
+      introduceSafaridriver = introduce "Introduce safaridriver" driverConfig alloc (const $ return ())
+        where
+          alloc = do
+            Just dir <- getCurrentFolder
+            safaridriver <- getContext browserDependencies >>= \case
+              BrowserDependenciesSafari {..} -> return browserDependenciesSafariSafaridriver
+              deps -> expectationFailure [i|Expected Safari dependencies, got #{deps}|]
+            return $ DriverConfigSafaridriver {
+              driverConfigSafaridriver = safaridriver
+              , driverConfigSafaridriverFlags = []
+              , driverConfigSafaridriverExtraEnv = Nothing
+              , driverConfigLogDir = Just dir
+              }
+
   let UserOptions {optBrowserToUse} = optUserOptions clo
 
-  runSandwichWithCommandLineArgs' defaultOptions userOptions $
-    introduceNixContext nixpkgsRelease $
-    introduceStaticServer $
-    introduceBrowserDependencies $ do
-      describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriverContext $ Spec.spec
+  runSandwichWithCommandLineArgs' defaultOptions userOptions $ do
+    introduceNixContext nixpkgsRelease $ do
+      Unit.tests
 
-      describe "Selenium 4" $ introduceSelenium4 $ introduceWebDriverContext $ Spec.spec
+      introduceStaticServer $
+        introduceBrowserDependencies $ do
+          describe "Selenium 3" $ introduceSelenium3 $ introduceWebDriverContext $ Spec.spec
 
-      when (optBrowserToUse == UseChrome) $
-        describe "chromedriver direct" $ introduceChromedriver $ introduceWebDriverContext Spec.spec
+          describe "Selenium 4" $ introduceSelenium4 $ introduceWebDriverContext $ Spec.spec
 
-      when (optBrowserToUse == UseFirefox) $
-        describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriverContext Spec.spec
+          when (optBrowserToUse == UseChrome) $
+            describe "chromedriver direct" $ introduceChromedriver $ introduceWebDriverContext Spec.spec
+
+          when (optBrowserToUse == UseFirefox) $
+            describe "geckodriver direct" $ introduceGeckodriver $ introduceWebDriverContext Spec.spec
+
+          when (optBrowserToUse == UseSafari) $
+            describe "safaridriver direct" $ introduceSafaridriver $ introduceWebDriverContext Spec.spec
 
 
 -- | Nixpkgs nixos-unstable, accessed 6\/2\/2026 (provides google-chrome 148.0.7778.215).
@@ -149,6 +170,13 @@ getSubDrivers dir = getContext browserDependencies >>= \case
         , driverConfigLogDir = Just dir
         , driverConfigGeckodriverFlags = []
         , driverConfigGeckodriverExtraEnv = Nothing
+    }]
+  BrowserDependenciesSafari {..} -> return [
+    DriverConfigSafaridriver {
+        driverConfigSafaridriver = browserDependenciesSafariSafaridriver
+        , driverConfigSafaridriverFlags = []
+        , driverConfigSafaridriverExtraEnv = Nothing
+        , driverConfigLogDir = Just dir
     }]
 
 

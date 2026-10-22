@@ -35,6 +35,10 @@ jobs:
         # set up Firefox + geckodriver on Github Actions on macOS
         - os: macOS-latest
           browser: firefox
+        include:
+        - os: macOS-latest
+          ghc: "9.14.1"
+          browser: safari
 
     steps:
     - uses: actions/checkout@v6
@@ -86,6 +90,10 @@ jobs:
         cabal build all \
           --extra-include-dirs=/opt/homebrew/include \
           --extra-lib-dirs=/opt/homebrew/lib
+
+    - name: Enable Safari automation
+      if: matrix.browser == 'safari'
+      run: sudo safaridriver --enable
 
     - name: Test
       run: |
