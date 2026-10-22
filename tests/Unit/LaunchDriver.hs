@@ -17,7 +17,12 @@ import UnliftIO.Exception
 
 
 tests :: NixSpec
-tests = describe "Driver startup" $ introduceBinaryViaNixDerivation @"mock-driver" mockDriverDerivation $ do
+tests = do
+  driverStartup
+  safariSessionStartup
+
+driverStartup :: NixSpec
+driverStartup = describe "Driver startup" $ introduceBinaryViaNixDerivation @"mock-driver" mockDriverDerivation $ do
   -- launchDriver gives up after 10 retries.
   it "retries safaridriver whenever it exits before it's ready" $
     startsBeforeGivingUp 11 $ \mockDriver dir env -> DriverConfigSafaridriver {
@@ -53,3 +58,40 @@ startsBeforeGivingUp expectedStarts mkDriverConfig = do
   starts <- lines <$> liftIO (readFile startsFile)
   length starts `shouldBe` expectedStarts
   all ("--port" `isPrefixOf`) starts `shouldBe` True
+
+safariSessionStartup :: NixSpec
+safariSessionStartup = describe "Safari session startup" $
+  introduceBinaryViaNixDerivation @"mock-safaridriver" mockSafaridriverDerivation $ do
+    it "launches a new safaridriver when one exits while starting a session" $ do
+      (starts, sessions) <- startSessionAfterFailure "exit"
+      length starts `shouldBe` 2
+      length sessions `shouldBe` 2
+
+    it "retries a session when Safari doesn't connect to safaridriver" $ do
+      (starts, sessions) <- startSessionAfterFailure "connect-timeout"
+      length starts `shouldBe` 1
+      length sessions `shouldBe` 2
+
+-- | Start and close a session on the mock safaridriver, whose first new-session request fails in
+-- the given way, and return the lines it wrote for each start and each new-session request.
+startSessionAfterFailure :: (
+  HasBaseContext context, HasFile context "mock-safaridriver"
+  ) => String -> ExampleT context IO ([String], [String])
+startSessionAfterFailure failure = do
+  Just dir <- getCurrentFolder
+  mockSafaridriver <- askFile @"mock-safaridriver"
+  let startsFile = dir </> "starts"
+      sessionsFile = dir </> "sessions"
+      dc = DriverConfigSafaridriver {
+        driverConfigSafaridriver = mockSafaridriver
+        , driverConfigSafaridriverFlags = []
+        , driverConfigSafaridriverExtraEnv = Just [
+            ("MOCK_DRIVER_STARTS", startsFile)
+            , ("MOCK_DRIVER_SESSIONS", sessionsFile)
+            , ("MOCK_SAFARIDRIVER_FAILURE", failure)
+            ]
+        , driverConfigLogDir = Just dir
+        }
+  bracket mkEmptyWebDriverContext teardownWebDriverContext $ \wdc ->
+    startSession wdc dc defaultCaps "session1" >>= closeSession wdc
+  (,) <$> (lines <$> liftIO (readFile startsFile)) <*> (lines <$> liftIO (readFile sessionsFile))
