@@ -1,0 +1,42 @@
+name: Safari fullscreen diagnostics
+
+on:
+  push:
+    branches: [diagnose-safari-fullscreen]
+
+jobs:
+  probe:
+    name: ${{ matrix.runner }}${{ matrix.stp && ' / Technology Preview' || '' }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - runner: macos-14
+        - runner: macos-15
+        - runner: macos-26
+        - runner: xcode-27
+        - runner: macos-26
+          stp: true
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install Safari Technology Preview
+      if: matrix.stp
+      run: brew install --cask safari-technology-preview
+
+    - name: Probe
+      run: |
+        if [ "${{ matrix.stp }}" = "true" ]; then
+          bash .github/diagnostics/safari-fullscreen-probe.sh "/Applications/Safari Technology Preview.app/Contents/MacOS/safaridriver"
+        else
+          bash .github/diagnostics/safari-fullscreen-probe.sh /usr/bin/safaridriver
+        fi
+
+    - uses: actions/upload-artifact@v7
+      if: always()
+      with:
+        name: probe-${{ matrix.runner }}${{ matrix.stp && '-stp' || '' }}
+        path: probe-out/
