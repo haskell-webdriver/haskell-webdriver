@@ -115,7 +115,7 @@ launchDriver' driverConfig = do
   flip withException handler $ do
     -- Read from the (combined) output stream until we see the up and running message
     -- safaridriver prints nothing, so for it readiness comes from the socket and /status checks alone.
-    forM_ (needles driverConfig) $ \ns -> do
+    whenJust (needles driverConfig) $ \ns -> do
       maybeReady <- timeout 30_000_000 $ fix $ \loop -> do
         line <- liftIO (try (T.pack <$> hGetLine hRead)) >>= \case
           Right line -> return line
