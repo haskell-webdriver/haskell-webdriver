@@ -189,6 +189,7 @@ test-suite tests
       Spec.Sessions
       Spec.UserPrompts
       TestLib.Contexts.BrowserDependencies
+      TestLib.Contexts.MockDriver
       TestLib.Contexts.Selenium4
       TestLib.Contexts.Session
       TestLib.Contexts.StaticServer
@@ -199,6 +200,7 @@ test-suite tests
       TestLib.Waits
       Unit
       Unit.Capabilities
+      Unit.LaunchDriver
       Paths_webdriver
   hs-source-dirs:
       tests
