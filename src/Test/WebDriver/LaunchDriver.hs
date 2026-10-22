@@ -103,6 +103,7 @@ launchDriver' driverConfig = do
           liftIO (hClose logFileHandle)
 
   startupOutput <- newIORef []
+  -- Keep recording output until the driver is up, so a failure can report it.
   recording <- newIORef True
 
   let outputEnded = do
@@ -113,6 +114,7 @@ launchDriver' driverConfig = do
 
   flip withException handler $ do
     -- Read from the (combined) output stream until we see the up and running message
+    -- safaridriver prints nothing, so for it readiness comes from the socket and /status checks alone.
     forM_ (needles driverConfig) $ \ns -> do
       maybeReady <- timeout 30_000_000 $ fix $ \loop -> do
         line <- liftIO (try (T.pack <$> hGetLine hRead)) >>= \case
@@ -153,7 +155,12 @@ launchDriver' driverConfig = do
             , _driverConfig = driverConfig
             }
 
+      -- A driver that fails to start, for example because its port was taken after all, exits without
+      -- ever listening. Watch for that rather than waiting the whole policy out. Without a ready
+      -- message we can't tell our listener from another process's on the same port, though, so a clash
+      -- that safaridriver notices only after /status has answered goes undetected.
       let watchProcess = fix $ \loop -> getProcessExitCode p >>= \case
+            -- Poll: waitForProcess would block every thread in a program built without -threaded.
             Nothing -> threadDelay 100_000 >> loop
             Just _ -> do
               -- Let the log thread finish copying the output; it ends when the pipe closes.
