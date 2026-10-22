@@ -45,7 +45,7 @@ waitForSocket :: (
   -> AddrInfo
   -> m ()
 waitForSocket policy addr = recoverAll policy $ \retryStatus@(RetryStatus {..}) -> do
-  flip withException (\(e :: SomeException) -> logErrorN [i|waitForSocket: failed to connect to #{addr}: #{e}|]) $ do
+  flip withException (\(e :: SomeException) -> logDebugN [i|waitForSocket: failed to connect to #{addr}: #{e}|]) $ do
     when (rsIterNumber > 0) $
       logDebugN [i|waitForSocket: attempt \##{rsIterNumber} to connect to #{addr}|]
 
