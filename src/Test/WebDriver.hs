@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiWayIf #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE ViewPatterns #-}
 
 {-|
@@ -95,6 +96,7 @@ import Data.String.Interpolate
 import qualified Data.Text as T
 import Test.WebDriver.Util.Aeson (aesonLookup)
 import Control.Monad.Logger
+import Control.Retry
 import Network.HTTP.Client
 import Network.HTTP.Types (RequestHeaders, statusCode)
 import UnliftIO.Concurrent
@@ -118,7 +120,8 @@ startSession :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContex
 startSession wdc dc caps sessionName = case dc of
   DriverConfigSeleniumJar {} -> shared (_webDriverSelenium wdc)
   DriverConfigChromedriver {} -> shared (_webDriverChromedriver wdc)
-  DriverConfigSafaridriver {} -> shared (_webDriverSafaridriver wdc)
+  -- Safari takes a moment to free itself after closeSession stops safaridriver.
+  DriverConfigSafaridriver {} -> recovering pairedPolicy [const alreadyPaired] $ \_ -> shared (_webDriverSafaridriver wdc)
   DriverConfigGeckodriver {} -> do
     driver <- launchDriver dc
     onException (launchSessionInDriver wdc driver caps sessionName)
@@ -130,6 +133,15 @@ startSession wdc dc caps sessionName = case dc of
         return (Just driver, driver)
 
       launchSessionInDriver wdc driver caps sessionName
+
+    pairedPolicy = limitRetriesByCumulativeDelay 5_000_000 (constantDelay 250_000)
+
+    alreadyPaired = Handler $ \case
+      SessionCreationFailed response -> return $ case A.decode (responseBody response) of
+        Just (A.Object (aesonLookup "value" -> Just (A.Object (aesonLookup "message" -> Just (A.String message))))) ->
+          "already paired" `T.isInfixOf` message
+        _ -> False
+      _ -> return False
 
 launchSessionInDriver :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Driver -> Capabilities -> String -> m Session
 launchSessionInDriver wdc driver caps sessionName = do
@@ -170,6 +182,9 @@ startSession' driver caps sessionName = do
 -- | Close the given WebDriver session. This sends the @DELETE
 -- \/session\/:sessionId@ command to the WebDriver API, and then shuts down the
 -- process if necessary.
+--
+-- Safari runs no other session until this one ends, so if a Safari session
+-- can't be closed, this stops @safaridriver@ to end it.
 closeSession :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Session -> m ()
 closeSession wdc sess@(Session {..}) = do
   -- For geckodriver, we own the process (one per session), so we must always
@@ -178,8 +193,19 @@ closeSession wdc sess@(Session {..}) = do
         DriverConfigGeckodriver {} -> teardownDriver sessionDriver
         _ -> return ()
 
+      -- safaridriver answers a session's DELETE only after its command in progress, which may never finish.
+      stopSafaridriver = case _driverConfig sessionDriver of
+        DriverConfigSafaridriver {} -> modifyMVar_ (_webDriverSafaridriver wdc) $ \case
+          Just driver | _driverPort driver == _driverPort sessionDriver -> do
+            logWarnN [i|Couldn't close session #{sessionName}; stopping safaridriver to end it|]
+            teardownDriver driver
+            modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
+            return Nothing
+          other -> return other
+        _ -> return ()
+
   flip finally teardownGecko $ do
-    closeSession' sess
+    closeSession' sess `onException` stopSafaridriver
     modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
 
 -- | Close the given WebDriver session. This is a lower-level version of
