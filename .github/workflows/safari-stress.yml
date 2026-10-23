@@ -1,0 +1,111 @@
+name: Safari stress
+
+on:
+  push:
+    branches: [stress-safari-retries]
+
+jobs:
+  stress:
+    name: ${{ matrix.runner }} / ${{ matrix.copy }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [macos-14, macos-15, macos-15-intel, macos-26, xcode-27]
+        copy: [1, 2]
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: cachix/install-nix-action@v31
+      with:
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/74435c9234c751e6786c5f3fd34ff6b0f0c13bd1.tar.gz
+
+    - name: Install dependencies (macOS)
+      run: |
+        sudo xcode-select -s /Library/Developer/CommandLineTools || true
+        echo "C_INCLUDE_PATH=`xcrun --show-sdk-path`/usr/include/ffi" >> "$GITHUB_ENV"
+        sw_vers
+        /usr/bin/defaults read /Applications/Safari.app/Contents/Info CFBundleShortVersionString
+
+    - uses: haskell-actions/setup@v2
+      id: setup-haskell-cabal
+      with:
+        ghc-version: "9.14.1"
+        cabal-version: "latest"
+
+    - name: Freeze
+      run: |
+        cabal update
+        cabal configure --enable-tests
+        cabal freeze
+
+    - uses: nix-community/cache-nix-action@v7
+      if: runner.arch == 'ARM64'
+      with:
+        primary-key: nix-${{ runner.os }}-safari-${{ hashFiles('tests/Main.hs') }}
+        restore-prefixes-first-match: nix-${{ runner.os }}-safari-
+        save: false
+
+    - uses: actions/cache/restore@v5
+      if: runner.arch == 'ARM64'
+      with:
+        path: ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+        key: ${{ runner.os }}-9.14.1-${{ hashFiles('cabal.project.freeze') }}-key2
+        restore-keys: ${{ runner.os }}-9.14.1-
+
+    - name: Build
+      run: |
+        cabal build all \
+          --extra-include-dirs=/opt/homebrew/include \
+          --extra-lib-dirs=/opt/homebrew/lib
+
+    - name: Stress
+      run: |
+        sudo safaridriver --enable
+        BIN=$(cabal list-bin test:tests --extra-include-dirs=/opt/homebrew/include --extra-lib-dirs=/opt/homebrew/lib)
+        mkdir -p out
+        /usr/bin/log stream --style compact --level info --predicate \
+          'subsystem BEGINSWITH "com.apple.WebDriver" OR process CONTAINS "WebDriver" OR process == "safaridriver" OR process == "webinspectord" OR category == "Automation"' \
+          > out/webdriver-log-stream.txt 2>&1 &
+        STREAM=$!
+        end=$((SECONDS + 45 * 60))
+        n=0
+        failed=0
+        while [ $SECONDS -lt $end ]; do
+          n=$((n + 1))
+          before=$(wc -l < out/webdriver-log-stream.txt)
+          start=$SECONDS
+          set +e
+          "$BIN" --headless-tests --use-safari --fixed-root "test_runs/run$n" --print > "out/run$n.txt" 2>&1
+          rc=$?
+          set -e
+          sed -E 's/\x1b\[[0-9;]*m//g' "out/run$n.txt" > "out/run$n.clean.txt"
+          tail -n +"$((before + 1))" out/webdriver-log-stream.txt > "out/run$n.log-stream.txt"
+          eperm=$(grep -c "Error starting HTTP server" "out/run$n.log-stream.txt" || true)
+          validation=$(grep -c "webinspectord validation failed" "out/run$n.log-stream.txt" || true)
+          interrupted=$(grep -c "HTTPService was interrupted" "out/run$n.log-stream.txt" || true)
+          result=$(grep -E "^All tests passed|failed in|tests failed|^[0-9]+ (out of|tests)" "out/run$n.clean.txt" | tail -1 || true)
+          echo "ITER $n rc=$rc secs=$((SECONDS - start)) eperm=$eperm validation=$validation interrupted=$interrupted result=\"$result\""
+          awk '/^  [^ ]/ { tree = substr($0, 3) } /\(WARN\)/ { sub(/^.*\] /, ""); print "  WARN [" tree "] " $0 }' "out/run$n.clean.txt" \
+            | grep -v "^  WARN \[Unit\]" || true
+          if [ $rc -ne 0 ]; then
+            failed=$((failed + 1))
+            echo "::group::run $n output"
+            sed -n '/^Beginning suite/,$p' "out/run$n.clean.txt"
+            echo "::endgroup::"
+          fi
+        done
+        kill $STREAM
+        echo "SUMMARY iterations=$n failed=$failed"
+
+    - uses: actions/upload-artifact@v7
+      if: always()
+      with:
+        name: safari-stress-${{ matrix.runner }}-${{ matrix.copy }}
+        path: |
+          out
+          test_runs
+          !test_runs/**/gcroot
+        retention-days: 7
