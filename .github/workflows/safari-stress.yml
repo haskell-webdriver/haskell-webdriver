@@ -12,8 +12,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [macos-14, macos-15, macos-15-intel, macos-26, xcode-27]
-        copy: [1, 2]
+        runner: [macos-14]
+        copy: [1, 2, 3, 4, 5, 6]
 
     steps:
     - uses: actions/checkout@v6
