@@ -67,6 +67,18 @@ safariSessionStartup = describe "Safari session startup" $
       length starts `shouldBe` 2
       length sessions `shouldBe` 2
 
+    it "retries a session when Safari doesn't connect to safaridriver" $ do
+      (starts, sessions) <- startSessionAfterFailure safaridriver
+        "Could not create a session: The session timed out while connecting to a Safari instance. The following asynchronous operation timed out: Finding or launching a compatible local Safari and waiting for its RWIApplication to appear and become ready."
+      length starts `shouldBe` 1
+      length sessions `shouldBe` 2
+
+    it "retries a Selenium session when Safari doesn't connect to its safaridriver" $ do
+      (starts, sessions) <- startSessionAfterFailure selenium
+        "Could not start a new session. Error while creating session with the driver service. Stopping driver service: Could not start a new session. Response code 500. Message: Could not create a session: The session timed out while connecting to a Safari instance. The following asynchronous operation timed out: Finding or launching a compatible local Safari and waiting for its RWIApplication to appear and become ready."
+      length starts `shouldBe` 1
+      length sessions `shouldBe` 2
+
     it "retries a Selenium session when its safaridriver exits before it's ready" $ do
       (starts, sessions) <- startSessionAfterFailure selenium
         "Could not start a new session. Error while creating session with the driver service. Stopping driver service: Driver server process died prematurely, exit value: 1"
