@@ -237,8 +237,9 @@ startSession' driver caps sessionName = do
 -- \/session\/:sessionId@ command to the WebDriver API, and then shuts down the
 -- process if necessary.
 --
--- Safari runs no other session until this one ends, so if a Safari session
--- can't be closed, this stops @safaridriver@ to end it.
+-- Safari runs no other session until this one ends, so if a session can't be
+-- closed, this stops @safaridriver@ to end it, or the Selenium server if no
+-- other session is using it.
 closeSession :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Session -> m ()
 closeSession wdc sess@(Session {..}) = do
   -- For geckodriver, we own the process (one per session), so we must always
@@ -247,19 +248,27 @@ closeSession wdc sess@(Session {..}) = do
         DriverConfigGeckodriver {} -> teardownDriver sessionDriver
         _ -> return ()
 
-      -- safaridriver answers a session's DELETE only after its command in progress, which may never finish.
-      stopSafaridriver = case _driverConfig sessionDriver of
-        DriverConfigSafaridriver {} -> modifyMVar_ (_webDriverSafaridriver wdc) $ \case
-          Just driver | _driverPort driver == _driverPort sessionDriver -> do
-            logWarnN [i|Couldn't close session #{sessionName}; stopping safaridriver to end it|]
+      -- safaridriver answers a session's DELETE only after its command in progress, which may never
+      -- finish, and Selenium frees the session's slot only once its driver answers.
+      stopDriver = case _driverConfig sessionDriver of
+        DriverConfigSafaridriver {} -> stopShared (_webDriverSafaridriver wdc) "safaridriver"
+        DriverConfigSeleniumJar {} -> stopShared (_webDriverSelenium wdc) "Selenium"
+        _ -> return ()
+
+      stopShared var (name :: T.Text) = modifyMVar_ var $ \case
+        Just driver | _driverPort driver == _driverPort sessionDriver -> do
+          others <- M.filter (\(Session {sessionDriver = d}) -> _driverPort d == _driverPort driver) . M.delete sessionName
+                      <$> readMVar (_webDriverSessions wdc)
+          if M.null others then do
+            logWarnN [i|Couldn't close session #{sessionName}; stopping #{name} to end it|]
             teardownDriver driver
             modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
             return Nothing
-          other -> return other
-        _ -> return ()
+          else return (Just driver)
+        other -> return other
 
   flip finally teardownGecko $ do
-    closeSession' sess `onException` stopSafaridriver
+    closeSession' sess `onException` stopDriver
     modifyMVar_ (_webDriverSessions wdc) (return . M.delete sessionName)
 
 -- | Close the given WebDriver session. This is a lower-level version of

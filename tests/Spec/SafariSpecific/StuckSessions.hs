@@ -14,9 +14,10 @@ import UnliftIO.Timeout
 
 tests :: SessionSpec
 tests = describe "Stuck sessions" $
-  it "starts a session after one that couldn't be closed" $ getContext driverConfig >>= \case
-    dc@(DriverConfigSafaridriver {}) -> do
-      caps <- getContext browserDependencies >>= getCapabilities False
+  it "starts a session after one that couldn't be closed" $ getContext browserDependencies >>= \case
+    deps@(BrowserDependenciesSafari {}) -> do
+      dc <- getContext driverConfig
+      caps <- getCapabilities False deps
       bracket mkEmptyWebDriverContext teardownWebDriverContext $ \wdc -> do
         stuck <- startSession wdc dc caps "session1"
         -- safaridriver holds back every later command for the session, DELETE included, until a
