@@ -99,7 +99,8 @@ isPortFree candidate = catch (tryOpenAndClosePort candidate >> return True)
 tryOpenAndClosePort :: MonadIO m => PortNumber -> m PortNumber
 tryOpenAndClosePort port = liftIO $ do
   sock <- socket AF_INET Stream 0
-  setSocketOption sock ReuseAddr 1
+  -- No ReuseAddr: with it, macOS lets this bind succeed while another process listens on the port
+  -- at 0.0.0.0.
   let hints = defaultHints { addrSocketType = Stream, addrFamily = AF_INET }
   getAddrInfo (Just hints) (Just "127.0.0.1") (Just $ show port) >>= \case
     ((AddrInfo {addrAddress=addr}):_) -> do
