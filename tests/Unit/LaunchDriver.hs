@@ -63,29 +63,54 @@ safariSessionStartup :: NixSpec
 safariSessionStartup = describe "Safari session startup" $
   introduceBinaryViaNixDerivation @"mock-safaridriver" mockSafaridriverDerivation $ do
     it "launches a new safaridriver when one exits while starting a session" $ do
-      (starts, sessions) <- startSessionAfterFailure
+      (starts, sessions) <- startSessionAfterFailure safaridriver "exit"
       length starts `shouldBe` 2
       length sessions `shouldBe` 2
 
--- | Start and close a session on the mock safaridriver, which exits on its first new-session
--- request, and return the lines it wrote for each start and each new-session request.
+    it "retries a Selenium session when its safaridriver exits before it's ready" $ do
+      (starts, sessions) <- startSessionAfterFailure selenium
+        "Could not start a new session. Error while creating session with the driver service. Stopping driver service: Driver server process died prematurely, exit value: 1"
+      length starts `shouldBe` 1
+      length sessions `shouldBe` 2
+
+    it "retries a Selenium session when its safaridriver exits while starting it" $ do
+      (starts, sessions) <- startSessionAfterFailure selenium
+        "Could not start a new session. Error while creating session with the driver service. Stopping driver service: java.io.IOException: HTTP/1.1 header parser received no bytes "
+      length starts `shouldBe` 1
+      length sessions `shouldBe` 2
+  where
+    safaridriver mock dir env = DriverConfigSafaridriver {
+      driverConfigSafaridriver = mock
+      , driverConfigSafaridriverFlags = []
+      , driverConfigSafaridriverExtraEnv = Just env
+      , driverConfigLogDir = Just dir
+      }
+
+    selenium mock dir env = DriverConfigSeleniumJar {
+      driverConfigJava = mock
+      , driverConfigSeleniumJar = "selenium-server.jar"
+      , driverConfigSubDrivers = []
+      , driverConfigLogDir = Just dir
+      , driverConfigJavaFlags = []
+      , driverConfigJavaExtraEnv = Just env
+      , driverConfigSeleniumVersion = Just Selenium4
+      }
+
+-- | Start and close a Safari session on the mock safaridriver, whose first new-session request fails
+-- in the given way, and return the lines it wrote for each start and each new-session request.
 startSessionAfterFailure :: (
   HasBaseContext context, HasFile context "mock-safaridriver"
-  ) => ExampleT context IO ([String], [String])
-startSessionAfterFailure = do
+  ) => (FilePath -> FilePath -> [(String, String)] -> DriverConfig) -> String -> ExampleT context IO ([String], [String])
+startSessionAfterFailure mkDriverConfig failure = do
   Just dir <- getCurrentFolder
   mockSafaridriver <- askFile @"mock-safaridriver"
   let startsFile = dir </> "starts"
       sessionsFile = dir </> "sessions"
-      dc = DriverConfigSafaridriver {
-        driverConfigSafaridriver = mockSafaridriver
-        , driverConfigSafaridriverFlags = []
-        , driverConfigSafaridriverExtraEnv = Just [
-            ("MOCK_DRIVER_STARTS", startsFile)
-            , ("MOCK_DRIVER_SESSIONS", sessionsFile)
-            ]
-        , driverConfigLogDir = Just dir
-        }
+      dc = mkDriverConfig mockSafaridriver dir [
+        ("MOCK_DRIVER_STARTS", startsFile)
+        , ("MOCK_DRIVER_SESSIONS", sessionsFile)
+        , ("MOCK_SAFARIDRIVER_FAILURE", failure)
+        ]
   bracket mkEmptyWebDriverContext teardownWebDriverContext $ \wdc ->
-    startSession wdc dc defaultCaps "session1" >>= closeSession wdc
+    startSession wdc dc (defaultCaps { _capabilitiesBrowserName = Just Safari }) "session1" >>= closeSession wdc
   (,) <$> (lines <$> liftIO (readFile startsFile)) <*> (lines <$> liftIO (readFile sessionsFile))
