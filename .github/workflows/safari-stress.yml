@@ -2,7 +2,7 @@ name: Safari stress
 
 on:
   push:
-    branches: [stress-safari-retries]
+    branches: [stress-safari-intel]
 
 jobs:
   stress:
@@ -12,8 +12,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [macos-14, macos-15, macos-15-intel, macos-26, xcode-27]
+        runner: [macos-15-intel]
         copy: [1, 2]
+        include:
+        - runner: macos-26
+          copy: 1
 
     steps:
     - uses: actions/checkout@v6
@@ -70,7 +73,7 @@ jobs:
           'subsystem BEGINSWITH "com.apple.WebDriver" OR process CONTAINS "WebDriver" OR process == "safaridriver" OR process == "webinspectord" OR category == "Automation"' \
           > out/webdriver-log-stream.txt 2>&1 &
         STREAM=$!
-        end=$((SECONDS + 45 * 60))
+        end=$((SECONDS + 60 * 60))
         n=0
         failed=0
         while [ $SECONDS -lt $end ]; do
