@@ -120,11 +120,14 @@ import UnliftIO.Timeout
 
 startSession :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> DriverConfig -> Capabilities -> String -> m Session
 startSession wdc dc caps sessionName = case dc of
-  DriverConfigSeleniumJar {} -> shared (_webDriverSelenium wdc)
+  DriverConfigSeleniumJar {}
+    | _capabilitiesBrowserName caps == Just "safari" -> retrySafari $
+        -- Selenium starts a safaridriver for each session, which can exit at once like the ones
+        -- launchDriver retries.
+        recovering launchPolicy [seleniumSafaridriverFailedToStart] $ \_ -> shared (_webDriverSelenium wdc)
+    | otherwise -> shared (_webDriverSelenium wdc)
   DriverConfigChromedriver {} -> shared (_webDriverChromedriver wdc)
-  DriverConfigSafaridriver {} -> recovering safaridriverPolicy [safaridriverExited, connectTimedOut] $ \_ ->
-    -- Safari takes a moment to free itself after closeSession stops safaridriver.
-    recovering pairedPolicy [const alreadyPaired] $ \_ -> shared (_webDriverSafaridriver wdc)
+  DriverConfigSafaridriver {} -> retrySafari $ shared (_webDriverSafaridriver wdc)
   DriverConfigGeckodriver {} -> do
     driver <- launchDriver dc
     onException (launchSessionInDriver wdc driver caps sessionName)
@@ -136,6 +139,10 @@ startSession wdc dc caps sessionName = case dc of
         return (Just driver, driver)
 
       launchSessionInDriver wdc driver caps sessionName
+
+    retrySafari start = recovering safaridriverPolicy [safaridriverExited, safariSessionFailed] $ \_ ->
+      -- Safari takes a moment to free itself after a safaridriver stops.
+      recovering pairedPolicy [const alreadyPaired] $ \_ -> start
 
     pairedPolicy = limitRetriesByCumulativeDelay 5_000_000 (constantDelay 250_000)
 
@@ -154,23 +161,37 @@ startSession wdc dc caps sessionName = case dc of
           Nothing -> return (Just driver, False)
         other -> return (other, False)
       when exited $
-        logSafariRetry retryStatus [i|safaridriver exited while starting session #{sessionName}|]
+        logRetry safaridriverPolicy retryStatus [i|safaridriver exited while starting session #{sessionName}|]
       return exited
 
     waitForExit p = retrying (limitRetriesByCumulativeDelay 2_000_000 (constantDelay 100_000))
                              (\_ -> return . isNothing) (\_ -> getProcessExitCode p)
 
-    -- Each attempt takes 30 s, so retry this only once. https://github.com/flutter/flutter/issues/163790
-    connectTimedOut retryStatus = Handler $ \case
+    -- recovering gives an exception only to the first handler for its type, so one handler takes
+    -- both of these.
+    safariSessionFailed retryStatus = Handler $ \case
       SessionCreationFailed response
+        -- Each attempt takes 30 s, so retry this only once. https://github.com/flutter/flutter/issues/163790
         | rsIterNumber retryStatus == 0
         , errorMessageContains "timed out while connecting to a Safari instance" response -> do
-            logSafariRetry retryStatus [i|Safari didn't connect to safaridriver for session #{sessionName}|]
+            logRetry safaridriverPolicy retryStatus [i|Safari didn't connect to safaridriver for session #{sessionName}|]
+            return True
+        -- Selenium stops its safaridriver after this, so the retry starts a new one.
+        | errorMessageContains "header parser received no bytes" response -> do
+            logRetry safaridriverPolicy retryStatus [i|Selenium's safaridriver exited while starting session #{sessionName}|]
             return True
       _ -> return False
 
-    logSafariRetry retryStatus message = do
-      willRetry <- isJust <$> applyPolicy safaridriverPolicy retryStatus
+    launchPolicy = limitRetries 10 <> capDelay 1_000_000 (exponentialBackoff 50_000)
+
+    seleniumSafaridriverFailedToStart retryStatus = Handler $ \case
+      SessionCreationFailed response | errorMessageContains "Driver server process died prematurely" response -> do
+        logRetry launchPolicy retryStatus [i|Selenium's safaridriver exited before it was ready for session #{sessionName}|]
+        return True
+      _ -> return False
+
+    logRetry policy retryStatus message = do
+      willRetry <- isJust <$> applyPolicy policy retryStatus
       when willRetry $ logWarnN [i|#{message :: T.Text}; retrying|]
 
     errorMessageContains needle response = case A.decode (responseBody response) of
