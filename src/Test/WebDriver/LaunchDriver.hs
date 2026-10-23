@@ -300,11 +300,15 @@ mkDriverRequest (Driver {..}) meth wdPath args =
     , requestBody = RequestBodyLBS body
     , requestHeaders = _driverRequestHeaders ++ extraHeaders
     , method = meth
-#if !MIN_VERSION_http_client(0,5,0)
+#if MIN_VERSION_http_client(0,5,0)
+    , responseTimeout = if isNewSession then responseTimeoutMicro newSessionTimeoutUs else responseTimeoutDefault
+#else
     , checkStatus = \_ _ _ -> Nothing
 #endif
     }
   where
+    isNewSession = meth == methodPost && wdPath == "/session"
+
     body = case toJSON args of
       Null -> "" -- Passing Null as the argument indicates no request body
       other -> encode other
@@ -314,6 +318,11 @@ mkDriverRequest (Driver {..}) meth wdPath args =
       , (hContentType, "application/json;charset=UTF-8")
       ]
 
+-- | How long to wait for the driver to answer a new-session request. Starting a session can mean
+-- launching the browser, and drivers report their own timeouts for that, such as safaridriver's
+-- 30 s wait for Safari to connect.
+newSessionTimeoutUs :: Int
+newSessionTimeoutUs = 120_000_000
 
 -- | Grace period to wait at each escalation step when stopping a driver process.
 driverStopGracePeriodUs :: Int
