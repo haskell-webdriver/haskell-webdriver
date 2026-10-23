@@ -120,7 +120,12 @@ import UnliftIO.Timeout
 
 startSession :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> DriverConfig -> Capabilities -> String -> m Session
 startSession wdc dc caps sessionName = case dc of
-  DriverConfigSeleniumJar {} -> shared (_webDriverSelenium wdc)
+  DriverConfigSeleniumJar {}
+    | _capabilitiesBrowserName caps == Just "safari" -> recovering safaridriverPolicy [seleniumSafaridriverExited] $ \_ ->
+        -- Selenium starts a safaridriver for each session, which can exit at once like the ones
+        -- launchDriver retries.
+        recovering launchPolicy [seleniumSafaridriverFailedToStart] $ \_ -> shared (_webDriverSelenium wdc)
+    | otherwise -> shared (_webDriverSelenium wdc)
   DriverConfigChromedriver {} -> shared (_webDriverChromedriver wdc)
   DriverConfigSafaridriver {} -> recovering safaridriverPolicy [safaridriverExited] $ \_ ->
     -- Safari takes a moment to free itself after closeSession stops safaridriver.
@@ -140,10 +145,7 @@ startSession wdc dc caps sessionName = case dc of
     pairedPolicy = limitRetriesByCumulativeDelay 5_000_000 (constantDelay 250_000)
 
     alreadyPaired = Handler $ \case
-      SessionCreationFailed response -> return $ case A.decode (responseBody response) of
-        Just (A.Object (aesonLookup "value" -> Just (A.Object (aesonLookup "message" -> Just (A.String message))))) ->
-          "already paired" `T.isInfixOf` message
-        _ -> False
+      SessionCreationFailed response -> return $ errorMessageContains "already paired" response
       _ -> return False
 
     safaridriverPolicy = limitRetries 2 <> constantDelay 1_000_000
@@ -156,13 +158,36 @@ startSession wdc dc caps sessionName = case dc of
           Just _ -> teardownDriver driver >> return (Nothing, True)
           Nothing -> return (Just driver, False)
         other -> return (other, False)
-      when exited $ do
-        willRetry <- isJust <$> applyPolicy safaridriverPolicy retryStatus
-        when willRetry $ logWarnN [i|safaridriver exited while starting session #{sessionName}; retrying|]
+      when exited $
+        logRetry safaridriverPolicy retryStatus [i|safaridriver exited while starting session #{sessionName}|]
       return exited
 
     waitForExit p = retrying (limitRetriesByCumulativeDelay 2_000_000 (constantDelay 100_000))
                              (\_ -> return . isNothing) (\_ -> getProcessExitCode p)
+
+    -- Selenium stops its safaridriver after this, so the retry starts a new one.
+    seleniumSafaridriverExited retryStatus = Handler $ \case
+      SessionCreationFailed response | errorMessageContains "header parser received no bytes" response -> do
+        logRetry safaridriverPolicy retryStatus [i|Selenium's safaridriver exited while starting session #{sessionName}|]
+        return True
+      _ -> return False
+
+    launchPolicy = limitRetries 10 <> capDelay 1_000_000 (exponentialBackoff 50_000)
+
+    seleniumSafaridriverFailedToStart retryStatus = Handler $ \case
+      SessionCreationFailed response | errorMessageContains "Driver server process died prematurely" response -> do
+        logRetry launchPolicy retryStatus [i|Selenium's safaridriver exited before it was ready for session #{sessionName}|]
+        return True
+      _ -> return False
+
+    logRetry policy retryStatus message = do
+      willRetry <- isJust <$> applyPolicy policy retryStatus
+      when willRetry $ logWarnN [i|#{message :: T.Text}; retrying|]
+
+    errorMessageContains needle response = case A.decode (responseBody response) of
+      Just (A.Object (aesonLookup "value" -> Just (A.Object (aesonLookup "message" -> Just (A.String message))))) ->
+        needle `T.isInfixOf` message
+      _ -> False
 
 launchSessionInDriver :: (WebDriverBase m, MonadLogger m) => WebDriverContext -> Driver -> Capabilities -> String -> m Session
 launchSessionInDriver wdc driver caps sessionName = do

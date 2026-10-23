@@ -25,8 +25,10 @@ pkgs.writeShellScriptBin "mock-driver" ''
 ''
 |]
 
--- | A safaridriver that answers @/status@ and exits without answering its first new-session
--- request. Later requests create a session. Each start appends its arguments to the file named by
+-- | A safaridriver, or a Selenium server for Safari when run as @java -jar ... standalone@, that
+-- answers @/status@ and fails its first new-session request as @MOCK_SAFARIDRIVER_FAILURE@ says:
+-- "exit" exits without answering, and anything else is returned as the error message. Later
+-- requests create a session. Each start appends its arguments to the file named by
 -- @MOCK_DRIVER_STARTS@, and each new-session request appends a line to the file named by
 -- @MOCK_DRIVER_SESSIONS@.
 mockSafaridriverDerivation :: Text
@@ -62,9 +64,13 @@ pkgs.writeScriptBin "mock-safaridriver" ''
           first = not os.path.exists(sessions)
           with open(sessions, "a") as f:
               f.write("POST /session\\n")
-          if first:
+          failure = os.environ["MOCK_SAFARIDRIVER_FAILURE"]
+          if first and failure == "exit":
               os._exit(1)
-          self.reply(200, {"sessionId": "mock-session", "capabilities": {}})
+          if first:
+              self.reply(500, {"error": "session not created", "message": failure})
+          else:
+              self.reply(200, {"sessionId": "mock-session", "capabilities": {}})
 
       def do_DELETE(self):
           self.reply(200, None)
@@ -72,6 +78,9 @@ pkgs.writeScriptBin "mock-safaridriver" ''
       def log_message(self, *args):
           pass
 
-  http.server.HTTPServer(("127.0.0.1", port), Handler).serve_forever()
+  server = http.server.HTTPServer(("127.0.0.1", port), Handler)
+  if "standalone" in sys.argv:
+      print("Started Selenium Standalone", flush=True)
+  server.serve_forever()
 ''
 |]
