@@ -66,6 +66,21 @@ jobs:
 
     - name: Stress
       run: |
+        # Retries happen while a session is introduced, and --print leaves out those nodes' logs, so
+        # count the warnings in each node's test_logs.txt.
+        cat > warnings.py <<'EOF'
+        import collections, glob, re, sys
+        trees = {}
+        for f in glob.glob(sys.argv[1] + "/**/test_logs.txt", recursive=True):
+            m = re.search(r"/\d+_(Selenium 4|safaridriver direct)/", f)
+            if m:
+                for l in open(f, errors="replace"):
+                    if "[Warn]" in l:
+                        trees[l.strip()] = m.group(1)
+        counts = collections.Counter((t, re.sub(r"^\S+ \S+ UTC \[Warn\] \(\) ", "", l)) for l, t in trees.items())
+        for (t, msg), k in sorted(counts.items()):
+            print(f"  WARN [{t}] {k}x {msg}")
+        EOF
         sudo safaridriver --enable
         BIN=$(cabal list-bin test:tests --extra-include-dirs=/opt/homebrew/include --extra-lib-dirs=/opt/homebrew/lib)
         mkdir -p out
@@ -89,10 +104,10 @@ jobs:
           eperm=$(grep -c "Error starting HTTP server" "out/run$n.log-stream.txt" || true)
           validation=$(grep -c "webinspectord validation failed" "out/run$n.log-stream.txt" || true)
           interrupted=$(grep -c "HTTPService was interrupted" "out/run$n.log-stream.txt" || true)
+          faults=$(grep -c "message from backend could not be understood" "out/run$n.log-stream.txt" || true)
           result=$(grep -E "^All tests passed|failed in|tests failed|^[0-9]+ (out of|tests)" "out/run$n.clean.txt" | tail -1 || true)
-          echo "ITER $n rc=$rc secs=$((SECONDS - start)) eperm=$eperm validation=$validation interrupted=$interrupted result=\"$result\""
-          awk '/^  [^ ]/ { tree = substr($0, 3) } /\(WARN\)/ { sub(/^.*\] /, ""); print "  WARN [" tree "] " $0 }' "out/run$n.clean.txt" \
-            | grep -v "^  WARN \[Unit\]" || true
+          echo "ITER $n rc=$rc secs=$((SECONDS - start)) eperm=$eperm validation=$validation interrupted=$interrupted faults=$faults result=\"$result\""
+          python3 warnings.py "test_runs/run$n" || true
           if [ $rc -ne 0 ]; then
             failed=$((failed + 1))
             echo "::group::run $n output"
