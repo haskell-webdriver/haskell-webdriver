@@ -46,6 +46,7 @@ import GHC.Stack
 import Network.HTTP.Client
 import Network.HTTP.Types (RequestHeaders)
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
+import Test.WebDriver.Capabilities.Browser (Browser)
 import Test.WebDriver.Util.Aeson (aesonKeyFromText)
 import UnliftIO.Async
 import UnliftIO.Concurrent
@@ -159,6 +160,8 @@ data Session = Session {
   sessionDriver :: Driver
   , sessionId :: SessionId
   , sessionName :: String
+  -- | The browser the session was requested with, such as 'Safari'.
+  , sessionBrowserName :: Maybe Browser
   , sessionWebSocketUrl :: Maybe String
   -- | Used to generate IDs for BiDi.
   , sessionIdCounter :: TVar Int
