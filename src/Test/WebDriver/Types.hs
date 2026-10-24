@@ -1,10 +1,14 @@
 {-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE NumericUnderscores #-}
 
 module Test.WebDriver.Types (
   WebDriverContext(..)
   -- , HasWebDriverContext
   , mkEmptyWebDriverContext
+  , mkWebDriverContext
+  , ContextOptions(..)
+  , defaultContextOptions
 
   , Driver(..)
   , DriverConfig(..)
@@ -65,14 +69,40 @@ data WebDriverContext = WebDriverContext {
   _webDriverSessions :: MVar (Map String Session)
   , _webDriverSelenium :: MVar (Maybe Driver)
   , _webDriverChromedriver :: MVar (Maybe Driver)
+  , _webDriverContextOptions :: ContextOptions
   }
 
--- | Create a new 'WebDriverContext'.
-mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
-mkEmptyWebDriverContext = WebDriverContext
+-- | Options for a 'WebDriverContext'.
+data ContextOptions = ContextOptions {
+  -- | How long to wait for a driver to respond.
+  contextDriverResponseTimeoutUs :: Int
+  -- | How long to wait for a driver the context launches to print that it's ready.
+  , contextDriverReadyTimeoutUs :: Int
+  -- | How long to keep retrying a driver the context launches until it accepts connections, and
+  -- then until it answers @\/status@.
+  , contextDriverStatusTimeoutUs :: Int
+  }
+
+-- | Default context options, which wait 30 s for a driver to respond or to print that it's ready,
+-- and keep retrying for 2 minutes while it starts listening and answering @\/status@.
+defaultContextOptions :: ContextOptions
+defaultContextOptions = ContextOptions {
+  contextDriverResponseTimeoutUs = 30_000_000
+  , contextDriverReadyTimeoutUs = 30_000_000
+  , contextDriverStatusTimeoutUs = 120_000_000
+  }
+
+-- | Create a new 'WebDriverContext' with the given options.
+mkWebDriverContext :: MonadIO m => ContextOptions -> m WebDriverContext
+mkWebDriverContext options = WebDriverContext
   <$> newMVar mempty
   <*> newMVar Nothing
   <*> newMVar Nothing
+  <*> pure options
+
+-- | Create a new 'WebDriverContext' with 'defaultContextOptions'.
+mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
+mkEmptyWebDriverContext = mkWebDriverContext defaultContextOptions
 
 data Driver = Driver {
   _driverHostname :: String

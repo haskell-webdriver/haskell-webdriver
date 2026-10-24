@@ -37,6 +37,9 @@ module Test.WebDriver (
   -- * WebDriverContext
   WebDriverContext
   , mkEmptyWebDriverContext
+  , mkWebDriverContext
+  , ContextOptions(..)
+  , defaultContextOptions
   , teardownWebDriverContext
 
   -- * Managed sessions
@@ -111,18 +114,18 @@ import UnliftIO.Timeout
 startSession :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> DriverConfig -> Capabilities -> String -> m Session
 startSession wdc dc@(DriverConfigSeleniumJar {}) caps sessionName = do
   driver <- modifyMVar (_webDriverSelenium wdc) $ \maybeSelenium -> do
-    driver <- maybe (launchDriver dc) return maybeSelenium
+    driver <- maybe (launchDriver (_webDriverContextOptions wdc) dc) return maybeSelenium
     return (Just driver, driver)
 
   launchSessionInDriver wdc driver caps sessionName
 startSession wdc dc@(DriverConfigChromedriver {}) caps sessionName = do
   driver <- modifyMVar (_webDriverChromedriver wdc) $ \maybeChromedriver -> do
-    driver <- maybe (launchDriver dc) return maybeChromedriver
+    driver <- maybe (launchDriver (_webDriverContextOptions wdc) dc) return maybeChromedriver
     return (Just driver, driver)
 
   launchSessionInDriver wdc driver caps sessionName
 startSession wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
-  driver <- launchDriver dc
+  driver <- launchDriver (_webDriverContextOptions wdc) dc
   onException (launchSessionInDriver wdc driver caps sessionName)
               (teardownDriver driver)
 
@@ -199,7 +202,7 @@ mkManualDriver :: MonadIO m =>
   -> RequestHeaders
   -> m Driver
 mkManualDriver hostname port basePath requestHeaders = do
-  manager <- liftIO $ newManager defaultManagerSettings
+  manager <- liftIO $ newDriverManager defaultContextOptions
 
   return $ Driver {
     _driverHostname = hostname

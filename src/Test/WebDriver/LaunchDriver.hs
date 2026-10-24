@@ -9,6 +9,7 @@ module Test.WebDriver.LaunchDriver (
   launchDriver
   , teardownDriver
   , mkDriverRequest
+  , newDriverManager
   ) where
 
 import Control.Monad
@@ -45,8 +46,8 @@ import UnliftIO.Process
 import UnliftIO.Timeout
 
 
-launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
-launchDriver driverConfig = recovering policy [const handler] $ \_ -> launchDriver' driverConfig
+launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => ContextOptions -> DriverConfig -> m Driver
+launchDriver options driverConfig = recovering policy [const handler] $ \_ -> launchDriver' options driverConfig
   where
     policy = limitRetries 10 <> capDelay 1_000_000 (exponentialBackoff 50_000)
 
@@ -58,9 +59,9 @@ launchDriver driverConfig = recovering policy [const handler] $ \_ -> launchDriv
 
     isPortTaken line = "address already in use" `T.isInfixOf` T.toLower line
 
-launchDriver' :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
-launchDriver' driverConfig = do
-  manager <- liftIO $ newManager defaultManagerSettings
+launchDriver' :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => ContextOptions -> DriverConfig -> m Driver
+launchDriver' options driverConfig = do
+  manager <- liftIO $ newDriverManager options
   let requestHeaders = mempty
 
   port <- findFreePortOrException
@@ -105,7 +106,7 @@ launchDriver' driverConfig = do
 
   flip withException handler $ do
     -- Read from the (combined) output stream until we see the up and running message
-    maybeReady <- timeout 30_000_000 $ fix $ \loop -> do
+    maybeReady <- timeout (contextDriverReadyTimeoutUs options) $ fix $ \loop -> do
       line <- liftIO (try (T.pack <$> hGetLine hRead)) >>= \case
         Right line -> return line
         -- EOF usually means the driver exited, but not necessarily, so don't wait forever.
@@ -131,7 +132,7 @@ launchDriver' driverConfig = do
       addr <- liftIO (getAddrInfo (Just defaultHints { addrSocketType = Stream }) (Just "127.0.0.1") (Just (show port))) >>= \case
         addr:_ -> return addr
         _ -> throwIO DriverGetAddrInfoFailed
-      let policy = limitRetriesByCumulativeDelay (120 * 1_000_000) $ capDelay 1_000_000 $ exponentialBackoff 1000
+      let policy = limitRetriesByCumulativeDelay (contextDriverStatusTimeoutUs options) $ capDelay 1_000_000 $ exponentialBackoff 1000
 
       waitForSocket policy addr
 
@@ -270,6 +271,16 @@ mkDriverRequest (Driver {..}) meth wdPath args =
       (hAccept, "application/json;charset=UTF-8")
       , (hContentType, "application/json;charset=UTF-8")
       ]
+
+-- | Create the HTTP 'Manager' for a driver, from a context's options.
+newDriverManager :: ContextOptions -> IO Manager
+newDriverManager ContextOptions {..} = newManager defaultManagerSettings {
+#if MIN_VERSION_http_client(0,5,0)
+  managerResponseTimeout = responseTimeoutMicro contextDriverResponseTimeoutUs
+#else
+  managerResponseTimeout = Just contextDriverResponseTimeoutUs
+#endif
+  }
 
 
 -- | Grace period to wait at each escalation step when stopping a driver process.
