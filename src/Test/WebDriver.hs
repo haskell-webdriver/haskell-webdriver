@@ -122,9 +122,11 @@ startSession :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContex
 startSession wdc dc caps sessionName = case dc of
   DriverConfigSeleniumJar {}
     | _capabilitiesBrowserName caps == Just "safari" -> recovering safaridriverPolicy [safariSessionFailed] $ \_ ->
-        -- Selenium starts a safaridriver for each session, which can exit at once like the ones
-        -- launchDriver retries.
-        recovering launchPolicy [seleniumSafaridriverFailedToStart] $ \_ -> shared (_webDriverSelenium wdc)
+        -- Safari takes a moment to free itself after closeSession stops Selenium.
+        recovering pairedPolicy [const alreadyPaired] $ \_ ->
+          -- Selenium starts a safaridriver for each session, which can exit at once like the ones
+          -- launchDriver retries.
+          recovering launchPolicy [seleniumSafaridriverFailedToStart] $ \_ -> shared (_webDriverSelenium wdc)
     | otherwise -> shared (_webDriverSelenium wdc)
   DriverConfigChromedriver {} -> shared (_webDriverChromedriver wdc)
   DriverConfigSafaridriver {} -> recovering safaridriverPolicy [safaridriverExited, safariSessionFailed] $ \_ ->

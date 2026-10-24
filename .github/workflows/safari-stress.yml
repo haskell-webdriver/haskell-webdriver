@@ -67,7 +67,7 @@ jobs:
     - name: Stress
       run: |
         # Retries happen while a session is introduced, and --print leaves out those nodes' logs, so
-        # count the warnings in each node's test_logs.txt.
+        # count the warnings in each node's test_logs.txt, and the session errors some retries don't log.
         cat > warnings.py <<'EOF'
         import collections, glob, re, sys
         trees = {}
@@ -76,8 +76,11 @@ jobs:
             if m:
                 for l in open(f, errors="replace"):
                     if "[Warn]" in l:
-                        trees[l.strip()] = m.group(1)
-        counts = collections.Counter((t, re.sub(r"^\S+ \S+ UTC \[Warn\] \(\) ", "", l)) for l, t in trees.items())
+                        trees[l.strip()] = (m.group(1), re.sub(r"^\S+ \S+ UTC \[Warn\] \(\) ", "", l.strip()))
+                    for needle in ("already paired", "timed out while connecting to a Safari instance"):
+                        if "<-- 500" in l and needle in l:
+                            trees[l.strip()] = (m.group(1), "<-- 500 " + needle)
+        counts = collections.Counter(trees.values())
         for (t, msg), k in sorted(counts.items()):
             print(f"  WARN [{t}] {k}x {msg}")
         EOF
