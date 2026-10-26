@@ -40,6 +40,7 @@ module Test.WebDriver.Capabilities (
   -- ** Types
   , Timeouts(..)
   , UserPromptHandler(..)
+  , Browser(..)
   , Platform(..)
 
   -- * Chrome
@@ -136,6 +137,7 @@ import qualified Data.Aeson as A
 import Data.Aeson.TH
 import Lens.Micro.TH
 import Test.WebDriver.Capabilities.Aeson
+import Test.WebDriver.Capabilities.Browser
 import Test.WebDriver.Capabilities.ChromeOptions
 import Test.WebDriver.Capabilities.FirefoxOptions
 import Test.WebDriver.Capabilities.Platform
@@ -159,7 +161,7 @@ import Test.WebDriver.Capabilities.UserPromptHandler
 -- a lack of support for the desired capability.
 data Capabilities = Capabilities {
   -- | Identifies the user agent.
-  _capabilitiesBrowserName :: Maybe String
+  _capabilitiesBrowserName :: Maybe Browser
   -- | Identifies the version of the user agent.
   , _capabilitiesBrowserVersion :: Maybe String
   -- | Identifies the operating system of the endpoint node.

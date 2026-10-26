@@ -34,7 +34,8 @@ tests = describe "Capabilities" $ do
     A.toJSON caps `shouldBe` A.object []
     A.fromJSON (A.toJSON caps) `shouldBe` A.Success defaultCaps
 
-  it "decodes the capabilities safaridriver returns" $
+  it "decodes the capabilities safaridriver returns" $ do
+    fmap _capabilitiesBrowserName (A.fromJSON safaridriverCaps) `shouldBe` A.Success (Just Safari)
     fmap _capabilitiesSafariOptions (A.fromJSON safaridriverCaps) `shouldBe` A.Success (Just emptySafariOptions {
       _safariOptionsAutomaticInspection = Just False
       , _safariOptionsAutomaticProfiling = Just False
@@ -44,9 +45,12 @@ tests = describe "Capabilities" $ do
       , _safariOptionsWebRTC = Just (WebKitWebRTC (Just False) (Just False))
       })
 
+  it "keeps the name of a browser it has no constructor for" $
+    A.fromJSON (A.toJSON (Browser "Safari Technology Preview")) `shouldBe` A.Success (Browser "Safari Technology Preview")
+
   where
     safariCaps = defaultCaps {
-      _capabilitiesBrowserName = Just "safari"
+      _capabilitiesBrowserName = Just Safari
       , _capabilitiesSafariOptions = Just SafariOptions {
           _safariOptionsAutomaticInspection = Just True
           , _safariOptionsAutomaticProfiling = Just True

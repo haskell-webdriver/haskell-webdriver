@@ -134,7 +134,7 @@ instance (MonadUnliftIO m, MonadCatch m) => WebDriverBase (ExampleT context m) w
 
 getCapabilities :: MonadIO m => Bool -> BrowserDependencies -> m Capabilities
 getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
-  _capabilitiesBrowserName = Just "chrome"
+  _capabilitiesBrowserName = Just Chrome
   , _capabilitiesGoogChromeOptions = Just $
     defaultChromeOptions
       & over (chromeOptionsArgs . non []) (if headless then (\xs -> "--headless" : [i|--window-size=1920,1080|] : xs) else id)
@@ -142,7 +142,7 @@ getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
       & set chromeOptionsBinary (Just browserDependenciesChromeChrome)
   }
 getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps {
-  _capabilitiesBrowserName = Just "firefox"
+  _capabilitiesBrowserName = Just Firefox
   , _capabilitiesMozFirefoxOptions = Just $
     defaultFirefoxOptions
       & set firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
@@ -150,7 +150,7 @@ getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps 
   }
 -- Safari has no headless mode.
 getCapabilities _ (BrowserDependenciesSafari {}) = pure $ defaultCaps {
-  _capabilitiesBrowserName = Just "safari"
+  _capabilitiesBrowserName = Just Safari
   }
 
 -- * Spec types

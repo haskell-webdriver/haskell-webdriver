@@ -53,6 +53,7 @@ library
       Test.WebDriver.WD
   other-modules:
       Test.WebDriver.Capabilities.Aeson
+      Test.WebDriver.Capabilities.Browser
       Test.WebDriver.Capabilities.ChromeOptions
       Test.WebDriver.Capabilities.FirefoxOptions
       Test.WebDriver.Capabilities.Platform

@@ -60,6 +60,7 @@ module Test.WebDriver (
   , defaultChromeOptions
   , defaultFirefoxOptions
   , Capabilities(..)
+  , Browser(..)
   , Platform(..)
   , ProxyType(..)
 
@@ -116,7 +117,7 @@ import UnliftIO.Timeout
 -- 'DriverConfigChromedriver', you should make sure to fill in
 -- '_capabilitiesGoogChromeOptions' and in particular the '_chromeOptionsBinary'
 -- field. For 'DriverConfigSafaridriver', set '_capabilitiesBrowserName' to
--- @"safari"@, and put Safari's other settings in '_capabilitiesSafariOptions'.
+-- 'Safari', and put Safari's other settings in '_capabilitiesSafariOptions'.
 
 startSession :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> DriverConfig -> Capabilities -> String -> m Session
 startSession wdc dc caps sessionName = case dc of

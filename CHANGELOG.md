@@ -2,6 +2,7 @@
 
 ## Unreleased
 * Add Safari support with `DriverConfigSafaridriver` and `SafariOptions` (#175)
+* `_capabilitiesBrowserName` is now a `Browser`: `Chrome`, `Firefox`, `Safari`, or `Browser` with any other browser's name.
 * Throw `SessionCreationFailed` instead of `SessionNameAlreadyExists` when the driver rejects a new session
 * Reduce BiDi log noise
 * Gracefully stop driver processes by signalling their whole process group (escalating sigINT -> sigTERM and waiting for exit), so the driver's browser child isn't left orphaned.
