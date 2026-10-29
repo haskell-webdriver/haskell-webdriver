@@ -17,6 +17,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Logger
 import Control.Retry
 import Data.Aeson
+import Data.Aeson.Types (parseMaybe)
 import qualified Data.ByteString.Char8 as BS
 import Data.Function
 import qualified Data.List as L
@@ -33,6 +34,7 @@ import System.FilePath
 import System.Exit (ExitCode)
 import System.IO
 import System.IO.Error (isEOFError)
+import Test.WebDriver.Capabilities.Browser (Browser(..))
 import Test.WebDriver.Types
 import Test.WebDriver.Util.Ports
 import Test.WebDriver.Util.Sockets
@@ -300,12 +302,16 @@ mkDriverRequest (Driver {..}) meth wdPath args =
     , requestBody = RequestBodyLBS body
     , requestHeaders = _driverRequestHeaders ++ extraHeaders
     , method = meth
-#if !MIN_VERSION_http_client(0,5,0)
+#if MIN_VERSION_http_client(0,5,0)
+    , responseTimeout = if startsSafariSession then responseTimeoutMicro safariSessionStartTimeoutUs else responseTimeoutDefault
+#else
     , checkStatus = \_ _ _ -> Nothing
 #endif
     }
   where
-    body = case toJSON args of
+    json = toJSON args
+
+    body = case json of
       Null -> "" -- Passing Null as the argument indicates no request body
       other -> encode other
 
@@ -313,6 +319,19 @@ mkDriverRequest (Driver {..}) meth wdPath args =
       (hAccept, "application/json;charset=UTF-8")
       , (hContentType, "application/json;charset=UTF-8")
       ]
+
+    -- A request to start a Safari session, directly or through Selenium.
+    startsSafariSession = meth == methodPost && wdPath == "/session" && requestedBrowser == Just Safari
+
+    requestedBrowser :: Maybe Browser
+    requestedBrowser = flip parseMaybe json $ withObject "new session" $ \o ->
+      o .: "capabilities" >>= (.: "alwaysMatch") >>= (.: "browserName")
+
+-- | How long to wait for safaridriver, or Selenium's, to answer a request to start a session.
+-- safaridriver gives Safari 30 s to connect and reports that it didn't about 5 s later, which
+-- http-client's 30 s default doesn't wait for.
+safariSessionStartTimeoutUs :: Int
+safariSessionStartTimeoutUs = 120_000_000
 
 
 -- | Grace period to wait at each escalation step when stopping a driver process.

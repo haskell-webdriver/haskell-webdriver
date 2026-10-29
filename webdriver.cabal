@@ -202,6 +202,7 @@ test-suite tests
       TestLib.Waits
       Unit
       Unit.Capabilities
+      Unit.DriverRequest
       Unit.LaunchDriver
       Paths_webdriver
   hs-source-dirs:
