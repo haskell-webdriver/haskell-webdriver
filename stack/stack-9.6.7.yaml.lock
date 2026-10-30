@@ -5,19 +5,19 @@
 
 packages:
 - completed:
-    hackage: sandwich-0.3.0.5@sha256:fa89bfb886c8232d40ef71554a681ceb0ed0bbe2afd422f0ab2ecdbbe5c7a5c8,9107
+    hackage: sandwich-0.3.1.0@sha256:7a8c8c0ff5bd3c134e4c6e732429b1a2ff4157f18bd6ec79884ab153e4f7652b,9513
     pantry-tree:
-      sha256: ad6090ca0b27a34e60b6ba5aa451d34e782b4fb4310e5de426737a90eb0ab554
-      size: 6127
+      sha256: 2675ad59f091c2deeeb27b8bc6284838f31cec4cb6ad559e723b86b8ede3e6c8
+      size: 6791
   original:
-    hackage: sandwich-0.3.0.5
+    hackage: sandwich-0.3.1.0
 - completed:
-    hackage: sandwich-contexts-0.3.0.3@sha256:8a02fe2600f5c45983041f0ac065d7d306fd884f67e36746ef1d8e801d2db6d1,3036
+    hackage: sandwich-contexts-0.3.0.4@sha256:bd4076815413dbc6650492f274e7e3ed55d4818eef1a655840ac4957af5984fc,3027
     pantry-tree:
-      sha256: 98c673489355c889038d1c50a6606a8bff2c857c9fed76b8fb6bee72f0ee574c
-      size: 1665
+      sha256: 41338e524eb45e3a6103af681c12d5a79fc7f13370c6c432bcb57f9d85666acd
+      size: 1666
   original:
-    hackage: sandwich-contexts-0.3.0.3
+    hackage: sandwich-contexts-0.3.0.4
 - completed:
     hackage: websockets-0.13.0.0@sha256:eaf0ec6b390c6ef6627534e897b733151aae75c9b441b28754011359cfffa75b,7815
     pantry-tree:
