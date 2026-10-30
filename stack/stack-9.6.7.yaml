@@ -9,6 +9,6 @@ nix:
 system-ghc: true
 
 extra-deps:
-- sandwich-0.3.0.5
-- sandwich-contexts-0.3.0.3
+- sandwich-0.3.1.0
+- sandwich-contexts-0.3.0.4
 - websockets-0.13.0.0
