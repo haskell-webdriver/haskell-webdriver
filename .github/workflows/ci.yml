@@ -15,6 +15,8 @@ jobs:
   cabal:
     name: ${{ matrix.os }} / ghc ${{ matrix.ghc }} / ${{ matrix.browser }}
     runs-on: ${{ matrix.os }}
+    env:
+      TEST_RUNS_ARCHIVE: test-runs-${{ github.run_number }}-${{ matrix.os }}-${{ matrix.ghc }}-${{ matrix.browser }}.tgz
     strategy:
       fail-fast: false
       matrix:
@@ -103,18 +105,25 @@ jobs:
           --test-option="test_runs/run"
 
     - name: Archive test_runs
+      if: always()
+      run: |
+        if [ -d test_runs ]; then
+          tar --exclude=gcroot -czf "$TEST_RUNS_ARCHIVE" test_runs
+        fi
+
+    - name: Upload test_runs
       uses: actions/upload-artifact@v7
       if: always()
       with:
-        name: test-runs-${{ github.run_number }}-${{ runner.os }}-${{ matrix.ghc }}-${{ matrix.browser }}
-        path: |
-          test_runs
-          !test_runs/**/gcroot
+        path: ${{ env.TEST_RUNS_ARCHIVE }}
+        archive: false
         retention-days: 7
 
   stack:
     name: stack / ghc ${{ matrix.ghc }} / ${{ matrix.browser }}
     runs-on: ubuntu-latest
+    env:
+      TEST_RUNS_ARCHIVE: test-runs-stack-${{ matrix.ghc }}-${{ matrix.browser }}.tgz
     strategy:
       fail-fast: false
       matrix:
@@ -168,13 +177,18 @@ jobs:
         stack test --stack-yaml stack/stack-${{ matrix.ghc }}.yaml --system-ghc --ta="--headless-tests --use-${{ matrix.browser }} --webdriver-chrome-no-sandbox --fixed-root test_runs/run --print-failures"
 
     - name: Archive test_runs
+      if: always()
+      run: |
+        if [ -d test_runs ]; then
+          tar --exclude=gcroot -czf "$TEST_RUNS_ARCHIVE" test_runs
+        fi
+
+    - name: Upload test_runs
       uses: actions/upload-artifact@v7
       if: always()
       with:
-        name: test-runs-stack-${{ matrix.ghc }}-${{ matrix.browser }}
-        path: |
-          test_runs
-          !test_runs/**/gcroot
+        path: ${{ env.TEST_RUNS_ARCHIVE }}
+        archive: false
         retention-days: 7
 
     - uses: actions/cache/save@v5
