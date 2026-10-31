@@ -5,6 +5,7 @@ import Data.Aeson as A
 import Data.Char
 import Data.Function
 import qualified Data.List as L
+import Data.Maybe
 
 
 baseOptions :: A.Options
@@ -41,6 +42,16 @@ capabilitiesOptions = baseOptions {
     specialCases "googChromeOptions" = "goog:chromeOptions"
     specialCases "mozFirefoxOptions" = "moz:firefoxOptions"
     specialCases x = x
+
+-- | For @SafariOptions@, whose fields are sent as top-level capabilities, so
+-- @_safariOptionsDeviceUDID@ becomes @safari:deviceUDID@.
+safariOptionsOptions :: A.Options
+safariOptionsOptions = toCamel2 {
+  A.fieldLabelModifier = vendorPrefixed . A.fieldLabelModifier toCamel2
+  }
+  where
+    vendorPrefixed "webRTC" = "webkit:WebRTC"
+    vendorPrefixed x = "safari:" <> x
 
 
 -- * Util
@@ -87,6 +98,9 @@ snakeToSpaced s = L.intercalate " " parts
 dropLeadingUnderscore :: [Char] -> [Char]
 dropLeadingUnderscore ('_':xs) = xs
 dropLeadingUnderscore xs = xs
+
+dropPrefix :: String -> String -> String
+dropPrefix prefix s = fromMaybe s (L.stripPrefix prefix s)
 
 capitalize :: String -> String
 capitalize (x:xs) = toUpper x : (fmap toLower xs)

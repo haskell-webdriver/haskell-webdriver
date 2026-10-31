@@ -53,10 +53,12 @@ library
       Test.WebDriver.WD
   other-modules:
       Test.WebDriver.Capabilities.Aeson
+      Test.WebDriver.Capabilities.Browser
       Test.WebDriver.Capabilities.ChromeOptions
       Test.WebDriver.Capabilities.FirefoxOptions
       Test.WebDriver.Capabilities.Platform
       Test.WebDriver.Capabilities.Proxy
+      Test.WebDriver.Capabilities.Safari
       Test.WebDriver.Capabilities.Timeouts
       Test.WebDriver.Capabilities.UserPromptHandler
       Test.WebDriver.Commands.Actions
@@ -182,12 +184,14 @@ test-suite tests
       Spec.Logs
       Spec.LogsBiDi
       Spec.Navigation
+      Spec.SafariSpecific.StuckSessions
       Spec.ScreenCapture
       Spec.SeleniumSpecific.Mobile
       Spec.SeleniumSpecific.Uploads
       Spec.Sessions
       Spec.UserPrompts
       TestLib.Contexts.BrowserDependencies
+      TestLib.Contexts.MockDriver
       TestLib.Contexts.Selenium4
       TestLib.Contexts.Session
       TestLib.Contexts.StaticServer
@@ -196,6 +200,10 @@ test-suite tests
       TestLib.Types
       TestLib.Types.Cli
       TestLib.Waits
+      Unit
+      Unit.Capabilities
+      Unit.DriverRequest
+      Unit.LaunchDriver
       Paths_webdriver
   hs-source-dirs:
       tests

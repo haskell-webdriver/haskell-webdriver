@@ -39,6 +39,9 @@ getText :: (HasCallStack, WebDriver wd) => Element -> wd Text
 getText e = doElemCommand methodGet e "/text" Null
 
 -- | Return the tag name of the given element.
+--
+-- Note: Safari returns HTML tag names in upper case, such as @BUTTON@, where the spec asks for
+-- lower case, so compare them case-insensitively.
 tagName :: (HasCallStack, WebDriver wd) => Element -> wd Text
 tagName e = doElemCommand methodGet e "/name" Null
 

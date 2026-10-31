@@ -46,6 +46,7 @@ import GHC.Stack
 import Network.HTTP.Client
 import Network.HTTP.Types (RequestHeaders)
 import Network.HTTP.Types.Method (methodDelete, methodGet, methodPost, Method)
+import Test.WebDriver.Capabilities.Browser (Browser)
 import Test.WebDriver.Util.Aeson (aesonKeyFromText)
 import UnliftIO.Async
 import UnliftIO.Concurrent
@@ -58,19 +59,21 @@ import UnliftIO.STM
 -- bookkeeping purposes. It tracks all the processes we spin up and all the
 -- sessions we create.
 --
--- Currently, we will create at most 1 Selenium or Chromedriver process per
--- 'WebDriverContext', and N Geckodriver processes, where N is the number of
--- Firefox sessions you request.
+-- Currently, we will create at most 1 Selenium, Chromedriver or Safaridriver
+-- process per 'WebDriverContext', and N Geckodriver processes, where N is the
+-- number of Firefox sessions you request.
 data WebDriverContext = WebDriverContext {
   _webDriverSessions :: MVar (Map String Session)
   , _webDriverSelenium :: MVar (Maybe Driver)
   , _webDriverChromedriver :: MVar (Maybe Driver)
+  , _webDriverSafaridriver :: MVar (Maybe Driver)
   }
 
 -- | Create a new 'WebDriverContext'.
 mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
 mkEmptyWebDriverContext = WebDriverContext
   <$> newMVar mempty
+  <*> newMVar Nothing
   <*> newMVar Nothing
   <*> newMVar Nothing
 
@@ -134,6 +137,17 @@ data DriverConfig =
       -- | Directory in which to place driver logs.
       , driverConfigLogDir :: Maybe FilePath
       }
+  | DriverConfigSafaridriver {
+      -- | Path to @safaridriver@ binary, such as @\/usr\/bin\/safaridriver@. Run
+      -- @safaridriver --enable@ once, as an administrator, before the first session.
+      driverConfigSafaridriver :: FilePath
+      -- | Extra flags to pass to @safaridriver@.
+      , driverConfigSafaridriverFlags :: [String]
+      -- | Extra environment variables to pass to @safaridriver@.
+      , driverConfigSafaridriverExtraEnv :: Maybe [(String, String)]
+      -- | Directory in which to place driver logs.
+      , driverConfigLogDir :: Maybe FilePath
+      }
 
 -- | An opaque identifier for a WebDriver session. These handles are produced by
 -- the server on session creation, and act to identify a session in progress.
@@ -146,6 +160,8 @@ data Session = Session {
   sessionDriver :: Driver
   , sessionId :: SessionId
   , sessionName :: String
+  -- | The browser the session was requested with, such as 'Safari'.
+  , sessionBrowserName :: Maybe Browser
   , sessionWebSocketUrl :: Maybe String
   -- | Used to generate IDs for BiDi.
   , sessionIdCounter :: TVar Int

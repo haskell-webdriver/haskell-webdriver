@@ -34,11 +34,13 @@ module Test.WebDriver.Capabilities (
   , capabilitiesUnhandledPromptBehavior
   , capabilitiesGoogChromeOptions
   , capabilitiesMozFirefoxOptions
+  , capabilitiesSafariOptions
   , capabilitiesWebSocketUrl
 
   -- ** Types
   , Timeouts(..)
   , UserPromptHandler(..)
+  , Browser(..)
   , Platform(..)
 
   -- * Chrome
@@ -108,15 +110,39 @@ module Test.WebDriver.Capabilities (
   -- ** Log level
   , FirefoxLogLevel(..)
   , FirefoxLogLevelType(..)
+
+  -- * Safari
+  , SafariOptions(..)
+  , emptySafariOptions
+  , defaultSafariOptions
+
+  -- ** Lenses
+  , safariOptionsAutomaticInspection
+  , safariOptionsAutomaticProfiling
+  , safariOptionsUseSimulator
+  , safariOptionsDeviceType
+  , safariOptionsDeviceName
+  , safariOptionsDeviceUDID
+  , safariOptionsPlatformVersion
+  , safariOptionsPlatformBuildVersion
+  , safariOptionsWebRTC
+
+  -- ** WebRTC
+  , WebKitWebRTC(..)
+  , webKitWebRTCDisableInsecureMediaCapture
+  , webKitWebRTCDisableICECandidateFiltering
   ) where
 
+import qualified Data.Aeson as A
 import Data.Aeson.TH
 import Lens.Micro.TH
 import Test.WebDriver.Capabilities.Aeson
+import Test.WebDriver.Capabilities.Browser
 import Test.WebDriver.Capabilities.ChromeOptions
 import Test.WebDriver.Capabilities.FirefoxOptions
 import Test.WebDriver.Capabilities.Platform
 import Test.WebDriver.Capabilities.Proxy
+import Test.WebDriver.Capabilities.Safari
 import Test.WebDriver.Capabilities.Timeouts
 import Test.WebDriver.Capabilities.UserPromptHandler
 
@@ -135,7 +161,7 @@ import Test.WebDriver.Capabilities.UserPromptHandler
 -- a lack of support for the desired capability.
 data Capabilities = Capabilities {
   -- | Identifies the user agent.
-  _capabilitiesBrowserName :: Maybe String
+  _capabilitiesBrowserName :: Maybe Browser
   -- | Identifies the version of the user agent.
   , _capabilitiesBrowserVersion :: Maybe String
   -- | Identifies the operating system of the endpoint node.
@@ -159,12 +185,31 @@ data Capabilities = Capabilities {
   , _capabilitiesGoogChromeOptions :: Maybe ChromeOptions
   -- | Firefox options
   , _capabilitiesMozFirefoxOptions :: Maybe FirefoxOptions
+  -- | Safari options
+  , _capabilitiesSafariOptions :: Maybe SafariOptions
 
   , _capabilitiesWebSocketUrl :: Maybe Bool
 
   } deriving (Eq, Show)
-deriveJSON capabilitiesOptions ''Capabilities
 makeLenses ''Capabilities
+
+instance A.ToJSON Capabilities where
+  toJSON caps = case $(mkToJSON capabilitiesOptions ''Capabilities) caps { _capabilitiesSafariOptions = Nothing } of
+    A.Object o -> A.Object (o <> safariKeys)
+    v -> v
+    where
+      safariKeys = case A.toJSON <$> _capabilitiesSafariOptions caps of
+        Just (A.Object keys) -> keys
+        _ -> mempty
+
+instance A.FromJSON Capabilities where
+  parseJSON v = do
+    caps <- $(mkParseJSON capabilitiesOptions ''Capabilities) v
+    -- Parsing ignores keys it doesn't know, so this reads only Safari's.
+    safari <- A.parseJSON v
+    return $ caps {
+      _capabilitiesSafariOptions = if safari == emptySafariOptions then Nothing else Just safari
+      }
 
 -- | Default capabilities.
 defaultCaps :: Capabilities
@@ -188,6 +233,7 @@ defaultCaps = Capabilities {
 
   , _capabilitiesGoogChromeOptions = Nothing
   , _capabilitiesMozFirefoxOptions = Nothing
+  , _capabilitiesSafariOptions = Nothing
 
   , _capabilitiesWebSocketUrl = Nothing
   }

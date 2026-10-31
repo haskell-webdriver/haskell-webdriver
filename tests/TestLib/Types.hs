@@ -29,6 +29,7 @@ module TestLib.Types (
 
   , SeleniumVersion(..)
 
+  , NixSpec
   , SessionSpec
   , SpecWithWebDriver
   ) where
@@ -72,6 +73,9 @@ data BrowserDependencies = BrowserDependenciesChrome {
   | BrowserDependenciesFirefox {
       browserDependenciesFirefoxFirefox :: FilePath
       , browserDependenciesFirefoxGeckodriver :: FilePath
+      }
+  | BrowserDependenciesSafari {
+      browserDependenciesSafariSafaridriver :: FilePath
       }
   deriving (Show)
 
@@ -130,7 +134,7 @@ instance (MonadUnliftIO m, MonadCatch m) => WebDriverBase (ExampleT context m) w
 
 getCapabilities :: MonadIO m => Bool -> BrowserDependencies -> m Capabilities
 getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
-  _capabilitiesBrowserName = Just "chrome"
+  _capabilitiesBrowserName = Just Chrome
   , _capabilitiesGoogChromeOptions = Just $
     defaultChromeOptions
       & over (chromeOptionsArgs . non []) (if headless then (\xs -> "--headless" : [i|--window-size=1920,1080|] : xs) else id)
@@ -138,14 +142,23 @@ getCapabilities headless (BrowserDependenciesChrome {..}) = pure $ defaultCaps {
       & set chromeOptionsBinary (Just browserDependenciesChromeChrome)
   }
 getCapabilities headless (BrowserDependenciesFirefox {..}) = pure $ defaultCaps {
-  _capabilitiesBrowserName = Just "firefox"
+  _capabilitiesBrowserName = Just Firefox
   , _capabilitiesMozFirefoxOptions = Just $
     defaultFirefoxOptions
       & set firefoxOptionsBinary (Just browserDependenciesFirefoxFirefox)
       & over (firefoxOptionsArgs . non []) (if headless then ("-headless" :) else id)
   }
+-- Safari has no headless mode.
+getCapabilities _ (BrowserDependenciesSafari {}) = pure $ defaultCaps {
+  _capabilitiesBrowserName = Just Safari
+  }
 
 -- * Spec types
+
+type NixSpec = forall context. (
+  HasBaseContext context
+  , HasNixContext context
+  ) => SpecFree context IO ()
 
 type SpecWithWebDriver = forall context. (
   HasBaseContext context

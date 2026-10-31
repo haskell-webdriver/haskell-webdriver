@@ -37,21 +37,24 @@ tests = introduceSession $ describe "Sessions" $ before "Open test page" openSim
 
         getTimeouts >>= (`shouldBe` timeouts)
 
-    describe "Individual timeout functions" $ do
+    describe "Individual timeout functions" $ beforeEach "Reset timeouts" (setTimeouts initialTimeouts) $ do
       it "setScriptTimeout" $ do
         setScriptTimeout (Just 11)
-        getTimeouts >>= (`shouldBe` (Timeouts (Just 11) (Just 2) (Just 3)))
+        getTimeouts >>= (`shouldBe` initialTimeouts { timeoutsScript = Just 11 })
 
+      it "setScriptTimeout Nothing" $ do
+        -- safaridriver rejects the null script timeout the spec allows.
+        pendingOnSafari
         setScriptTimeout Nothing
-        getTimeouts >>= (`shouldBe` (Timeouts Nothing (Just 2) (Just 3)))
+        getTimeouts >>= (`shouldBe` initialTimeouts { timeoutsScript = Nothing })
 
       it "setPageLoadTimeout" $ do
         setPageLoadTimeout 12
-        getTimeouts >>= (`shouldBe` (Timeouts Nothing (Just 12) (Just 3)))
+        getTimeouts >>= (`shouldBe` initialTimeouts { timeoutsPageLoad = Just 12 })
 
       it "setImplicitWait" $ do
         setImplicitWait 13
-        getTimeouts >>= (`shouldBe` (Timeouts Nothing (Just 12) (Just 13)))
+        getTimeouts >>= (`shouldBe` initialTimeouts { timeoutsImplicit = Just 13 })
 
   -- it "sessions" $ do
   --   xs <- sessions
@@ -60,3 +63,11 @@ tests = introduceSession $ describe "Sessions" $ before "Open test page" openSim
   -- it "getActualCaps" $ do
   --   caps <- getActualCaps
   --   info [i|Got actual caps: #{caps}|]
+
+-- Distinct from the values the tests set, so each test can tell which timeout changed.
+initialTimeouts :: Timeouts
+initialTimeouts = Timeouts {
+  timeoutsScript = Just 1
+  , timeoutsPageLoad = Just 2
+  , timeoutsImplicit = Just 3
+  }
