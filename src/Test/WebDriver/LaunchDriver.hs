@@ -60,7 +60,8 @@ launchDriver driverConfig = recovering policy [const handler] $ \_ -> launchDriv
 
 launchDriver' :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
 launchDriver' driverConfig = do
-  manager <- liftIO $ newManager defaultManagerSettings
+  -- The driver listens on localhost, so don't let an http_proxy in the environment redirect requests to it.
+  manager <- liftIO $ newManager (managerSetProxy noProxy defaultManagerSettings)
   let requestHeaders = mempty
 
   port <- findFreePortOrException
