@@ -4,6 +4,7 @@
 * Reduce BiDi log noise
 * Gracefully stop driver processes by signalling their whole process group (escalating sigINT -> sigTERM and waiting for exit), so the driver's browser child isn't left orphaned.
 * Bound each session close in `teardownWebDriverContext` with a timeout so an unresponsive driver can't block session teardown.
+* Ignore the `http_proxy` environment variable for drivers the library launches, since they always listen on localhost.
 
 ## 0.15.0.0
 * Add `Test.WebDriver.Commands.BiDi.NetworkActivity` with tools for working with browser network activity.
