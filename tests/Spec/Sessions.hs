@@ -1,16 +1,27 @@
 
 module Spec.Sessions where
 
+import Control.Monad
+import Data.Maybe
 import Data.String.Interpolate
+import Network.HTTP.Client (defaultManagerSettings, managerModifyRequest)
 import Test.Sandwich
-import Test.WebDriver.Commands
+import Test.WebDriver
 import TestLib.Contexts.Session
 import TestLib.Contexts.StaticServer
 import TestLib.Types
+import TestLib.Types.Cli
+import UnliftIO.Exception
+import UnliftIO.IORef
 
 
 tests :: SessionSpec
-tests = introduceSession $ describe "Sessions" $ before "Open test page" openSimpleTestPage $ do
+tests = do
+  sessionTests
+  contextTests
+
+sessionTests :: SessionSpec
+sessionTests = introduceSession $ describe "Sessions" $ before "Open test page" openSimpleTestPage $ do
   -- createSession is already tested in introduceSession
 
   it "status" $ do
@@ -60,3 +71,25 @@ tests = introduceSession $ describe "Sessions" $ before "Open test page" openSim
   -- it "getActualCaps" $ do
   --   caps <- getActualCaps
   --   info [i|Got actual caps: #{caps}|]
+
+contextTests :: SessionSpec
+contextTests = describe "WebDriverContext" $ do
+  it "reaches its drivers through the context's ManagerSettings" $ do
+    requests <- newIORef (0 :: Int)
+    let options = defaultContextOptions {
+          contextDriverManagerSettings = defaultManagerSettings {
+            managerModifyRequest = \req -> modifyIORef' requests (+ 1) >> return req
+            }
+          }
+
+    browserDeps <- getContext browserDependencies
+    UserOptions {..} <- getUserCommandLineOptions
+    caps <- getCapabilities (fromMaybe False optHeadlessTests) browserDeps
+    dc <- getContext driverConfig
+
+    bracket (mkWebDriverContext options) teardownWebDriverContext $ \wdc ->
+      void $ startSession wdc dc caps "session"
+
+    readIORef requests >>= \case
+      0 -> expectationFailure "No request went through the context's Manager"
+      _ -> return ()

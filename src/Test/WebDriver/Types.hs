@@ -5,6 +5,9 @@ module Test.WebDriver.Types (
   WebDriverContext(..)
   -- , HasWebDriverContext
   , mkEmptyWebDriverContext
+  , mkWebDriverContext
+  , ContextOptions(..)
+  , defaultContextOptions
 
   , Driver(..)
   , DriverConfig(..)
@@ -56,7 +59,8 @@ import UnliftIO.STM
 
 -- | The 'WebDriverContext' is an opaque type used by this library for
 -- bookkeeping purposes. It tracks all the processes we spin up and all the
--- sessions we create.
+-- sessions we create, and holds the http-client 'Manager' those processes are
+-- reached through.
 --
 -- Currently, we will create at most 1 Selenium or Chromedriver process per
 -- 'WebDriverContext', and N Geckodriver processes, where N is the number of
@@ -65,14 +69,34 @@ data WebDriverContext = WebDriverContext {
   _webDriverSessions :: MVar (Map String Session)
   , _webDriverSelenium :: MVar (Maybe Driver)
   , _webDriverChromedriver :: MVar (Maybe Driver)
+  , _webDriverManager :: Manager
   }
 
--- | Create a new 'WebDriverContext'.
-mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
-mkEmptyWebDriverContext = WebDriverContext
+-- | Options for a 'WebDriverContext'.
+data ContextOptions = ContextOptions {
+  -- | Settings for the http-client 'Manager' the context's drivers are reached
+  -- through, such as 'managerResponseTimeout' and the proxy chosen by
+  -- 'managerSetProxy'.
+  contextDriverManagerSettings :: ManagerSettings
+  }
+
+-- | Default context options, which use 'defaultManagerSettings'.
+defaultContextOptions :: ContextOptions
+defaultContextOptions = ContextOptions {
+  contextDriverManagerSettings = defaultManagerSettings
+  }
+
+-- | Create a new 'WebDriverContext' with the given options.
+mkWebDriverContext :: MonadIO m => ContextOptions -> m WebDriverContext
+mkWebDriverContext (ContextOptions {..}) = WebDriverContext
   <$> newMVar mempty
   <*> newMVar Nothing
   <*> newMVar Nothing
+  <*> liftIO (newManager contextDriverManagerSettings)
+
+-- | Create a new 'WebDriverContext' with 'defaultContextOptions'.
+mkEmptyWebDriverContext :: MonadIO m => m WebDriverContext
+mkEmptyWebDriverContext = mkWebDriverContext defaultContextOptions
 
 data Driver = Driver {
   _driverHostname :: String

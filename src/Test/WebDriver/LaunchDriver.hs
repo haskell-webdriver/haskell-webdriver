@@ -45,8 +45,8 @@ import UnliftIO.Process
 import UnliftIO.Timeout
 
 
-launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
-launchDriver driverConfig = recovering policy [const handler] $ \_ -> launchDriver' driverConfig
+launchDriver :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => Manager -> DriverConfig -> m Driver
+launchDriver manager driverConfig = recovering policy [const handler] $ \_ -> launchDriver' manager driverConfig
   where
     policy = limitRetries 10 <> capDelay 1_000_000 (exponentialBackoff 50_000)
 
@@ -58,9 +58,8 @@ launchDriver driverConfig = recovering policy [const handler] $ \_ -> launchDriv
 
     isPortTaken line = "address already in use" `T.isInfixOf` T.toLower line
 
-launchDriver' :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => DriverConfig -> m Driver
-launchDriver' driverConfig = do
-  manager <- liftIO $ newManager defaultManagerSettings
+launchDriver' :: (MonadUnliftIO m, MonadMask m, MonadLogger m) => Manager -> DriverConfig -> m Driver
+launchDriver' manager driverConfig = do
   let requestHeaders = mempty
 
   port <- findFreePortOrException

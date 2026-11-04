@@ -37,6 +37,9 @@ module Test.WebDriver (
   -- * WebDriverContext
   WebDriverContext
   , mkEmptyWebDriverContext
+  , mkWebDriverContext
+  , ContextOptions(..)
+  , defaultContextOptions
   , teardownWebDriverContext
 
   -- * Managed sessions
@@ -48,6 +51,7 @@ module Test.WebDriver (
   , startSession'
   , closeSession'
   , mkManualDriver
+  , mkManualDriver'
 
   -- * Capabilities
   , defaultCaps
@@ -111,18 +115,18 @@ import UnliftIO.Timeout
 startSession :: (WebDriverBase m, MonadMask m, MonadLogger m) => WebDriverContext -> DriverConfig -> Capabilities -> String -> m Session
 startSession wdc dc@(DriverConfigSeleniumJar {}) caps sessionName = do
   driver <- modifyMVar (_webDriverSelenium wdc) $ \maybeSelenium -> do
-    driver <- maybe (launchDriver dc) return maybeSelenium
+    driver <- maybe (launchDriver (_webDriverManager wdc) dc) return maybeSelenium
     return (Just driver, driver)
 
   launchSessionInDriver wdc driver caps sessionName
 startSession wdc dc@(DriverConfigChromedriver {}) caps sessionName = do
   driver <- modifyMVar (_webDriverChromedriver wdc) $ \maybeChromedriver -> do
-    driver <- maybe (launchDriver dc) return maybeChromedriver
+    driver <- maybe (launchDriver (_webDriverManager wdc) dc) return maybeChromedriver
     return (Just driver, driver)
 
   launchSessionInDriver wdc driver caps sessionName
 startSession wdc dc@(DriverConfigGeckodriver {}) caps sessionName = do
-  driver <- launchDriver dc
+  driver <- launchDriver (_webDriverManager wdc) dc
   onException (launchSessionInDriver wdc driver caps sessionName)
               (teardownDriver driver)
 
@@ -198,8 +202,23 @@ mkManualDriver :: MonadIO m =>
   -- | Headers to send with every request
   -> RequestHeaders
   -> m Driver
-mkManualDriver hostname port basePath requestHeaders = do
-  manager <- liftIO $ newManager defaultManagerSettings
+mkManualDriver = mkManualDriver' defaultManagerSettings
+
+-- | 'mkManualDriver' with settings for the http-client 'Manager' the driver is reached through.
+mkManualDriver' :: MonadIO m =>
+  -- | Manager settings
+  ManagerSettings
+  -- | Host name
+  -> String
+  -- | Port
+  -> Int
+  -- | Base HTTP path (use "\/wd\/hub" for Selenium)
+  -> String
+  -- | Headers to send with every request
+  -> RequestHeaders
+  -> m Driver
+mkManualDriver' managerSettings hostname port basePath requestHeaders = do
+  manager <- liftIO $ newManager managerSettings
 
   return $ Driver {
     _driverHostname = hostname
