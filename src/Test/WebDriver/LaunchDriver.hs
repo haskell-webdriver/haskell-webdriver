@@ -81,9 +81,12 @@ launchDriver' driverConfig = do
         , std_out = UseHandle hWrite
         , std_err = UseHandle hWrite
         , env = envToUse
+        , close_fds = True
         }
 
   (_, _, _, p) <- createProcess cp
+  -- The driver has its own copy; ours would keep hRead from ever reaching EOF
+  liftIO $ hClose hWrite
 
   let hostname = "localhost"
 

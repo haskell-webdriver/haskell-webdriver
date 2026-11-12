@@ -4,6 +4,7 @@
 * Reduce BiDi log noise
 * Gracefully stop driver processes by signalling their whole process group (escalating sigINT -> sigTERM and waiting for exit), so the driver's browser child isn't left orphaned.
 * Bound each session close in `teardownWebDriverContext` with a timeout so an unresponsive driver can't block session teardown.
+* Close the parent's copy of the driver log pipe's write end and spawn the driver with `close_fds`, so its log reader reaches EOF when the driver exits (on Windows the reader used to hang).
 
 ## 0.15.0.0
 * Add `Test.WebDriver.Commands.BiDi.NetworkActivity` with tools for working with browser network activity.
